@@ -1,0 +1,13 @@
+{
+  "name": "harvest-hill-delivery",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:admin": "cd web/admin && npm run dev",
+    "dev:supplier": "cd web/supplier && npm run dev",
+    "build:admin": "cd web/admin && npm run build",
+    "build:supplier": "cd web/supplier && npm run build",
+    "start:admin": "cd web/admin && npm run start",
+    "start:supplier": "cd web/supplier && npm run start"
+  }
+}
