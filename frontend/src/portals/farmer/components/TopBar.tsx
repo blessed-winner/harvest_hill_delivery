@@ -16,6 +16,8 @@ interface TopBarProps {
 export default function TopBar({ onMenuToggle }: TopBarProps) {
   const [farmName, setFarmName] = useState('Green Valley Farm');
   const [roleLabel, setRoleLabel] = useState('Tier 1 Supplier');
+  const profileImage =
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuC9re6yJPQ5TYt9TGg1Mt0-bI4EtsJFQjADaJ-AwucfipGIVS_n3JHlVfqhYm5ByV0h5A3ex6xXqVx_l3oBhemoxWVhA0IPAGluGjQO4OPoJ9gQdqnssN5XJBPp5OFVC7xQElJLs4enHGBVPXJAWBIS1VNjcQowBBzGU4M_b4cPWpbY3sw7Bu_wCsn5_rNTUAiuiqPMd8LwtDezfTQ-Zehk2fUY53IVBnoVJaGfWMQAjI0XQr03PQqA9Q';
 
   useEffect(() => {
     let mounted = true;
@@ -64,14 +66,11 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
             <p className="font-mono text-xs font-bold text-on-surface">{farmName}</p>
             <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">{roleLabel}</p>
           </div>
-          <div className="w-9 h-9 rounded-full border-2 border-secondary-container overflow-hidden group-hover:scale-105 transition-transform duration-300 bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold font-mono">
-            {farmName
-              .split(' ')
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join('')
-              .toUpperCase()}
-          </div>
+          <img
+            src={profileImage}
+            alt="Farm profile"
+            className="w-9 h-9 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         </div>
       </div>
     </header>

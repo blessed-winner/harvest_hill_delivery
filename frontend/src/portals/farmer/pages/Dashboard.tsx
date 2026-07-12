@@ -14,6 +14,17 @@ const iconMap: Record<string, any> = {
   ReceiptText,
 };
 
+const referenceProductImages: Record<string, string> = {
+  'Roma Tomatoes':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA',
+  Avocados:
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCsfqJNDz80Xn2-KaRXRF31K6QO_pupkjC6UMWWowylvZaP3qkjI72tron27rcRdbKO_jjlbc6lKgXigL5eAONaza__KFiKV-Q0DK9dZlLBUZzm_gUWidtttVRcM6KWI6ZN6PRT7uuOi73MSJ3eMcA4C5_oQT3EYiFYDV0F9_1gPE-ry-nZknkpmGuAP95b0M1dSMOvNehWKcVMek3M4uNL97Dg-b8Tk1DtC7pMkhJPWiOk-8wCUYAAgQ',
+  'Iceberg Lettuce':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg',
+  Kale:
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuA8D_XWtM45-WArGJBOguIxVmsdiMsXgaW8zHcrJx283oUd-ahP56_lgK6umUM6vT1uSRmmV3rvogNb0XlL9Ywwe9IYp83uzwm8jlIViXp1P3KMNDEzmJFZFVssS7OBbsbnU-DeDPs_z_QrwPo7TaeVQv52ISiC69b-jeLPG7NhGOeAZZUGXQDxVaId-bOv9LU9u1PBTOFnIav6sruuIsKZTXapAmB0RQ8CFE2uYvBscfADb4xeGJftzA',
+};
+
 type KpiStyle = {
   card: string;
   iconWrap?: string;
@@ -28,37 +39,37 @@ type KpiStyle = {
 
 const kpiStyles: KpiStyle[] = [
   {
-    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
-    iconWrap: 'bg-[#bfeec4]',
-    icon: 'text-[#234b32]',
-    label: 'text-[#59645c]',
-    value: 'text-[#1a1c1b]',
-    unit: 'text-[#59645c]',
+    card: 'bg-[#ffffff] border-[#c1c9c0]',
+    iconWrap: 'bg-[#b6edc2]',
+    icon: 'text-[#144227]',
+    label: 'text-[#414942]',
+    value: 'text-[#1c1c18]',
+    unit: 'text-[#414942]',
   },
   {
-    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
-    iconWrap: 'bg-[#f5d6bf]',
-    icon: 'text-[#7a4a24]',
-    badge: 'bg-[#8a5a2d] text-[#f8eadb]',
-    label: 'text-[#59645c]',
-    value: 'text-[#1a1c1b]',
-    unit: 'text-[#7a4a24]',
+    card: 'bg-[#ffffff] border-[#c1c9c0]',
+    iconWrap: 'bg-[#ffdcc5]',
+    icon: 'text-[#563113]',
+    badge: 'bg-[#704727] text-[#f1b88f]',
+    label: 'text-[#414942]',
+    value: 'text-[#1c1c18]',
+    unit: 'text-[#563113]',
   },
   {
-    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
-    ringTrack: '#dde4d9',
-    ringFill: '#3f6f49',
-    label: 'text-[#59645c]',
-    value: 'text-[#1a1c1b]',
-    unit: 'text-[#59645c]',
+    card: 'bg-[#ffffff] border-[#c1c9c0]',
+    ringTrack: '#e5e2db',
+    ringFill: '#376847',
+    label: 'text-[#414942]',
+    value: 'text-[#1c1c18]',
+    unit: 'text-[#414942]',
   },
   {
-    card: 'bg-[#2f5a39] border-[#21462d]',
-    iconWrap: 'bg-[#4f7958]',
-    icon: 'text-[#cfe2d2]',
-    label: 'text-[#9eb9a3]',
-    value: 'text-[#bcd1bf]',
-    unit: 'text-[#9eb9a3]',
+    card: 'bg-[#2d5a3d] border-[#144227]',
+    iconWrap: 'bg-white/10',
+    icon: 'text-white',
+    label: 'text-[#b6edc2]/80',
+    value: 'text-[#b6edc2]',
+    unit: 'text-[#b6edc2]/80',
   },
 ] as const;
 
@@ -110,7 +121,8 @@ export default function Dashboard() {
           { name: 'Tubers', value: 15, color: '#563113' },
         ]);
         setDemands([
-          { id: 'd1', name: 'Roma Tomatoes', category: 'Vegetables', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA7mLxGJ6xzaHLUCSr_1umm3RMLbPBBRmXCy-4f_ZuaRTdv8VaKWWv9cWdkwxPE5-a8zRrLGWcbVVTS6mDo2Ywdo0ka1FXrHMXqT7WYobgDgxQa1xmPaP7VDuWWhCWKUZ7rBKkzxtd7utEG4zvoLvLwBL8oNwKJ-WOxIBQvhW-CBzfREOH97JRcOTZHikBuwvDXrlultQywcsB7YpLyr3JdRy62v-ei5A2-rhl8Yz8z2PXoZ-FG-q2lg', price: '$3.45', status: 'HIGH', quantityNeeded: '2,500 kg' },
+          { id: 'd1', name: 'Roma Tomatoes', category: 'Vegetables', image: referenceProductImages['Roma Tomatoes'], price: '$3.45', status: 'HIGH', quantityNeeded: '2,500 kg' },
+          { id: 'd2', name: 'Iceberg Lettuce', category: 'Vegetables', image: referenceProductImages['Iceberg Lettuce'], price: '$1.20', status: 'STEADY', quantityNeeded: '1,200 kg' },
         ]);
       }
     }
@@ -159,8 +171,8 @@ export default function Dashboard() {
                       background: `conic-gradient(${styles.ringFill ?? '#3f6f49'} 0 94%, ${styles.ringTrack ?? '#dde4d9'} 94% 100%)`,
                     }}
                   >
-                    <div className="absolute inset-2 rounded-full bg-[#fbfaf4] flex items-center justify-center">
-                      <span className="font-mono text-[11px] sm:text-xs font-bold text-[#1a1c1b]">94%</span>
+                    <div className="absolute inset-2 rounded-full bg-[#ffffff] flex items-center justify-center">
+                      <span className="font-mono text-[11px] sm:text-xs font-bold text-[#1c1c18]">94%</span>
                     </div>
                   </div>
                   <div className="min-w-0">
@@ -177,7 +189,7 @@ export default function Dashboard() {
                       <Icon size={16} className={cn("sm:w-5 sm:h-5", styles.icon)} />
                     </div>
                     {kpi.trend && (
-                      <span className={cn("font-mono text-[10px] sm:text-xs font-bold flex items-center gap-0.5 sm:gap-1", i === 0 ? "text-[#5b8566]" : "text-[#7a4a24]")}>
+                      <span className={cn("font-mono text-[10px] sm:text-xs font-bold flex items-center gap-0.5 sm:gap-1", i === 0 ? "text-[#376847]" : "text-[#563113]")}>
                         <TrendingUp size={12} className="sm:w-3.5 sm:h-3.5" />
                         {kpi.trend}
                       </span>
@@ -291,7 +303,7 @@ export default function Dashboard() {
               className="min-w-[240px] bg-surface-container-lowest custom-shadow rounded-xl overflow-hidden border border-outline-variant group cursor-pointer"
             >
               <div className="h-32 overflow-hidden relative">
-                <img src={demand.image} alt={demand.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={referenceProductImages[demand.name] || demand.image} alt={demand.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-3 right-3">
                   <span className={cn(
                     "px-2 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wider shadow-sm",

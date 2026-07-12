@@ -32,6 +32,9 @@ const initialProfile: ProfileForm = {
   notify_payment_received: false,
 };
 
+const mapImage =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAQr25ys2wkXGrQ7titI1OSd9Zv4X7bXsT3mBQKc1VxEScgvgwVtMp7lrofnmtpo_IRANeAEDXZJ2nZcsUNO1Q-nME_5g12eruSLVu4rUDUI_WPm1v2XEsc-2Z5z7otIi55Zry1WJnn9_sR_wlS8KxKxuidw2PZGlgauoAzLfrVkIVGGKTo4zy95YUvI7Lq-4xX6W2biSnwumGFlM0p8TyaoDSi2e7Vrwt0gALG6EThu4T6gM5YEZXQtg';
+
 export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -145,8 +148,11 @@ export default function Settings() {
 
           <div className="space-y-2">
             <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Farm Location</label>
-            <div className="relative rounded-xl overflow-hidden group border border-outline-variant h-48 bg-[radial-gradient(circle_at_top_left,_rgba(180,230,200,0.7),_transparent_45%),linear-gradient(135deg,_#d8e8da_0%,_#b7d3bf_100%)]">
-              <div className="absolute inset-0 opacity-35 bg-[linear-gradient(transparent_24px,rgba(20,66,39,0.16)_25px),linear-gradient(90deg,transparent_24px,rgba(20,66,39,0.16)_25px)] bg-[size:48px_48px]" />
+            <div className="relative rounded-xl overflow-hidden group border border-outline-variant h-48 bg-surface-container-high">
+              <div
+                className="absolute inset-0 bg-center bg-cover"
+                style={{ backgroundImage: `url('${mapImage}')` }}
+              />
               <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 bg-white/90 backdrop-blur-md p-3 sm:p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-lg">
                 <span className="font-sans text-xs sm:text-sm text-primary font-extrabold">{profile.location}</span>
                 <button className="text-primary hover:underline font-mono text-[10px] uppercase font-bold">Edit Map</button>
@@ -198,7 +204,7 @@ export default function Settings() {
                   <button className="text-primary font-mono text-[10px] uppercase font-bold hover:underline">Change</button>
                 </div>
               </div>
-              <div className="p-5 rounded-xl bg-tertiary-container/5 border border-tertiary-container/20 flex items-start gap-3">
+              <div className="p-5 rounded-xl bg-tertiary-container/10 border border-tertiary-container/20 flex items-start gap-3">
                 <Info size={20} className="text-tertiary shrink-0" />
                 <p className="font-sans text-sm text-on-tertiary-fixed-variant leading-relaxed">
                   Invoices are generated automatically on the 1st of every month for all completed deliveries.

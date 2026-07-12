@@ -5,32 +5,53 @@
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-surface: #f8f7f2;
-  --color-on-surface: #1a1c1b;
+  --color-surface: #fcf9f2;
+  --color-surface-bright: #fcf9f2;
+  --color-surface-dim: #dcdad3;
+  --color-background: #fcf9f2;
+  --color-on-background: #1c1c18;
+  --color-on-surface: #1c1c18;
   --color-primary: #144227;
   --color-primary-container: #2d5a3d;
   --color-on-primary-container: #9ed0ab;
-  --color-secondary: #57765f;
-  --color-secondary-container: #bde7c1;
-  --color-on-secondary-container: #234b32;
-  --color-tertiary: #7b4b25;
-  --color-tertiary-container: #f1d5bf;
-  --color-on-tertiary-container: #7b4b25;
-  --color-tertiary-fixed: #efe1d0;
-  --color-on-tertiary-fixed-variant: #6d4320;
-  --color-surface-container-low: #f4f4f2;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-high: #e8e8e6;
-  --color-surface-container-highest: #e2e3e1;
-  --color-outline-variant: #c1c9c0;
-  --color-on-surface-variant: #414942;
+  --color-primary-fixed: #bceec8;
+  --color-primary-fixed-dim: #a1d2ad;
+  --color-on-primary: #ffffff;
+  --color-on-primary-fixed: #00210f;
+  --color-on-primary-fixed-variant: #224f33;
+  --color-secondary: #376847;
+  --color-secondary-container: #b6edc2;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #3b6d4b;
+  --color-secondary-fixed: #b9efc5;
+  --color-secondary-fixed-dim: #9dd3aa;
+  --color-on-secondary-fixed: #00210e;
+  --color-on-secondary-fixed-variant: #1e5031;
+  --color-tertiary: #563113;
+  --color-tertiary-container: #704727;
+  --color-tertiary-fixed: #ffdcc5;
+  --color-tertiary-fixed-dim: #f4bb92;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #f1b88f;
+  --color-on-tertiary-fixed: #301400;
+  --color-on-tertiary-fixed-variant: #653d1e;
+  --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
-  --color-on-error-container: #7a2e24;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+  --color-surface-container-low: #f6f3ec;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #f0eee7;
+  --color-surface-container-high: #ebe8e1;
+  --color-surface-container-highest: #e5e2db;
+  --color-outline-variant: #c1c9c0;
+  --color-outline: #717971;
+  --color-on-surface-variant: #414942;
 }
 
 @layer base {
   body {
-    @apply bg-[#f9f9f7] text-[#1a1c1b] font-sans antialiased;
+    @apply bg-[#fcf9f2] text-[#1c1c18] font-sans antialiased;
   }
 }
 

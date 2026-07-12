@@ -6,19 +6,36 @@ import { Search, ChevronDown, Calendar as CalendarIcon, Eye, Trash2, ChevronLeft
 import { cn } from '../lib/utils';
 import { apiRequest } from '../lib/api';
 
+const romaTomatoesImage =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA'
+
 export default function MySupplies() {
   const [supplies, setSupplies] = useState<any[]>([]);
+
+  const getSupplyImage = (supply: any) => {
+    const name = String(supply?.product_detail?.name || '').trim().toLowerCase();
+    if (name.includes('roma') || name.includes('tomato')) {
+      return romaTomatoesImage;
+    }
+    return supply?.product_detail?.image || '';
+  };
 
   useEffect(() => {
     async function loadSupplies() {
       try {
         const data = await apiRequest("/api/supplies/");
-        setSupplies(data);
+        setSupplies((data || []).map((item: any) => ({
+          ...item,
+          product_detail: {
+            ...item.product_detail,
+            image: getSupplyImage(item),
+          },
+        })));
       } catch (err) {
         console.error("Error loading supplies:", err);
         // Offline Mock Fallbacks
         setSupplies([
-          { id: '1', product_detail: { name: 'Heirloom Tomatoes', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCRey3ni57-r0mdsoqUUDjHnVzK-ot3jGZRlwrVWdgcfcTfcNBLWLlKAcIA9CueOunIO19QIG1pwBC5ulTFRIYHeThaIS8QZw5X7AFoMWGshdk25Hvxc5CPZDsrXHFuAiiXX8NL1XE6xYpQcUOvZ25DcyOKJscCaZ4TWnprMyVujMqYG5lUz-7rNm9nvTO7eH_vr2p_bOpFx4_g9rnGphbCqQOgj-6PK_2B9dFcJ5ATMmfuuwFpIh8bIg' }, batch: '#HT-992', quantity: '250', unit: 'kg', submitted_at: '2023-10-12T00:00:00Z', status: 'accepted', proposed_price: '5.00' },
+          { id: '1', product_detail: { name: 'Roma Tomatoes', image: romaTomatoesImage }, batch: '#RT-992', quantity: '250', unit: 'kg', submitted_at: '2023-10-12T00:00:00Z', status: 'accepted', proposed_price: '5.00' },
           { id: '2', product_detail: { name: 'Organic Curly Kale', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0vrzC0e6TSgZ3qUfQGwi1SBbx1Azxcwej8lQIgygqNPfj4BvtV79fCCiz3w-x380yG1ib7N9s-Ya73fkUbfLZOE-zEgN_zcgc2pQSKpEXEXmR9V3T_7g-8xs_nJgaibWJZ4cEBuiVonvwwxjgYcVeWXp6ZtmLS_t4ddMpkRpSPU_c1xPYGQBucsGiGtfTrkDNum3MTJxPYkOOh3Lei-uvm3sYRIcI_-Lm6Mf44Bo_E_qUSWgE3JbZ4g' }, batch: '#OK-451', quantity: '80', unit: 'kg', submitted_at: '2023-10-14T00:00:00Z', status: 'pending', proposed_price: '4.00' },
           { id: '3', product_detail: { name: 'Farm Fresh Eggs', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxsEs4IhBMq2z7Dc30_bYvToFqv-NONJHBLanc_VQi_40AtymTuKos-Y78p_MkdZ33afM9Uye8vUSh4tvZzk1YdQmTcDeaU3iRByGcMMPLAazHOxd5checkr74FpOjjHQPktyrC_MOlMnmPi7I7ZgiBsDtE9iQC6elk8RdmZ9pQSXxXOpEhlhlgpA-LHzZyv9-8JBtTKm5Nwjqz0IS08MaA5Ef1QluLZ-_sT9llyt-ewd2Z1utcqB9pQ' }, batch: '#FE-122', quantity: '40', unit: 'doz', submitted_at: '2023-10-15T00:00:00Z', status: 'delivered', proposed_price: '6.00' },
         ]);
@@ -89,7 +106,7 @@ export default function MySupplies() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-outline-variant shrink-0">
-                        <img src={supply.product_detail?.image} alt={supply.product_detail?.name} className="w-full h-full object-cover" />
+                        <img src={getSupplyImage(supply)} alt={supply.product_detail?.name} className="w-full h-full object-cover" />
                       </div>
                       <div>
                         <p className="font-sans font-bold text-primary">{supply.product_detail?.name}</p>

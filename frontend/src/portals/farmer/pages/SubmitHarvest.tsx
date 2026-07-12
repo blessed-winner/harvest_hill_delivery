@@ -27,11 +27,60 @@ type HarvestFormState = {
   photo: string;
 };
 
+const referenceProductImages: Record<string, string> = {
+  'Roma Tomatoes':
+   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA',
+  'Durum Wheat':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w',
+  'Iceberg Lettuce':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg',
+  'Russet Potatoes':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuB41-Vuzo9PoiMU_6JQZOXCKOLW-1IS1IInscIbXRMORY7tTrv44rIvtwhrnsLhdCuonKVd7FwSgRhoTZC4E-PnVFrYOHSFAPKKBNcd8APsOv64N3UUjF53XLXomgCACC8eAwykUHfBJfNjc8JnaM4CdDIUrDyDqE3Cu4KSlEs-hs6Wza1utfBiwoQRKnhnotV-b6enuBmfjpUJYSxR-5Bb5guV7pLUip6Uo16gWDhndBPdCrBjHVsYSw',
+};
+
+const getReferenceImage = (name: string) => {
+  const normalized = name.trim().toLowerCase();
+
+  if (normalized.includes('roma') || normalized.includes('tomato')) return referenceProductImages['Roma Tomatoes'];
+  if (normalized.includes('durum whe')) return referenceProductImages['Durum Wheat'];
+  if (normalized.includes('iceberg')) return referenceProductImages['Iceberg Lettuce'];
+  if (normalized.includes('russet')) return referenceProductImages['Russet Potatoes'];
+
+  return '';
+};
+
+const getBadgeMeta = (name: string, urgency?: string) => {
+  const normalized = name.trim().toLowerCase();
+
+  if (normalized.includes('roma') || normalized.includes('tomato') || urgency === 'high') {
+    return {
+      label: 'High Urgency',
+      className: 'bg-error text-white',
+    };
+  }
+
+  if (normalized.includes('durum') || normalized.includes('wheat')) {
+    return {
+      label: 'Medium Demand',
+      className: 'bg-tertiary-container text-on-tertiary-container',
+    };
+  }
+
+  if (normalized.includes('iceberg')) {
+    return {
+      label: 'Seasonal Pick',
+      className: 'bg-primary text-white',
+    };
+  }
+
+  return null;
+};
+
 const fallbackDemands: DemandProduct[] = [
-  { id: 1, name: 'Roma Tomatoes', category: 'Vegetables', unit: 'kg', base_price: '3.45', quantity_needed: 2500, urgency: 'high' },
-  { id: 2, name: 'Durum Wheat', category: 'Grains', unit: 'kg', base_price: '0.85', quantity_needed: 15000, urgency: 'steady' },
-  { id: 3, name: 'Iceberg Lettuce', category: 'Vegetables', unit: 'kg', base_price: '1.20', quantity_needed: 1200, urgency: 'steady' },
-  { id: 4, name: 'Russet Potatoes', category: 'Vegetables', unit: 'kg', base_price: '0.95', quantity_needed: 4800, urgency: 'steady' },
+  { id: 1, name: 'Roma Tomatoes', category: 'Vegetables', unit: 'kg', base_price: '3.45', quantity_needed: 2500, urgency: 'high', image: getReferenceImage('Roma Tomatoes') },
+  { id: 2, name: 'Durum Wheat', category: 'Grains', unit: 'kg', base_price: '0.85', quantity_needed: 15000, urgency: 'steady', image: getReferenceImage('Durum Wheat') },
+  { id: 3, name: 'Iceberg Lettuce', category: 'Vegetables', unit: 'kg', base_price: '1.20', quantity_needed: 1200, urgency: 'steady', image: getReferenceImage('Iceberg Lettuce') },
+  { id: 4, name: 'Russet Potatoes', category: 'Vegetables', unit: 'kg', base_price: '0.95', quantity_needed: 4800, urgency: 'steady', image: getReferenceImage('Russet Potatoes') },
 ];
 
 const initialFormState: HarvestFormState = {
@@ -57,7 +106,13 @@ export default function SubmitHarvest() {
       try {
         const data = await api.currentDemands();
         if (!mounted) return;
-        setDemands((data || []).length > 0 ? data : fallbackDemands);
+        setDemands((data || []).length > 0
+          ? (data || [])
+              .map((item: DemandProduct) => ({
+                ...item,
+                image: getReferenceImage(item.name) || item.image || '',
+              }))
+          : fallbackDemands);
       } catch (error) {
         console.error('Failed to load current demands:', error);
       }
@@ -154,15 +209,23 @@ export default function SubmitHarvest() {
             onClick={() => openProduct(product)}
             className={cn(
               'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden',
-              selectedProduct?.id === product.id ? 'border-primary' : 'border-outline-variant'
+              selectedProduct?.id === product.id || product.name.toLowerCase().includes('roma')
+                ? 'border-primary'
+                : 'border-outline-variant'
             )}
           >
             <div className="relative rounded-lg overflow-hidden h-40 mb-3">
-              <img src={product.image || ''} alt={product.name} className="w-full h-full object-cover" />
-              {(product.urgency || 'steady') === 'high' && (
+              <img src={getReferenceImage(product.name) || product.image || ''} alt={product.name} className="w-full h-full object-cover" />
+              {getBadgeMeta(product.name, product.urgency) && (
                 <div className="absolute top-4 right-4">
-                  <span className="bg-error text-white px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider">
-                    <Bolt size={12} fill="currentColor" /> High Urgency
+                  <span className={cn(
+                    "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
+                    getBadgeMeta(product.name, product.urgency)?.className
+                  )}>
+                    {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
+                      <Bolt size={12} fill="currentColor" />
+                    )}
+                    {getBadgeMeta(product.name, product.urgency)?.label}
                   </span>
                 </div>
               )}
@@ -170,7 +233,7 @@ export default function SubmitHarvest() {
             <div className="px-2 pb-2">
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
-                <span className="bg-primary-container/10 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
+                <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
                   {product.category}
                 </span>
               </div>
