@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight, Handshake, CheckCircle2, MessageSquare, Send, Archive, Check, X, RefreshCw } from 'lucide-react';
 import { NegotiationMessage } from '../types';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 

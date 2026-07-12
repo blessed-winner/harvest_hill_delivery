@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, MoreVertical, AlertTriangle, MapPin, Truck, FileText, CheckCircle2 } from 'lucide-react';
 import { DeliveryNote } from '../types';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 

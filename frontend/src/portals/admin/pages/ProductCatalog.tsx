@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, MoreVertical, AlertCircle, Calendar, Package, ArrowRight, X, Image as ImageIcon } from 'lucide-react';
 import { Product } from '../types';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 

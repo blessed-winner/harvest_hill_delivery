@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Filter, Plus, ShoppingCart, CheckCircle, Truck, Trash2, MoreVertical, Handshake, ChevronRight, X } from 'lucide-react';
 import { Order } from '../types';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 

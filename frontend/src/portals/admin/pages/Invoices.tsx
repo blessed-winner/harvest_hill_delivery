@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, RefreshCw, Bell, Settings, AlertCircle, Wallet, ChevronRight, Download } from 'lucide-react';
 import { Invoice } from '../types';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 

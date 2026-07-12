@@ -5,7 +5,7 @@ import {
 import { 
   Download, FileText, Filter, Check, MoreVertical 
 } from 'lucide-react';
-import { DetailDrawer } from './DetailDrawer';
+import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
