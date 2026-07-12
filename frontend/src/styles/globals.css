@@ -5,9 +5,19 @@
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
+  --color-surface: #f8f7f2;
+  --color-on-surface: #1a1c1b;
   --color-primary: #144227;
   --color-primary-container: #2d5a3d;
   --color-on-primary-container: #9ed0ab;
+  --color-secondary: #57765f;
+  --color-secondary-container: #bde7c1;
+  --color-on-secondary-container: #234b32;
+  --color-tertiary: #7b4b25;
+  --color-tertiary-container: #f1d5bf;
+  --color-on-tertiary-container: #7b4b25;
+  --color-tertiary-fixed: #efe1d0;
+  --color-on-tertiary-fixed-variant: #6d4320;
   --color-surface-container-low: #f4f4f2;
   --color-surface-container-lowest: #ffffff;
   --color-surface-container-high: #e8e8e6;
@@ -15,6 +25,7 @@
   --color-outline-variant: #c1c9c0;
   --color-on-surface-variant: #414942;
   --color-error-container: #ffdad6;
+  --color-on-error-container: #7a2e24;
 }
 
 @layer base {

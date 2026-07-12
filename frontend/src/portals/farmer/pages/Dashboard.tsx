@@ -14,6 +14,54 @@ const iconMap: Record<string, any> = {
   ReceiptText,
 };
 
+type KpiStyle = {
+  card: string;
+  iconWrap?: string;
+  icon?: string;
+  badge?: string;
+  label: string;
+  value: string;
+  unit?: string;
+  ringTrack?: string;
+  ringFill?: string;
+};
+
+const kpiStyles: KpiStyle[] = [
+  {
+    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
+    iconWrap: 'bg-[#bfeec4]',
+    icon: 'text-[#234b32]',
+    label: 'text-[#59645c]',
+    value: 'text-[#1a1c1b]',
+    unit: 'text-[#59645c]',
+  },
+  {
+    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
+    iconWrap: 'bg-[#f5d6bf]',
+    icon: 'text-[#7a4a24]',
+    badge: 'bg-[#8a5a2d] text-[#f8eadb]',
+    label: 'text-[#59645c]',
+    value: 'text-[#1a1c1b]',
+    unit: 'text-[#7a4a24]',
+  },
+  {
+    card: 'bg-[#fbfaf4] border-[#cdd4cb]',
+    ringTrack: '#dde4d9',
+    ringFill: '#3f6f49',
+    label: 'text-[#59645c]',
+    value: 'text-[#1a1c1b]',
+    unit: 'text-[#59645c]',
+  },
+  {
+    card: 'bg-[#2f5a39] border-[#21462d]',
+    iconWrap: 'bg-[#4f7958]',
+    icon: 'text-[#cfe2d2]',
+    label: 'text-[#9eb9a3]',
+    value: 'text-[#bcd1bf]',
+    unit: 'text-[#9eb9a3]',
+  },
+] as const;
+
 export default function Dashboard() {
   const [kpis, setKpis] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -82,7 +130,7 @@ export default function Dashboard() {
           <h1 className="font-sans text-xl sm:text-2xl font-extrabold text-on-surface">Welcome back, Green Valley Farm</h1>
           <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1">Monday, October 23, 2023</p>
         </div>
-        <button className="bg-primary text-on-primary font-mono text-xs px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto justify-center">
+        <button className="bg-[#144227] text-white font-mono text-xs px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto justify-center">
           <Plus size={16} />
           Quick Harvest Submission
         </button>
@@ -91,36 +139,63 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {kpis.map((kpi, i) => {
           const Icon = iconMap[kpi.icon];
+          const styles = kpiStyles[i] ?? kpiStyles[0];
           return (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-surface-container-lowest custom-shadow p-2.5 sm:p-4 rounded-xl flex flex-col justify-between border border-outline-variant group min-w-0"
+              className={cn(
+                'custom-shadow p-2.5 sm:p-4 rounded-xl flex flex-col justify-between border group min-w-0',
+                styles.card
+              )}
             >
-              <div className="flex justify-between items-start">
-                <div className="p-1.5 sm:p-2 rounded-lg bg-surface-container">
-                  <Icon size={16} className="sm:w-5 sm:h-5 text-primary" />
+              {i === 2 ? (
+                <div className="flex items-center gap-4 sm:gap-5 min-h-[100px] sm:min-h-[120px]">
+                  <div
+                    className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full"
+                    style={{
+                      background: `conic-gradient(${styles.ringFill ?? '#3f6f49'} 0 94%, ${styles.ringTrack ?? '#dde4d9'} 94% 100%)`,
+                    }}
+                  >
+                    <div className="absolute inset-2 rounded-full bg-[#fbfaf4] flex items-center justify-center">
+                      <span className="font-mono text-[11px] sm:text-xs font-bold text-[#1a1c1b]">94%</span>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn("font-mono text-[8px] sm:text-[10px] uppercase tracking-wider", styles.label)}>{kpi.label}</p>
+                    <p className={cn("font-sans text-sm sm:text-base md:text-lg lg:text-xl font-bold mt-0.5 sm:mt-1", styles.value)}>
+                      High
+                    </p>
+                  </div>
                 </div>
-                {kpi.trend && (
-                  <span className="font-mono text-[10px] sm:text-xs text-secondary font-bold flex items-center gap-0.5 sm:gap-1">
-                    <TrendingUp size={12} className="sm:w-3.5 sm:h-3.5" />
-                    {kpi.trend}
-                  </span>
-                )}
-                {kpi.status && (
-                  <span className="bg-tertiary-container text-on-tertiary-container px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-mono text-[8px] sm:text-[10px] uppercase tracking-wider">
-                    {kpi.status}
-                  </span>
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="font-mono text-[8px] sm:text-[10px] text-on-surface-variant uppercase tracking-wider">{kpi.label}</p>
-                <p className="font-sans text-sm sm:text-base md:text-lg lg:text-xl font-bold mt-0.5 sm:mt-1 text-on-surface">
-                  {kpi.value} <span className="text-[8px] sm:text-xs font-normal text-on-surface-variant">{kpi.unit}</span>
-                </p>
-              </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-start">
+                    <div className={cn("p-1.5 sm:p-2 rounded-lg", styles.iconWrap)}>
+                      <Icon size={16} className={cn("sm:w-5 sm:h-5", styles.icon)} />
+                    </div>
+                    {kpi.trend && (
+                      <span className={cn("font-mono text-[10px] sm:text-xs font-bold flex items-center gap-0.5 sm:gap-1", i === 0 ? "text-[#5b8566]" : "text-[#7a4a24]")}>
+                        <TrendingUp size={12} className="sm:w-3.5 sm:h-3.5" />
+                        {kpi.trend}
+                      </span>
+                    )}
+                    {kpi.status && (
+                      <span className={cn("px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-mono text-[8px] sm:text-[10px] uppercase tracking-wider", styles.badge)}>
+                        {kpi.status}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <p className={cn("font-mono text-[8px] sm:text-[10px] uppercase tracking-wider", styles.label)}>{kpi.label}</p>
+                    <p className={cn("font-sans text-sm sm:text-base md:text-lg lg:text-xl font-bold mt-0.5 sm:mt-1", styles.value)}>
+                      {kpi.value} <span className={cn("text-[8px] sm:text-xs font-normal", styles.unit)}>{kpi.unit}</span>
+                    </p>
+                  </div>
+                </>
+              )}
             </motion.div>
           );
         })}

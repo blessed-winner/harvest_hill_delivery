@@ -6,8 +6,8 @@
  */
 
 import { ReactNode, useState } from 'react';
-import Sidebar from './Sidebar';
-import TopBar from './TopBar';
+import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import { View } from '../types';
 import { cn } from '../lib/utils';
 import { LayoutDashboard, Sprout, Package, Handshake, Settings, ReceiptText } from 'lucide-react';
