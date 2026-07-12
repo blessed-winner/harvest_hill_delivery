@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight, Handshake, CheckCircle2, MessageSquare, Send, Archive, Check, X, RefreshCw } from 'lucide-react';
-import { NegotiationMessage } from '../types';
+import { NegotiationMessage } from '../../types';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
 
 const mockSupplies = [
   { id: '1', product: 'Organic Gala Apples', sku: 'FR-APP-GALA-02', farmer: 'Green Valley Orchards', region: 'Oregon, USA', qty: '2,400 lbs', prop: 1.42, market: 1.28, status: 'Negotiating' },

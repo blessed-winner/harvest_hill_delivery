@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Filter, Plus, MoreVertical, ShieldCheck, History, User as UserIcon } from 'lucide-react';
-import { User } from '../types';
+import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon } from 'lucide-react';
+import { User } from '../../types';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
 
 const mockUsers: User[] = [
   {
@@ -158,7 +157,7 @@ export function UserManagement() {
                           <img src={user.avatar} className="w-9 h-9 rounded-full object-cover border border-outline-variant" alt="" />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface-variant">
-                            {user.name.split(' ').map(n => n[0]).join('')}
+                            {user.name.split(' ').map((n: string) => n[0]).join('')}
                           </div>
                         )}
                         <div>

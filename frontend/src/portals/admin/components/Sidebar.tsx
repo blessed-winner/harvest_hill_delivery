@@ -11,7 +11,7 @@ import {
   UserCircle, 
   LogOut 
 } from 'lucide-react';
-import { ViewType } from '../types';
+import { ViewType } from '../../types';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {

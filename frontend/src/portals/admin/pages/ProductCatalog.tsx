@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Plus, MoreVertical, AlertCircle, Calendar, Package, ArrowRight, X, Image as ImageIcon } from 'lucide-react';
-import { Product } from '../types';
+import { Product } from '../../types';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -25,7 +25,7 @@ const mockProducts: Product[] = [
     unit: 'crate',
     status: 'active',
     season: 'Autumn',
-    image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6bccb?auto=format&fit=crop&q=80&w=400'
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w'
   },
   {
     id: 'VG-ASP-WHT-01',
@@ -35,7 +35,7 @@ const mockProducts: Product[] = [
     unit: 'kg',
     status: 'inactive',
     season: 'Spring',
-    image: 'https://images.unsplash.com/photo-1515471204579-47dad4368482?auto=format&fit=crop&q=80&w=400'
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w'
   },
   {
     id: 'PN-HON-WILD-15',
