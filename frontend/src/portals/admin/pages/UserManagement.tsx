@@ -34,16 +34,61 @@ const mockUsers: User[] = [
     dateJoined: 'Mar 22, 2023',
     lastActive: '3 days ago',
     avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=200'
+  },
+  {
+    id: 'CLI-1108',
+    name: 'Nadia Cole',
+    email: 'nadia.cole@urbanharvest.com',
+    role: 'CLIENT',
+    status: 'active',
+    dateJoined: 'Apr 08, 2023',
+    lastActive: '1 hour ago'
+  },
+  {
+    id: 'FRM-8834',
+    name: 'Owen Vale',
+    email: 'owen.vale@sunridgefarm.co',
+    role: 'FARMER',
+    status: 'active',
+    dateJoined: 'Jun 19, 2023',
+    lastActive: '22 mins ago',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200'
+  },
+  {
+    id: 'STF-1044',
+    name: 'Mira Choi',
+    email: 'm.choi@harvestlogistics.co',
+    role: 'STAFF',
+    status: 'active',
+    dateJoined: 'Aug 02, 2023',
+    lastActive: '5 mins ago'
+  },
+  {
+    id: 'CLI-1115',
+    name: 'Theo Marks',
+    email: 'theo.marks@citymarketgroup.com',
+    role: 'CLIENT',
+    status: 'suspended',
+    dateJoined: 'Sep 14, 2023',
+    lastActive: '6 days ago'
   }
 ];
 
 export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+  const totalUsers = 48;
+  const totalPages = Math.max(1, Math.ceil(mockUsers.length / pageSize));
+  const pagedUsers = mockUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="px-6 pt-6 shrink-0">
-        <h2 className="text-2xl font-extrabold text-primary mb-6">User Management</h2>
+    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary">User Management</h2>
+          <p className="mt-1 text-sm text-on-surface-variant font-medium">Keep clients, farmers, suppliers, and staff aligned.</p>
+        </div>
         
         <div className="flex border-b border-outline-variant">
           {['All Users', 'Clients', 'Farmers & Suppliers', 'Staff'].map((tab, i) => (
@@ -59,7 +104,7 @@ export function UserManagement() {
           ))}
         </div>
 
-        <div className="py-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="py-2 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
@@ -87,9 +132,9 @@ export function UserManagement() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden px-6 pb-6">
-        <div className="h-full bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
                 <tr>
@@ -101,7 +146,7 @@ export function UserManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {mockUsers.map((user) => (
+                {pagedUsers.map((user) => (
                   <tr 
                     key={user.id}
                     onClick={() => setSelectedUser(user)}
@@ -151,19 +196,36 @@ export function UserManagement() {
           </div>
           
           <div className="p-4 bg-surface-container-low flex justify-between items-center border-t border-outline-variant">
-            <span className="text-xs text-on-surface-variant">Showing 1 to {mockUsers.length} of 48 users</span>
+            <span className="text-xs text-on-surface-variant font-mono">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalUsers)} of {totalUsers} users
+            </span>
             <div className="flex gap-1">
-              {['Prev', '1', '2', '3', 'Next'].map((p, i) => (
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded text-xs transition-colors bg-white border border-outline-variant hover:bg-surface-container-high disabled:opacity-40"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
-                  key={p}
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
                   className={cn(
-                    "px-3 py-1 rounded text-xs transition-colors",
-                    i === 1 ? "bg-primary text-white" : "bg-white border border-outline-variant hover:bg-surface-container-high"
+                    "px-3 py-1 rounded text-xs transition-colors border",
+                    currentPage === page ? "bg-primary text-white border-primary" : "bg-white border-outline-variant hover:bg-surface-container-high"
                   )}
                 >
-                  {p}
+                  {page}
                 </button>
               ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded text-xs transition-colors bg-white border border-outline-variant hover:bg-surface-container-high disabled:opacity-40"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>

@@ -11,17 +11,26 @@ const mockInvoices: Invoice[] = [
   { id: 'BK-90213', client: 'Sun-Drenched Farms', orderId: 'ORD-7729', amount: 4120.00, status: 'PENDING', dueDate: 'Nov 02, 2023' },
   { id: 'BK-90214', client: 'Alpine Distribution', orderId: 'ORD-7730', amount: 15000.00, status: 'SYNCED', dueDate: 'Nov 05, 2023' },
   { id: 'BK-90215', client: 'Urban Greens Collective', orderId: 'ORD-7735', amount: 3069.50, status: 'SYNCED', dueDate: 'Nov 10, 2023' },
+  { id: 'BK-90216', client: 'Cedar Market Partners', orderId: 'ORD-7741', amount: 5775.25, status: 'PENDING', dueDate: 'Nov 12, 2023' },
+  { id: 'BK-90217', client: 'Fresh Route SA', orderId: 'ORD-7744', amount: 9820.00, status: 'SYNCED', dueDate: 'Nov 15, 2023' },
+  { id: 'BK-90218', client: 'North Coast Traders', orderId: 'ORD-7748', amount: 2415.75, status: 'UNSYNCED', dueDate: 'Nov 18, 2023' },
+  { id: 'BK-90219', client: 'Prairie Foods Group', orderId: 'ORD-7750', amount: 10990.00, status: 'SYNCED', dueDate: 'Nov 20, 2023' },
+  { id: 'BK-90220', client: 'Summit Pantry', orderId: 'ORD-7754', amount: 6890.40, status: 'PENDING', dueDate: 'Nov 23, 2023' },
 ];
 
 export function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(mockInvoices.length / pageSize));
+  const pagedInvoices = mockInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="p-6 shrink-0 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
+        <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-primary">Invoices</h2>
+            <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary">Invoices</h2>
             <div className="h-6 w-px bg-outline-variant mx-2" />
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -77,9 +86,9 @@ export function Invoices() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden px-6 pb-6">
-        <div className="h-full bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
-          <div className="h-full overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
                 <tr>
@@ -93,7 +102,7 @@ export function Invoices() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {mockInvoices.map((inv) => (
+                {pagedInvoices.map((inv) => (
                   <tr 
                     key={inv.id}
                     onClick={() => setSelectedInvoice(inv)}
@@ -126,6 +135,39 @@ export function Invoices() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-surface-container-low border-t border-outline-variant">
+            <p className="text-xs text-on-surface-variant font-mono">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, mockInvoices.length)} of {mockInvoices.length} invoices
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
+                    currentPage === page ? "bg-primary text-white border-primary" : "bg-white border-outline-variant hover:bg-surface-container-high"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

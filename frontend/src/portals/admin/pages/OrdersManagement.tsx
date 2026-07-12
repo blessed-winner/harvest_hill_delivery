@@ -10,6 +10,14 @@ const mockOrders: Order[] = [
   { id: '#HH-9420', client: 'Green Leaf Distribution', items: 112, total: 5890.00, isNegotiated: false, status: 'APPROVED', date: 'Oct 23, 2023' },
   { id: '#HH-9419', client: 'Sunshine Markets', items: 45, total: 2115.75, isNegotiated: true, status: 'IN DELIVERY', date: 'Oct 23, 2023' },
   { id: '#HH-9418', client: 'Root & Stem Co.', items: 8, total: 420.00, isNegotiated: false, status: 'COMPLETED', date: 'Oct 22, 2023' },
+  { id: '#HH-9417', client: 'North Field Supply', items: 16, total: 980.25, isNegotiated: true, status: 'SUBMITTED', date: 'Oct 22, 2023' },
+  { id: '#HH-9416', client: 'Harvest Lane Foods', items: 72, total: 3340.00, isNegotiated: false, status: 'APPROVED', date: 'Oct 21, 2023' },
+  { id: '#HH-9415', client: 'Prairie Basket Co.', items: 31, total: 1525.40, isNegotiated: true, status: 'IN DELIVERY', date: 'Oct 20, 2023' },
+  { id: '#HH-9414', client: 'Golden Acre Retail', items: 18, total: 760.90, isNegotiated: false, status: 'COMPLETED', date: 'Oct 20, 2023' },
+  { id: '#HH-9413', client: 'Riverbend Produce', items: 52, total: 2489.30, isNegotiated: true, status: 'SUBMITTED', date: 'Oct 19, 2023' },
+  { id: '#HH-9412', client: 'Summit Fresh Co.', items: 64, total: 4011.60, isNegotiated: false, status: 'APPROVED', date: 'Oct 18, 2023' },
+  { id: '#HH-9411', client: 'Cedar Ridge Foods', items: 27, total: 1195.00, isNegotiated: true, status: 'IN DELIVERY', date: 'Oct 18, 2023' },
+  { id: '#HH-9410', client: 'Blue Orchard Group', items: 15, total: 688.75, isNegotiated: false, status: 'COMPLETED', date: 'Oct 17, 2023' },
 ];
 
 const statusSteps = [
@@ -22,16 +30,25 @@ const statusSteps = [
 export function OrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>(['#HH-9421', '#HH-9420', '#HH-9419']);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
+
+  const totalPages = Math.max(1, Math.ceil(mockOrders.length / pageSize));
+  const pagedOrders = mockOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const allVisibleSelected = pagedOrders.length > 0 && pagedOrders.every(order => selectedIds.includes(order.id));
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-6 shrink-0 bg-white">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-primary">Orders Management</h2>
+    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary">Orders Management</h2>
+            <p className="mt-1 text-sm text-on-surface-variant font-medium">Track submissions, approvals, and delivery progress.</p>
+          </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg text-sm font-bold hover:bg-surface-container-low transition-colors">
               <Filter className="w-4 h-4" /> Filters
@@ -42,7 +59,7 @@ export function OrdersManagement() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl w-fit mb-6">
+        <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl w-fit">
           {[
             { l: 'All', c: 128 },
             { l: 'Submitted', c: 12 },
@@ -107,17 +124,17 @@ export function OrdersManagement() {
         </AnimatePresence>
       </div>
 
-      <div className="flex-1 overflow-hidden px-6 pb-6 bg-[#f9f9f7]">
-        <div className="h-full bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
-          <div className="h-full overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
                 <tr>
                   <th className="py-3 px-4 w-10">
                     <input 
                       type="checkbox"
-                      checked={selectedIds.length === mockOrders.length}
-                      onChange={(e) => setSelectedIds(e.target.checked ? mockOrders.map(o => o.id) : [])}
+                      checked={allVisibleSelected}
+                      onChange={(e) => setSelectedIds(e.target.checked ? Array.from(new Set([...selectedIds, ...pagedOrders.map(o => o.id)])) : selectedIds.filter(id => !pagedOrders.some(order => order.id === id)))}
                       className="w-4 h-4 rounded border-outline text-primary" 
                     />
                   </th>
@@ -132,7 +149,7 @@ export function OrdersManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/30">
-                {mockOrders.map((order) => (
+                {pagedOrders.map((order) => (
                   <tr 
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
@@ -185,6 +202,39 @@ export function OrdersManagement() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-surface-container-low border-t border-outline-variant">
+            <p className="text-xs text-on-surface-variant font-mono">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, mockOrders.length)} of {mockOrders.length} orders
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
+                    currentPage === page ? "bg-primary text-white border-primary" : "bg-white border-outline-variant hover:bg-surface-container-high"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

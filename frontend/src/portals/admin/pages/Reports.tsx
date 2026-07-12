@@ -30,10 +30,10 @@ export function Reports() {
   const [selectedFarmer, setSelectedFarmer] = useState<any | null>(null);
 
   return (
-    <div className="flex h-full overflow-hidden">
-      <div className="w-72 bg-surface-container-low border-r border-outline-variant flex flex-col p-6 overflow-y-auto shrink-0">
+    <div className="flex h-[calc(100vh-56px)] overflow-hidden">
+      <div className="w-72 bg-surface-container-low border-r border-outline-variant flex flex-col p-6 overflow-hidden shrink-0 h-full">
         <h2 className="text-xl font-bold text-on-surface mb-6">Report Builder</h2>
-        <div className="space-y-6 flex-1">
+        <div className="space-y-5 flex-1 overflow-hidden">
           <div>
             <label className="text-[10px] font-bold text-on-surface-variant block mb-3 uppercase tracking-widest">Report Type</label>
             <div className="space-y-2">
@@ -80,12 +80,12 @@ export function Reports() {
             </div>
           </div>
         </div>
-        <button className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:opacity-90 transition-all mt-6">
+        <button className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:opacity-90 transition-all mt-auto">
           Apply Changes
         </button>
       </div>
 
-      <div className="flex-1 bg-background p-8 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-w-0 bg-background p-8 overflow-y-auto custom-scrollbar">
         <div className="max-w-5xl mx-auto space-y-8">
           <div className="flex justify-between items-end">
             <div>

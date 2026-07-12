@@ -9,6 +9,14 @@ const mockSupplies = [
   { id: '1', product: 'Organic Gala Apples', sku: 'FR-APP-GALA-02', farmer: 'Green Valley Orchards', region: 'Oregon, USA', qty: '2,400 lbs', prop: 1.42, market: 1.28, status: 'Negotiating' },
   { id: '2', product: 'Heirloom Carrots', sku: 'VG-CAR-HEIR-09', farmer: 'Rooted Earth Farm', region: 'California, USA', qty: '850 lbs', prop: 0.95, market: 0.98, status: 'Pending Review' },
   { id: '3', product: 'Raw Wildflower Honey', sku: 'PN-HON-WILD-15', farmer: 'Busy Bee Apiary', region: 'Vermont, USA', qty: '120 units', prop: 8.50, market: 8.50, status: 'Delivered' },
+  { id: '4', product: 'Roma Tomatoes', sku: 'VG-TOM-ROMA-07', farmer: 'Sunrise Produce', region: 'Florida, USA', qty: '1,100 lbs', prop: 1.10, market: 1.05, status: 'Negotiating' },
+  { id: '5', product: 'Baby Spinach', sku: 'VG-SPN-BABY-11', farmer: 'North Valley Farm', region: 'Texas, USA', qty: '430 lbs', prop: 2.20, market: 2.18, status: 'Pending Review' },
+  { id: '6', product: 'Russet Potatoes', sku: 'VG-POT-RUSS-04', farmer: 'Prairie Root Farm', region: 'Idaho, USA', qty: '3,000 lbs', prop: 0.84, market: 0.81, status: 'Accepted' },
+  { id: '7', product: 'Kale Bunches', sku: 'VG-KAL-BNCH-03', farmer: 'Cedar Crest Farm', region: 'Washington, USA', qty: '680 bunches', prop: 1.65, market: 1.59, status: 'Delivered' },
+  { id: '8', product: 'Cucumber Crates', sku: 'VG-CUC-CRT-05', farmer: 'Mesa Verde Produce', region: 'Arizona, USA', qty: '1,250 lbs', prop: 1.08, market: 1.02, status: 'Negotiating' },
+  { id: '9', product: 'Red Onions', sku: 'VG-ONI-RED-08', farmer: 'Prairie Root Farm', region: 'Idaho, USA', qty: '1,900 lbs', prop: 0.92, market: 0.89, status: 'Pending Review' },
+  { id: '10', product: 'Butter Lettuce', sku: 'VG-LET-BUT-01', farmer: 'Riverbend Greens', region: 'Georgia, USA', qty: '240 heads', prop: 1.74, market: 1.71, status: 'Accepted' },
+  { id: '11', product: 'Sweet Bell Peppers', sku: 'VG-PEP-SWE-06', farmer: 'Harvest Ridge Farm', region: 'North Carolina, USA', qty: '760 lbs', prop: 2.45, market: 2.39, status: 'Delivered' },
 ];
 
 const mockMessages: NegotiationMessage[] = [
@@ -19,12 +27,16 @@ const mockMessages: NegotiationMessage[] = [
 
 export function Supplies() {
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(mockSupplies.length / pageSize));
+  const pagedSupplies = mockSupplies.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="p-6 h-full flex flex-col bg-background">
-      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
+    <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 min-h-[calc(100vh-56px)] flex flex-col bg-[#f9f9f7]">
+      <div className="mb-5 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-on-surface mb-1">Supply Negotiations</h2>
+          <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary mb-1">Supply Negotiations</h2>
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
         </div>
         <div className="flex bg-surface-container-low p-1 rounded-lg">
@@ -39,8 +51,8 @@ export function Supplies() {
         </div>
       </div>
 
-      <div className="flex-1 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col mb-6">
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
               <tr className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
@@ -54,7 +66,7 @@ export function Supplies() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/50">
-              {mockSupplies.map((s) => (
+              {pagedSupplies.map((s) => (
                 <tr 
                   key={s.id} 
                   onClick={() => setSelectedSupply(s)}
@@ -102,6 +114,39 @@ export function Supplies() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 bg-surface-container-low border-t border-outline-variant">
+          <p className="text-xs text-on-surface-variant font-mono">
+            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, mockSupplies.length)} of {mockSupplies.length} proposals
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+            >
+              Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
+                  currentPage === page ? "bg-primary text-white border-primary" : "bg-white border-outline-variant hover:bg-surface-container-high"
+                )}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-outline-variant bg-white disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
