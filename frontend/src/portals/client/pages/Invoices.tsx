@@ -96,7 +96,7 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-x-hidden">
       
       {/* Breadcrumbs */}
       <div className="text-xs text-[#717971] flex items-center gap-1.5">
@@ -112,10 +112,10 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
       </div>
 
       {/* Split Layout: Left Table, Right Preview Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         
         {/* Left Table Section */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="xl:col-span-2 space-y-4">
           
           {/* Controls row */}
           <div className="flex items-center gap-3 justify-between">
@@ -146,12 +146,12 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#f6f3ec]/60 border-b border-[#e5e2db] text-[9px] uppercase font-extrabold tracking-wider text-[#717971]">
-                    <th className="px-5 py-4">Invoice ID</th>
-                    <th className="px-5 py-4">Related Order</th>
-                    <th className="px-5 py-4">Issue Date</th>
-                    <th className="px-5 py-4">Amount</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4 text-center">Actions</th>
+                    <th className="px-3 py-3">Invoice ID</th>
+                    <th className="px-3 py-3 hidden sm:table-cell">Related Order</th>
+                    <th className="px-3 py-3 hidden md:table-cell">Issue Date</th>
+                    <th className="px-3 py-3">Amount</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0eee7] text-xs">
@@ -167,14 +167,14 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                           isSelected ? 'bg-[#bceec8]/10' : ''
                         }`}
                       >
-                        <td className="px-5 py-4 font-bold text-[#1c1c18]">{inv.id}</td>
-                        <td className="px-5 py-4">
+                        <td className="px-3 py-3 font-bold text-[#1c1c18]">{inv.id}</td>
+                        <td className="px-3 py-3 hidden sm:table-cell">
                           <span className="block font-bold text-[#1c1c18]">{inv.order}</span>
                           <span className="block text-[10px] text-[#717971] font-mono mt-0.5">{inv.orderId}</span>
                         </td>
-                        <td className="px-5 py-4 text-[#414942] font-semibold">{inv.date}</td>
-                        <td className="px-5 py-4 font-extrabold text-[#1c1c18]">${inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-5 py-4">
+                        <td className="px-3 py-3 hidden md:table-cell text-[#414942] font-semibold">{inv.date}</td>
+                        <td className="px-3 py-3 font-extrabold text-[#1c1c18]">${inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="px-3 py-3">
                           <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
                             isPaid
                               ? 'bg-[#bceec8] text-[#00210f]'
@@ -184,7 +184,7 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                             {inv.status}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-3 py-3 text-center">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

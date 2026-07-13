@@ -287,20 +287,23 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
                 key={prod.id}
                 onClick={() => onNavigate('product-detail')}
                 className={`bg-white border border-[#e5e2db] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex ${
-                  layoutMode === 'grid' ? 'flex-col justify-between' : 'flex-row items-center p-4 gap-4'
+                  layoutMode === 'grid' ? 'flex-col justify-between max-w-[260px] w-full mx-auto' : 'flex-row items-center p-4 gap-4'
                 }`}
               >
                 {/* Product Image */}
-                <div className={`relative bg-[#f6f3ec] ${
-                  layoutMode === 'grid' ? 'w-full aspect-[4/3]' : 'w-24 h-24 rounded-lg overflow-hidden'
-                }`}>
+                <div 
+                  className={`relative bg-[#f6f3ec] overflow-hidden ${
+                    layoutMode === 'grid' ? 'w-full' : 'w-24 h-24 rounded-lg'
+                  }`}
+                  style={layoutMode === 'grid' ? { aspectRatio: '26 / 24' } : undefined}
+                >
                   <img
                     src={prod.img}
                     alt={prod.name}
                     className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                   />
                   {prod.badge && (
-                    <span className={`absolute top-3 left-3 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm ${prod.badgeColor}`}>
+                    <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${prod.badgeColor}`}>
                       {prod.badge}
                     </span>
                   )}
@@ -308,19 +311,19 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
 
                 {/* Content Panel */}
                 <div className={`flex-grow flex flex-col justify-between ${
-                  layoutMode === 'grid' ? 'p-5' : 'p-0'
+                  layoutMode === 'grid' ? 'p-3.5' : 'p-0'
                 }`}>
                   <div>
                     <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">{prod.farm}</span>
-                    <h3 className="text-sm font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors">{prod.name}</h3>
+                    <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">{prod.name}</h3>
                   </div>
 
                   <div className={`flex items-center justify-between border-t border-[#f0eee7] ${
-                    layoutMode === 'grid' ? 'mt-4 pt-3' : 'mt-2 pt-2'
+                    layoutMode === 'grid' ? 'mt-2.5 pt-2' : 'mt-2 pt-2'
                   }`}>
                     <div>
-                      <span className="block text-sm font-bold text-[#144227]">{prod.price}</span>
-                      <span className="block text-[9px] text-[#717971] uppercase font-semibold">{prod.unit}</span>
+                      <span className="block text-xs font-bold text-[#144227]">{prod.price}</span>
+                      <span className="block text-[8px] text-[#717971] uppercase font-semibold">{prod.unit}</span>
                     </div>
 
                     <button
@@ -328,9 +331,9 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
                         e.stopPropagation();
                         addToCart();
                       }}
-                      className="bg-[#144227] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
                     >
-                      <ShoppingCart size={14} /> Add to Cart
+                      <ShoppingCart size={11} /> Add to Cart
                     </button>
                   </div>
                 </div>

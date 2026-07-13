@@ -38,11 +38,8 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
       <Footer activeScreen={activeScreen} onNavigate={onNavigate} />
 
       {/* Floating Screen Preview Switcher */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#144227]/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center gap-3 border border-[#9ed0ab]/30 z-[9999] w-[95vw] md:w-max md:min-w-[850px] transition-all hover:scale-[1.01]">
-        <span className="text-[10px] uppercase font-black tracking-widest text-[#9ed0ab] border-b md:border-b-0 md:border-r border-[#9ed0ab]/30 pb-1.5 md:pb-0 md:pr-4 mb-1.5 md:mb-0 w-full md:w-auto text-center md:text-left whitespace-nowrap">
-          Preview Screen
-        </span>
-        <div className="flex flex-wrap justify-center items-center gap-2 max-h-[140px] md:max-h-none overflow-y-auto w-full md:w-auto">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#144227]/95 backdrop-blur-md px-8 py-4 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center gap-3 border border-[#9ed0ab]/30 z-[9999] w-max max-w-[95vw] transition-all hover:scale-[1.01]">
+        <div className="flex flex-wrap justify-center items-center gap-2 max-h-[140px] px-2 md:max-h-none overflow-y-auto w-full md:w-auto">
           {screens.map((screen) => {
             const isActive = activeScreen === screen.id;
             return (
