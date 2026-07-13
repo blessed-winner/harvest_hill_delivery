@@ -4,9 +4,10 @@ import { Clock, Leaf, Mail, ShieldAlert, Instagram } from 'lucide-react';
 
 interface FooterProps {
   activeScreen: string;
+  onNavigate: (screen: string) => void;
 }
 
-export default function Footer({ activeScreen }: FooterProps) {
+export default function Footer({ activeScreen, onNavigate }: FooterProps) {
   // Check which footer version to show
   if (activeScreen === 'catalog') {
     return (
@@ -14,7 +15,12 @@ export default function Footer({ activeScreen }: FooterProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Col 1: Logo & Info */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-[#144227]">Harvest Hill</h3>
+            <h3
+              onClick={() => onNavigate('landing')}
+              className="text-2xl font-bold text-[#144227] cursor-pointer hover:opacity-80"
+            >
+              Harvest Hill
+            </h3>
             <p className="text-sm leading-relaxed text-[#414942]/90 max-w-xs">
               Your premium gateway to the finest local agricultural supplies. Direct from the farm to your business.
             </p>
@@ -29,10 +35,10 @@ export default function Footer({ activeScreen }: FooterProps) {
           <div>
             <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Navigation</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Catalog</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Suppliers</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Sustainability</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Wholesale Pricing</a></li>
+              <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Catalog</button></li>
+              <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Suppliers</button></li>
+              <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Sustainability</button></li>
+              <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Wholesale Pricing</button></li>
             </ul>
           </div>
 
@@ -40,10 +46,10 @@ export default function Footer({ activeScreen }: FooterProps) {
           <div>
             <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Support</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Support Center</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Quality Assurance</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Shipping Policy</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Privacy Policy</a></li>
+              <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Support Center</button></li>
+              <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Quality Assurance</button></li>
+              <li><button onClick={() => onNavigate('delivery-note')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Shipping Policy</button></li>
+              <li><button onClick={() => onNavigate('invoices')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Privacy Policy</button></li>
             </ul>
           </div>
 
@@ -79,7 +85,12 @@ export default function Footer({ activeScreen }: FooterProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Col 1: Logo & Info */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-[#144227]">Harvest Hill</h3>
+            <h3
+              onClick={() => onNavigate('landing')}
+              className="text-2xl font-bold text-[#144227] cursor-pointer hover:opacity-80"
+            >
+              Harvest Hill
+            </h3>
             <p className="text-sm leading-relaxed text-[#414942]/90 max-w-xs">
               Connecting local farms directly to your business with transparency and quality assurance.
             </p>
@@ -93,9 +104,9 @@ export default function Footer({ activeScreen }: FooterProps) {
           <div>
             <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Supply Chain</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Quality Assurance</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Shipping Policy</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Wholesale Portal</a></li>
+              <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Quality Assurance</button></li>
+              <li><button onClick={() => onNavigate('delivery-note')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Shipping Policy</button></li>
+              <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Wholesale Portal</button></li>
             </ul>
           </div>
 
@@ -103,9 +114,9 @@ export default function Footer({ activeScreen }: FooterProps) {
           <div>
             <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Support</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Support Center</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-[#144227] transition-colors">Terms of Service</a></li>
+              <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Support Center</button></li>
+              <li><button onClick={() => onNavigate('invoices')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Privacy Policy</button></li>
+              <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Terms of Service</button></li>
             </ul>
           </div>
 
@@ -146,7 +157,12 @@ export default function Footer({ activeScreen }: FooterProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Col 1: Logo */}
         <div className="space-y-4">
-          <h3 className="text-2xl font-bold text-[#144227]">Harvest Hill</h3>
+          <h3
+            onClick={() => onNavigate('landing')}
+            className="text-2xl font-bold text-[#144227] cursor-pointer hover:opacity-85"
+          >
+            Harvest Hill
+          </h3>
           <p className="text-sm leading-relaxed text-[#414942]/90 max-w-xs">
             Bridging the gap between artisanal local farms and high-end culinary professionals through a transparent supply chain.
           </p>
@@ -156,9 +172,9 @@ export default function Footer({ activeScreen }: FooterProps) {
         <div>
           <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Explore</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="#" className="hover:text-[#144227] transition-colors">Quality Assurance</a></li>
-            <li><a href="#" className="hover:text-[#144227] transition-colors">Support Center</a></li>
-            <li><a href="#" className="hover:text-[#144227] transition-colors">Newsletter Signup</a></li>
+            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Quality Assurance</button></li>
+            <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Support Center</button></li>
+            <li><button onClick={() => onNavigate('order-history')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Order History</button></li>
           </ul>
         </div>
 
@@ -166,8 +182,8 @@ export default function Footer({ activeScreen }: FooterProps) {
         <div>
           <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Legal</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="#" className="hover:text-[#144227] transition-colors">Shipping Policy</a></li>
-            <li><a href="#" className="hover:text-[#144227] transition-colors">Privacy Policy</a></li>
+            <li><button onClick={() => onNavigate('delivery-note')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Shipping Policy</button></li>
+            <li><button onClick={() => onNavigate('invoices')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Billing & Invoices</button></li>
           </ul>
         </div>
 

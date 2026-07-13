@@ -6,7 +6,7 @@
  */
 
 import { LayoutDashboard, Sprout, Package, Handshake, ReceiptText, Settings, LogOut, X } from 'lucide-react';
-import { View } from '../types';
+import { View } from '../../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 

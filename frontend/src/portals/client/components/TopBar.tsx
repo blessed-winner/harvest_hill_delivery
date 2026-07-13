@@ -17,7 +17,7 @@ export default function TopBar({ activeScreen, onNavigate, cartCount }: TopBarPr
         {/* Brand Logo */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => onNavigate('landing')}
             className="text-2xl font-bold text-[#144227] tracking-tight font-sans hover:opacity-85 transition-opacity cursor-pointer"
           >
             Harvest Hill
@@ -71,9 +71,9 @@ export default function TopBar({ activeScreen, onNavigate, cartCount }: TopBarPr
 
             {/* Delivery Note / History */}
             <button
-              onClick={() => onNavigate('delivery-note')}
+              onClick={() => onNavigate('order-history')}
               className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors cursor-pointer"
-              title="Deliveries"
+              title="Order History"
             >
               <History className="h-5 w-5" />
             </button>
@@ -89,9 +89,9 @@ export default function TopBar({ activeScreen, onNavigate, cartCount }: TopBarPr
 
             {/* Shopping Cart */}
             <button
-              onClick={() => onNavigate('checkout')}
+              onClick={() => onNavigate('cart')}
               className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors relative cursor-pointer"
-              title="Checkout Cart"
+              title="Harvest Cart"
             >
               <ShoppingCart className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 bg-[#144227] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { TrendingUp, Calendar, DollarSign, Leaf, ChevronRight, User, MapPin, Bell, CreditCard, LogOut, ShoppingCart, Check } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, Leaf, ChevronRight, User, MapPin, Bell, CreditCard, LogOut, ShoppingCart, Check, FileText } from 'lucide-react';
 
 interface DashboardProps {
   onNavigate: (screen: string) => void;
@@ -149,7 +149,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-[#1c1c18]">Quick Reorder Favorites</h2>
           <button
-            onClick={() => onNavigate('delivery-note')}
+            onClick={() => onNavigate('order-history')}
             className="flex items-center gap-1 text-sm font-semibold text-[#144227] hover:underline underline-offset-4 cursor-pointer"
           >
             View All History <ChevronRight size={16} />
@@ -201,17 +201,18 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
           <div className="bg-white border border-[#e5e2db] rounded-xl overflow-hidden shadow-sm">
             <nav className="flex flex-col">
               {[
-                { id: 'profile', label: 'Personal Profile', icon: User },
-                { id: 'addresses', label: 'Shipping Addresses', icon: MapPin },
-                { id: 'notifications', label: 'Notifications', icon: Bell },
-                { id: 'payments', label: 'Payment Methods', icon: CreditCard },
+                { id: 'profile', label: 'Personal Profile', icon: User, action: () => setActiveTab('profile') },
+                { id: 'addresses', label: 'Shipping Addresses', icon: MapPin, action: () => setActiveTab('addresses') },
+                { id: 'notifications', label: 'Notifications', icon: Bell, action: () => setActiveTab('notifications') },
+                { id: 'payments', label: 'Payment Methods', icon: CreditCard, action: () => setActiveTab('payments') },
+                { id: 'invoices', label: 'Billing & Invoices', icon: FileText, action: () => onNavigate('invoices') },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={tab.action}
                     className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold border-b border-[#f0eee7] transition-colors cursor-pointer text-left ${
                       isActive
                         ? 'bg-[#144227] text-white'
