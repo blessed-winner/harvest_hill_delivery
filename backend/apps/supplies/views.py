@@ -13,7 +13,7 @@ class SupplySerializer(serializers.ModelSerializer):
             'id', 'product', 'product_detail', 'quantity', 'proposed_price', 
             'status', 'available_date', 'quality_grade', 'notes', 'photo', 'created_at'
         ]
-        read_only_fields = ['status', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
