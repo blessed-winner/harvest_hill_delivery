@@ -24,7 +24,7 @@ type HarvestFormState = {
   askingPrice: string;
   qualityGrade: 'premium' | 'standard' | 'economy';
   notes: string;
-  photo: string;
+  photo: File | null;
 };
 
 const referenceProductImages: Record<string, string> = {
@@ -84,7 +84,7 @@ const initialFormState: HarvestFormState = {
   askingPrice: '',
   qualityGrade: 'premium',
   notes: '',
-  photo: '',
+  photo: null,
 };
 
 export default function SubmitHarvest() {
@@ -94,6 +94,22 @@ export default function SubmitHarvest() {
   const [form, setForm] = useState<HarvestFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm((current) => ({ ...current, photo: file }));
+      const url = URL.createObjectURL(file);
+      setPhotoPreview(url);
+    }
+  };
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,8 +154,9 @@ export default function SubmitHarvest() {
       askingPrice: product.base_price ? String(product.base_price) : '',
       qualityGrade: 'premium',
       notes: '',
-      photo: '',
+      photo: null,
     });
+    setPhotoPreview(null);
   };
 
   const handleSubmit = async () => {
@@ -163,6 +180,7 @@ export default function SubmitHarvest() {
       setNotice(`Harvest submitted for ${selectedProduct.name}.`);
       setSelectedProduct(null);
       setForm(initialFormState);
+      setPhotoPreview(null);
     } catch (error) {
       console.error('Failed to submit harvest:', error);
       setNotice('Could not submit harvest right now. Please try again shortly.');
@@ -496,13 +514,52 @@ export default function SubmitHarvest() {
 
                 <div className="space-y-4">
                   <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Current Crop Photos</label>
-                  <div className="border-2 border-dashed border-outline-variant rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary transition-all cursor-pointer group">
-                    <div className="w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <CloudUpload size={24} className="text-primary" />
+                  <input
+                    type="file"
+                    id="photo-upload"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  {photoPreview ? (
+                    <div className="relative border-2 border-dashed border-primary rounded-2xl overflow-hidden aspect-video bg-surface-container-lowest group">
+                      <img
+                        src={photoPreview}
+                        alt="Crop preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('photo-upload')?.click()}
+                          className="px-4 py-2 bg-white text-primary text-xs font-bold rounded-lg hover:bg-surface-container-low transition-colors"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((current) => ({ ...current, photo: null }));
+                            setPhotoPreview(null);
+                          }}
+                          className="px-4 py-2 bg-error text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                    <p className="font-sans font-extrabold text-primary">Drop images or click to upload</p>
-                    <p className="font-mono text-[10px] text-on-surface-variant mt-1 uppercase">Supports JPG, PNG up to 10MB</p>
-                  </div>
+                  ) : (
+                    <div
+                      onClick={() => document.getElementById('photo-upload')?.click()}
+                      className="border-2 border-dashed border-outline-variant rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary transition-all cursor-pointer group"
+                    >
+                      <div className="w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <CloudUpload size={24} className="text-primary" />
+                      </div>
+                      <p className="font-sans font-extrabold text-primary">Drop images or click to upload</p>
+                      <p className="font-mono text-[10px] text-on-surface-variant mt-1 uppercase">Supports JPG, PNG up to 10MB</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 pb-10">
