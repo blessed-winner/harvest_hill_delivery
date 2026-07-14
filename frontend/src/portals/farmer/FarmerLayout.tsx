@@ -40,7 +40,7 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
       />
       <div className="flex-grow flex flex-col min-w-0">
         <TopBar onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} />
-        <main className="mt-[64px] lg:pl-[224px] pb-20 lg:pb-8 min-w-0">
+        <main className="mt-[64px] lg:pl-[260px] pb-20 lg:pb-8 min-w-0">
           {children}
         </main>
       </div>

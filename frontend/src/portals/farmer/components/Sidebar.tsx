@@ -1,14 +1,19 @@
 "use client";
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { LayoutDashboard, Sprout, Package, Handshake, ReceiptText, Settings, LogOut, X } from 'lucide-react';
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Sprout, 
+  Package, 
+  Handshake, 
+  ReceiptText, 
+  Settings, 
+  LogOut, 
+  X,
+  UserCircle
+} from 'lucide-react';
 import { View } from '../../types';
 import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface SidebarProps {
   activeView: View;
@@ -24,7 +29,6 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
     { id: 'supplies' as View, label: 'My Supplies', icon: Package },
     { id: 'negotiations' as View, label: 'Negotiations', icon: Handshake },
     { id: 'invoices' as View, label: 'Invoices & Payments', icon: ReceiptText },
-    { id: 'settings' as View, label: 'Profile & Settings', icon: Settings },
   ];
 
   const handleNavClick = (id: View) => {
@@ -32,52 +36,69 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
     onClose?.();
   };
 
-  const sidebarContent = (
-    <>
-      <div className="mb-8 px-2 flex items-center justify-between">
+  return (
+    <aside className={cn(
+      "w-[260px] bg-primary flex flex-col h-screen sticky top-0 py-4 shadow-sm z-30 shrink-0 overflow-hidden transition-all duration-300",
+      isOpen ? "translate-x-0 fixed left-0" : "hidden lg:flex"
+    )}>
+      {/* Branding */}
+      <div className="px-6 mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-sans text-2xl font-extrabold text-[#184b2d] tracking-tight">Harvest Hill</h1>
-          <p className="font-mono text-[10px] text-[#8a9087] uppercase tracking-widest mt-1 opacity-70">Delivery Portal</p>
+          <h1 className="text-lg font-bold text-white leading-tight font-sans">Harvest Hill</h1>
+          <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold font-mono">Delivery Portal</p>
         </div>
-        {/* Close button visible only on mobile overlay */}
-        <button
-          onClick={onClose}
-          className="lg:hidden p-2 rounded-lg hover:bg-[#eef1eb] text-[#667067] transition-colors"
-        >
-          <X size={20} />
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-grow flex flex-col gap-1">
+      {/* Navigation */}
+      <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => handleNavClick(item.id)}
             className={cn(
-              "flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all duration-200 text-left group",
-              activeView === item.id
-                ? "bg-[#b7ebb8] text-[#234b32] border-l-4 border-[#184b2d] font-bold scale-[0.98]"
-                : "text-[#59645c] hover:bg-[#eef1eb]"
+              "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer",
+              activeView === item.id 
+                ? "bg-primary-container text-on-primary-container font-semibold" 
+                : "text-white/80 hover:text-white hover:bg-primary-container/20"
             )}
           >
-            <item.icon size={18} className={activeView === item.id ? "text-[#234b32]" : "text-[#59645c]"} />
-            <span className="font-mono text-xs">{item.label}</span>
+            <item.icon className={cn(
+              "w-5 h-5 mr-3 transition-colors",
+              activeView === item.id ? "text-on-primary-container" : "text-white/60 group-hover:text-white"
+            )} size={20} />
+            <span className="text-sm font-sans">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="mt-auto border-t border-[#c9d0c6] pt-4">
-        <button className="flex items-center gap-3 py-2.5 px-3 w-full rounded-xl text-[#59645c] hover:bg-[#eef1eb] transition-colors duration-200">
-          <LogOut size={18} />
-          <span className="font-mono text-xs">Logout</span>
+      {/* Footer / Profile */}
+      <div className="mt-auto px-4 pt-4 border-t border-white/10 space-y-1 shrink-0">
+        <button 
+          onClick={() => handleNavClick('settings')}
+          className={cn(
+            "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer",
+            activeView === 'settings'
+              ? "bg-primary-container text-on-primary-container font-semibold"
+              : "text-white/80 hover:text-white hover:bg-primary-container/20"
+          )}
+        >
+          <UserCircle className="w-5 h-5 mr-3 text-white/60 group-hover:text-white" size={20} />
+          <span className="text-sm font-sans">Farmer Profile</span>
+        </button>
+        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors text-left cursor-pointer">
+          <LogOut className="w-5 h-5 mr-3 text-white/60" size={20} />
+          <span className="text-sm font-sans">Logout</span>
         </button>
       </div>
-    </>
-  );
-
-  return (
-    <aside className="w-56 h-[calc(100vh-64px)] fixed left-0 top-[64px] hidden lg:flex flex-col bg-[#f8f7f2] border-r border-[#d4d8d1] py-6 px-3 z-40">
-      {sidebarContent}
     </aside>
   );
 }
+

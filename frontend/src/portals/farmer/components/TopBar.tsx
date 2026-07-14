@@ -42,7 +42,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
   }, []);
 
   return (
-    <header className="h-[64px] w-full fixed top-0 z-50 bg-surface border-b border-outline-variant flex justify-between items-center px-4 sm:px-6 lg:pl-[224px] lg:pr-8">
+    <header className="h-[64px] w-full fixed top-0 z-50 bg-surface border-b border-outline-variant flex justify-between items-center px-4 sm:px-6 lg:pl-[260px] lg:pr-8">
       <div className="flex items-center gap-3">
         <h2 className="font-sans text-base font-bold text-primary">Harvest Hill Delivery</h2>
       </div>
