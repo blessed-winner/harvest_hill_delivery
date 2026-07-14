@@ -38,11 +38,11 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
 
   return (
     <aside className={cn(
-      "w-[260px] bg-primary flex flex-col h-screen sticky top-0 py-4 shadow-sm z-30 shrink-0 overflow-hidden transition-all duration-300",
-      isOpen ? "translate-x-0 fixed left-0" : "hidden lg:flex"
+      "w-56 h-[calc(100vh-64px)] fixed left-0 top-[64px] flex flex-col bg-primary border-r border-white/10 py-6 px-3 z-40 transition-all duration-300",
+      isOpen ? "translate-x-0" : "hidden lg:flex"
     )}>
       {/* Branding */}
-      <div className="px-6 mb-8 flex items-center justify-between">
+      <div className="px-2 mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-white leading-tight font-sans">Harvest Hill</h1>
           <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold font-mono">Delivery Portal</p>
