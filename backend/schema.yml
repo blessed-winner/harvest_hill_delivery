@@ -1,0 +1,1012 @@
+openapi: 3.0.3
+info:
+  title: Harvest Hill Delivery API
+  version: 1.0.0
+  description: Farmer, Client, and Admin APIs for logistics, supplies, and negotiations.
+paths:
+  /api/accounts/login/:
+    post:
+      operationId: accounts_login_create
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/logout/:
+    post:
+      operationId: accounts_logout_create
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/me/:
+    get:
+      operationId: accounts_me_retrieve
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/password-reset/:
+    post:
+      operationId: accounts_password_reset_create
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/password-reset/confirm/:
+    post:
+      operationId: accounts_password_reset_confirm_create
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/register/:
+    post:
+      operationId: accounts_register_create
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/accounts/token/refresh/:
+    post:
+      operationId: accounts_token_refresh_create
+      description: Subclassed SimpleJWT TokenRefreshView to easily allow custom logging
+        or overrides.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/farmer/dashboard/earnings-by-category/:
+    get:
+      operationId: farmer_dashboard_earnings_by_category_retrieve
+      tags:
+      - farmer
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/farmer/dashboard/summary/:
+    get:
+      operationId: farmer_dashboard_summary_retrieve
+      tags:
+      - farmer
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/farmer/dashboard/supply-volume/:
+    get:
+      operationId: farmer_dashboard_supply_volume_retrieve
+      tags:
+      - farmer
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/invoiceSummary/:
+    get:
+      operationId: invoiceSummary_retrieve
+      tags:
+      - invoiceSummary
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/invoices/:
+    get:
+      operationId: invoices_list
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+          description: ''
+    post:
+      operationId: invoices_create
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/invoices/{id}/:
+    get:
+      operationId: invoices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    put:
+      operationId: invoices_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    patch:
+      operationId: invoices_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInvoice'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+    delete:
+      operationId: invoices_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/negotiations/threads/:
+    get:
+      operationId: negotiations_threads_list
+      tags:
+      - negotiations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+    post:
+      operationId: negotiations_threads_create
+      tags:
+      - negotiations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+  /api/negotiations/threads/{id}/:
+    get:
+      operationId: negotiations_threads_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+    put:
+      operationId: negotiations_threads_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+    patch:
+      operationId: negotiations_threads_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNegotiationThread'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNegotiationThread'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNegotiationThread'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+    delete:
+      operationId: negotiations_threads_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/negotiations/threads/{id}/accept/:
+    post:
+      operationId: negotiations_threads_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+  /api/negotiations/threads/{id}/offer/:
+    post:
+      operationId: negotiations_threads_offer_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this negotiation thread.
+        required: true
+      tags:
+      - negotiations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NegotiationThread'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationThread'
+          description: ''
+  /api/products/:
+    get:
+      operationId: products_list
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+          description: ''
+  /api/products/{id}/:
+    get:
+      operationId: products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/supplies/:
+    get:
+      operationId: supplies_list
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      tags:
+      - supplies
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Supply'
+          description: ''
+    post:
+      operationId: supplies_create
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      tags:
+      - supplies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Supply'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Supply'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Supply'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+  /api/supplies/{id}/:
+    get:
+      operationId: supplies_retrieve
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply.
+        required: true
+      tags:
+      - supplies
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+    put:
+      operationId: supplies_update
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply.
+        required: true
+      tags:
+      - supplies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Supply'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Supply'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Supply'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+    patch:
+      operationId: supplies_partial_update
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply.
+        required: true
+      tags:
+      - supplies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupply'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSupply'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSupply'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+    delete:
+      operationId: supplies_destroy
+      description: |-
+        Mixin to enforce role-scoped queryset filtering.
+        Ensures non-admin users can only query records owned by them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this supply.
+        required: true
+      tags:
+      - supplies
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bikanawe_invoice_id:
+          type: string
+          readOnly: true
+        supply_detail:
+          allOf:
+          - $ref: '#/components/schemas/SupplyShort'
+          readOnly: true
+        issue_date:
+          type: string
+          format: date-time
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/InvoiceStatusEnum'
+        supply:
+          type: integer
+          nullable: true
+      required:
+      - amount
+      - bikanawe_invoice_id
+      - id
+      - issue_date
+      - supply_detail
+    InvoiceStatusEnum:
+      enum:
+      - paid
+      - pending
+      type: string
+      description: |-
+        * `paid` - Paid
+        * `pending` - Pending
+    NegotiationOffer:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        sender:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        message:
+          type: string
+        created_at:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - price
+      - quantity
+      - sender
+    NegotiationThread:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          readOnly: true
+        supply_detail:
+          allOf:
+          - $ref: '#/components/schemas/SupplyDetail'
+          readOnly: true
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/NegotiationOffer'
+          readOnly: true
+      required:
+      - id
+      - offers
+      - price
+      - status
+      - supply_detail
+    PatchedInvoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bikanawe_invoice_id:
+          type: string
+          readOnly: true
+        supply_detail:
+          allOf:
+          - $ref: '#/components/schemas/SupplyShort'
+          readOnly: true
+        issue_date:
+          type: string
+          format: date-time
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/InvoiceStatusEnum'
+        supply:
+          type: integer
+          nullable: true
+    PatchedNegotiationThread:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          readOnly: true
+        supply_detail:
+          allOf:
+          - $ref: '#/components/schemas/SupplyDetail'
+          readOnly: true
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/NegotiationOffer'
+          readOnly: true
+    PatchedSupply:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusB3bEnum'
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 100
+        is_currently_needed:
+          type: boolean
+        urgency:
+          type: string
+          maxLength: 20
+        unit:
+          type: string
+          maxLength: 10
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        image:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 500
+          - type: string
+            maxLength: 0
+        quantity_needed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - category
+      - id
+      - name
+    ProductShort:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          type: string
+          maxLength: 100
+        unit:
+          type: string
+          maxLength: 10
+        image:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 500
+          - type: string
+            maxLength: 0
+      required:
+      - category
+      - id
+      - name
+    StatusB3bEnum:
+      enum:
+      - draft
+      - pending
+      - negotiating
+      - accepted
+      - rejected
+      - delivered
+      - invoiced
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `pending` - Pending
+        * `negotiating` - Negotiating
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `delivered` - Delivered
+        * `invoiced` - Invoiced
+    Supply:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusB3bEnum'
+      required:
+      - id
+      - price
+      - quantity
+    SupplyDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        unit:
+          type: string
+          readOnly: true
+        proposed_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusB3bEnum'
+        product_detail:
+          allOf:
+          - $ref: '#/components/schemas/ProductShort'
+          readOnly: true
+      required:
+      - id
+      - product_detail
+      - proposed_price
+      - quantity
+      - unit
+    SupplyShort:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/StatusB3bEnum'
+        product_detail:
+          allOf:
+          - $ref: '#/components/schemas/ProductShort'
+          readOnly: true
+      required:
+      - id
+      - product_detail
+      - quantity
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

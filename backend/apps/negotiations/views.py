@@ -1,0 +1,72 @@
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import NegotiationThread, NegotiationOffer
+from .serializers import NegotiationThreadSerializer
+from apps.supplies.models import Supply
+
+class NegotiationThreadViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NegotiationThreadSerializer
+    queryset = NegotiationThread.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.role == 'farmer':
+            try:
+                profile = self.request.user.farmer_profile
+                queryset = queryset.filter(supply__farmer=profile)
+            except AttributeError:
+                queryset = queryset.none()
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def offer(self, request, pk=None):
+        thread = self.get_object()
+        if thread.supply.status in ['accepted', 'delivered', 'invoiced']:
+            return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        price = request.data.get('price')
+        quantity = request.data.get('quantity')
+        
+        if price is None or quantity is None:
+            return Response({"error": "Price and quantity are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create counter offer
+        offer = NegotiationOffer.objects.create(
+            thread=thread,
+            sender=request.user,
+            price=price,
+            quantity=quantity
+        )
+        
+        # Update supply price/quantity
+        thread.supply.status = 'negotiating'
+        thread.supply.price = price
+        thread.supply.quantity = quantity
+        thread.supply.save()
+
+        return Response(NegotiationThreadSerializer(thread).data)
+
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        thread = self.get_object()
+        if thread.supply.status in ['accepted', 'delivered', 'invoiced']:
+            return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
+
+        thread.supply.status = 'accepted'
+        thread.supply.save()
+
+        # Automatically generate a pending invoice upon acceptance
+        from apps.invoices.models import Invoice
+        Invoice.objects.get_or_create(
+            supply=thread.supply,
+            defaults={
+                'status': 'pending',
+                'amount': thread.supply.price * thread.supply.quantity,
+                'sync_status': 'synced'
+            }
+        )
+
+        return Response(NegotiationThreadSerializer(thread).data)
