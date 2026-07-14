@@ -27,7 +27,7 @@ export default function FarmerPage() {
         return <Settings />;
       case 'dashboard':
       default:
-        return <Dashboard />;
+        return <Dashboard onViewChange={setActiveView} />;
     }
   };
 

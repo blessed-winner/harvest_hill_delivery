@@ -99,6 +99,13 @@ export default function SubmitHarvest() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [showFiltersMenu, setShowFiltersMenu] = useState(false);
+  const [urgencyFilter, setUrgencyFilter] = useState('All');
+  const [priceFilter, setPriceFilter] = useState('All');
+
   useEffect(() => {
     let mounted = true;
 
@@ -166,6 +173,19 @@ export default function SubmitHarvest() {
     }
   };
 
+  // Filter calculations
+  const filteredDemands = demands.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All Categories' || product.category === selectedCategory;
+    const matchesUrgency = urgencyFilter === 'All' || 
+      (urgencyFilter === 'high' && (product.urgency === 'high' || product.name.toLowerCase().includes('tomato'))) ||
+      (urgencyFilter === 'steady' && product.urgency === 'steady' && !product.name.toLowerCase().includes('tomato'));
+    const matchesPrice = priceFilter === 'All' || 
+      (priceFilter === 'Under $1.00' && Number(product.base_price || 0) < 1.00) ||
+      (priceFilter === 'Over $1.00' && Number(product.base_price || 0) >= 1.00);
+    return matchesSearch && matchesCategory && matchesUrgency && matchesPrice;
+  });
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <div className="mb-6 sm:mb-8">
@@ -178,31 +198,110 @@ export default function SubmitHarvest() {
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant custom-shadow">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
-          <input
-            className="w-full pl-11 pr-4 py-2 rounded-lg border border-outline-variant font-sans text-sm bg-surface-container-low focus:bg-white transition-all"
-            placeholder="Search products (e.g., Tomatoes, Wheat)"
-            type="text"
-          />
+      <div className="relative mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant custom-shadow">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
+            <input
+              className="w-full pl-11 pr-4 py-2 rounded-lg border border-outline-variant font-sans text-sm bg-surface-container-low focus:bg-white transition-all"
+              placeholder="Search products (e.g., Tomatoes, Wheat)"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-3 sm:gap-4">
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-2 rounded-lg border border-outline-variant bg-white font-mono text-xs min-w-[160px] cursor-pointer focus:ring-primary focus:border-primary outline-none"
+            >
+              <option>All Categories</option>
+              <option>Vegetables</option>
+              <option>Grains</option>
+              <option>Fruits</option>
+            </select>
+            <button 
+              onClick={() => setShowFiltersMenu(!showFiltersMenu)}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2 rounded-lg font-bold transition-all active:scale-95 cursor-pointer",
+                showFiltersMenu ? "bg-primary text-white" : "bg-surface-container-high text-primary hover:bg-surface-container-highest"
+              )}
+            >
+              <SlidersHorizontal size={16} />
+              <span className="font-mono text-xs uppercase tracking-wider">Filters</span>
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3 sm:gap-4">
-          <select className="px-4 py-2 rounded-lg border border-outline-variant bg-white font-mono text-xs min-w-[160px] cursor-pointer">
-            <option>All Categories</option>
-            <option>Vegetables</option>
-            <option>Grains</option>
-            <option>Fruits</option>
-          </select>
-          <button className="flex items-center gap-2 px-6 py-2 bg-surface-container-high rounded-lg text-primary font-bold hover:bg-surface-container-highest transition-colors active:scale-95">
-            <SlidersHorizontal size={16} />
-            <span className="font-mono text-xs uppercase tracking-wider">Filters</span>
-          </button>
-        </div>
+
+        {/* Real dropdown filters menu */}
+        {showFiltersMenu && (
+          <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-outline-variant rounded-2xl shadow-xl z-30 p-4 space-y-4">
+            <div className="space-y-2">
+              <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Demand Urgency</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['All', 'High', 'Steady'].map((urg) => (
+                  <button
+                    key={urg}
+                    type="button"
+                    onClick={() => setUrgencyFilter(urg === 'All' ? 'All' : urg.toLowerCase())}
+                    className={cn(
+                      "py-1.5 rounded-lg font-sans text-xs font-bold border transition-all cursor-pointer",
+                      (urgencyFilter === 'All' && urg === 'All') || (urgencyFilter === urg.toLowerCase() && urg !== 'All')
+                        ? "bg-primary border-primary text-white"
+                        : "bg-white border-[#c1c9c0] text-[#414942]"
+                    )}
+                  >
+                    {urg}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Price Level</label>
+              <div className="flex flex-col gap-1.5">
+                {['All', 'Under $1.00', 'Over $1.00'].map((price) => (
+                  <button
+                    key={price}
+                    type="button"
+                    onClick={() => setPriceFilter(price)}
+                    className={cn(
+                      "py-1.5 px-3 rounded-lg font-sans text-xs font-bold border text-left transition-all cursor-pointer",
+                      priceFilter === price
+                        ? "bg-primary border-primary text-white"
+                        : "bg-white border-[#c1c9c0] text-[#414942]"
+                    )}
+                  >
+                    {price}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-outline-variant flex justify-between">
+              <button 
+                onClick={() => {
+                  setUrgencyFilter('All');
+                  setPriceFilter('All');
+                }}
+                className="text-[10px] font-mono uppercase font-bold text-on-surface-variant hover:text-[#1c1c18]"
+              >
+                Reset
+              </button>
+              <button 
+                onClick={() => setShowFiltersMenu(false)}
+                className="text-[10px] font-mono uppercase font-bold text-primary hover:underline"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {demands.map((product) => (
+        {filteredDemands.map((product) => (
           <motion.div
             key={product.id}
             whileHover={{ scale: 1.02 }}

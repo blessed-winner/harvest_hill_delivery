@@ -73,11 +73,36 @@ const kpiStyles: KpiStyle[] = [
   },
 ] as const;
 
-export default function Dashboard() {
+export default function Dashboard({ onViewChange }: { onViewChange?: (view: any) => void }) {
   const [kpis, setKpis] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
   const [demands, setDemands] = useState<any[]>([]);
+  const [range, setRange] = useState('Last 6 months');
+
+  const data6Months = [
+    { name: 'May', volume: 45 },
+    { name: 'Jun', volume: 60 },
+    { name: 'Jul', volume: 55 },
+    { name: 'Aug', volume: 80 },
+    { name: 'Sep', volume: 70 },
+    { name: 'Oct', volume: 90 },
+  ];
+
+  const data12Months = [
+    { name: 'Nov', volume: 30 },
+    { name: 'Dec', volume: 40 },
+    { name: 'Jan', volume: 35 },
+    { name: 'Feb', volume: 50 },
+    { name: 'Mar', volume: 45 },
+    { name: 'Apr', volume: 55 },
+    { name: 'May', volume: 45 },
+    { name: 'Jun', volume: 60 },
+    { name: 'Jul', volume: 55 },
+    { name: 'Aug', volume: 80 },
+    { name: 'Sep', volume: 70 },
+    { name: 'Oct', volume: 90 },
+  ];
 
   useEffect(() => {
     async function loadData() {
@@ -90,7 +115,8 @@ export default function Dashboard() {
           { label: 'Total earnings this month', value: summary.total_earnings, icon: 'ReceiptText', color: 'primary-container' },
         ]);
 
-        const volume = await apiRequest("/api/farmer/dashboard/supply-volume/");
+        const volumeUrl = `/api/farmer/dashboard/supply-volume/?range=${range === 'Last year' ? 'year' : '6months'}`;
+        const volume = await apiRequest(volumeUrl);
         setChartData(volume);
 
         const categories = await apiRequest("/api/farmer/dashboard/earnings-by-category/");
@@ -107,14 +133,13 @@ export default function Dashboard() {
           { label: 'Acceptance rate', value: '94%', trend: 'High', icon: 'CheckCircle2', color: 'secondary' },
           { label: 'Total earnings this month', value: '$4,250.00', icon: 'ReceiptText', color: 'primary-container' },
         ]);
-        setChartData([
-          { name: 'May', volume: 45 },
-          { name: 'Jun', volume: 60 },
-          { name: 'Jul', volume: 55 },
-          { name: 'Aug', volume: 80 },
-          { name: 'Sep', volume: 70 },
-          { name: 'Oct', volume: 90 },
-        ]);
+        
+        if (range === 'Last year') {
+          setChartData(data12Months);
+        } else {
+          setChartData(data6Months);
+        }
+
         setPieData([
           { name: 'Vegetables', value: 60, color: '#144227' },
           { name: 'Fruits', value: 25, color: '#376847' },
@@ -127,7 +152,7 @@ export default function Dashboard() {
       }
     }
     loadData();
-  }, []);
+  }, [range]);
 
   const totalEarningsVal = kpis[3]?.value || "$0.00";
 
@@ -142,7 +167,10 @@ export default function Dashboard() {
           <h1 className="font-sans text-xl sm:text-2xl font-extrabold text-on-surface">Welcome back, Green Valley Farm</h1>
           <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1">Monday, October 23, 2023</p>
         </div>
-        <button className="bg-[#144227] text-white font-mono text-xs px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto justify-center">
+        <button 
+          onClick={() => onViewChange?.('submit')}
+          className="bg-[#144227] text-white font-mono text-xs px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg active:scale-95 w-full sm:w-auto justify-center cursor-pointer"
+        >
           <Plus size={16} />
           Quick Harvest Submission
         </button>
@@ -217,7 +245,11 @@ export default function Dashboard() {
         <div className="md:col-span-2 lg:col-span-2 bg-surface-container-lowest custom-shadow p-4 sm:p-5 rounded-xl border border-outline-variant min-w-0">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Supply volume over time</h3>
-            <select className="bg-surface-container-low border-none rounded-lg font-mono text-[10px] px-3 py-1 focus:ring-primary cursor-pointer">
+            <select 
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              className="bg-surface-container-low border-none rounded-lg font-mono text-[10px] px-3 py-1 focus:ring-primary cursor-pointer"
+            >
               <option>Last 6 months</option>
               <option>Last year</option>
             </select>
@@ -290,7 +322,10 @@ export default function Dashboard() {
       <div>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
           <h3 className="font-sans text-base sm:text-lg font-bold text-on-surface">Products currently needed</h3>
-          <button className="text-primary font-mono text-xs flex items-center gap-1 hover:underline">
+          <button 
+            onClick={() => onViewChange?.('submit')}
+            className="text-primary font-mono text-xs flex items-center gap-1 hover:underline cursor-pointer"
+          >
             View market trends
             <ChevronRight size={14} />
           </button>
@@ -300,6 +335,7 @@ export default function Dashboard() {
             <motion.div
               key={demand.id}
               whileHover={{ y: -4 }}
+              onClick={() => onViewChange?.('submit')}
               className="min-w-[240px] bg-surface-container-lowest custom-shadow rounded-xl overflow-hidden border border-outline-variant group cursor-pointer"
             >
               <div className="h-32 overflow-hidden relative">
@@ -316,13 +352,22 @@ export default function Dashboard() {
               <div className="p-3">
                 <h4 className="font-sans text-sm font-bold text-on-surface">{demand.name}</h4>
                 <p className="font-sans text-xs text-on-surface-variant mt-1">Need: {demand.quantity_needed} {demand.unit}</p>
-                <button className="w-full mt-3 py-1.5 bg-surface-container text-primary font-mono text-[10px] font-bold rounded-xl hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewChange?.('submit');
+                  }}
+                  className="w-full mt-3 py-1.5 bg-surface-container text-primary font-mono text-[10px] font-bold rounded-xl hover:bg-primary hover:text-on-primary transition-all active:scale-95 cursor-pointer"
+                >
                   Submit Harvest
                 </button>
               </div>
             </motion.div>
           ))}
-          <div className="min-w-[120px] flex items-center justify-center border-2 border-dashed border-outline-variant rounded-xl group hover:border-primary transition-colors cursor-pointer">
+          <div 
+            onClick={() => onViewChange?.('submit')}
+            className="min-w-[120px] flex items-center justify-center border-2 border-dashed border-outline-variant rounded-xl group hover:border-primary transition-colors cursor-pointer"
+          >
             <div className="text-center">
               <PlusCircle size={28} className="mx-auto text-on-surface-variant group-hover:text-primary transition-colors" />
               <p className="font-mono text-[10px] mt-2 text-on-surface-variant uppercase tracking-wider group-hover:text-primary">See all</p>

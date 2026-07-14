@@ -47,9 +47,12 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
         onClose={() => setIsMobileMenuOpen(false)}
       />
 
-      <div className="flex-grow flex flex-col min-w-0 lg:pl-[260px]">
-        <TopBar onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} />
-        <main className="flex-grow min-w-0 overflow-x-hidden p-6 pb-20 lg:pb-8">
+      <div className="flex-grow flex flex-col min-w-0 lg:pl-[260px] h-screen overflow-hidden">
+        <TopBar activeView={activeView} onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} />
+        <main className={cn(
+          "flex-grow min-w-0",
+          activeView === 'negotiations' ? "h-[calc(100vh-64px)] overflow-hidden p-0" : "overflow-y-auto p-6 pb-20 lg:pb-8"
+        )}>
           {children}
         </main>
       </div>

@@ -10,14 +10,26 @@ import { Bell, Menu } from 'lucide-react';
 import { api } from '../lib/api';
 
 interface TopBarProps {
+  activeView?: string;
   onMenuToggle: () => void;
 }
 
-export default function TopBar({ onMenuToggle }: TopBarProps) {
+export default function TopBar({ activeView, onMenuToggle }: TopBarProps) {
   const [farmName, setFarmName] = useState('Green Valley Farm');
   const [roleLabel, setRoleLabel] = useState('Tier 1 Supplier');
   const profileImage =
     'https://lh3.googleusercontent.com/aida-public/AB6AXuC9re6yJPQ5TYt9TGg1Mt0-bI4EtsJFQjADaJ-AwucfipGIVS_n3JHlVfqhYm5ByV0h5A3ex6xXqVx_l3oBhemoxWVhA0IPAGluGjQO4OPoJ9gQdqnssN5XJBPp5OFVC7xQElJLs4enHGBVPXJAWBIS1VNjcQowBBzGU4M_b4cPWpbY3sw7Bu_wCsn5_rNTUAiuiqPMd8LwtDezfTQ-Zehk2fUY53IVBnoVJaGfWMQAjI0XQr03PQqA9Q';
+
+  const viewTitles: Record<string, string> = {
+    dashboard: 'Dashboard Overview',
+    submit: 'Submit New Harvest',
+    supplies: 'My Supplies',
+    negotiations: 'Negotiations & Deals',
+    invoices: 'Invoices & Payments',
+    settings: 'Farmer Profile & Settings',
+  };
+
+  const activeTitle = activeView ? viewTitles[activeView] || 'Farmer Portal' : 'Farmer Portal';
 
   useEffect(() => {
     let mounted = true;
@@ -51,7 +63,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
         >
           <Menu size={20} />
         </button>
-        <h2 className="font-sans text-base font-bold text-primary">Harvest Hill Delivery</h2>
+        <h2 className="font-sans text-base font-bold text-primary">{activeTitle}</h2>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6">

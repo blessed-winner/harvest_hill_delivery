@@ -109,7 +109,7 @@ export default function Negotiations() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col lg:flex-row h-[calc(100vh-144px)] lg:h-[calc(100vh-64px)] overflow-hidden"
+      className="flex flex-col lg:flex-row h-full overflow-hidden"
     >
       {/* Active Deal Selector Bar for Mobile */}
       {activeThread && (

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Filter, Download, FileText, X, Printer, ChevronLeft, ChevronRight, Sprout } from 'lucide-react';
@@ -26,11 +21,15 @@ const fallbackInvoices: InvoiceRow[] = [
   { id: '#HH-INV-2023-002', supply: 'Seed Corn High-Yield 50kg Bags', date: 'Nov 02, 2023', amount: '$5,790.50', status: 'PENDING' },
   { id: '#HH-INV-2023-003', supply: 'Irrigation System Spare Parts', date: 'Nov 05, 2023', amount: '$1,200.00', status: 'PAID' },
   { id: '#HH-INV-2023-004', supply: 'Greenhouse Temperature Sensors', date: 'Nov 12, 2023', amount: '$850.00', status: 'PENDING' },
+  { id: '#HH-INV-2023-005', supply: 'Roma Tomatoes Bulk Sale', date: 'Oct 12, 2023', amount: '$1,250.00', status: 'PAID' },
+  { id: '#HH-INV-2023-006', supply: 'Curly Kale Batch OK-451', date: 'Oct 14, 2023', amount: '$320.00', status: 'PENDING' },
+  { id: '#HH-INV-2023-007', supply: 'Farm Fresh Eggs Delivery', date: 'Oct 15, 2023', amount: '$240.00', status: 'PAID' },
+  { id: '#HH-INV-2023-008', supply: 'Lettuce Direct Wholesale', date: 'Oct 18, 2023', amount: '$384.00', status: 'PAID' },
 ];
 
 export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
-  const [invoices, setInvoices] = useState<InvoiceRow[]>(fallbackInvoices);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [summary, setSummary] = useState({
     totalEarned: '$42,850.00',
     pendingPayments: '$8,240.50',
@@ -38,6 +37,13 @@ export default function Invoices() {
     lastPayment: '$3,150.00',
     lastPaymentDate: 'Oct 24, 2023',
   });
+
+  // Interactive filters
+  const [showFiltersMenu, setShowFiltersMenu] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [amountFilter, setAmountFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
 
   useEffect(() => {
     let mounted = true;
@@ -63,12 +69,13 @@ export default function Invoices() {
         setSummary({
           totalEarned: formatCurrency(totals?.total_earned ?? 0),
           pendingPayments: formatCurrency(totals?.pending ?? 0),
-          outstandingCount: rows.filter((invoice) => invoice.status === 'PENDING').length,
+          outstandingCount: rows.filter((invoice: any) => invoice.status === 'PENDING').length,
           lastPayment: formatCurrency(totals?.last_payment ?? 0),
-          lastPaymentDate: rows.find((invoice) => invoice.status === 'PAID')?.date || 'N/A',
+          lastPaymentDate: rows.find((invoice: any) => invoice.status === 'PAID')?.date || 'N/A',
         });
       } catch (error) {
         console.error('Failed to load invoices:', error);
+        setInvoices(fallbackInvoices);
       }
     }
 
@@ -78,6 +85,42 @@ export default function Invoices() {
       mounted = false;
     };
   }, []);
+
+  // Filter calculations
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesStatus = statusFilter === 'All' || inv.status === statusFilter;
+    const cleanAmount = Number(inv.amount.replace(/[^0-9.-]+/g, ""));
+    const matchesAmount = amountFilter === 'All' ||
+      (amountFilter === 'Under $1,500' && cleanAmount < 1500) ||
+      (amountFilter === 'Over $1,500' && cleanAmount >= 1500);
+    return matchesStatus && matchesAmount;
+  });
+
+  // Reset page number on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, amountFilter]);
+
+  // Pagination
+  const totalEntries = filteredInvoices.length;
+  const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleExport = () => {
+    const headers = "Invoice ID,Related Supply,Issue Date,Amount,Status\n";
+    const rows = filteredInvoices.map(inv => 
+      `"${inv.id}","${inv.supply}","${inv.date}","${inv.amount}","${inv.status}"`
+    ).join("\n");
+    
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `invoices_export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -127,17 +170,92 @@ export default function Invoices() {
       </div>
 
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant custom-shadow overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 border-b border-outline-variant flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-surface-container-low">
+        <div className="px-4 sm:px-6 py-3 border-b border-outline-variant flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-surface-container-low relative">
           <h4 className="font-sans text-base font-bold text-primary">Recent Invoices</h4>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-surface-container-low transition-colors">
+            <button 
+              onClick={() => setShowFiltersMenu(!showFiltersMenu)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 border rounded-lg font-mono text-[10px] uppercase tracking-wider transition-all cursor-pointer",
+                showFiltersMenu ? "bg-primary border-primary text-white" : "bg-white border-outline-variant text-primary hover:bg-surface-container-low"
+              )}
+            >
               <Filter size={14} /> Filter
             </button>
-            <button className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 transition-opacity active:scale-95 shadow-md">
-              <Download size={14} /> Export All
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 transition-opacity active:scale-95 shadow-md cursor-pointer"
+            >
+              <Download size={14} /> Export Filtered
             </button>
           </div>
+
+          {/* Real working dropdown filters */}
+          {showFiltersMenu && (
+            <div className="absolute right-6 top-full mt-2 w-72 bg-white border border-outline-variant rounded-2xl shadow-xl z-30 p-4 space-y-4">
+              <div className="space-y-2">
+                <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Payment Status</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['All', 'PAID', 'PENDING'].map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setStatusFilter(status)}
+                      className={cn(
+                        "py-1.5 rounded-lg font-sans text-xs font-bold border transition-all cursor-pointer",
+                        statusFilter === status
+                          ? "bg-primary border-primary text-white"
+                          : "bg-white border-[#c1c9c0] text-[#414942]"
+                      )}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Invoice Amount</label>
+                <div className="flex flex-col gap-1.5">
+                  {['All', 'Under $1,500', 'Over $1,500'].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setAmountFilter(amt)}
+                      className={cn(
+                        "py-1.5 px-3 rounded-lg font-sans text-xs font-bold border text-left transition-all cursor-pointer",
+                        amountFilter === amt
+                          ? "bg-primary border-primary text-white"
+                          : "bg-white border-[#c1c9c0] text-[#414942]"
+                      )}
+                    >
+                      {amt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-outline-variant flex justify-between">
+                <button 
+                  onClick={() => {
+                    setStatusFilter('All');
+                    setAmountFilter('All');
+                  }}
+                  className="text-[10px] font-mono uppercase font-bold text-on-surface-variant hover:text-[#1c1c18]"
+                >
+                  Reset
+                </button>
+                <button 
+                  onClick={() => setShowFiltersMenu(false)}
+                  className="text-[10px] font-mono uppercase font-bold text-primary hover:underline"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+        
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[750px]">
             <thead>
@@ -151,16 +269,20 @@ export default function Invoices() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-surface-container-low transition-colors cursor-pointer group" onClick={() => setSelectedInvoice(invoice)}>
+              {paginatedInvoices.map((invoice) => (
+                <tr 
+                  key={invoice.id} 
+                  className="hover:bg-surface-container-low transition-colors cursor-pointer group" 
+                  onClick={() => setSelectedInvoice(invoice)}
+                >
                   <td className="px-6 py-4 font-mono text-xs text-primary font-bold">{invoice.id}</td>
                   <td className="px-6 py-4 font-sans text-sm text-on-surface">{invoice.supply}</td>
                   <td className="px-6 py-4 font-mono text-xs text-on-surface-variant">{invoice.date}</td>
                   <td className="px-6 py-4 font-mono text-sm font-bold text-on-surface">{invoice.amount}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
-                      "px-3 py-1 rounded-full font-mono text-[8px] uppercase font-extrabold tracking-widest",
-                      invoice.status === 'PAID' ? "bg-secondary-container text-on-secondary-container" : "bg-tertiary-fixed text-on-tertiary-fixed-variant"
+                      "px-3 py-1 rounded-full font-mono text-[8px] uppercase font-extrabold tracking-widest border",
+                      invoice.status === 'PAID' ? "bg-secondary-container text-on-secondary-container border-secondary" : "bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-container"
                     )}>
                       {invoice.status}
                     </span>
@@ -172,19 +294,51 @@ export default function Invoices() {
                   </td>
                 </tr>
               ))}
+              {paginatedInvoices.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-xs text-on-surface-variant font-medium">
+                    No invoice records match the selected filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Real working Pagination */}
         <div className="px-4 sm:px-6 py-4 border-t border-outline-variant flex flex-col sm:flex-row gap-3 justify-between items-center bg-surface-container-low">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant">Showing 4 of 24 invoices</p>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant">
+            Showing {totalEntries > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalEntries)} of {totalEntries} invoices
+          </p>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg border border-outline-variant opacity-30 cursor-not-allowed">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
               <ChevronLeft size={16} />
             </button>
-            <button className="w-8 h-8 rounded-lg font-mono text-xs bg-primary text-on-primary shadow-md">1</button>
-            <button className="w-8 h-8 rounded-lg font-mono text-xs border border-outline-variant hover:bg-surface-container-high">2</button>
-            <button className="w-8 h-8 rounded-lg font-mono text-xs border border-outline-variant hover:bg-surface-container-high">3</button>
-            <button className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high">
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={cn(
+                  "w-8 h-8 rounded-lg font-mono text-xs flex items-center justify-center transition-all cursor-pointer",
+                  currentPage === page 
+                    ? "bg-primary text-on-primary shadow-md font-bold" 
+                    : "border border-outline-variant bg-white hover:bg-surface-container-high text-on-surface-variant"
+                )}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
               <ChevronRight size={16} />
             </button>
           </div>
@@ -209,24 +363,24 @@ export default function Invoices() {
               className="fixed top-0 right-0 h-full w-full md:w-[640px] bg-white z-[70] shadow-2xl overflow-y-auto flex flex-col custom-scrollbar"
             >
               <div className="p-4 sm:p-6 border-b border-outline-variant flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between sticky top-0 bg-white z-10">
-                    <div className="flex items-center gap-4">
-                      <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-surface-container-low rounded-full">
-                        <X size={20} />
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-surface-container-low rounded-full cursor-pointer">
+                    <X size={20} />
                   </button>
                   <h5 className="font-sans text-lg sm:text-xl font-extrabold text-on-surface">Invoice Preview</h5>
                 </div>
                 <div className="flex gap-2">
-                  <button className="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-surface-container-low transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-surface-container-low transition-colors cursor-pointer">
                     <Printer size={14} /> Print
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 shadow-md">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 shadow-md cursor-pointer">
                     <Download size={14} /> Download
                   </button>
                 </div>
               </div>
 
               <div className="p-6 sm:p-8 md:p-12 min-h-full flex flex-col bg-white" style={{ backgroundImage: 'radial-gradient(#e5e0d5 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0 mb-10 sm:mb-16">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0 mb-10 sm:mb-16">
                   <div className="space-y-4">
                     <div className="flex items-center text-primary font-extrabold text-2xl sm:text-3xl gap-2">
                       <Sprout size={32} />
@@ -277,7 +431,7 @@ export default function Invoices() {
                     </thead>
                     <tbody className="divide-y divide-outline-variant">
                       {[
-                        { desc: selectedInvoice.supply, sub: 'Linked supply record', qty: 1, rate: Number(selectedInvoice.raw?.amount || 0) },
+                        { desc: selectedInvoice.supply, sub: 'Linked supply record', qty: 1, rate: Number(selectedInvoice.raw?.amount || 0) || Number((selectedInvoice.amount || "0").replace(/[^0-9.-]+/g, "")) },
                       ].map((item, i) => (
                         <tr key={i}>
                           <td className="py-6">
