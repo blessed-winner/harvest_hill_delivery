@@ -10,6 +10,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("farmer", "Farmer")
     ]
     email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_email_verified = models.BooleanField(default=False)

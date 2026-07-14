@@ -7,7 +7,7 @@ import { Sprout, Eye, EyeOff, Tractor } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -23,17 +23,17 @@ export default function LoginPage() {
       const response = await fetch('http://localhost:8000/api/accounts/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username_or_email: identifier, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         // Extract errors from our standardized response shape
-        const errorMsg = data.errors?.non_field_errors?.[0] || 
-                         data.errors?.email?.[0] || 
-                         data.errors?.password?.[0] || 
-                         'Invalid email or password.';
+        const errorMsg = data.errors?.non_field_errors?.[0] ||
+                         data.errors?.username_or_email?.[0] ||
+                         data.errors?.email?.[0] ||
+                         'Invalid credentials.';
         throw new Error(errorMsg);
       }
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
           {/* Separator */}
           <div className="relative flex py-2 items-center">
             <div className="flex-grow border-t border-[#e5e2db]"></div>
-            <span className="flex-shrink mx-4 text-[10px] text-[#717971] font-bold uppercase tracking-wider">or log in with email</span>
+            <span className="flex-shrink mx-4 text-[10px] text-[#717971] font-bold uppercase tracking-wider">or log in with email / username</span>
             <div className="flex-grow border-t border-[#e5e2db]"></div>
           </div>
 
@@ -122,13 +122,13 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-[#1c1c18]">Email Address</label>
+              <label className="block text-xs font-bold text-[#1c1c18]">Email or Username</label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="farmer@harvesthill.com"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="farmer@harvesthill.com or greenvalley"
                 className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-4 py-3 text-sm focus:outline-none transition-all placeholder-[#717971]"
               />
             </div>

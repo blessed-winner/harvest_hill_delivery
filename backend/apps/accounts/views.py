@@ -51,17 +51,21 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data['email']
+        identifier = serializer.validated_data['username_or_email']
         password = serializer.validated_data['password']
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            # Timing attack mitigation: do dummy hash check
+        # Try email first, then username
+        user = None
+        if '@' in identifier:
+            user = User.objects.filter(email=identifier).first()
+        if not user:
+            user = User.objects.filter(username__iexact=identifier).first()
+        if not user:
+            # Timing attack mitigation
             User().set_password(password)
             log_action(request, actor=None, action="failed_login_nonexistent_user")
             return Response(
-                {"errors": {"non_field_errors": ["Invalid credentials."]}},
+                {"errors": {"non_field_errors": ["No account found with that email or username."]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

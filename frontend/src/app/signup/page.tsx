@@ -8,13 +8,14 @@ import { Eye, EyeOff } from 'lucide-react';
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [role, setRole] = useState('client'); // Default to client registration
+  const [role, setRole] = useState('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -30,6 +31,16 @@ export default function SignupPage() {
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters.");
+      return;
+    }
+
+    if (!/^[\w.@+-]+$/.test(username)) {
+      setError("Username may only contain letters, numbers, and @/./+/-/_ characters.");
       return;
     }
 
@@ -49,6 +60,7 @@ export default function SignupPage() {
           password,
           role,
           full_name: fullName,
+          username: username.toLowerCase().trim(),
           phone: phone
         }),
       });
@@ -172,6 +184,26 @@ export default function SignupPage() {
                 placeholder="John Doe"
                 className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg px-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
               />
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="block text-[10px] font-bold text-[#1c1c18]">
+                Username
+                <span className="ml-1 text-[#717971] font-normal">(used to log in)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#717971] text-xs select-none">@</span>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                  placeholder="greenvalley"
+                  minLength={3}
+                  maxLength={30}
+                  className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg pl-7 pr-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">

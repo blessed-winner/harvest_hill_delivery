@@ -27,8 +27,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'role', 'is_email_verified', 'date_joined', 'profile']
-        read_only_fields = ['id', 'email', 'role', 'is_email_verified', 'date_joined']
+        fields = ['id', 'email', 'username', 'role', 'is_email_verified', 'date_joined', 'profile']
+        read_only_fields = ['id', 'email', 'username', 'role', 'is_email_verified', 'date_joined']
 
     def get_profile(self, obj):
         if obj.role == 'farmer' and hasattr(obj, 'farmer_profile'):
@@ -41,7 +41,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    # Accepts either email address or username
+    username_or_email = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
 
@@ -56,24 +57,37 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=10)
+    password = serializers.CharField(write_only=True, min_length=8)
     full_name = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
     phone = serializers.CharField(required=False, allow_blank=True, default='')
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'role', 'full_name', 'phone']
+        fields = ['email', 'password', 'role', 'full_name', 'username', 'phone']
+
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        # Only alphanumeric, underscores, dots, hyphens
+        import re
+        if not re.match(r'^[\w.@+-]+$', value):
+            raise serializers.ValidationError("Username may only contain letters, numbers, and @/./+/-/_ characters.")
+        return value.lower()
 
     def create(self, validated_data):
         full_name = validated_data.pop('full_name')
         phone = validated_data.pop('phone', '')
-        
+        username = validated_data.pop('username')
+
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
             role=validated_data['role']
         )
-        
+        user.username = username
+        user.save(update_fields=['username'])
+
         # Update profile properties based on role
         if user.role == 'farmer':
             profile = user.farmer_profile
@@ -84,5 +98,5 @@ class RegisterSerializer(serializers.ModelSerializer):
             profile.business_name = full_name
             profile.phone = phone
             profile.save()
-            
+
         return user

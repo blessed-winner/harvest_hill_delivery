@@ -23,6 +23,11 @@ if created:
     user.set_password("farmerpass123")
     user.save()
 
+# Ensure username is set for existing seed user too
+if not user.username:
+    user.username = "greenvalley"
+    user.save(update_fields=["username"])
+
 profile, _ = FarmerProfile.objects.get_or_create(
     user=user,
     defaults={
