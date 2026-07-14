@@ -17,14 +17,14 @@ type InvoiceRow = {
 };
 
 const fallbackInvoices: InvoiceRow[] = [
-  { id: '#HH-INV-2023-001', supply: 'Premium Organic Fertilizer (Batch A)', date: 'Oct 28, 2023', amount: '$2,450.00', status: 'PAID' },
-  { id: '#HH-INV-2023-002', supply: 'Seed Corn High-Yield 50kg Bags', date: 'Nov 02, 2023', amount: '$5,790.50', status: 'PENDING' },
-  { id: '#HH-INV-2023-003', supply: 'Irrigation System Spare Parts', date: 'Nov 05, 2023', amount: '$1,200.00', status: 'PAID' },
-  { id: '#HH-INV-2023-004', supply: 'Greenhouse Temperature Sensors', date: 'Nov 12, 2023', amount: '$850.00', status: 'PENDING' },
-  { id: '#HH-INV-2023-005', supply: 'Roma Tomatoes Bulk Sale', date: 'Oct 12, 2023', amount: '$1,250.00', status: 'PAID' },
-  { id: '#HH-INV-2023-006', supply: 'Curly Kale Batch OK-451', date: 'Oct 14, 2023', amount: '$320.00', status: 'PENDING' },
-  { id: '#HH-INV-2023-007', supply: 'Farm Fresh Eggs Delivery', date: 'Oct 15, 2023', amount: '$240.00', status: 'PAID' },
-  { id: '#HH-INV-2023-008', supply: 'Lettuce Direct Wholesale', date: 'Oct 18, 2023', amount: '$384.00', status: 'PAID' },
+  { id: '#HH-INV-000001', supply: 'Premium Organic Fertilizer (Batch A)', date: 'Oct 28, 2023', amount: '$2,450.00', status: 'PAID' },
+  { id: '#HH-INV-000002', supply: 'Seed Corn High-Yield 50kg Bags', date: 'Nov 02, 2023', amount: '$5,790.50', status: 'PENDING' },
+  { id: '#HH-INV-000003', supply: 'Irrigation System Spare Parts', date: 'Nov 05, 2023', amount: '$1,200.00', status: 'PAID' },
+  { id: '#HH-INV-000004', supply: 'Greenhouse Temperature Sensors', date: 'Nov 12, 2023', amount: '$850.00', status: 'PENDING' },
+  { id: '#HH-INV-000005', supply: 'Roma Tomatoes Bulk Sale', date: 'Oct 12, 2023', amount: '$1,250.00', status: 'PAID' },
+  { id: '#HH-INV-000006', supply: 'Curly Kale Batch OK-451', date: 'Oct 14, 2023', amount: '$320.00', status: 'PENDING' },
+  { id: '#HH-INV-000007', supply: 'Farm Fresh Eggs Delivery', date: 'Oct 15, 2023', amount: '$240.00', status: 'PAID' },
+  { id: '#HH-INV-000008', supply: 'Lettuce Direct Wholesale', date: 'Oct 18, 2023', amount: '$384.00', status: 'PAID' },
 ];
 
 export default function Invoices() {
@@ -42,6 +42,7 @@ export default function Invoices() {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [amountFilter, setAmountFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
 
@@ -55,7 +56,7 @@ export default function Invoices() {
         if (!mounted) return;
 
         const rows = (data || []).map((invoice: any) => ({
-          id: invoice.bikanawe_invoice_id || `#HH-INV-${String(invoice.id).padStart(4, '0')}`,
+          id: invoice.bikanawe_invoice_id || `#HH-INV-${String(invoice.id).padStart(6, '0')}`,
           supply: invoice.supply_detail?.product_detail?.name || invoice.supply_detail?.product?.name || `Supply #${invoice.supply}`,
           date: invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
           amount: formatCurrency(invoice.amount),
@@ -93,13 +94,26 @@ export default function Invoices() {
     const matchesAmount = amountFilter === 'All' ||
       (amountFilter === 'Under $1,500' && cleanAmount < 1500) ||
       (amountFilter === 'Over $1,500' && cleanAmount >= 1500);
-    return matchesStatus && matchesAmount;
+
+    // date filtering
+    const dateVal = new Date(inv.date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - dateVal.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const matchesDate = dateFilter === 'All' ||
+      (dateFilter === 'Last 7 Days' && diffDays <= 7) ||
+      (dateFilter === 'Last 30 Days' && diffDays <= 30) ||
+      (dateFilter === 'Last 6 Months' && diffDays <= 180) ||
+      (dateFilter === 'Last Year' && diffDays <= 365);
+
+    return matchesStatus && matchesAmount && matchesDate;
   });
 
   // Reset page number on filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, amountFilter]);
+  }, [statusFilter, amountFilter, dateFilter]);
 
   // Pagination
   const totalEntries = filteredInvoices.length;
@@ -235,11 +249,27 @@ export default function Invoices() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Issue Date Range</label>
+                <select 
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white border border-[#c1c9c0] text-[#414942] rounded-lg font-sans text-xs font-bold focus:ring-1 focus:ring-primary outline-none cursor-pointer"
+                >
+                  <option>All</option>
+                  <option>Last 7 Days</option>
+                  <option>Last 30 Days</option>
+                  <option>Last 6 Months</option>
+                  <option>Last Year</option>
+                </select>
+              </div>
+
               <div className="pt-2 border-t border-outline-variant flex justify-between">
                 <button 
                   onClick={() => {
                     setStatusFilter('All');
                     setAmountFilter('All');
+                    setDateFilter('All');
                   }}
                   className="text-[10px] font-mono uppercase font-bold text-on-surface-variant hover:text-[#1c1c18]"
                 >

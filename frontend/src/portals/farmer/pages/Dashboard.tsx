@@ -17,12 +17,12 @@ const iconMap: Record<string, any> = {
 const referenceProductImages: Record<string, string> = {
   'Roma Tomatoes':
     'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA',
-  Avocados:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCsfqJNDz80Xn2-KaRXRF31K6QO_pupkjC6UMWWowylvZaP3qkjI72tron27rcRdbKO_jjlbc6lKgXigL5eAONaza__KFiKV-Q0DK9dZlLBUZzm_gUWidtttVRcM6KWI6ZN6PRT7uuOi73MSJ3eMcA4C5_oQT3EYiFYDV0F9_1gPE-ry-nZknkpmGuAP95b0M1dSMOvNehWKcVMek3M4uNL97Dg-b8Tk1DtC7pMkhJPWiOk-8wCUYAAgQ',
+  'Durum Wheat':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w',
   'Iceberg Lettuce':
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg',
-  Kale:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuA8D_XWtM45-WArGJBOguIxVmsdiMsXgaW8zHcrJx283oUd-ahP56_lgK6umUM6vT1uSRmmV3rvogNb0XlL9Ywwe9IYp83uzwm8jlIViXp1P3KMNDEzmJFZFVssS7OBbsbnU-DeDPs_z_QrwPo7TaeVQv52ISiC69b-jeLPG7NhGOeAZZUGXQDxVaId-bOv9LU9u1PBTOFnIav6sruuIsKZTXapAmB0RQ8CFE2uYvBscfADb4xeGJftzA',
+  'Russet Potatoes':
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuB41-Vuzo9PoiMU_6JQZOXCKOLW-1IS1IInscIbXRMORY7tTrv44rIvtwhrnsLhdCuonKVd7FwSgRhoTZC4E-PnVFrYOHSFAPKKBNcd8APsOv64N3UUjF53XLXomgCACC8eAwykUHfBJfNjc8JnaM4CdDIUrDyDqE3Cu4KSlEs-hs6Wza1utfBiwoQRKnhnotV-b6enuBmfjpUJYSxR-5Bb5guV7pLUip6Uo16gWDhndBPdCrBjHVsYSw',
 };
 
 type KpiStyle = {
@@ -146,8 +146,10 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
           { name: 'Tubers', value: 15, color: '#563113' },
         ]);
         setDemands([
-          { id: 'd1', name: 'Roma Tomatoes', category: 'Vegetables', image: referenceProductImages['Roma Tomatoes'], price: '$3.45', status: 'HIGH', quantityNeeded: '2,500 kg' },
-          { id: 'd2', name: 'Iceberg Lettuce', category: 'Vegetables', image: referenceProductImages['Iceberg Lettuce'], price: '$1.20', status: 'STEADY', quantityNeeded: '1,200 kg' },
+          { id: '1', name: 'Roma Tomatoes', category: 'Vegetables', image: referenceProductImages['Roma Tomatoes'], price: '$3.45', urgency: 'high', quantity_needed: '2,500', unit: 'kg' },
+          { id: '2', name: 'Durum Wheat', category: 'Grains', image: referenceProductImages['Durum Wheat'], price: '$0.85', urgency: 'steady', quantity_needed: '15,000', unit: 'kg' },
+          { id: '3', name: 'Iceberg Lettuce', category: 'Vegetables', image: referenceProductImages['Iceberg Lettuce'], price: '$1.20', urgency: 'steady', quantity_needed: '1,200', unit: 'kg' },
+          { id: '4', name: 'Russet Potatoes', category: 'Vegetables', image: referenceProductImages['Russet Potatoes'], price: '$0.95', urgency: 'steady', quantity_needed: '4,800', unit: 'kg' },
         ]);
       }
     }

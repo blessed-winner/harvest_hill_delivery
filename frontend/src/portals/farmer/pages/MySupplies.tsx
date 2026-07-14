@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, ChevronDown, Calendar as CalendarIcon, Eye, EyeOff, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
+import { Search, ChevronDown, Calendar as CalendarIcon, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { apiRequest } from '../lib/api';
 
@@ -10,12 +10,12 @@ const romaTomatoesImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA';
 
 const fallbackSupplies = [
-  { id: '1', product_detail: { name: 'Roma Tomatoes', image: romaTomatoesImage }, batch: '#RT-992', quantity: '250', unit: 'kg', submitted_at: '2023-10-12T00:00:00Z', status: 'accepted', proposed_price: '5.00', is_hidden: false },
-  { id: '2', product_detail: { name: 'Organic Curly Kale', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0vrzC0e6TSgZ3qUfQGwi1SBbx1Azxcwej8lQIgygqNPfj4BvtV79fCCiz3w-x380yG1ib7N9s-Ya73fkUbfLZOE-zEgN_zcgc2pQSKpEXEXmR9V3T_7g-8xs_nJgaibWJZ4cEBuiVonvwwxjgYcVeWXp6ZtmLS_t4ddMpkRpSPU_c1xPYGQBucsGiGtfTrkDNum3MTJxPYkOOh3Lei-uvm3sYRIcI_-Lm6Mf44Bo_E_qUSWgE3JbZ4g' }, batch: '#OK-451', quantity: '80', unit: 'kg', submitted_at: '2023-10-14T00:00:00Z', status: 'pending', proposed_price: '4.00', is_hidden: false },
-  { id: '3', product_detail: { name: 'Farm Fresh Eggs', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxsEs4IhBMq2z7Dc30_bYvToFqv-NONJHBLanc_VQi_40AtymTuKos-Y78p_MkdZ33afM9Uye8vUSh4tvZzk1YdQmTcDeaU3iRByGcMMPLAazHOxd5checkr74FpOjjHQPktyrC_MOlMnmPi7I7ZgiBsDtE9iQC6elk8RdmZ9pQSXxXOpEhlhlgpA-LHzZyv9-8JBtTKm5Nwjqz0IS08MaA5Ef1QluLZ-_sT9llyt-ewd2Z1utcqB9pQ' }, batch: '#FE-122', quantity: '40', unit: 'doz', submitted_at: '2023-10-15T00:00:00Z', status: 'delivered', proposed_price: '6.00', is_hidden: false },
-  { id: '4', product_detail: { name: 'Iceberg Lettuce', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg' }, batch: '#IL-802', quantity: '320', unit: 'kg', submitted_at: '2023-10-18T00:00:00Z', status: 'accepted', proposed_price: '1.20', is_hidden: false },
-  { id: '5', product_detail: { name: 'Russet Potatoes', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB41-Vuzo9PoiMU_6JQZOXCKOLW-1IS1IInscIbXRMORY7tTrv44rIvtwhrnsLhdCuonKVd7FwSgRhoTZC4E-PnVFrYOHSFAPKKBNcd8APsOv64N3UUjF53XLXomgCACC8eAwykUHfBJfNjc8JnaM4CdDIUrDyDqE3Cu4KSlEs-hs6Wza1utfBiwoQRKnhnotV-b6enuBmfjpUJYSxR-5Bb5guV7pLUip6Uo16gWDhndBPdCrBjHVsYSw' }, batch: '#RP-402', quantity: '1200', unit: 'kg', submitted_at: '2023-10-20T00:00:00Z', status: 'negotiating', proposed_price: '0.95', is_hidden: false },
-  { id: '6', product_detail: { name: 'Durum Wheat', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w' }, batch: '#DW-102', quantity: '6000', unit: 'kg', submitted_at: '2023-10-22T00:00:00Z', status: 'delivered', proposed_price: '0.85', is_hidden: false },
+  { id: '1', product_detail: { name: 'Roma Tomatoes', image: romaTomatoesImage }, batch: '#RT-992', quantity: '250', unit: 'kg', submitted_at: '2023-10-12T00:00:00Z', status: 'accepted', proposed_price: '5.00' },
+  { id: '2', product_detail: { name: 'Organic Curly Kale', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0vrzC0e6TSgZ3qUfQGwi1SBbx1Azxcwej8lQIgygqNPfj4BvtV79fCCiz3w-x380yG1ib7N9s-Ya73fkUbfLZOE-zEgN_zcgc2pQSKpEXEXmR9V3T_7g-8xs_nJgaibWJZ4cEBuiVonvwwxjgYcVeWXp6ZtmLS_t4ddMpkRpSPU_c1xPYGQBucsGiGtfTrkDNum3MTJxPYkOOh3Lei-uvm3sYRIcI_-Lm6Mf44Bo_E_qUSWgE3JbZ4g' }, batch: '#OK-451', quantity: '80', unit: 'kg', submitted_at: '2023-10-14T00:00:00Z', status: 'pending', proposed_price: '4.00' },
+  { id: '3', product_detail: { name: 'Farm Fresh Eggs', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxsEs4IhBMq2z7Dc30_bYvToFqv-NONJHBLanc_VQi_40AtymTuKos-Y78p_MkdZ33afM9Uye8vUSh4tvZzk1YdQmTcDeaU3iRByGcMMPLAazHOxd5checkr74FpOjjHQPktyrC_MOlMnmPi7I7ZgiBsDtE9iQC6elk8RdmZ9pQSXxXOpEhlhlgpA-LHzZyv9-8JBtTKm5Nwjqz0IS08MaA5Ef1QluLZ-_sT9llyt-ewd2Z1utcqB9pQ' }, batch: '#FE-122', quantity: '40', unit: 'doz', submitted_at: '2023-10-15T00:00:00Z', status: 'delivered', proposed_price: '6.00' },
+  { id: '4', product_detail: { name: 'Iceberg Lettuce', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg' }, batch: '#IL-802', quantity: '320', unit: 'kg', submitted_at: '2023-10-18T00:00:00Z', status: 'accepted', proposed_price: '1.20' },
+  { id: '5', product_detail: { name: 'Russet Potatoes', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB41-Vuzo9PoiMU_6JQZOXCKOLW-1IS1IInscIbXRMORY7tTrv44rIvtwhrnsLhdCuonKVd7FwSgRhoTZC4E-PnVFrYOHSFAPKKBNcd8APsOv64N3UUjF53XLXomgCACC8eAwykUHfBJfNjc8JnaM4CdDIUrDyDqE3Cu4KSlEs-hs6Wza1utfBiwoQRKnhnotV-b6enuBmfjpUJYSxR-5Bb5guV7pLUip6Uo16gWDhndBPdCrBjHVsYSw' }, batch: '#RP-402', quantity: '1200', unit: 'kg', submitted_at: '2023-10-20T00:00:00Z', status: 'negotiating', proposed_price: '0.95' },
+  { id: '6', product_detail: { name: 'Durum Wheat', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w' }, batch: '#DW-102', quantity: '6000', unit: 'kg', submitted_at: '2023-10-22T00:00:00Z', status: 'delivered', proposed_price: '0.85' },
 ];
 
 export default function MySupplies() {
@@ -50,7 +50,6 @@ export default function MySupplies() {
             ...item.product_detail,
             image: getSupplyImage(item),
           },
-          is_hidden: false,
         })));
       } catch (err) {
         console.error("Error loading supplies:", err);
@@ -68,10 +67,6 @@ export default function MySupplies() {
     } catch {
       return dateStr;
     }
-  };
-
-  const toggleVisibility = (id: string) => {
-    setSupplies(supplies.map(s => s.id === id ? { ...s, is_hidden: !s.is_hidden } : s));
   };
 
   const confirmDelete = () => {
@@ -117,7 +112,9 @@ export default function MySupplies() {
     
     const matchesDate = dateFilter === 'All Dates' ||
       (dateFilter === 'Last 7 Days' && diffDays <= 7) ||
-      (dateFilter === 'Last 30 Days' && diffDays <= 30);
+      (dateFilter === 'Last 30 Days' && diffDays <= 30) ||
+      (dateFilter === 'Last 6 Months' && diffDays <= 180) ||
+      (dateFilter === 'Last Year' && diffDays <= 365);
 
     return matchesSearch && matchesStatus && matchesCategory && matchesDate;
   });
@@ -126,6 +123,8 @@ export default function MySupplies() {
   const totalEntries = filteredSupplies.length;
   const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
   const paginatedSupplies = filteredSupplies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const selectedDeleteSupply = supplies.find(s => s.id === deleteConfirmId);
 
   return (
     <motion.div 
@@ -185,6 +184,8 @@ export default function MySupplies() {
             <option>All Dates</option>
             <option>Last 7 Days</option>
             <option>Last 30 Days</option>
+            <option>Last 6 Months</option>
+            <option>Last Year</option>
           </select>
         </div>
       </div>
@@ -205,24 +206,18 @@ export default function MySupplies() {
             </thead>
             <tbody className="divide-y divide-outline-variant">
               {paginatedSupplies.map((supply) => (
-                <tr 
-                  key={supply.id} 
-                  className={cn(
-                    "hover:bg-surface-container-low transition-colors group",
-                    supply.is_hidden && "opacity-40 select-none bg-surface-container-low/30"
-                  )}
-                >
+                <tr key={supply.id} className="hover:bg-surface-container-low transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-outline-variant shrink-0">
                         <img src={getSupplyImage(supply)} alt={supply.product_detail?.name} className="w-full h-full object-cover" />
                       </div>
                       <div>
-                        <p className={cn("font-sans font-bold text-primary", supply.is_hidden && "line-through")}>
+                        <p className="font-sans font-bold text-primary">
                           {supply.product_detail?.name}
                         </p>
                         <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                          #{supply.id} {supply.is_hidden && "(Hidden)"}
+                          #{supply.id}
                         </p>
                       </div>
                     </div>
@@ -249,13 +244,6 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => toggleVisibility(supply.id)}
-                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                        title={supply.is_hidden ? "Show supply" : "Hide supply"}
-                      >
-                        {supply.is_hidden ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
                       <button 
                         onClick={() => setDeleteConfirmId(supply.id)}
                         className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
@@ -318,47 +306,58 @@ export default function MySupplies() {
         </div>
       </div>
 
-      {/* Delete confirmation dialog box */}
+      {/* Sleek and premium theme-blended delete confirmation dialog */}
       <AnimatePresence>
-        {deleteConfirmId && (
+        {deleteConfirmId && selectedDeleteSupply && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDeleteConfirmId(null)}
-              className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm"
+              className="fixed inset-0 bg-[#144227]/40 z-[60] backdrop-blur-md"
             />
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-0 m-auto w-[90vw] max-w-md h-fit bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl p-6 sm:p-8 space-y-6"
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="fixed inset-0 m-auto w-[90vw] max-w-md h-fit bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#ffdad6] text-[#93000a] flex items-center justify-center shrink-0 shadow-sm">
-                  <AlertTriangle size={24} />
+              {/* Forest Green Header Card */}
+              <div className="bg-[#144227] px-6 py-5 flex items-center gap-4 text-white">
+                <div className="p-2 bg-white/10 rounded-xl">
+                  <AlertTriangle size={22} className="text-[#b6edc2]" />
                 </div>
                 <div>
-                  <h3 className="font-sans text-lg font-extrabold text-[#1c1c18] tracking-tight">Delete Supply Record?</h3>
-                  <p className="text-xs text-[#717971] leading-relaxed mt-1">
-                    Are you sure you want to delete this supply record? This action is permanent and cannot be undone.
-                  </p>
+                  <h3 className="font-sans text-base font-extrabold tracking-tight">Confirm Deletion</h3>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record #{selectedDeleteSupply.id}</p>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              {/* Message Block */}
+              <div className="p-6 space-y-4">
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  You are about to permanently delete the supply record for <span className="font-sans font-bold text-[#1c1c18]">{selectedDeleteSupply.product_detail?.name}</span> ({selectedDeleteSupply.quantity} {selectedDeleteSupply.unit}).
+                </p>
+                <div className="bg-surface-container-low rounded-xl p-3 border border-outline-variant text-[10px] font-mono text-on-surface-variant uppercase tracking-wide leading-relaxed">
+                  Notice: Once deleted, this supply transaction history cannot be recovered.
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="px-6 pb-6 pt-2 flex gap-3 justify-end">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
-                  className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary font-bold font-sans text-xs hover:bg-surface-container-low transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-[#c1c9c0] text-[#414942] font-extrabold font-sans text-xs hover:bg-surface-container-low transition-colors cursor-pointer"
                 >
-                  Cancel
+                  Keep Record
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-5 py-2.5 rounded-xl bg-error text-white font-bold font-sans text-xs hover:bg-[#ba1a1a]/90 transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#8a3333] text-white font-extrabold font-sans text-xs hover:bg-[#732a2a] transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  Delete Record
+                  Delete Permanently
                 </button>
               </div>
             </motion.div>
