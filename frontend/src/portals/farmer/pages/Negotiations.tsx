@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Send, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Search, Send, CheckCircle2, TrendingUp, Handshake } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { apiRequest } from '../lib/api';
 
 export default function Negotiations() {
   const [threads, setThreads] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeNegId, setActiveNegId] = useState<string | null>(null);
   const [showListMobile, setShowListMobile] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -15,43 +16,17 @@ export default function Negotiations() {
   const [counterQty, setCounterQty] = useState("500");
 
   const loadNegotiations = async () => {
+    setIsLoading(true);
     try {
       const data = await apiRequest("/api/negotiations/threads/");
-      setThreads(data);
-      if (data.length > 0 && !activeNegId) {
+      setThreads(data || []);
+      if ((data || []).length > 0 && !activeNegId) {
         setActiveNegId(data[0].id.toString());
       }
     } catch (err) {
       console.error("Error loading negotiations:", err);
-      // Mock fallback
-      const fallbackThreads = [
-        {
-          id: 1,
-          status: "open",
-          price: "8.50",
-          supply_detail: {
-            id: 4,
-            quantity: 500,
-            unit: "kg",
-            proposed_price: 9.00,
-            status: "negotiating",
-            product_detail: {
-              name: "Organic Bing Cherries",
-              image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCDjW4LDDg9AP70u42NvTwegX0aSJNLRjt9qSwBllNwb_diw_nxtuUDtN-TcdUiA3ivCMjbYnGmgv5-wkvLzRGpmqY8xMZu-ylv5QfnxZlHwCRKBpiG5A8G9Ta0OiugntBsGuXZSmsbtb8KEUNEHV73RMwY1zZYbedheJuxMoFEmJpM5ARItKv04bj7gtmOHuBXHviExa4vDOX-yw21yRwq616WxnlapT2173nuHbJEKQ9VghPugmqtBg",
-              category: "Fruits",
-              unit: "kg"
-            }
-          },
-          offers: [
-            { id: 1, sender: "farmer", price: 9.00, quantity: 500, created_at: "2023-10-24T10:00:00Z" },
-            { id: 2, sender: "admin", price: 8.20, quantity: 500, created_at: "2023-10-24T10:05:00Z" },
-            { id: 3, sender: "farmer", price: 8.50, quantity: 500, created_at: "2023-10-24T10:10:00Z" },
-            { id: 4, sender: "admin", price: 8.35, quantity: 500, created_at: "2023-10-24T10:15:00Z" }
-          ]
-        }
-      ];
-      setThreads(fallbackThreads);
-      setActiveNegId("1");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -143,7 +118,27 @@ export default function Negotiations() {
           </div>
 
           <div className="space-y-2">
-            {threads.map((neg) => (
+            {isLoading ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-xl border border-outline-variant animate-pulse">
+                  <div className="flex gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-surface-container-high shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 bg-surface-container-high rounded w-3/4" />
+                      <div className="h-2 bg-surface-container-high rounded w-1/2" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : threads.length === 0 ? (
+              <div className="py-8 text-center">
+                <div className="w-10 h-10 rounded-full bg-surface-container mx-auto flex items-center justify-center mb-3">
+                  <Handshake size={18} className="text-outline" />
+                </div>
+                <p className="font-sans text-xs font-bold text-on-surface-variant">No negotiations yet</p>
+                <p className="font-mono text-[9px] text-on-surface-variant/70 mt-1">Submit a harvest to start one</p>
+              </div>
+            ) : threads.map((neg) => (
               <div 
                 key={neg.id}
                 onClick={() => {
@@ -211,6 +206,21 @@ export default function Negotiations() {
         </div>
 
         {/* Messages */}
+        {!activeThread ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+            <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center">
+              <Handshake size={28} className="text-outline" />
+            </div>
+            <p className="font-sans text-sm font-bold text-on-surface">
+              {isLoading ? 'Loading negotiations...' : 'No active negotiations'}
+            </p>
+            <p className="font-sans text-xs text-on-surface-variant max-w-xs">
+              {isLoading
+                ? 'Fetching your negotiation threads from the server.'
+                : 'When you submit a harvest and Harvest Hill opens a negotiation, it will appear here.'}
+            </p>
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-background custom-scrollbar">
           <div className="flex justify-center">
             <span className="px-4 py-1 bg-surface-container-high rounded-full font-mono text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Offer Timeline</span>
@@ -251,6 +261,7 @@ export default function Negotiations() {
             </motion.div>
           ))}
         </div>
+        )}
 
         {/* Controls */}
         {activeThread?.status === 'open' && (

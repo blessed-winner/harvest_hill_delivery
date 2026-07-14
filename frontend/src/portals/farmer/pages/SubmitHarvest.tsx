@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send } from 'lucide-react';
+import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, formatCurrency } from '../lib/api';
 
@@ -76,12 +76,7 @@ const getBadgeMeta = (name: string, urgency?: string) => {
   return null;
 };
 
-const fallbackDemands: DemandProduct[] = [
-  { id: 1, name: 'Roma Tomatoes', category: 'Vegetables', unit: 'kg', base_price: '3.45', quantity_needed: 2500, urgency: 'high', image: getReferenceImage('Roma Tomatoes') },
-  { id: 2, name: 'Durum Wheat', category: 'Grains', unit: 'kg', base_price: '0.85', quantity_needed: 15000, urgency: 'steady', image: getReferenceImage('Durum Wheat') },
-  { id: 3, name: 'Iceberg Lettuce', category: 'Vegetables', unit: 'kg', base_price: '1.20', quantity_needed: 1200, urgency: 'steady', image: getReferenceImage('Iceberg Lettuce') },
-  { id: 4, name: 'Russet Potatoes', category: 'Vegetables', unit: 'kg', base_price: '0.95', quantity_needed: 4800, urgency: 'steady', image: getReferenceImage('Russet Potatoes') },
-];
+// Removed fallbackDemands mock data
 
 const initialFormState: HarvestFormState = {
   quantity: '',
@@ -94,7 +89,8 @@ const initialFormState: HarvestFormState = {
 
 export default function SubmitHarvest() {
   const [selectedProduct, setSelectedProduct] = useState<DemandProduct | null>(null);
-  const [demands, setDemands] = useState<DemandProduct[]>(fallbackDemands);
+  const [demands, setDemands] = useState<DemandProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<HarvestFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -110,18 +106,20 @@ export default function SubmitHarvest() {
     let mounted = true;
 
     async function loadDemands() {
+      setIsLoading(true);
       try {
         const data = await api.currentDemands();
         if (!mounted) return;
-        setDemands((data || []).length > 0
-          ? (data || [])
-              .map((item: DemandProduct) => ({
-                ...item,
-                image: getReferenceImage(item.name) || item.image || '',
-              }))
-          : fallbackDemands);
+        setDemands(
+          (data || []).map((item: DemandProduct) => ({
+            ...item,
+            image: getReferenceImage(item.name) || item.image || '',
+          }))
+        );
       } catch (error) {
         console.error('Failed to load current demands:', error);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
 
@@ -300,8 +298,35 @@ export default function SubmitHarvest() {
         )}
       </div>
 
+      {/* Product grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {filteredDemands.map((product) => (
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-2 animate-pulse">
+              <div className="h-40 bg-surface-container-high rounded-lg mb-3" />
+              <div className="px-2 pb-2 space-y-2">
+                <div className="h-4 bg-surface-container-high rounded w-3/4" />
+                <div className="h-3 bg-surface-container-high rounded w-1/2" />
+              </div>
+            </div>
+          ))
+        ) : filteredDemands.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-16 gap-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center">
+              <Leaf size={28} className="text-outline" />
+            </div>
+            <p className="font-sans text-sm font-bold text-on-surface">
+              {searchQuery || selectedCategory !== 'All Categories' || urgencyFilter !== 'All' || priceFilter !== 'All'
+                ? 'No products match your filters.'
+                : 'No products are currently needed.'}
+            </p>
+            <p className="font-sans text-xs text-on-surface-variant max-w-xs">
+              {searchQuery || selectedCategory !== 'All Categories' || urgencyFilter !== 'All' || priceFilter !== 'All'
+                ? 'Try adjusting or clearing your filters.'
+                : 'Harvest Hill will post new demands soon. Check back later.'}
+            </p>
+          </div>
+        ) : filteredDemands.map((product) => (
           <motion.div
             key={product.id}
             whileHover={{ scale: 1.02 }}

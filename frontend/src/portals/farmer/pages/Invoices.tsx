@@ -16,26 +16,18 @@ type InvoiceRow = {
   raw?: any;
 };
 
-const fallbackInvoices: InvoiceRow[] = [
-  { id: '#HH-INV-000001', supply: 'Premium Organic Fertilizer (Batch A)', date: 'Oct 28, 2023', amount: '$2,450.00', status: 'PAID' },
-  { id: '#HH-INV-000002', supply: 'Seed Corn High-Yield 50kg Bags', date: 'Nov 02, 2023', amount: '$5,790.50', status: 'PENDING' },
-  { id: '#HH-INV-000003', supply: 'Irrigation System Spare Parts', date: 'Nov 05, 2023', amount: '$1,200.00', status: 'PAID' },
-  { id: '#HH-INV-000004', supply: 'Greenhouse Temperature Sensors', date: 'Nov 12, 2023', amount: '$850.00', status: 'PENDING' },
-  { id: '#HH-INV-000005', supply: 'Roma Tomatoes Bulk Sale', date: 'Oct 12, 2023', amount: '$1,250.00', status: 'PAID' },
-  { id: '#HH-INV-000006', supply: 'Curly Kale Batch OK-451', date: 'Oct 14, 2023', amount: '$320.00', status: 'PENDING' },
-  { id: '#HH-INV-000007', supply: 'Farm Fresh Eggs Delivery', date: 'Oct 15, 2023', amount: '$240.00', status: 'PAID' },
-  { id: '#HH-INV-000008', supply: 'Lettuce Direct Wholesale', date: 'Oct 18, 2023', amount: '$384.00', status: 'PAID' },
-];
+// Removed fallbackInvoices mock data
 
 export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [summary, setSummary] = useState({
-    totalEarned: '$42,850.00',
-    pendingPayments: '$8,240.50',
-    outstandingCount: 3,
-    lastPayment: '$3,150.00',
-    lastPaymentDate: 'Oct 24, 2023',
+    totalEarned: '$0.00',
+    pendingPayments: '$0.00',
+    outstandingCount: 0,
+    lastPayment: '$0.00',
+    lastPaymentDate: '—',
   });
 
   // Interactive filters
@@ -50,6 +42,7 @@ export default function Invoices() {
     let mounted = true;
 
     async function loadInvoices() {
+      setIsLoading(true);
       try {
         const [data, totals] = await Promise.all([api.invoices(), api.invoiceSummary()]);
 
@@ -65,18 +58,19 @@ export default function Invoices() {
           raw: invoice,
         }));
 
-        setInvoices(rows.length > 0 ? rows : fallbackInvoices);
+        setInvoices(rows);
 
         setSummary({
           totalEarned: formatCurrency(totals?.total_earned ?? 0),
           pendingPayments: formatCurrency(totals?.pending ?? 0),
           outstandingCount: rows.filter((invoice: any) => invoice.status === 'PENDING').length,
           lastPayment: formatCurrency(totals?.last_payment ?? 0),
-          lastPaymentDate: rows.find((invoice: any) => invoice.status === 'PAID')?.date || 'N/A',
+          lastPaymentDate: rows.find((invoice: any) => invoice.status === 'PAID')?.date || '—',
         });
       } catch (error) {
         console.error('Failed to load invoices:', error);
-        setInvoices(fallbackInvoices);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
 
@@ -299,7 +293,30 @@ export default function Invoices() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {paginatedInvoices.map((invoice) => (
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <td key={j} className="px-6 py-4">
+                        <div className="h-3 bg-surface-container-high rounded w-3/4" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : paginatedInvoices.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center">
+                        <Sprout size={22} className="text-outline" />
+                      </div>
+                      <p className="font-sans text-sm font-bold text-on-surface-variant">
+                        {statusFilter !== 'All' || amountFilter !== 'All' || dateFilter !== 'All' ? 'No invoices match the selected filters.' : 'No invoices yet — accepted supplies will generate invoices here.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedInvoices.map((invoice) => (
                 <tr 
                   key={invoice.id} 
                   className="hover:bg-surface-container-low transition-colors cursor-pointer group" 
@@ -324,13 +341,6 @@ export default function Invoices() {
                   </td>
                 </tr>
               ))}
-              {paginatedInvoices.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-xs text-on-surface-variant font-medium">
-                    No invoice records match the selected filters.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

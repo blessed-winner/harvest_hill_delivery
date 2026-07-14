@@ -49,7 +49,7 @@ class AuthenticationTestCase(APITestCase):
 
     def test_login_success(self):
         url = reverse('login')
-        data = {'email': 'farmer1@test.com', 'password': 'Password123!'}
+        data = {'username_or_email': 'farmer1@test.com', 'password': 'Password123!'}
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -59,7 +59,7 @@ class AuthenticationTestCase(APITestCase):
 
     def test_login_failed(self):
         url = reverse('login')
-        data = {'email': 'farmer1@test.com', 'password': 'WrongPassword!'}
+        data = {'username_or_email': 'farmer1@test.com', 'password': 'WrongPassword!'}
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -67,7 +67,7 @@ class AuthenticationTestCase(APITestCase):
 
     def test_account_lockout_after_5_attempts(self):
         url = reverse('login')
-        data = {'email': 'farmer1@test.com', 'password': 'WrongPassword!'}
+        data = {'username_or_email': 'farmer1@test.com', 'password': 'WrongPassword!'}
         
         # 5 failed attempts
         for _ in range(5):
@@ -83,7 +83,7 @@ class AuthenticationTestCase(APITestCase):
     def test_token_refresh(self):
         # First log in to get a refresh token
         url_login = reverse('login')
-        data_login = {'email': 'farmer1@test.com', 'password': 'Password123!'}
+        data_login = {'username_or_email': 'farmer1@test.com', 'password': 'Password123!'}
         response_login = self.client.post(url_login, data_login, format='json')
         refresh_token = response_login.data['refresh']
         
@@ -98,7 +98,7 @@ class AuthenticationTestCase(APITestCase):
     def test_token_blacklist_on_logout(self):
         # Log in
         url_login = reverse('login')
-        data_login = {'email': 'farmer1@test.com', 'password': 'Password123!'}
+        data_login = {'username_or_email': 'farmer1@test.com', 'password': 'Password123!'}
         response_login = self.client.post(url_login, data_login, format='json')
         access_token = response_login.data['access']
         refresh_token = response_login.data['refresh']
@@ -117,7 +117,7 @@ class AuthenticationTestCase(APITestCase):
     def test_queryset_scoping_prevent_leakage(self):
         # Log in as farmer1
         url_login = reverse('login')
-        data_login = {'email': 'farmer1@test.com', 'password': 'Password123!'}
+        data_login = {'username_or_email': 'farmer1@test.com', 'password': 'Password123!'}
         response_login = self.client.post(url_login, data_login, format='json')
         access_token = response_login.data['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')

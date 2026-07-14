@@ -34,7 +34,7 @@ export default function HomePage() {
           </Link>
 
           <Link
-            href="/"
+            href="/farmer"
             className="group bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1"
           >
             <div className="w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary group-hover:scale-110 transition-all">
