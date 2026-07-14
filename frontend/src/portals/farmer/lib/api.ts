@@ -282,108 +282,96 @@ export function formatCurrency(value: unknown, fallback = '$0.00') {
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
   const method = (options.method ?? 'GET').toUpperCase();
+  const token = typeof window !== 'undefined' ? (window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken')) : null;
 
-  switch (true) {
-    case endpoint === '/api/farmer/dashboard/summary/' && method === 'GET':
-      return clone(dashboardSummary);
-    case endpoint === '/api/farmer/dashboard/supply-volume/' && method === 'GET':
-      return clone(dashboardVolume);
-    case endpoint === '/api/farmer/dashboard/earnings-by-category/' && method === 'GET':
-      return clone(earningsByCategory);
-    case endpoint === '/api/products/?is_currently_needed=true' && method === 'GET':
-      return clone(demandProducts);
-    case endpoint === '/api/supplies/' && method === 'GET':
-      return clone(supplies);
-    case endpoint === '/api/negotiations/threads/' && method === 'GET':
-      return clone(negotiationThreads);
-    case endpoint.startsWith('/api/negotiations/threads/') && endpoint.endsWith('/offer/') && method === 'POST': {
-      const threadId = Number(endpoint.split('/')[4]);
-      const body = JSON.parse((options.body as string) || '{}');
-      negotiationThreads = negotiationThreads.map((thread) =>
-        thread.id === threadId
-          ? {
-              ...thread,
-              offers: [
-                ...thread.offers,
-                {
-                  id: thread.offers.length + 1,
-                  sender: 'farmer',
-                  price: Number(body.price ?? 0),
-                  quantity: Number(body.quantity ?? 0),
-                  created_at: new Date().toISOString(),
-                },
-              ],
-            }
-          : thread
-      );
-      return { ok: true };
-    }
-    case endpoint.startsWith('/api/negotiations/threads/') && endpoint.endsWith('/accept/') && method === 'POST': {
-      const threadId = Number(endpoint.split('/')[4]);
-      negotiationThreads = negotiationThreads.map((thread) =>
-        thread.id === threadId ? { ...thread, status: 'closed' } : thread
-      );
-      return { ok: true };
-    }
-    case endpoint === '/api/invoices/' && method === 'GET':
-      return clone(invoices);
-    case endpoint === '/api/invoices/summary/' && method === 'GET':
-      return {
-        total_earned: invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + invoice.amount, 0),
-        pending: invoices.filter((invoice) => invoice.status === 'PENDING').reduce((sum, invoice) => sum + invoice.amount, 0),
-        last_payment: invoices.find((invoice) => invoice.status === 'PAID')?.amount ?? 0,
-      };
-    case endpoint === '/api/notifications/' && method === 'GET':
-      return [
-        { id: 1, title: 'Demo data loaded', message: 'No live data source is connected yet.' },
-        { id: 2, title: 'Mock store active', message: 'All actions stay local in this frontend.' },
-      ];
-    case endpoint === '/api/farmer/profile/' && method === 'GET':
-      return clone(farmerProfile);
-    case endpoint === '/api/farmer/profile/' && method === 'PUT': {
-      const body = JSON.parse((options.body as string) || '{}');
-      farmerProfile = {
-        ...farmerProfile,
-        ...body,
-        certifications: Array.isArray(body.certifications) ? body.certifications : farmerProfile.certifications,
-      };
-      return clone(farmerProfile);
-    }
-    case endpoint === '/api/supplies/' && method === 'POST': {
-      const body = JSON.parse((options.body as string) || '{}');
-      const productId = Number(body.product ?? 0);
-      const matchedProduct = demandProducts.find((product) => product.id === productId);
-      const nextSupply: SupplyRecord = {
-        id: String(supplies.length + 1),
-        product_detail: {
-          name: String(body.product_name ?? matchedProduct?.name ?? 'New Harvest'),
-          image: String(body.photo ?? matchedProduct?.image ?? demandProducts[0].image),
-        },
-        batch: `#HH-${String(supplies.length + 1).padStart(3, '0')}`,
-        quantity: String(body.quantity ?? ''),
-        unit: String(body.unit ?? 'kg'),
-        submitted_at: new Date().toISOString(),
-        status: 'pending',
-        proposed_price: String(body.proposed_price ?? '0.00'),
-      };
-      supplies = [nextSupply, ...supplies];
-      return clone(nextSupply);
-    }
-    default:
-      throw new Error(`Mock API does not handle ${method} ${endpoint}`);
+  const headers: HeadersInit = {
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
+
+  if (options.body && !(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`http://localhost:8000${endpoint}`, {
+    ...options,
+    method,
+    headers,
+  });
+
+  if (!response.ok) {
+    let errMsg = `Request failed: ${response.status} ${response.statusText}`;
+    try {
+      const errData = await response.json();
+      errMsg = errData.error || errData.detail || JSON.stringify(errData);
+    } catch {}
+    throw new Error(errMsg);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
 }
 
 export const api = {
   dashboardSummary: () => apiRequest('/api/farmer/dashboard/summary/'),
-  dashboardSupplyVolume: () => apiRequest('/api/farmer/dashboard/supply-volume/'),
+  dashboardSupplyVolume: (range?: string) => apiRequest(`/api/farmer/dashboard/supply-volume/?range=${range === 'Last year' ? 'year' : '6months'}`),
   dashboardEarningsByCategory: () => apiRequest('/api/farmer/dashboard/earnings-by-category/'),
   currentDemands: () => apiRequest('/api/products/?is_currently_needed=true'),
   supplies: () => apiRequest('/api/supplies/'),
-  submitSupply: (payload: Record<string, unknown>) =>
-    apiRequest('/api/supplies/', {
+  submitSupply: (payload: Record<string, any>) => {
+    // If photo is a File, use FormData to upload via Cloudinary
+    if (payload.photo && typeof payload.photo !== 'string') {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) {
+          if (key === 'photo') {
+            formData.append('photo', val as File);
+          } else {
+            formData.append(key, String(val));
+          }
+        }
+      });
+      return apiRequest('/api/supplies/', {
+        method: 'POST',
+        body: formData,
+      });
+    }
+    return apiRequest('/api/supplies/', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+  updateSupply: (supplyId: string | number, payload: Record<string, any>) => {
+    if (payload.photo && typeof payload.photo !== 'string') {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) {
+          if (key === 'photo') {
+            formData.append('photo', val as File);
+          } else {
+            formData.append(key, String(val));
+          }
+        }
+      });
+      return apiRequest(`/api/supplies/${supplyId}/`, {
+        method: 'PATCH',
+        body: formData,
+      });
+    }
+    return apiRequest(`/api/supplies/${supplyId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  deleteSupply: (supplyId: string | number) =>
+    apiRequest(`/api/supplies/${supplyId}/`, {
+      method: 'DELETE',
     }),
   negotiationThreads: () => apiRequest('/api/negotiations/threads/'),
   sendNegotiationOffer: (threadId: number | string, payload: Record<string, unknown>) =>
@@ -396,12 +384,74 @@ export const api = {
       method: 'POST',
     }),
   invoices: () => apiRequest('/api/invoices/'),
-  invoiceSummary: () => apiRequest('/api/invoices/summary/'),
-  notifications: () => apiRequest('/api/notifications/'),
-  farmerProfile: () => apiRequest('/api/farmer/profile/'),
-  updateFarmerProfile: (payload: Record<string, unknown>) =>
-    apiRequest('/api/farmer/profile/', {
+  invoiceSummary: () => apiRequest('/api/invoiceSummary/'),
+  notifications: () => Promise.resolve([
+    { id: 1, title: 'Live connection established', message: 'You are now connected to the Django backend!' },
+    { id: 2, title: 'Database syncing', message: 'All actions are stored persistently.' },
+  ]),
+  farmerProfile: async () => {
+    const data = await apiRequest('/api/accounts/me/');
+    const p = data.profile || {};
+    const certArray = p.certifications 
+      ? p.certifications.split(',').map((c: string) => c.trim()) 
+      : [];
+    return {
+      farm_name: p.farm_name || '',
+      location: p.location || '',
+      phone: p.phone || '',
+      certifications: certArray,
+      latitude: p.latitude !== null ? Number(p.latitude) : null,
+      longitude: p.longitude !== null ? Number(p.longitude) : null,
+      payment_method: 'AgriBank Savings',
+      payment_account_number: '**** **** 8829',
+      notify_new_demand: true,
+      notify_negotiation_update: false,
+      notify_payment_received: false,
+      user: {
+        username: data.email.split('@')[0],
+        role: data.role,
+      }
+    };
+  },
+  updateFarmerProfile: async (payload: any) => {
+    const certificationsStr = Array.isArray(payload.certifications)
+      ? payload.certifications.join(', ')
+      : payload.certifications || '';
+
+    const backendPayload = {
+      farm_name: payload.farm_name,
+      location: payload.location,
+      phone: payload.phone,
+      certifications: certificationsStr,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+    };
+
+    const data = await apiRequest('/api/accounts/me/', {
       method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
+      body: JSON.stringify(backendPayload),
+    });
+
+    const p = data.profile || {};
+    const certArray = p.certifications 
+      ? p.certifications.split(',').map((c: string) => c.trim()) 
+      : [];
+    return {
+      farm_name: p.farm_name || '',
+      location: p.location || '',
+      phone: p.phone || '',
+      certifications: certArray,
+      latitude: p.latitude !== null ? Number(p.latitude) : null,
+      longitude: p.longitude !== null ? Number(p.longitude) : null,
+      payment_method: 'AgriBank Savings',
+      payment_account_number: '**** **** 8829',
+      notify_new_demand: true,
+      notify_negotiation_update: false,
+      notify_payment_received: false,
+      user: {
+        username: data.email.split('@')[0],
+        role: data.role,
+      }
+    };
+  }
 };

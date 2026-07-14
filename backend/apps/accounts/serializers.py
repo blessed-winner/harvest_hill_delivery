@@ -7,7 +7,7 @@ User = get_user_model()
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProfile
-        fields = ['farm_name', 'location', 'organic_certified', 'certification_number']
+        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'latitude', 'longitude']
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):

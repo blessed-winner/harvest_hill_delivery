@@ -209,3 +209,31 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        user = request.user
+        if user.role == 'farmer':
+            try:
+                profile = user.farmer_profile
+            except AttributeError:
+                return Response({"detail": "Farmer profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = FarmerProfileSerializer(profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif user.role == 'client':
+            try:
+                profile = user.client_profile
+            except AttributeError:
+                return Response({"detail": "Client profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            serializer = ClientProfileSerializer(profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({"detail": "Role update not supported"}, status=status.HTTP_400_BAD_REQUEST)

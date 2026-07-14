@@ -29,7 +29,11 @@ profile, _ = FarmerProfile.objects.get_or_create(
         "farm_name": "Green Valley Farm",
         "location": "Green Valley",
         "organic_certified": True,
-        "certification_number": "GV-ORG-992"
+        "certification_number": "GV-ORG-992",
+        "phone": "+250 781 234 567",
+        "certifications": "USDA Organic, Fair Trade",
+        "latitude": -1.944100,
+        "longitude": 30.061900
     }
 )
 

@@ -1,19 +1,17 @@
 "use client";
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Sprout, CreditCard, BellRing, Info, Save, Banknote, CheckCircle2, PlusCircle } from 'lucide-react';
+import { Sprout, CreditCard, BellRing, Info, Save, Banknote, CheckCircle2, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
 
 type ProfileForm = {
   farm_name: string;
   location: string;
+  phone: string;
   certificationsText: string;
+  latitude: number | null;
+  longitude: number | null;
   payment_method: string;
   payment_account_number: string;
   notify_new_demand: boolean;
@@ -23,8 +21,11 @@ type ProfileForm = {
 
 const initialProfile: ProfileForm = {
   farm_name: 'Green Valley Organic Farms Ltd.',
-  location: '1248 Vineyard Lane, St. Helena, CA',
+  location: 'Kigali, Rwanda',
+  phone: '+250 781 234 567',
   certificationsText: 'USDA Organic, Fair Trade',
+  latitude: -1.9441,
+  longitude: 30.0619,
   payment_method: 'AgriBank Savings',
   payment_account_number: '**** **** 8829',
   notify_new_demand: true,
@@ -32,13 +33,12 @@ const initialProfile: ProfileForm = {
   notify_payment_received: false,
 };
 
-const mapImage =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAQr25ys2wkXGrQ7titI1OSd9Zv4X7bXsT3mBQKc1VxEScgvgwVtMp7lrofnmtpo_IRANeAEDXZJ2nZcsUNO1Q-nME_5g12eruSLVu4rUDUI_WPm1v2XEsc-2Z5z7otIi55Zry1WJnn9_sR_wlS8KxKxuidw2PZGlgauoAzLfrVkIVGGKTo4zy95YUvI7Lq-4xX6W2biSnwumGFlM0p8TyaoDSi2e7Vrwt0gALG6EThu4T6gM5YEZXQtg';
-
 export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -51,7 +51,12 @@ export default function Settings() {
         setProfile({
           farm_name: data.farm_name || initialProfile.farm_name,
           location: data.location || initialProfile.location,
-          certificationsText: Array.isArray(data.certifications) ? data.certifications.join(', ') : initialProfile.certificationsText,
+          phone: data.phone || initialProfile.phone,
+          certificationsText: Array.isArray(data.certifications) 
+            ? data.certifications.join(', ') 
+            : data.certificationsText || initialProfile.certificationsText,
+          latitude: data.latitude !== null ? Number(data.latitude) : initialProfile.latitude,
+          longitude: data.longitude !== null ? Number(data.longitude) : initialProfile.longitude,
           payment_method: data.payment_method || initialProfile.payment_method,
           payment_account_number: data.payment_account_number || initialProfile.payment_account_number,
           notify_new_demand: Boolean(data.notify_new_demand),
@@ -70,18 +75,93 @@ export default function Settings() {
     };
   }, []);
 
+  // Initialize Leaflet Map
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Load Leaflet assets dynamically from CDN
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      const L = (window as any).L;
+      if (!L || !document.getElementById('farm-map')) return;
+
+      const currentLat = profile.latitude || -1.9441;
+      const currentLng = profile.longitude || 30.0619;
+
+      // Avoid double initialization
+      if (mapRef.current) {
+        mapRef.current.setView([currentLat, currentLng], 13);
+        if (markerRef.current) {
+          markerRef.current.setLatLng([currentLat, currentLng]);
+        }
+        return;
+      }
+
+      const map = L.map('farm-map').setView([currentLat, currentLng], 13);
+      mapRef.current = map;
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      const marker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
+      markerRef.current = marker;
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setProfile(current => ({
+          ...current,
+          latitude: Number(pos.lat.toFixed(6)),
+          longitude: Number(pos.lng.toFixed(6))
+        }));
+      });
+
+      map.on('click', (e: any) => {
+        marker.setLatLng(e.latlng);
+        setProfile(current => ({
+          ...current,
+          latitude: Number(e.latlng.lat.toFixed(6)),
+          longitude: Number(e.latlng.lng.toFixed(6))
+        }));
+      });
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      link.remove();
+      script.remove();
+    };
+  }, [profile.latitude, profile.longitude]);
+
   const handleSave = async () => {
     setIsSaving(true);
     setStatusMessage(null);
+
+    // Validate Rwandan Phone Number
+    // Accepts format: +250 788 000 000 or +250788000000 (starts with +250 followed by 7 and 8 digits)
+    const phoneClean = profile.phone.replace(/\s+/g, '');
+    const phoneRegex = /^\+2507[2389]\d{7}$/;
+    if (!phoneRegex.test(phoneClean)) {
+      setStatusMessage('Invalid Phone Number. Please use Rwandan format: +250 7XX XXX XXX');
+      setIsSaving(false);
+      return;
+    }
 
     try {
       await api.updateFarmerProfile({
         farm_name: profile.farm_name,
         location: profile.location,
-        certifications: profile.certificationsText
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean),
+        phone: profile.phone,
+        certifications: profile.certificationsText,
+        latitude: profile.latitude,
+        longitude: profile.longitude,
         payment_method: profile.payment_method,
         payment_account_number: profile.payment_account_number,
         notify_new_demand: profile.notify_new_demand,
@@ -89,10 +169,10 @@ export default function Settings() {
         notify_payment_received: profile.notify_payment_received,
       });
 
-      setStatusMessage('Profile saved in local mock data.');
+      setStatusMessage('Profile successfully saved.');
     } catch (error) {
       console.error('Failed to save farm profile:', error);
-      setStatusMessage('Could not save settings right now.');
+      setStatusMessage('Could not save profile changes.');
     } finally {
       setIsSaving(false);
     }
@@ -106,9 +186,9 @@ export default function Settings() {
     >
       <header className="mb-6 sm:mb-8">
         <h1 className="font-sans text-xl sm:text-2xl font-extrabold text-primary">Profile & Settings</h1>
-        <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1">Manage your farm's identity, payment preferences, and alert configurations.</p>
+        <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1">Manage your farm's identity, map coordinates, and certifications.</p>
         {statusMessage && (
-          <div className="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface">
+          <div className="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-sans font-bold text-primary shadow-sm">
             {statusMessage}
           </div>
         )}
@@ -136,45 +216,58 @@ export default function Settings() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Contact Phone</label>
-                <input className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none" type="tel" defaultValue="+1 (555) 012-3456" />
+                <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Contact Phone (Rwandan)</label>
+                <input 
+                  className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all" 
+                  type="tel" 
+                  value={profile.phone} 
+                  onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="+250 7XX XXX XXX"
+                />
               </div>
               <div className="space-y-2">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Primary Email</label>
-                <input className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none" type="email" defaultValue="admin@greenvalley.farm" />
+                <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Farm General Location</label>
+                <input 
+                  className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all" 
+                  type="text" 
+                  value={profile.location} 
+                  onChange={(event) => setProfile((current) => ({ ...current, location: event.target.value }))}
+                  placeholder="Kigali, Rwanda"
+                />
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Farm Location</label>
-            <div className="relative rounded-xl overflow-hidden group border border-outline-variant h-48 bg-surface-container-high">
-              <div
-                className="absolute inset-0 bg-center bg-cover"
-                style={{ backgroundImage: `url('${mapImage}')` }}
-              />
-              <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 bg-white/90 backdrop-blur-md p-3 sm:p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-lg">
-                <span className="font-sans text-xs sm:text-sm text-primary font-extrabold">{profile.location}</span>
-                <button className="text-primary hover:underline font-mono text-[10px] uppercase font-bold">Edit Map</button>
-              </div>
+            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold flex items-center justify-between">
+              <span>Interactive Location Map</span>
+              {profile.latitude && profile.longitude && (
+                <span className="text-[9px] text-[#414942]">GPS: {profile.latitude}, {profile.longitude}</span>
+              )}
+            </label>
+            <div className="relative rounded-2xl overflow-hidden border border-outline-variant h-56 bg-surface-container-high z-10">
+              <div id="farm-map" className="w-full h-full" />
             </div>
           </div>
 
           <div className="space-y-4">
-            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Active Certifications</label>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              {profile.certificationsText.split(',').map(cert => cert.trim()).filter(Boolean).map(cert => (
-                <button key={cert} className="px-3 sm:px-5 py-2 rounded-full bg-primary text-on-primary font-mono text-[10px] uppercase font-bold flex items-center gap-2 shadow-sm">
-                  <CheckCircle2 size={14} fill="currentColor" className="text-on-primary" />
-                  {cert}
-                </button>
-              ))}
-              {['Non-GMO Project', 'Rainforest Alliance'].map(cert => (
-                <button key={cert} className="px-3 sm:px-5 py-2 rounded-full border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container-low font-mono text-[10px] uppercase font-bold flex items-center gap-2 transition-all">
-                  <PlusCircle size={14} />
-                  {cert}
-                </button>
-              ))}
+            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Active Certifications (optional)</label>
+            <div className="space-y-3">
+              <input 
+                className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all" 
+                type="text" 
+                value={profile.certificationsText} 
+                onChange={(event) => setProfile((current) => ({ ...current, certificationsText: event.target.value }))}
+                placeholder="USDA Organic, Fair Trade (comma separated)"
+              />
+              <div className="flex flex-wrap gap-2">
+                {profile.certificationsText.split(',').map(cert => cert.trim()).filter(Boolean).map(cert => (
+                  <span key={cert} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-mono text-[9px] uppercase font-extrabold flex items-center gap-1.5 border border-primary/20">
+                    <CheckCircle2 size={12} className="text-primary" />
+                    {cert}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -220,48 +313,47 @@ export default function Settings() {
               </div>
               <h3 className="font-sans text-lg font-bold text-on-surface">Communication Prefs</h3>
             </div>
-              <div className="divide-y divide-outline-variant">
-                {[
-                  { key: 'notify_new_demand', title: 'SMS Notifications', desc: 'Real-time alerts for new demand submissions.' },
-                  { key: 'notify_negotiation_update', title: 'Email Digest', desc: 'Weekly summary of negotiations and supplies.' },
-                  { key: 'notify_payment_received', title: 'Marketing & Tips', desc: 'Updates about new platform features.' }
-                ].map((toggle, i) => (
-                  <div key={i} className="py-3 sm:py-4 flex items-center justify-between group">
-                    <div className="mr-4">
-                      <p className="font-sans text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{toggle.title}</p>
-                      <p className="font-sans text-[11px] sm:text-xs text-on-surface-variant">{toggle.desc}</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={profile[toggle.key as keyof ProfileForm] as boolean}
-                        onChange={(event) => setProfile((current) => ({ ...current, [toggle.key]: event.target.checked }))}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                    </label>
+            <div className="divide-y divide-outline-variant">
+              {[
+                { key: 'notify_new_demand', title: 'SMS Notifications', desc: 'Real-time alerts for new demand submissions.' },
+                { key: 'notify_negotiation_update', title: 'Email Digest', desc: 'Weekly summary of negotiations and supplies.' },
+                { key: 'notify_payment_received', title: 'Marketing & Tips', desc: 'Updates about new platform features.' }
+              ].map((toggle, i) => (
+                <div key={i} className="py-3 sm:py-4 flex items-center justify-between group">
+                  <div className="mr-4">
+                    <p className="font-sans text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{toggle.title}</p>
+                    <p className="font-sans text-[11px] sm:text-xs text-on-surface-variant">{toggle.desc}</p>
                   </div>
-                ))}
-              </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={profile[toggle.key as keyof ProfileForm] as boolean}
+                      onChange={(event) => setProfile((current) => ({ ...current, [toggle.key]: event.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                  </label>
+                </div>
+              ))}
             </div>
+          </div>
         </div>
       </div>
 
-      <footer className="fixed bottom-16 lg:bottom-0 left-0 right-0 lg:left-[224px] bg-white border-t border-outline-variant p-4 sm:p-5 z-30 shadow-[0px_-4px_20px_rgba(45,90,61,0.08)]">
+      <footer className="fixed bottom-16 lg:bottom-0 left-0 right-0 lg:left-[260px] bg-white border-t border-outline-variant p-4 sm:p-5 z-30 shadow-[0px_-4px_20px_rgba(45,90,61,0.08)]">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <p className="hidden sm:block font-mono text-[10px] uppercase text-on-surface-variant font-bold">Last saved: 12 mins ago</p>
+          <p className="hidden sm:block font-mono text-[10px] uppercase text-on-surface-variant font-bold">Profile Details</p>
           <div className="flex gap-4 w-full sm:w-auto">
-            <button className="flex-1 sm:flex-none px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl border-2 border-primary text-primary font-bold font-sans text-sm hover:bg-surface-container-low transition-all active:scale-95">Discard Changes</button>
             <button 
               onClick={handleSave}
-              className="flex-1 sm:flex-none px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl bg-primary text-on-primary font-bold font-sans text-sm shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-10 py-3 rounded-xl bg-primary text-on-primary font-bold font-sans text-sm shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSaving ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
                   <Save size={18} />
-                  Save Changes
+                  Save Settings
                 </>
               )}
             </button>

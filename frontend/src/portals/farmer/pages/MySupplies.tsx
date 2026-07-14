@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, ChevronDown, Calendar as CalendarIcon, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
+import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { apiRequest } from '../lib/api';
+import { api, apiRequest } from '../lib/api';
 
 const romaTomatoesImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA';
@@ -13,9 +13,6 @@ const fallbackSupplies = [
   { id: '1', product_detail: { name: 'Roma Tomatoes', image: romaTomatoesImage }, batch: '#RT-992', quantity: '250', unit: 'kg', submitted_at: '2023-10-12T00:00:00Z', status: 'accepted', proposed_price: '5.00' },
   { id: '2', product_detail: { name: 'Organic Curly Kale', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0vrzC0e6TSgZ3qUfQGwi1SBbx1Azxcwej8lQIgygqNPfj4BvtV79fCCiz3w-x380yG1ib7N9s-Ya73fkUbfLZOE-zEgN_zcgc2pQSKpEXEXmR9V3T_7g-8xs_nJgaibWJZ4cEBuiVonvwwxjgYcVeWXp6ZtmLS_t4ddMpkRpSPU_c1xPYGQBucsGiGtfTrkDNum3MTJxPYkOOh3Lei-uvm3sYRIcI_-Lm6Mf44Bo_E_qUSWgE3JbZ4g' }, batch: '#OK-451', quantity: '80', unit: 'kg', submitted_at: '2023-10-14T00:00:00Z', status: 'pending', proposed_price: '4.00' },
   { id: '3', product_detail: { name: 'Farm Fresh Eggs', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxsEs4IhBMq2z7Dc30_bYvToFqv-NONJHBLanc_VQi_40AtymTuKos-Y78p_MkdZ33afM9Uye8vUSh4tvZzk1YdQmTcDeaU3iRByGcMMPLAazHOxd5checkr74FpOjjHQPktyrC_MOlMnmPi7I7ZgiBsDtE9iQC6elk8RdmZ9pQSXxXOpEhlhlgpA-LHzZyv9-8JBtTKm5Nwjqz0IS08MaA5Ef1QluLZ-_sT9llyt-ewd2Z1utcqB9pQ' }, batch: '#FE-122', quantity: '40', unit: 'doz', submitted_at: '2023-10-15T00:00:00Z', status: 'delivered', proposed_price: '6.00' },
-  { id: '4', product_detail: { name: 'Iceberg Lettuce', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxaIEjUGtnGXLWgWM3dQ4i0tAvOfi7RKZLGu1fGEtWVK3e05aLGKP6QyWo87_ktHPD6eeGJE0IdMO3UIr8r1xbyzKJfapEyuokusuq4sIrAitDQp5plyNJ55e8qI6GFvfmkIu88U-hcSoIGPKI245Pcr01LUYzqaqmqv4UirXitG5XKKi07SQy_JyALKzIO_wYp8GWfZTo03pmxEI5swE3ZsUPP8o2M0LbY1lhw4Qlvi2itb3_dVKCxg' }, batch: '#IL-802', quantity: '320', unit: 'kg', submitted_at: '2023-10-18T00:00:00Z', status: 'accepted', proposed_price: '1.20' },
-  { id: '5', product_detail: { name: 'Russet Potatoes', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB41-Vuzo9PoiMU_6JQZOXCKOLW-1IS1IInscIbXRMORY7tTrv44rIvtwhrnsLhdCuonKVd7FwSgRhoTZC4E-PnVFrYOHSFAPKKBNcd8APsOv64N3UUjF53XLXomgCACC8eAwykUHfBJfNjc8JnaM4CdDIUrDyDqE3Cu4KSlEs-hs6Wza1utfBiwoQRKnhnotV-b6enuBmfjpUJYSxR-5Bb5guV7pLUip6Uo16gWDhndBPdCrBjHVsYSw' }, batch: '#RP-402', quantity: '1200', unit: 'kg', submitted_at: '2023-10-20T00:00:00Z', status: 'negotiating', proposed_price: '0.95' },
-  { id: '6', product_detail: { name: 'Durum Wheat', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQYDniTVJvGnzcOZnyoyxdN10cAwuEDsM40zmbtxaMxe-Rvogvt5wvb9isBj_wDgTwDpTojDHf4_jCBFklPVWrjYvfN_P3fJ0uiFJJfs45K8-8K-IVMVCnt8QYgGExTonLEOjHe2AW3QDPkQksQZ3lZqYalgm1LOKScCsbjMko35cjhlcD8Gxb8Ro0-cQtY2h5VTWfYtT8iwBiVUlaDv-u8L-Bn2f_JBmIhRcuWdQUEjU8Qqkl6ZSA0w' }, batch: '#DW-102', quantity: '6000', unit: 'kg', submitted_at: '2023-10-22T00:00:00Z', status: 'delivered', proposed_price: '0.85' },
 ];
 
 export default function MySupplies() {
@@ -28,34 +25,46 @@ export default function MySupplies() {
   const [dateFilter, setDateFilter] = useState('All Dates');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 5;
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editSupply, setEditSupply] = useState<any | null>(null);
+
+  // Edit form state
+  const [editQuantity, setEditQuantity] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editQuality, setEditQuality] = useState('standard');
+  const [editNotes, setEditNotes] = useState('');
+  const [editPhoto, setEditPhoto] = useState<File | null>(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const getSupplyImage = (supply: any) => {
     const name = String(supply?.product_detail?.name || '').trim().toLowerCase();
     if (name.includes('roma') || name.includes('tomato')) {
       return romaTomatoesImage;
     }
-    return supply?.product_detail?.image || '';
+    return supply?.photo || supply?.product_detail?.image || '';
   };
 
-  useEffect(() => {
-    async function loadSupplies() {
-      try {
-        const data = await apiRequest("/api/supplies/");
-        setSupplies((data || []).map((item: any) => ({
-          ...item,
-          product_detail: {
-            ...item.product_detail,
-            image: getSupplyImage(item),
-          },
-        })));
-      } catch (err) {
-        console.error("Error loading supplies:", err);
-        setSupplies(fallbackSupplies);
-      }
+  async function loadSupplies() {
+    try {
+      const data = await api.supplies();
+      setSupplies((data || []).map((item: any) => ({
+        ...item,
+        product_detail: {
+          ...item.product_detail,
+          image: getSupplyImage(item),
+        },
+      })));
+    } catch (err) {
+      console.error("Error loading supplies:", err);
+      setSupplies(fallbackSupplies);
     }
+  }
+
+  useEffect(() => {
     loadSupplies();
   }, []);
 
@@ -69,10 +78,65 @@ export default function MySupplies() {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirmId) {
-      setSupplies(supplies.filter(s => s.id !== deleteConfirmId));
+      try {
+        await api.deleteSupply(deleteConfirmId);
+        setSupplies(supplies.filter(s => s.id !== deleteConfirmId));
+      } catch (err) {
+        console.error("Failed to delete supply record:", err);
+        // Fallback local deletion
+        setSupplies(supplies.filter(s => s.id !== deleteConfirmId));
+      }
       setDeleteConfirmId(null);
+    }
+  };
+
+  const handleEditClick = (supply: any) => {
+    setEditSupply(supply);
+    setEditQuantity(supply.quantity || '');
+    setEditPrice(supply.proposed_price || '');
+    setEditDate(supply.available_date || '');
+    setEditQuality(supply.quality_grade || 'standard');
+    setEditNotes(supply.notes || '');
+    setEditPhoto(null);
+    setEditPhotoPreview(supply.photo || null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditPhoto(file);
+      setEditPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSupply) return;
+    setIsUpdating(true);
+
+    try {
+      const payload: Record<string, any> = {
+        quantity: Number(editQuantity),
+        proposed_price: Number(editPrice),
+        available_date: editDate || null,
+        quality_grade: editQuality,
+        notes: editNotes,
+      };
+
+      if (editPhoto) {
+        payload.photo = editPhoto;
+      }
+
+      await api.updateSupply(editSupply.id, payload);
+      setEditSupply(null);
+      await loadSupplies(); // Reload records
+    } catch (err) {
+      console.error("Failed to update supply record:", err);
+      alert("Could not update record. Please try again.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -85,7 +149,7 @@ export default function MySupplies() {
   const filteredSupplies = supplies.filter(item => {
     const name = item.product_detail?.name || '';
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (item.batch || '').toLowerCase().includes(searchQuery.toLowerCase());
+                          String(item.id).toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'All Statuses' || item.status.toLowerCase() === statusFilter.toLowerCase();
     
@@ -105,7 +169,7 @@ export default function MySupplies() {
     const matchesCategory = categoryFilter === 'All Categories' || category === categoryFilter;
     
     // Date classification
-    const date = new Date(item.submitted_at);
+    const date = new Date(item.created_at || item.submitted_at);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -160,6 +224,7 @@ export default function MySupplies() {
             <option>pending</option>
             <option>negotiating</option>
             <option>delivered</option>
+            <option>draft</option>
           </select>
 
           {/* Category Filter */}
@@ -222,8 +287,8 @@ export default function MySupplies() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-sm">{supply.quantity} {supply.unit}</td>
-                  <td className="px-6 py-4 font-mono text-sm">{formatDate(supply.submitted_at)}</td>
+                  <td className="px-6 py-4 font-mono text-sm">{supply.quantity} {supply.unit || supply.product_detail?.unit || 'kg'}</td>
+                  <td className="px-6 py-4 font-mono text-sm">{formatDate(supply.created_at || supply.submitted_at)}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full font-mono text-[9px] uppercase font-extrabold tracking-widest border",
@@ -244,6 +309,13 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => handleEditClick(supply)}
+                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                        title="Edit supply/product details"
+                      >
+                        <Edit3 size={18} />
+                      </button>
                       <button 
                         onClick={() => setDeleteConfirmId(supply.id)}
                         className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
@@ -360,6 +432,161 @@ export default function MySupplies() {
                   Delete Permanently
                 </button>
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Own Product Update Modal */}
+      <AnimatePresence>
+        {editSupply && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditSupply(null)}
+              className="fixed inset-0 bg-[#144227]/40 z-[60] backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, y: 25, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 25, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="fixed inset-0 m-auto w-[92vw] max-w-lg h-[85vh] bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Forest Green Header */}
+              <div className="bg-[#144227] px-6 py-5 flex items-center justify-between text-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-xl">
+                    <Sparkles size={20} className="text-[#b6edc2]" />
+                  </div>
+                  <div>
+                    <h3 className="font-sans text-base font-extrabold tracking-tight">Update Harvest Supply</h3>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} (#{editSupply.id})</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setEditSupply(null)}
+                  className="p-1 text-white/70 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Form Content (Scrollable Container) */}
+              <form onSubmit={handleUpdateSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                
+                {/* 1. Quantity & Price */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-primary font-sans">Harvest Quantity ({editSupply.unit || 'kg'})</label>
+                    <input 
+                      type="number"
+                      required
+                      value={editQuantity}
+                      onChange={(e) => setEditQuantity(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all"
+                      placeholder="e.g. 500"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-primary font-sans">Asking Price ($ per unit)</label>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      required
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all"
+                      placeholder="e.g. 2.50"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Ready Date & Quality */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-primary font-sans">Harvest Ready Date</label>
+                    <input 
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all cursor-pointer"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-primary font-sans">Quality Grade</label>
+                    <select 
+                      value={editQuality}
+                      onChange={(e) => setEditQuality(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all cursor-pointer"
+                    >
+                      <option value="premium">Premium Grade (Top Tier)</option>
+                      <option value="standard">Standard Grade (Choice)</option>
+                      <option value="economy">Economy Grade (Utility)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 3. Notes */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-primary font-sans">Description & Seller Notes</label>
+                  <textarea 
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all resize-none"
+                    placeholder="Add batch notes, organic status details, or packing info..."
+                  />
+                </div>
+
+                {/* 4. Photo Upload (Cloudinary Linked) */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-primary font-sans">Update Harvest Photo</label>
+                  <div className="flex gap-4 items-center">
+                    {editPhotoPreview && (
+                      <div className="w-20 h-20 rounded-xl border border-outline-variant overflow-hidden shrink-0 bg-surface-container-high">
+                        <img src={editPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <label className="flex-1 border border-dashed border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center bg-surface-container-low hover:border-primary cursor-pointer transition-all">
+                      <CloudUpload size={20} className="text-primary mb-1" />
+                      <span className="font-sans text-xs text-primary font-extrabold">Upload New Photo</span>
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-4 flex gap-3 justify-end shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEditSupply(null)}
+                    className="px-6 py-2.5 rounded-xl border border-[#c1c9c0] text-[#414942] font-extrabold font-sans text-xs hover:bg-surface-container-low transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-extrabold font-sans text-xs shadow-md hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isUpdating ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        Update Harvest
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

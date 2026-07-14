@@ -78,7 +78,12 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
   const [demands, setDemands] = useState<any[]>([]);
-  const [range, setRange] = useState('Last 6 months');
+  const [range, setRange] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.sessionStorage.getItem('dashboard_graph_range') || 'Last 6 months';
+    }
+    return 'Last 6 months';
+  });
 
   const data6Months = [
     { name: 'May', volume: 45 },
@@ -249,7 +254,13 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Supply volume over time</h3>
             <select 
               value={range}
-              onChange={(e) => setRange(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setRange(val);
+                if (typeof window !== 'undefined') {
+                  window.sessionStorage.setItem('dashboard_graph_range', val);
+                }
+              }}
               className="bg-surface-container-low border-none rounded-lg font-mono text-[10px] px-3 py-1 focus:ring-primary cursor-pointer"
             >
               <option>Last 6 months</option>
