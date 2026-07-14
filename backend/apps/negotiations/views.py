@@ -47,6 +47,14 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.supply.quantity = quantity
         thread.supply.save()
 
+        # Send live notification
+        from apps.notifications.utils import send_live_notification
+        send_live_notification(
+            user=request.user,
+            title="Counter Offer Sent",
+            message=f"Your offer of ${price} for {quantity} of {thread.supply.product.name} has been submitted."
+        )
+
         return Response(NegotiationThreadSerializer(thread).data)
 
     @action(detail=True, methods=['post'])
@@ -67,6 +75,14 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                 'amount': thread.supply.price * thread.supply.quantity,
                 'sync_status': 'synced'
             }
+        )
+
+        # Send live notification
+        from apps.notifications.utils import send_live_notification
+        send_live_notification(
+            user=thread.supply.farmer.user,
+            title="Agreement Reached",
+            message=f"Negotiation finalized for supply #{thread.supply.id} ({thread.supply.product.name})."
         )
 
         return Response(NegotiationThreadSerializer(thread).data)

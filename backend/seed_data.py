@@ -131,4 +131,12 @@ Invoice.objects.create(supply=s1, status='paid', amount=1250.00)
 Invoice.objects.create(supply=s3, status='paid', amount=4250.00)
 Invoice.objects.create(supply=s2, status='pending', amount=320.00)
 
+# 6. Create Notifications
+from apps.notifications.models import Notification
+Notification.objects.filter(user=user).delete()
+Notification.objects.create(user=user, title="Demand Update", message="Roma Tomatoes demand matches your target prices.", is_read=False)
+Notification.objects.create(user=user, title="Deal Finalized", message="Negotiation thread for Russet Potatoes accepted by admin.", is_read=True)
+Notification.objects.create(user=user, title="System Alert", message="Your organic certification GV-ORG-992 is marked verified.", is_read=False)
+
 print("Seed completed successfully!")
+

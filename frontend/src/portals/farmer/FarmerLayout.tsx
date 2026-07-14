@@ -5,12 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import { View } from '../types';
 import { cn } from '../lib/utils';
-import { LayoutDashboard, Sprout, Package, Handshake, Settings, ReceiptText } from 'lucide-react';
+import { api, apiRequest } from './lib/api';
 
 interface LayoutProps {
   children: ReactNode;
@@ -18,17 +18,80 @@ interface LayoutProps {
   onViewChange: (view: View) => void;
 }
 
-const mobileNavItems = [
-  { id: 'dashboard' as View, label: 'Home', icon: LayoutDashboard },
-  { id: 'submit' as View, label: 'Submit', icon: Sprout },
-  { id: 'supplies' as View, label: 'Supplies', icon: Package },
-  { id: 'negotiations' as View, label: 'Deals', icon: Handshake },
-  { id: 'invoices' as View, label: 'Invoices', icon: ReceiptText },
-  { id: 'settings' as View, label: 'Settings', icon: Settings },
-];
-
 export default function Layout({ children, activeView, onViewChange }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let socket: WebSocket | null = null;
+    let mounted = true;
+
+    async function initNotifications() {
+      try {
+        const list = await api.notifications();
+        if (!mounted) return;
+        setNotifications(list || []);
+        setUnreadCount((list || []).filter((n: any) => !n.is_read).length);
+      } catch (err) {
+        console.error("Failed to load notifications history:", err);
+      }
+
+      // Establish WebSocket connection
+      if (typeof window !== 'undefined') {
+        const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken');
+        if (!token) return;
+
+        socket = new WebSocket(`ws://localhost:8000/ws/notifications/?token=${token}`);
+
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (!mounted) return;
+            // Append incoming notification at the front
+            setNotifications(prev => [data, ...prev]);
+            setUnreadCount(prev => prev + 1);
+          } catch (err) {
+            console.error("Error parsing WebSocket message:", err);
+          }
+        };
+
+        socket.onclose = () => {
+          console.log("Notification socket closed");
+        };
+      }
+    }
+
+    initNotifications();
+
+    return () => {
+      mounted = false;
+      if (socket) socket.close();
+    };
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await apiRequest('/api/notifications/mark-all-read/', { method: 'POST' });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
+  };
+
+  const handleMarkRead = async (id: number) => {
+    try {
+      await apiRequest(`/api/notifications/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_read: true })
+      });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setUnreadCount(prev => Math.max(prev - 1, 0));
+    } catch (err) {
+      console.error("Failed to mark single notification as read:", err);
+    }
+  };
 
   return (
     <div className="min-h-screen flex bg-surface">
@@ -48,7 +111,14 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
       />
 
       <div className="flex-grow flex flex-col min-w-0 lg:pl-[260px] h-screen overflow-hidden">
-        <TopBar activeView={activeView} onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} />
+        <TopBar 
+          activeView={activeView} 
+          onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} 
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAllRead={handleMarkAllRead}
+          onMarkRead={handleMarkRead}
+        />
         <main className={cn(
           "flex-grow min-w-0",
           activeView === 'negotiations' ? "h-[calc(100vh-64px)] overflow-hidden p-0" : "overflow-y-auto p-6 pb-20 lg:pb-8"

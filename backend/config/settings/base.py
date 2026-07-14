@@ -21,6 +21,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Application definition
 INSTALLED_APPS = [
+    'daphne',
     'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'cloudinary',
+    'channels',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -168,4 +170,11 @@ CLOUDINARY_STORAGE = {
 }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 
