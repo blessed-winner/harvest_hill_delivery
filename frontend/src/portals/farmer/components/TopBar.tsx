@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { Bell, Menu, CheckCheck, Check, Clock, AlertCircle, Handshake, Package, X } from 'lucide-react';
+import { Bell, Menu, Clock, AlertCircle, Handshake, Package, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
 
@@ -130,33 +130,27 @@ export default function TopBar({
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant bg-gradient-to-r from-primary to-primary-container text-white shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-white/10 text-white">
-                  <Bell size={16} />
-                </div>
-                <div>
-                  <span className="font-sans text-sm font-extrabold block leading-none">Notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="text-[10px] text-white/80 font-mono mt-1 block">
-                      {unreadCount} unread message{unreadCount > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-sans text-sm font-extrabold block leading-none">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] text-white/80 font-mono mt-1 block">
+                    {unreadCount} unread message{unreadCount > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 {unreadCount > 0 && (
                   <button
                     onClick={() => { onMarkAllRead(); }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/15 text-[#b6edc2] hover:bg-white/25 hover:text-white transition-all cursor-pointer border border-white/10"
+                    className="text-[11px] font-sans font-bold text-[#b6edc2] hover:text-white hover:underline transition-all cursor-pointer bg-transparent border-none p-0"
                     title="Mark all as read"
                   >
-                    <CheckCheck size={12} />
-                    <span className="font-mono text-[9px] font-extrabold uppercase tracking-tight">Mark All Read</span>
+                    Mark all read
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -207,10 +201,9 @@ export default function TopBar({
                               <p className="font-sans text-[11px] text-on-surface-variant mt-1 leading-relaxed">{notify.message}</p>
                               <button
                                 onClick={e => { e.stopPropagation(); onMarkRead(notify.id); }}
-                                className="mt-2 flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-sans"
+                                className="mt-2 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-mono text-[9px] font-bold uppercase hover:underline p-0 border-none bg-transparent"
                               >
-                                <Check size={12} className="stroke-[3]" />
-                                <span className="font-mono text-[9px] font-extrabold uppercase tracking-tight">Mark read</span>
+                                Mark read
                               </button>
                             </div>
                           </div>
