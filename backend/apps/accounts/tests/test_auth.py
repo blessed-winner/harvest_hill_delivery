@@ -3,7 +3,8 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-from datetime import timedelta
+from datetime import timedelta, timezone as datetime_timezone
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.products.models import Product
 from apps.supplies.models import Supply
@@ -131,3 +132,46 @@ class AuthenticationTestCase(APITestCase):
         url_detail_other = reverse('supply-detail', kwargs={'pk': self.supply2.id})
         response_other = self.client.get(url_detail_other)
         self.assertEqual(response_other.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_remember_me_dynamic_lifetimes(self):
+        url_login = reverse('login')
+        
+        # Test 1: login with remember_me=True
+        data_remember = {
+            'username_or_email': 'farmer1@test.com',
+            'password': 'Password123!',
+            'remember_me': True
+        }
+        res_remember = self.client.post(url_login, data_remember, format='json')
+        self.assertEqual(res_remember.status_code, status.HTTP_200_OK)
+        
+        refresh_remember = RefreshToken(res_remember.data['refresh'])
+        # Refresh token expiration should be around 30 days from now
+        exp_remember = refresh_remember['exp']
+        expected_days = (timezone.datetime.fromtimestamp(exp_remember, tz=datetime_timezone.utc) - timezone.now()).days
+        self.assertTrue(29 <= expected_days <= 31)
+
+        # Test 2: login with remember_me=False
+        data_no_remember = {
+            'username_or_email': 'farmer1@test.com',
+            'password': 'Password123!',
+            'remember_me': False
+        }
+        res_no_remember = self.client.post(url_login, data_no_remember, format='json')
+        self.assertEqual(res_no_remember.status_code, status.HTTP_200_OK)
+        
+        refresh_no_remember = RefreshToken(res_no_remember.data['refresh'])
+        # Refresh token expiration should be around 30 minutes from now (0 days difference)
+        exp_no_remember = refresh_no_remember['exp']
+        expected_minutes = int((timezone.datetime.fromtimestamp(exp_no_remember, tz=datetime_timezone.utc) - timezone.now()).total_seconds() / 60)
+        self.assertTrue(25 <= expected_minutes <= 35)
+
+        # Test 3: refresh token rotation preserves expiration
+        url_refresh = reverse('token_refresh')
+        res_refresh = self.client.post(url_refresh, {'refresh': str(refresh_remember)}, format='json')
+        self.assertEqual(res_refresh.status_code, status.HTTP_200_OK)
+        self.assertIn('refresh', res_refresh.data)
+        
+        new_refresh = RefreshToken(res_refresh.data['refresh'])
+        # Expiration must match the original one exactly
+        self.assertEqual(new_refresh['exp'], exp_remember)

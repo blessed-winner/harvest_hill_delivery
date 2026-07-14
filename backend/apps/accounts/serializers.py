@@ -44,6 +44,7 @@ class LoginSerializer(serializers.Serializer):
     # Accepts either email address or username
     username_or_email = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    remember_me = serializers.BooleanField(required=False, default=False)
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -100,3 +101,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             profile.save()
 
         return user
+
+
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        old_refresh = RefreshToken(attrs['refresh'])
+        old_exp = old_refresh['exp']
+        
+        data = super().validate(attrs)
+        
+        if 'refresh' in data:
+            new_refresh = RefreshToken(data['refresh'])
+            new_refresh['exp'] = old_exp
+            data['refresh'] = str(new_refresh)
+            
+        return data

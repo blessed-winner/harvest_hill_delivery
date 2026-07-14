@@ -12,7 +12,7 @@ export function formatCurrency(value: unknown, fallback = '$0.00') {
   return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+export async function apiRequest(endpoint: string, options: RequestInit = {}, _retry = false): Promise<any> {
   const method = (options.method ?? 'GET').toUpperCase();
   const token =
     typeof window !== 'undefined'
@@ -39,6 +39,26 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
 
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined') {
+      const refreshToken = window.localStorage.getItem('refresh_token');
+      if (refreshToken && !_retry) {
+        try {
+          const refreshRes = await fetch('http://localhost:8000/api/accounts/token/refresh/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh: refreshToken }),
+          });
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            window.localStorage.setItem('access_token', refreshData.access);
+            if (refreshData.refresh) {
+              window.localStorage.setItem('refresh_token', refreshData.refresh);
+            }
+            return apiRequest(endpoint, options, true);
+          }
+        } catch (refreshErr) {
+          console.error("Token refresh failed:", refreshErr);
+        }
+      }
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
       window.localStorage.removeItem('user_role');

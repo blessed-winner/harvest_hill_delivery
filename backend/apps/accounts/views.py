@@ -18,7 +18,8 @@ from .serializers import (
     LoginSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
-    RegisterSerializer
+    RegisterSerializer,
+    CustomTokenRefreshSerializer
 )
 from apps.common.utils import log_action
 
@@ -39,7 +40,7 @@ class CustomTokenRefreshView(TokenRefreshView):
     """
     Subclassed SimpleJWT TokenRefreshView to easily allow custom logging or overrides.
     """
-    pass
+    serializer_class = CustomTokenRefreshSerializer
 
 
 class LoginView(APIView):
@@ -53,6 +54,7 @@ class LoginView(APIView):
 
         identifier = serializer.validated_data['username_or_email']
         password = serializer.validated_data['password']
+        remember_me = serializer.validated_data.get('remember_me', False)
 
         # Try email first, then username
         user = None
@@ -87,6 +89,13 @@ class LoginView(APIView):
 
             # Generate tokens
             refresh = RefreshToken.for_user(user)
+            if remember_me:
+                refresh.set_exp(lifetime=timedelta(days=30))
+                refresh.access_token.set_exp(lifetime=timedelta(minutes=30))
+            else:
+                refresh.set_exp(lifetime=timedelta(minutes=30))
+                refresh.access_token.set_exp(lifetime=timedelta(minutes=30))
+
             log_action(request, actor=user, action="login_success")
 
             return Response({

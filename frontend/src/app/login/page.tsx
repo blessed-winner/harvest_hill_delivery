@@ -23,7 +23,7 @@ export default function LoginPage() {
       const response = await fetch('http://localhost:8000/api/accounts/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username_or_email: identifier, password }),
+        body: JSON.stringify({ username_or_email: identifier, password, remember_me: rememberMe }),
       });
 
       const data = await response.json();
