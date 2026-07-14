@@ -42,12 +42,8 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
   }, []);
 
   return (
-    <header className="h-[64px] w-full fixed top-0 z-50 bg-surface border-b border-outline-variant flex justify-between items-center px-4 sm:px-6 lg:pl-[224px] lg:pr-8">
+    <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-outline-variant shrink-0 z-20">
       <div className="flex items-center gap-3">
-        <h2 className="font-sans text-base font-bold text-primary">Harvest Hill Delivery</h2>
-      </div>
-
-      <div className="flex items-center gap-3 sm:gap-6">
         <button
           onClick={onMenuToggle}
           className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
@@ -55,7 +51,10 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
         >
           <Menu size={20} />
         </button>
+        <h2 className="font-sans text-base font-bold text-primary">Harvest Hill Delivery</h2>
+      </div>
 
+      <div className="flex items-center gap-3 sm:gap-6">
         <button className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors relative group">
           <Bell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>

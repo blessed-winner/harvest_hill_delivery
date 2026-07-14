@@ -38,11 +38,14 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
 
   return (
     <aside className={cn(
-      "w-56 h-[calc(100vh-64px)] fixed left-0 top-[64px] flex flex-col bg-primary border-r border-white/10 py-6 px-3 z-40 transition-all duration-300",
-      isOpen ? "translate-x-0" : "hidden lg:flex"
+      "w-[260px] bg-primary flex flex-col h-screen fixed left-0 top-0 bottom-0 py-4 shadow-sm z-50 shrink-0 overflow-hidden transition-transform duration-300",
+      "lg:translate-x-0 lg:flex",
+      isOpen 
+        ? "translate-x-0" 
+        : "-translate-x-full lg:translate-x-0"
     )}>
       {/* Branding */}
-      <div className="px-2 mb-8 flex items-center justify-between">
+      <div className="px-6 mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-white leading-tight font-sans">Harvest Hill</h1>
           <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold font-mono">Delivery Portal</p>
@@ -64,17 +67,17 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
             key={item.id}
             onClick={() => handleNavClick(item.id)}
             className={cn(
-              "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer",
+              "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer whitespace-nowrap",
               activeView === item.id 
                 ? "bg-primary-container text-on-primary-container font-semibold" 
                 : "text-white/80 hover:text-white hover:bg-primary-container/20"
             )}
           >
             <item.icon className={cn(
-              "w-5 h-5 mr-3 transition-colors",
+              "w-5 h-5 mr-3 transition-colors shrink-0",
               activeView === item.id ? "text-on-primary-container" : "text-white/60 group-hover:text-white"
             )} size={20} />
-            <span className="text-sm font-sans">{item.label}</span>
+            <span className="text-sm font-sans whitespace-nowrap">{item.label}</span>
           </button>
         ))}
       </nav>
@@ -84,21 +87,22 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
         <button 
           onClick={() => handleNavClick('settings')}
           className={cn(
-            "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer",
+            "w-full flex items-center px-4 py-2.5 rounded-lg transition-all group text-left cursor-pointer whitespace-nowrap",
             activeView === 'settings'
               ? "bg-primary-container text-on-primary-container font-semibold"
               : "text-white/80 hover:text-white hover:bg-primary-container/20"
           )}
         >
-          <UserCircle className="w-5 h-5 mr-3 text-white/60 group-hover:text-white" size={20} />
-          <span className="text-sm font-sans">Farmer Profile</span>
+          <UserCircle className="w-5 h-5 mr-3 text-white/60 group-hover:text-white shrink-0" size={20} />
+          <span className="text-sm font-sans whitespace-nowrap">Farmer Profile</span>
         </button>
-        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors text-left cursor-pointer">
-          <LogOut className="w-5 h-5 mr-3 text-white/60" size={20} />
-          <span className="text-sm font-sans">Logout</span>
+        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors text-left cursor-pointer whitespace-nowrap">
+          <LogOut className="w-5 h-5 mr-3 text-white/60 shrink-0" size={20} />
+          <span className="text-sm font-sans whitespace-nowrap">Logout</span>
         </button>
       </div>
     </aside>
   );
 }
+
 

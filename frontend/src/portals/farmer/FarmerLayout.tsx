@@ -31,43 +31,28 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
+    <div className="min-h-screen flex bg-surface">
+      {/* Backdrop for mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
       <Sidebar
         activeView={activeView}
         onViewChange={onViewChange}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
-      <div className="flex-grow flex flex-col min-w-0">
+
+      <div className="flex-grow flex flex-col min-w-0 lg:pl-[260px]">
         <TopBar onMenuToggle={() => setIsMobileMenuOpen((prev) => !prev)} />
-        <main className="mt-[64px] lg:pl-[224px] pb-20 lg:pb-8 min-w-0">
+        <main className="flex-grow min-w-0 overflow-x-hidden p-6 pb-20 lg:pb-8">
           {children}
         </main>
       </div>
-      
-      {/* Mobile Bottom Nav — visible below lg */}
-      <nav className="fixed bottom-0 w-full z-50 lg:hidden bg-surface-container-lowest border-t border-outline-variant shadow-lg">
-        <div className="flex justify-around items-center h-16 px-1 w-full">
-          {mobileNavItems.map((item) => (
-            <button 
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition-all duration-300 min-w-0 relative flex-1",
-                activeView === item.id 
-                  ? "text-primary scale-105" 
-                  : "text-on-surface-variant/80 hover:text-on-surface"
-              )}
-            >
-              {activeView === item.id && (
-                <span className="absolute top-0 w-8 h-[3px] bg-primary rounded-full" />
-              )}
-              <item.icon size={18} strokeWidth={activeView === item.id ? 2.5 : 2} className={activeView === item.id ? "text-primary" : "text-on-surface-variant/80"} />
-              <span className="text-[8px] font-extrabold uppercase tracking-tighter leading-none">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
     </div>
   );
 }
