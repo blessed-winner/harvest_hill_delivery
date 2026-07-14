@@ -832,16 +832,40 @@ components:
         id:
           type: integer
           readOnly: true
+        product:
+          type: integer
+        product_detail:
+          allOf:
+          - $ref: '#/components/schemas/ProductShort'
+          readOnly: true
         quantity:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        price:
+        proposed_price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          $ref: '#/components/schemas/StatusB3bEnum'
+          allOf:
+          - $ref: '#/components/schemas/StatusB3bEnum'
+          readOnly: true
+        available_date:
+          type: string
+          format: date
+          nullable: true
+        quality_grade:
+          $ref: '#/components/schemas/QualityGradeEnum'
+        notes:
+          type: string
+        photo:
+          type: string
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
     Product:
       type: object
       properties:
@@ -907,6 +931,16 @@ components:
       - category
       - id
       - name
+    QualityGradeEnum:
+      enum:
+      - premium
+      - standard
+      - economy
+      type: string
+      description: |-
+        * `premium` - Premium
+        * `standard` - Standard
+        * `economy` - Economy
     StatusB3bEnum:
       enum:
       - draft
@@ -931,20 +965,48 @@ components:
         id:
           type: integer
           readOnly: true
+        product:
+          type: integer
+        product_detail:
+          allOf:
+          - $ref: '#/components/schemas/ProductShort'
+          readOnly: true
         quantity:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        price:
+        proposed_price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
-          $ref: '#/components/schemas/StatusB3bEnum'
+          allOf:
+          - $ref: '#/components/schemas/StatusB3bEnum'
+          readOnly: true
+        available_date:
+          type: string
+          format: date
+          nullable: true
+        quality_grade:
+          $ref: '#/components/schemas/QualityGradeEnum'
+        notes:
+          type: string
+        photo:
+          type: string
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
       required:
+      - created_at
       - id
-      - price
+      - product
+      - product_detail
+      - proposed_price
       - quantity
+      - status
     SupplyDetail:
       type: object
       properties:
