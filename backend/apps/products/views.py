@@ -1,10 +1,17 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from .models import Product
 from .serializers import ProductSerializer
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and request.user.role == 'admin'
+
+class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
         queryset = super().get_queryset()

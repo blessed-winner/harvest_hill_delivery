@@ -119,3 +119,71 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             data['refresh'] = str(new_refresh)
             
         return data
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    farmer_profile = FarmerProfileSerializer(required=False)
+    client_profile = ClientProfileSerializer(required=False)
+    admin_profile = AdminProfileSerializer(required=False)
+    password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'username', 'role', 'is_active', 'is_email_verified',
+            'password', 'date_joined', 'farmer_profile', 'client_profile', 'admin_profile'
+        ]
+        read_only_fields = ['id', 'date_joined']
+
+    def create(self, validated_data):
+        farmer_profile_data = validated_data.pop('farmer_profile', None)
+        client_profile_data = validated_data.pop('client_profile', None)
+        admin_profile_data = validated_data.pop('admin_profile', None)
+        
+        password = validated_data.pop('password', None)
+        user = User.objects.create_user(**validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+            
+        if user.role == 'farmer' and farmer_profile_data:
+            FarmerProfile.objects.create(user=user, **farmer_profile_data)
+        elif user.role == 'client' and client_profile_data:
+            ClientProfile.objects.create(user=user, **client_profile_data)
+        elif user.role == 'admin' and admin_profile_data:
+            AdminProfile.objects.create(user=user, **admin_profile_data)
+            
+        return user
+
+    def update(self, instance, validated_data):
+        farmer_profile_data = validated_data.pop('farmer_profile', None)
+        client_profile_data = validated_data.pop('client_profile', None)
+        admin_profile_data = validated_data.pop('admin_profile', None)
+
+        instance.email = validated_data.get('email', instance.email)
+        instance.username = validated_data.get('username', instance.username)
+        instance.role = validated_data.get('role', instance.role)
+        instance.is_active = validated_data.get('is_active', instance.is_active)
+        instance.is_email_verified = validated_data.get('is_email_verified', instance.is_email_verified)
+        instance.save()
+
+        if instance.role == 'farmer':
+            profile, _ = FarmerProfile.objects.get_or_create(user=instance)
+            if farmer_profile_data:
+                for attr, value in farmer_profile_data.items():
+                    setattr(profile, attr, value)
+                profile.save()
+        elif instance.role == 'client':
+            profile, _ = ClientProfile.objects.get_or_create(user=instance)
+            if client_profile_data:
+                for attr, value in client_profile_data.items():
+                    setattr(profile, attr, value)
+                profile.save()
+        elif instance.role == 'admin':
+            profile, _ = AdminProfile.objects.get_or_create(user=instance)
+            if admin_profile_data:
+                for attr, value in admin_profile_data.items():
+                    setattr(profile, attr, value)
+                profile.save()
+
+        return instance

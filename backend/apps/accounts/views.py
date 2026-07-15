@@ -7,11 +7,13 @@ from django.conf import settings
 from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from datetime import timedelta
+from django.db.models import Q
+from apps.common.permissions import IsAdmin
 
 from .serializers import (
     UserSerializer,
@@ -19,7 +21,8 @@ from .serializers import (
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
     RegisterSerializer,
-    CustomTokenRefreshSerializer
+    CustomTokenRefreshSerializer,
+    AdminUserSerializer
 )
 from apps.common.utils import log_action
 
@@ -248,5 +251,176 @@ class UserProfileView(APIView):
                 serializer.save()
                 return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        return Response({"detail": "Role update not supported"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
+    serializer_class = AdminUserSerializer
+    queryset = User.objects.all().order_by('-date_joined')
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        role = self.request.query_params.get('role', None)
+        is_active = self.request.query_params.get('is_active', None)
+        search = self.request.query_params.get('search', None)
+
+        if role:
+            queryset = queryset.filter(role=role)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() in ['true', '1'])
+        if search:
+            queryset = queryset.filter(
+                Q(email__icontains=search) |
+                Q(username__icontains=search) |
+                Q(farmer_profile__farm_name__icontains=search) |
+                Q(client_profile__business_name__icontains=search)
+            )
+        return queryset
+
+
+class AdminDashboardView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from apps.orders.models import Order, OrderItem
+        from apps.supplies.models import Supply
+        from apps.invoices.models import Invoice
+        from apps.delivery_notes.models import DeliveryNote
+        from django.db.models import Sum, Count
+
+        # 1. KPIs
+        active_orders = Order.objects.exclude(status__in=['delivered', 'cancelled']).count()
+        deliveries = Order.objects.filter(status='delivered').count()
+        revenue = Invoice.objects.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0.00
+        pending_approvals = Supply.objects.filter(status='pending').count()
+        clients_count = User.objects.filter(role='client').count()
+
+        # 2. Charts: Order volume over last 7 days
+        order_volume = []
+        for i in range(6, -1, -1):
+            day = timezone.now() - timedelta(days=i)
+            day_str = day.strftime('%a').upper()
+            count = Order.objects.filter(created_at__date=day.date()).count()
+            order_volume.append({"day": day_str, "value": count})
+
+        # 3. Charts: Orders by status
+        status_colors = {
+            'pending': '#9ed0ab',
+            'processing': '#466551',
+            'shipped': '#144227',
+            'delivered': '#144227',
+            'cancelled': '#ba1a1a'
+        }
+        status_data = []
+        total_orders = Order.objects.count()
+        if total_orders > 0:
+            for s_choice, s_label in Order.STATUS_CHOICES:
+                count = Order.objects.filter(status=s_choice).count()
+                if count > 0:
+                    pct = round((count / total_orders) * 100, 1)
+                    status_data.append({
+                        "name": s_label,
+                        "value": pct,
+                        "color": status_colors.get(s_choice, '#414942')
+                    })
+
+        # 4. Top products by volume
+        top_products = []
+        prod_volumes = OrderItem.objects.values('product__name').annotate(volume=Sum('quantity')).order_by('-volume')[:5]
+        max_vol = max([float(item['volume']) for item in prod_volumes] or [1.0])
+        for item in prod_volumes:
+            vol = float(item['volume'])
+            top_products.append({
+                "name": item['product__name'],
+                "volume": vol,
+                "percent": int((vol / max_vol) * 100)
+            })
+
+        # 5. Needs Attention (up to 5 items)
+        needs_attention = []
+        # Pending orders
+        for o in Order.objects.filter(status='pending')[:2]:
+            total_amt = sum(float(item.price * item.quantity) for item in o.items.all())
+            needs_attention.append({
+                "type": "order",
+                "id": o.id,
+                "title": f"Pending Order Approval #ORD-{o.id}",
+                "sub": f"Customer: {o.client.business_name or o.client.user.email} • ${total_amt:.2f}",
+                "color": "text-red-500",
+                "icon": "AlertCircle"
+            })
+        # Unconfirmed delivery notes
+        for dn in DeliveryNote.objects.filter(status='pending')[:2]:
+            needs_attention.append({
+                "type": "delivery_note",
+                "id": dn.id,
+                "title": f"Unconfirmed Delivery Note #DLV-{dn.id}",
+                "sub": f"Status: {dn.status} • {dn.details[:40]}...",
+                "color": "text-emerald-600",
+                "icon": "Truck"
+            })
+        # Pending supplies
+        for s in Supply.objects.filter(status='pending')[:2]:
+            needs_attention.append({
+                "type": "supply",
+                "id": s.id,
+                "title": f"New Supply Submission: {s.product.name}",
+                "sub": f"From: {s.farmer.farm_name or s.farmer.user.email} • {s.quantity} {s.product.unit}",
+                "color": "text-primary",
+                "icon": "Clock"
+            })
+
+        # 6. Recent Activity (up to 5 items)
+        recent_activity = []
+        # Let's pull recently created orders, supplies, and delivery notes
+        activities = []
+        for o in Order.objects.order_by('-created_at')[:3]:
+            activities.append({
+                "t": f"Order #{o.id} Created",
+                "time": o.created_at,
+                "color": "bg-primary"
+            })
+        for s in Supply.objects.order_by('-created_at')[:3]:
+            activities.append({
+                "t": f"Supply: {s.product.name} submitted",
+                "time": s.created_at,
+                "color": "bg-emerald-600"
+            })
+        for dn in DeliveryNote.objects.order_by('-created_at')[:3]:
+            activities.append({
+                "t": f"Delivery Note #{dn.id} update",
+                "time": dn.created_at,
+                "color": "bg-outline-variant"
+            })
+        
+        # Sort activities by time desc
+        activities.sort(key=lambda x: x['time'], reverse=True)
+        for act in activities[:5]:
+            time_diff = timezone.now() - act['time']
+            if time_diff.total_seconds() < 60:
+                time_str = "Just now"
+            elif time_diff.total_seconds() < 3600:
+                time_str = f"{int(time_diff.total_seconds() / 60)} mins ago"
+            else:
+                time_str = f"{int(time_diff.total_seconds() / 3600)} hours ago"
+
+            recent_activity.append({
+                "t": act['t'],
+                "time": time_str,
+                "color": act['color']
+            })
+
+        return Response({
+            "kpis": {
+                "active_orders": active_orders,
+                "deliveries": deliveries,
+                "revenue": float(revenue),
+                "pending_approvals": pending_approvals,
+                "clients_count": clients_count
+            },
+            "order_volume": order_volume,
+            "status_data": status_data,
+            "top_products": top_products,
+            "needs_attention": needs_attention[:5],
+            "recent_activity": recent_activity
+        })
