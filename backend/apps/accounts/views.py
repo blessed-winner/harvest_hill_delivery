@@ -256,7 +256,7 @@ class UserProfileView(APIView):
 class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     serializer_class = AdminUserSerializer
-    queryset = User.objects.all().order_by('-date_joined')
+    queryset = User.objects.exclude(role='admin').order_by('-date_joined')
 
     def get_queryset(self):
         queryset = super().get_queryset()
