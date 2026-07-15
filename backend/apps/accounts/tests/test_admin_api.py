@@ -44,7 +44,7 @@ class AdminAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.admin)
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 3) # admin, farmer, client
+        self.assertEqual(len(res.data), 2) # farmer, client (admin excluded)
 
     def test_admin_user_deactivation(self):
         url_detail = reverse('admin-users-detail', kwargs={'pk': self.farmer.id})
