@@ -16,20 +16,20 @@ import { api, apiRequest } from './lib/api';
 import { cn } from './lib/utils';
 import { CurrencyProvider } from '../../context/CurrencyContext';
 
-function renderView(view: ViewType, searchTerm: string) {
+function renderView(view: ViewType) {
   switch (view) {
     case 'users':
-      return <UserManagement searchTerm={searchTerm} />;
+      return <UserManagement />;
     case 'products':
-      return <ProductCatalog searchTerm={searchTerm} />;
+      return <ProductCatalog />;
     case 'orders':
-      return <OrdersManagement searchTerm={searchTerm} />;
+      return <OrdersManagement />;
     case 'deliveries':
-      return <DeliveryNotes searchTerm={searchTerm} />;
+      return <DeliveryNotes />;
     case 'invoices':
-      return <Invoices searchTerm={searchTerm} />;
+      return <Invoices />;
     case 'supplies':
-      return <Supplies searchTerm={searchTerm} />;
+      return <Supplies />;
     case 'reports':
       return <Reports />;
     case 'dashboard':
@@ -44,7 +44,7 @@ export default function AdminLayout() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [adminName, setAdminName] = useState('Admin');
-  const [searchTerm, setSearchTerm] = useState('');
+
 
   // Fetch admin name
   useEffect(() => {
@@ -183,10 +183,9 @@ export default function AdminLayout() {
           onDeleteAll={handleDeleteAll}
           adminName={adminName}
           onMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
-          onSearchChange={setSearchTerm}
         />
         <main className="flex-grow min-w-0 overflow-y-auto">
-          {renderView(currentView, searchTerm)}
+          {renderView(currentView)}
         </main>
       </div>
     </div>
