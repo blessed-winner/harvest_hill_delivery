@@ -12,6 +12,11 @@ export function formatCurrency(value: unknown, fallback = '$0.00') {
   return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+if (!API_BASE) {
+  throw new Error('[api.ts] NEXT_PUBLIC_API_URL is not set. Check your Vercel environment variables.');
+}
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}, _retry = false): Promise<any> {
   const method = (options.method ?? 'GET').toUpperCase();
   const token =
@@ -31,7 +36,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     method,
     headers,
@@ -42,7 +47,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       const refreshToken = window.localStorage.getItem('refresh_token');
       if (refreshToken && !_retry) {
         try {
-          const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/token/refresh/`, {
+          const refreshRes = await fetch(`${API_BASE}/api/accounts/token/refresh/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh: refreshToken }),
