@@ -93,6 +93,32 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      await apiRequest('/api/notifications/delete-all/', { method: 'DELETE' });
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to delete all notifications:", err);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await apiRequest(`/api/notifications/${id}/`, { method: 'DELETE' });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      setUnreadCount(prev => {
+        const deletedNotif = notifications.find(n => n.id === id);
+        if (deletedNotif && !deletedNotif.is_read) {
+          return Math.max(prev - 1, 0);
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-surface">
       {/* Backdrop for mobile */}
@@ -118,6 +144,8 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
           unreadCount={unreadCount}
           onMarkAllRead={handleMarkAllRead}
           onMarkRead={handleMarkRead}
+          onDelete={handleDelete}
+          onDeleteAll={handleDeleteAll}
         />
         <main className={cn(
           "flex-grow min-w-0",

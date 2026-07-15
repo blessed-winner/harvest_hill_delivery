@@ -19,9 +19,8 @@ user, created = User.objects.get_or_create(
         "is_email_verified": True
     }
 )
-if created:
-    user.set_password("farmerpass123")
-    user.save()
+user.set_password("farmerpass123")
+user.save()
 
 # Ensure username is set for existing seed user too
 if not user.username:
@@ -44,7 +43,7 @@ profile, _ = FarmerProfile.objects.get_or_create(
 
 # Create admin user for offers
 admin_email = "admin@harvesthill.com"
-admin_user, _ = User.objects.get_or_create(
+admin_user, admin_created = User.objects.get_or_create(
     email=admin_email,
     defaults={
         "role": "admin",
@@ -52,6 +51,8 @@ admin_user, _ = User.objects.get_or_create(
         "is_staff": True
     }
 )
+admin_user.set_password("adminpass123")
+admin_user.save()
 
 # 2. Create products
 roma, _ = Product.objects.get_or_create(

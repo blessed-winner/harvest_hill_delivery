@@ -226,7 +226,12 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
               })}
               
               <button
-                onClick={() => alert("Signing out...")}
+                onClick={() => {
+                  localStorage.removeItem('access_token');
+                  localStorage.removeItem('refresh_token');
+                  localStorage.removeItem('user_role');
+                  window.location.href = '/login';
+                }}
                 className="flex items-center gap-3 px-4 py-3 text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6]/20 transition-colors cursor-pointer text-left"
               >
                 <LogOut size={16} />

@@ -36,6 +36,13 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
     onClose?.();
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
+    window.location.href = '/login';
+  };
+
   return (
     <aside className={cn(
       "w-[260px] bg-primary flex flex-col h-screen fixed left-0 top-0 bottom-0 py-4 shadow-sm z-50 shrink-0 overflow-hidden transition-transform duration-300",
@@ -96,7 +103,10 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
           <UserCircle className="w-5 h-5 mr-3 text-white/60 group-hover:text-white shrink-0" size={20} />
           <span className="text-sm font-sans whitespace-nowrap">Farmer Profile</span>
         </button>
-        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors text-left cursor-pointer whitespace-nowrap">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors text-left cursor-pointer whitespace-nowrap"
+        >
           <LogOut className="w-5 h-5 mr-3 text-white/60 shrink-0" size={20} />
           <span className="text-sm font-sans whitespace-nowrap">Logout</span>
         </button>

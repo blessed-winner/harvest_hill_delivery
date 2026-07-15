@@ -12,6 +12,8 @@ interface TopBarProps {
   unreadCount: number;
   onMarkAllRead: () => void;
   onMarkRead: (id: number) => void;
+  onDelete?: (id: number) => void;
+  onDeleteAll?: () => void;
 }
 
 function getNotifyIcon(title: string) {
@@ -41,7 +43,9 @@ export default function TopBar({
   notifications,
   unreadCount,
   onMarkAllRead,
-  onMarkRead
+  onMarkRead,
+  onDelete,
+  onDeleteAll
 }: TopBarProps) {
   const [farmName, setFarmName] = useState('Loading...');
   const [roleLabel, setRoleLabel] = useState('Farmer');
@@ -139,15 +143,26 @@ export default function TopBar({
                 )}
               </div>
               <div className="flex items-center gap-4">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={() => { onMarkAllRead(); }}
-                    className="text-[11px] font-sans font-bold text-[#b6edc2] hover:text-white hover:underline transition-all cursor-pointer bg-transparent border-none p-0"
-                    title="Mark all as read"
-                  >
-                    Mark all read
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => { onMarkAllRead(); }}
+                      className="text-[11px] font-sans font-bold text-[#b6edc2] hover:text-white hover:underline transition-all cursor-pointer bg-transparent border-none p-0"
+                      title="Mark all as read"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={() => { onDeleteAll?.(); }}
+                      className="text-[11px] font-sans font-bold text-red-200 hover:text-red-100 hover:underline transition-all cursor-pointer bg-transparent border-none p-0 ml-2"
+                      title="Delete all notifications"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
@@ -199,12 +214,20 @@ export default function TopBar({
                                 </div>
                               </div>
                               <p className="font-sans text-[11px] text-on-surface-variant mt-1 leading-relaxed">{notify.message}</p>
-                              <button
-                                onClick={e => { e.stopPropagation(); onMarkRead(notify.id); }}
-                                className="mt-2 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-mono text-[9px] font-bold uppercase hover:underline p-0 border-none bg-transparent"
-                              >
-                                Mark read
-                              </button>
+                              <div className="flex gap-3 mt-2">
+                                <button
+                                  onClick={e => { e.stopPropagation(); onMarkRead(notify.id); }}
+                                  className="text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-mono text-[9px] font-bold uppercase hover:underline p-0 border-none bg-transparent"
+                                >
+                                  Mark read
+                                </button>
+                                <button
+                                  onClick={e => { e.stopPropagation(); onDelete?.(notify.id); }}
+                                  className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-mono text-[9px] font-bold uppercase hover:underline p-0 border-none bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -223,7 +246,7 @@ export default function TopBar({
                         return (
                           <div
                             key={notify.id}
-                            className="flex gap-4.5 px-5 py-4 border-b border-outline-variant/30 hover:bg-surface-container-low/50 transition-all duration-200 border-l-4 border-transparent"
+                            className="flex gap-4.5 px-5 py-4 border-b border-outline-variant/30 hover:bg-surface-container-low/50 transition-all duration-200 border-l-4 border-transparent group"
                           >
                             <div className="mt-0.5 shrink-0 w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-outline shadow-sm">
                               <Icon size={16} />
@@ -239,6 +262,14 @@ export default function TopBar({
                                 </div>
                               </div>
                               <p className="font-sans text-[11px] text-on-surface-variant/75 mt-1 leading-relaxed">{notify.message}</p>
+                              <div className="flex gap-3 mt-2">
+                                <button
+                                  onClick={e => { e.stopPropagation(); onDelete?.(notify.id); }}
+                                  className="text-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer font-mono text-[9px] font-bold uppercase hover:underline p-0 border-none bg-transparent"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );

@@ -31,6 +31,13 @@ const navItems = [
 ] as const;
 
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
+    window.location.href = '/login';
+  };
+
   return (
     <aside className="w-[260px] bg-primary flex flex-col h-screen sticky top-0 py-4 shadow-sm z-30 shrink-0 overflow-hidden">
       <div className="px-6 mb-8">
@@ -64,7 +71,10 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
           <UserCircle className="w-5 h-5 mr-3 text-white/60" />
           <span className="text-sm">Admin Profile</span>
         </button>
-        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors"
+        >
           <LogOut className="w-5 h-5 mr-3 text-white/60" />
           <span className="text-sm">Logout</span>
         </button>

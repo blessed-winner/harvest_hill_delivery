@@ -7,6 +7,7 @@ from .serializers import NotificationSerializer
 
 class NotificationViewSet(mixins.ListModelMixin,
                           mixins.UpdateModelMixin,
+                          mixins.DestroyModelMixin,
                           viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
@@ -19,3 +20,8 @@ class NotificationViewSet(mixins.ListModelMixin,
     def mark_all_read(self, request):
         self.get_queryset().update(is_read=True)
         return Response({"detail": "All notifications marked as read"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='delete-all')
+    def delete_all(self, request):
+        self.get_queryset().delete()
+        return Response({"detail": "All notifications deleted"}, status=status.HTTP_204_NO_CONTENT)
