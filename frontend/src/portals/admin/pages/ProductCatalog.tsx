@@ -92,6 +92,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
     setImageFile(null);
+    // Use the product's image URL from the backend (Cloudinary)
     setImagePreviewUrl(product.image || "");
   };
 
@@ -120,9 +121,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       } else {
         await api.products.update(selectedProduct.id, formData);
       }
+      // Clear the form state
       setImageFile(null);
       setImagePreviewUrl("");
       setSelectedProduct(null);
+      // Reload products to get fresh data including new image URLs
       loadProducts();
     } catch (err: any) {
       alert(err.message || "Failed to save product.");

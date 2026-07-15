@@ -48,8 +48,8 @@ export default function TopBar({
   onDelete,
   onDeleteAll
 }: TopBarProps) {
-  const [farmName, setFarmName] = useState('Loading...');
-  const [roleLabel, setRoleLabel] = useState('Farmer');
+  const [farmName, setFarmName] = useState('');
+  const [roleLabel, setRoleLabel] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -73,8 +73,8 @@ export default function TopBar({
       try {
         const profile = await api.farmerProfile();
         if (!mounted) return;
-        setFarmName(profile.farm_name || profile.user?.username || 'Green Valley Farm');
-        setRoleLabel(profile.user?.role ? `${String(profile.user.role).toUpperCase()} Supplier` : 'Tier 1 Supplier');
+        setFarmName(profile.farm_name || profile.user?.username || '');
+        setRoleLabel(profile.user?.role ? `${String(profile.user.role).toUpperCase()} Supplier` : '');
       } catch {}
     }
     loadProfile();

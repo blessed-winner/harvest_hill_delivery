@@ -576,17 +576,18 @@ export default function SubmitHarvest() {
               <div className="p-4 sm:p-6 bg-surface-container-low border-t border-outline-variant flex flex-col gap-3 sm:gap-4 sticky bottom-0 z-20">
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-60"
+                  disabled={isSubmitting || !form.quantity || !form.askingPrice}
+                  className="w-full py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span>{isSubmitting ? 'Submitting...' : 'Submit for Review'}</span>
                   <Send size={20} />
                 </button>
                 <button
                   onClick={() => setSelectedProduct(null)}
-                  className="w-full py-3 bg-white border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-colors active:scale-[0.98]"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-white border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-colors active:scale-[0.98] disabled:opacity-60"
                 >
-                  Save as draft
+                  Cancel
                 </button>
               </div>
             </motion.div>
