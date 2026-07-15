@@ -416,7 +416,8 @@ class AdminDashboardView(APIView):
                 "deliveries": deliveries,
                 "revenue": float(revenue),
                 "pending_approvals": pending_approvals,
-                "clients_count": clients_count
+                "clients_count": clients_count,
+                "total_orders": total_orders
             },
             "order_volume": order_volume,
             "status_data": status_data,
