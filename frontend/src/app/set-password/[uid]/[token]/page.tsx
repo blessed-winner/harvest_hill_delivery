@@ -52,7 +52,7 @@ export default function SetPasswordPage() {
 
     try {
       // Set password activates the account under the hood using the same reset confirm API endpoint
-      const response = await fetch('http://localhost:8000/api/accounts/password-reset/confirm/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/password-reset/confirm/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

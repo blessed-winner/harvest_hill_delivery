@@ -79,7 +79,7 @@ export default function AdminLayout() {
         const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken');
         if (!token) return;
 
-        socket = new WebSocket(`ws://localhost:8000/ws/notifications/?token=${token}`);
+        socket = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/notifications/?token=${token}`);
 
         socket.onmessage = (event) => {
           try {

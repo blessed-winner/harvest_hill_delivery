@@ -31,7 +31,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`http://localhost:8000${endpoint}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
     ...options,
     method,
     headers,
@@ -42,7 +42,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       const refreshToken = window.localStorage.getItem('refresh_token');
       if (refreshToken && !_retry) {
         try {
-          const refreshRes = await fetch('http://localhost:8000/api/accounts/token/refresh/', {
+          const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/token/refresh/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh: refreshToken }),

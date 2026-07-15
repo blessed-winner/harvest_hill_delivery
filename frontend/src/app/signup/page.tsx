@@ -52,7 +52,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/register/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -51,7 +51,7 @@ export default function ResetPasswordConfirmPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/password-reset/confirm/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/password-reset/confirm/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
