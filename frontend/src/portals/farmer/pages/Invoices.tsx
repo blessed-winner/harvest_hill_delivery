@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Filter, Download, FileText, X, Printer, ChevronLeft, ChevronRight, Sprout } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { api, formatCurrency } from '../lib/api';
+import { api } from '../lib/api';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 type InvoiceRow = {
   id: string;
@@ -22,6 +23,7 @@ export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { formatPrice } = useCurrency();
   const [summary, setSummary] = useState({
     totalEarned: '$0.00',
     pendingPayments: '$0.00',
@@ -53,7 +55,7 @@ export default function Invoices() {
           id: invoice.bikanawe_invoice_id || `#HH-INV-${String(invoice.id).padStart(6, '0')}`,
           supply: invoice.supply_detail?.product_detail?.name || invoice.supply_detail?.product?.name || `Supply #${invoice.supply}`,
           date: invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
-          amount: formatCurrency(invoice.amount),
+          amount: formatPrice(invoice.amount),
           status: String(invoice.status).toUpperCase() === 'PAID' ? 'PAID' : 'PENDING',
           supplyDetail: invoice.supply_detail,
           raw: invoice,
@@ -62,10 +64,10 @@ export default function Invoices() {
         setInvoices(rows);
 
         setSummary({
-          totalEarned: formatCurrency(totals?.total_earned ?? 0),
-          pendingPayments: formatCurrency(totals?.pending ?? 0),
+          totalEarned: formatPrice(totals?.total_earned ?? 0),
+          pendingPayments: formatPrice(totals?.pending ?? 0),
           outstandingCount: rows.filter((invoice: any) => invoice.status === 'PENDING').length,
-          lastPayment: formatCurrency(totals?.last_payment ?? 0),
+          lastPayment: formatPrice(totals?.last_payment ?? 0),
           lastPaymentDate: rows.find((invoice: any) => invoice.status === 'PAID')?.date || '—',
           earnedChangePercentage: totals?.earned_change_percentage ?? 0,
         });
@@ -482,8 +484,8 @@ export default function Invoices() {
                             <p className="font-mono text-[9px] text-on-surface-variant mt-1">{item.sub}</p>
                           </td>
                           <td className="py-6 text-center font-mono text-sm">{item.qty}</td>
-                          <td className="py-6 text-right font-mono text-sm">${item.rate.toFixed(2)}</td>
-                          <td className="py-6 text-right font-mono text-sm font-bold">${(item.qty * item.rate).toFixed(2)}</td>
+                          <td className="py-6 text-right font-mono text-sm">{formatPrice(item.rate)}</td>
+                          <td className="py-6 text-right font-mono text-sm font-bold">{formatPrice(item.qty * item.rate)}</td>
                         </tr>
                       ))}
                     </tbody>

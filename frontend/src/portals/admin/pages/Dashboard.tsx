@@ -23,11 +23,13 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 export function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'today' | '7days' | '30days'>('7days');
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     setIsLoading(true);
@@ -102,7 +104,7 @@ export function Dashboard() {
         {[
           { label: 'Active Orders', value: kpis.active_orders.toLocaleString(), change: 'Live', icon: ShoppingCart, color: 'text-primary' },
           { label: 'Deliveries', value: kpis.deliveries.toLocaleString(), change: 'Live', icon: Truck, color: 'text-emerald-600' },
-          { label: 'Revenue', value: `$${kpis.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: 'Total', icon: TrendingUp, color: 'text-green-600' },
+          { label: 'Revenue', value: formatPrice(kpis.revenue), change: 'Total', icon: TrendingUp, color: 'text-green-600' },
           { label: 'Approvals', value: kpis.pending_approvals.toLocaleString(), change: 'Pending', icon: FileCheck, color: 'text-primary-container' },
           { label: 'Clients', value: kpis.clients_count.toLocaleString(), change: 'Active', icon: UsersIcon, color: 'text-primary' },
         ].map((kpi, i) => (

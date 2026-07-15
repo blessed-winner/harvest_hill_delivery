@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { CurrencyToggle } from '../../../components/CurrencyToggle';
 
 interface TopBarProps {
   notifications: any[];
@@ -95,6 +96,7 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-2 relative" ref={dropdownRef}>
+        <CurrencyToggle />
         <button 
           onClick={() => setIsOpen(prev => !prev)}
           className={cn(

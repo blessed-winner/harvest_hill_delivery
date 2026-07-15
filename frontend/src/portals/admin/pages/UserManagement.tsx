@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon, AlertCircle, Trash2, Power } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -20,6 +20,20 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Actions dropdown state
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // User Form state
   const [formEmail, setFormEmail] = useState("");
@@ -70,16 +84,28 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
-  const handleToggleStatus = async (user: any, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleStatus = async (user: any) => {
     try {
       await api.users.update(user.id, { is_active: !user.is_active });
+      setOpenMenuId(null);
       loadUsers();
       if (selectedUser?.id === user.id) {
         setSelectedUser({ ...selectedUser, is_active: !user.is_active });
       }
     } catch (err) {
       console.error("Failed to toggle status:", err);
+    }
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${user.email}? This action cannot be undone.`)) return;
+    try {
+      await api.users.delete(user.id);
+      setOpenMenuId(null);
+      if (selectedUser?.id === user.id) setSelectedUser(null);
+      loadUsers();
+    } catch (err) {
+      console.error("Failed to delete user:", err);
     }
   };
 
@@ -292,26 +318,46 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div 
-                          onClick={(e) => handleToggleStatus(user, e)}
-                          className={cn(
-                            "w-8 h-4 rounded-full relative transition-colors cursor-pointer",
-                            user.is_active ? "bg-primary" : "bg-outline-variant"
-                          )}
-                        >
-                          <div className={cn(
-                            "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm",
-                            user.is_active ? "left-[17px]" : "left-[3px]"
-                          )} />
-                        </div>
+                        <span className={cn(
+                          "px-2.5 py-1 text-[10px] font-bold rounded-full border",
+                          user.is_active 
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                            : "bg-red-50 text-red-700 border-red-200"
+                        )}>
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 font-mono text-[13px] text-on-surface-variant">
                         {new Date(user.date_joined).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative inline-block" ref={openMenuId === user.id ? menuRef : undefined}>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === user.id ? null : user.id); }}
+                            className="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {openMenuId === user.id && (
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-outline-variant rounded-xl shadow-lg z-50 overflow-hidden min-w-[180px] animate-in fade-in slide-in-from-top-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-on-surface hover:bg-surface-container-low transition-all cursor-pointer"
+                              >
+                                <Power className="w-3.5 h-3.5" />
+                                {user.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <div className="border-t border-outline-variant/30" />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteUser(user); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete User
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

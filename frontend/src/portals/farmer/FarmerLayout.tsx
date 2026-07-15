@@ -11,6 +11,7 @@ import TopBar from './components/TopBar';
 import { View } from '../types';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from './lib/api';
+import { CurrencyProvider } from '../../context/CurrencyContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -120,6 +121,7 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
   };
 
   return (
+    <CurrencyProvider>
     <div className="min-h-screen flex bg-surface">
       {/* Backdrop for mobile */}
       {isMobileMenuOpen && (
@@ -155,5 +157,6 @@ export default function Layout({ children, activeView, onViewChange }: LayoutPro
         </main>
       </div>
     </div>
+    </CurrencyProvider>
   );
 }

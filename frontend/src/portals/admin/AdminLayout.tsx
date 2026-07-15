@@ -14,6 +14,7 @@ import { Reports } from './pages/Reports';
 import { ViewType } from '../types';
 import { api, apiRequest } from './lib/api';
 import { cn } from './lib/utils';
+import { CurrencyProvider } from '../../context/CurrencyContext';
 
 function renderView(view: ViewType, searchTerm: string) {
   switch (view) {
@@ -152,6 +153,7 @@ export default function AdminLayout() {
   };
 
   return (
+    <CurrencyProvider>
     <div className="min-h-screen flex bg-surface">
       {/* Backdrop for mobile */}
       {isMobileMenuOpen && (
@@ -188,5 +190,6 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
+    </CurrencyProvider>
   );
 }

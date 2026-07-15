@@ -12,6 +12,7 @@ import Checkout from '../../portals/client/pages/Checkout';
 import DeliveryNote from '../../portals/client/pages/DeliveryNote';
 import OrderHistory from '../../portals/client/pages/OrderHistory';
 import Invoices from '../../portals/client/pages/Invoices';
+import { CurrencyProvider } from '../../context/CurrencyContext';
 
 export default function ClientPage() {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function ClientPage() {
   };
 
   return (
+    <CurrencyProvider>
     <ClientLayout
       activeScreen={activeScreen}
       onNavigate={handleNavigate}
@@ -88,5 +90,6 @@ export default function ClientPage() {
     >
       {renderActiveScreen()}
     </ClientLayout>
+    </CurrencyProvider>
   );
 }

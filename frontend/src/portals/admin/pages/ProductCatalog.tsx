@@ -4,6 +4,7 @@ import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 interface ProductCatalogProps {
   searchTerm?: string;
@@ -13,6 +14,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const { formatPrice } = useCurrency();
 
   // Form states
   const [formName, setFormName] = useState("");
@@ -262,7 +264,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     <div className="flex justify-between items-center mt-3">
                       <div>
                         <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Base Price</p>
-                        <p className="font-mono text-sm font-bold text-primary">${parseFloat(product.base_price).toFixed(2)} / {product.unit}</p>
+                        <p className="font-mono text-sm font-bold text-primary">{formatPrice(product.base_price)} / {product.unit}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Qty Needed</p>
