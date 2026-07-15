@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle } from 'lucide-react';
+import { Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
 
@@ -14,7 +14,6 @@ interface TopBarProps {
   onDeleteAll: () => void;
   adminName: string;
   onMenuToggle: () => void;
-  onSearchChange?: (val: string) => void;
 }
 
 function getNotifyIcon(title: string) {
@@ -47,10 +46,8 @@ export function TopBar({
   onDeleteAll,
   adminName,
   onMenuToggle,
-  onSearchChange,
 }: TopBarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,18 +60,12 @@ export function TopBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearchValue(val);
-    onSearchChange?.(val);
-  };
-
   const unreadNotifs = notifications.filter(n => !n.is_read);
   const readNotifs = notifications.filter(n => n.is_read);
 
   return (
     <header className="h-14 flex items-center justify-between px-6 bg-white border-b border-outline-variant shrink-0 z-20">
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-4">
         <button
           onClick={onMenuToggle}
           className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors cursor-pointer"
@@ -82,17 +73,6 @@ export function TopBar({
         >
           <Menu size={20} />
         </button>
-
-        <div className="relative w-full max-w-md group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant transition-colors group-focus-within:text-primary" />
-          <input 
-            type="text" 
-            placeholder="Search records, users, or orders..."
-            value={searchValue}
-            onChange={handleSearchChange}
-            className="w-full h-9 pl-10 pr-4 bg-surface-container-low border-none rounded-full text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/60"
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-2 relative" ref={dropdownRef}>
