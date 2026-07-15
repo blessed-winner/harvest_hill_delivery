@@ -5,7 +5,11 @@ import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
 
-export function ProductCatalog() {
+interface ProductCatalogProps {
+  searchTerm?: string;
+}
+
+export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -25,7 +29,9 @@ export function ProductCatalog() {
 
   const loadProducts = () => {
     setIsLoading(true);
-    api.products.list()
+    const params: Record<string, string> = {};
+    if (searchTerm) params.search = searchTerm;
+    api.products.list(params)
       .then(res => {
         setProducts(res || []);
       })
@@ -39,7 +45,7 @@ export function ProductCatalog() {
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [searchTerm]);
 
   const handleToggleNeeded = async (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -120,7 +126,13 @@ export function ProductCatalog() {
     }
   };
 
-  const filteredProducts = products.filter(p => activeCategory === 'All Products' || p.category === activeCategory);
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = activeCategory === 'All Products' || p.category === activeCategory;
+    const matchesSearch = searchTerm 
+      ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="flex flex-col h-full">

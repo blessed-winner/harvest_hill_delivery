@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 
-export function Supplies() {
+interface SuppliesProps {
+  searchTerm?: string;
+}
+
+export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
   const [activeStatusTab, setActiveStatusTab] = useState('Pending Review');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const statusMap: Record<string, string> = {
     'Pending Review': 'pending',
@@ -34,6 +41,10 @@ export function Supplies() {
     loadSupplies();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeStatusTab, searchTerm]);
+
   const handleUpdateStatus = async (supplyId: number | string, newStatus: string) => {
     try {
       await api.supplies.update(supplyId, { status: newStatus });
@@ -46,8 +57,21 @@ export function Supplies() {
 
   const filteredSupplies = supplies.filter(s => {
     const backendStatus = statusMap[activeStatusTab];
-    return s.status === backendStatus;
+    const matchesTab = s.status === backendStatus;
+    const matchesSearch = searchTerm 
+      ? (s.product_detail?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.farmer_name || s.farmer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.product_detail?.category || '').toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+    return matchesTab && matchesSearch;
   });
+
+  // Pagination calculations
+  const suppliesPerPage = 8;
+  const indexOfLastSupply = currentPage * suppliesPerPage;
+  const indexOfFirstSupply = indexOfLastSupply - suppliesPerPage;
+  const currentSupplies = filteredSupplies.slice(indexOfFirstSupply, indexOfLastSupply);
+  const totalPages = Math.ceil(filteredSupplies.length / suppliesPerPage);
 
   return (
     <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 min-h-[calc(100vh-56px)] flex flex-col bg-[#f9f9f7]">
@@ -56,13 +80,13 @@ export function Supplies() {
           <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary mb-1">Supply Logs</h2>
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
         </div>
-        <div className="flex bg-surface-container-low p-1 rounded-lg">
+        <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
           {['Pending Review', 'Accepted', 'Delivered'].map((t) => (
             <button 
               key={t} 
               onClick={() => setActiveStatusTab(t)}
               className={cn(
-                "px-4 py-1.5 rounded-md font-bold text-xs transition-all",
+                "px-4 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap",
                 activeStatusTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"
               )}
             >
@@ -72,12 +96,15 @@ export function Supplies() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
         <div className="overflow-x-auto custom-scrollbar">
           {isLoading ? (
-            <div className="p-8 text-center text-on-surface-variant font-medium">Loading supplies...</div>
+            <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading supplies...</div>
           ) : filteredSupplies.length === 0 ? (
-            <div className="p-8 text-center text-on-surface-variant font-medium">No supplies found.</div>
+            <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+              <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+              <p className="text-sm font-bold">No supplies found.</p>
+            </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
@@ -91,7 +118,7 @@ export function Supplies() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
-                {filteredSupplies.map((s) => (
+                {currentSupplies.map((s) => (
                   <tr 
                     key={s.id} 
                     onClick={() => setSelectedSupply(s)}
@@ -136,6 +163,31 @@ export function Supplies() {
             </table>
           )}
         </div>
+
+        {/* Pagination Footer */}
+        {!isLoading && totalPages > 1 && (
+          <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
+            <span className="text-xs text-on-surface-variant font-bold">
+              Showing {indexOfFirstSupply + 1}-{Math.min(indexOfLastSupply, filteredSupplies.length)} of {filteredSupplies.length} supplies
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+              >
+                Previous
+              </button>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <DetailDrawer
@@ -150,13 +202,13 @@ export function Supplies() {
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => handleUpdateStatus(selectedSupply.id, 'accepted')}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white rounded-lg font-bold shadow-sm hover:opacity-90 transition-all"
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white rounded-lg font-bold shadow-sm hover:opacity-90 transition-all cursor-pointer"
                   >
                     <Check className="w-5 h-5" /> Accept Proposal
                   </button>
                   <button 
                     onClick={() => handleUpdateStatus(selectedSupply.id, 'cancelled')}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-red-600 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all"
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-red-600 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all cursor-pointer"
                   >
                     <X className="w-5 h-5" /> Reject Proposal
                   </button>
@@ -165,14 +217,14 @@ export function Supplies() {
               {selectedSupply.status === 'accepted' && (
                 <button 
                   onClick={() => handleUpdateStatus(selectedSupply.id, 'delivered')}
-                  className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Archive className="w-5 h-5" /> Mark as Received
                 </button>
               )}
               <button 
                 onClick={() => setSelectedSupply(null)}
-                className="w-full py-3 bg-surface-container-high text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-highest transition-all"
+                className="w-full py-3 bg-surface-container-high text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-highest transition-all cursor-pointer"
               >
                 Close
               </button>

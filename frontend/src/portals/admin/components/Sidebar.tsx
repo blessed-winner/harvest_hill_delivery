@@ -9,7 +9,8 @@ import {
   Warehouse, 
   BarChart3, 
   UserCircle, 
-  LogOut 
+  LogOut,
+  X
 } from 'lucide-react';
 import { ViewType } from '../../types';
 import { cn } from '../lib/utils';
@@ -17,6 +18,8 @@ import { cn } from '../lib/utils';
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const navItems = [
@@ -30,7 +33,7 @@ const navItems = [
   { id: 'reports', label: 'Reports', icon: BarChart3 },
 ] as const;
 
-export function Sidebar({ currentView, onViewChange }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, isOpen = false, onClose }: SidebarProps) {
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -39,10 +42,26 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
   };
 
   return (
-    <aside className="w-[260px] bg-primary flex flex-col h-screen sticky top-0 py-4 shadow-sm z-30 shrink-0 overflow-hidden">
-      <div className="px-6 mb-8">
-        <h1 className="text-lg font-bold text-white leading-tight">Harvest Hill</h1>
-        <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Supply Chain Admin</p>
+    <aside className={cn(
+      "w-[260px] bg-primary flex flex-col h-screen fixed left-0 top-0 bottom-0 py-4 shadow-sm z-50 shrink-0 overflow-hidden transition-transform duration-300",
+      "lg:translate-x-0 lg:flex",
+      isOpen 
+        ? "translate-x-0" 
+        : "-translate-x-full lg:translate-x-0"
+    )}>
+      <div className="px-6 mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-white leading-tight">Harvest Hill</h1>
+          <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Supply Chain Admin</p>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-2 space-y-1 overflow-y-auto custom-scrollbar">

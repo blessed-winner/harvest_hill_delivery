@@ -5,11 +5,18 @@ import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
 
-export function Invoices() {
+interface InvoicesProps {
+  searchTerm?: string;
+}
+
+export function Invoices({ searchTerm = '' }: InvoicesProps) {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('All Invoices');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadInvoices = () => {
     setIsLoading(true);
@@ -29,6 +36,10 @@ export function Invoices() {
     loadInvoices();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
   const handleMarkAsPaid = async (invoiceId: number | string) => {
     try {
       await api.invoices.update(invoiceId, { status: 'paid' });
@@ -44,8 +55,13 @@ export function Invoices() {
   };
 
   const filteredInvoices = invoices.filter(inv => {
-    if (activeTab === 'All Invoices') return true;
-    return getFrontendStatus(inv.status) === activeTab;
+    const matchesTab = activeTab === 'All Invoices' ? true : getFrontendStatus(inv.status) === activeTab;
+    const matchesSearch = searchTerm 
+      ? inv.bikanawe_invoice_id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        inv.party_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        String(inv.amount).includes(searchTerm)
+      : true;
+    return matchesTab && matchesSearch;
   });
 
   const totalPendingAmount = invoices
@@ -53,6 +69,13 @@ export function Invoices() {
     .reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
 
   const unsyncedCount = invoices.filter(inv => inv.sync_status === 'failed').length;
+
+  // Pagination calculations
+  const invoicesPerPage = 8;
+  const indexOfLastInvoice = currentPage * invoicesPerPage;
+  const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
+  const currentInvoices = filteredInvoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
+  const totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
@@ -68,7 +91,7 @@ export function Invoices() {
           </div>
           <button 
             onClick={loadInvoices}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-bold hover:bg-emerald-200 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-bold hover:bg-emerald-200 transition-all cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
@@ -85,13 +108,13 @@ export function Invoices() {
 
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-8 flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm border border-outline-variant">
-            <div className="flex bg-surface-container-low rounded-lg p-1 shrink-0">
+            <div className="flex bg-surface-container-low rounded-lg p-1 shrink-0 overflow-x-auto">
               {['All Invoices', 'Pending', 'Paid'].map((t) => (
                 <button 
                   key={t}
                   onClick={() => setActiveTab(t)}
                   className={cn(
-                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all",
+                    "px-4 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                     activeTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"
                   )}
                 >
@@ -111,10 +134,10 @@ export function Invoices() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
+          <div className="flex-grow overflow-x-auto">
             {isLoading ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium">Loading ledger invoices...</div>
+              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading ledger invoices...</div>
             ) : filteredInvoices.length === 0 ? (
               <div className="p-8 text-center text-on-surface-variant font-medium">No invoices found.</div>
             ) : (
@@ -130,7 +153,7 @@ export function Invoices() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {filteredInvoices.map((inv) => (
+                  {currentInvoices.map((inv) => (
                     <tr 
                       key={inv.id}
                       onClick={() => setSelectedInvoice(inv)}
@@ -159,6 +182,31 @@ export function Invoices() {
               </table>
             )}
           </div>
+
+          {/* Pagination Footer */}
+          {!isLoading && totalPages > 1 && (
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
+              <span className="text-xs text-on-surface-variant font-bold">
+                Showing {indexOfFirstInvoice + 1}-{Math.min(indexOfLastInvoice, filteredInvoices.length)} of {filteredInvoices.length} invoices
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -174,14 +222,14 @@ export function Invoices() {
               {selectedInvoice.status === 'pending' && (
                 <button 
                   onClick={() => handleMarkAsPaid(selectedInvoice.id)}
-                  className="px-6 py-2.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2"
+                  className="px-6 py-2.5 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Check className="w-4 h-4" /> Mark as Paid
                 </button>
               )}
               <button 
                 onClick={() => setSelectedInvoice(null)}
-                className="px-6 py-2.5 border border-outline-variant rounded-lg font-bold text-on-surface hover:bg-surface-container-high transition-all"
+                className="px-6 py-2.5 border border-outline-variant rounded-lg font-bold text-on-surface hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Close
               </button>

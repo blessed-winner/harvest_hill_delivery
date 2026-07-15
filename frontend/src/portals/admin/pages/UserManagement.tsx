@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon } from 'lucide-react';
+import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon, AlertCircle } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 
-export function UserManagement() {
+interface UserManagementProps {
+  searchTerm?: string;
+}
+
+export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -15,7 +19,10 @@ export function UserManagement() {
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [activeTab, setActiveTab] = useState("All Users");
 
-  // Add User Form state
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // User Form state
   const [formEmail, setFormEmail] = useState("");
   const [formUsername, setFormUsername] = useState("");
   const [formPassword, setFormPassword] = useState("");
@@ -31,7 +38,8 @@ export function UserManagement() {
     setIsLoading(true);
     const params: Record<string, string> = {};
     
-    if (searchQuery) params.search = searchQuery;
+    const activeSearch = searchTerm || searchQuery;
+    if (activeSearch) params.search = activeSearch;
     
     if (statusFilter === "Active") params.is_active = "true";
     else if (statusFilter === "Suspended") params.is_active = "false";
@@ -60,7 +68,12 @@ export function UserManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, [searchQuery, statusFilter, roleFilter, activeTab]);
+  }, [searchQuery, statusFilter, roleFilter, activeTab, searchTerm]);
+
+  // Reset to first page when query / filter updates
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, roleFilter, activeTab, searchTerm]);
 
   const handleToggleStatus = async (user: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -131,6 +144,10 @@ export function UserManagement() {
       is_active: selectedUser.is_active,
     };
 
+    if (formPassword) {
+      payload.password = formPassword;
+    }
+
     if (selectedUser.role === 'farmer') {
       payload.farmer_profile = {
         farm_name: formProfileName,
@@ -147,6 +164,7 @@ export function UserManagement() {
 
     try {
       await api.users.update(selectedUser.id, payload);
+      setFormPassword(""); // reset password input field
       setSelectedUser(null);
       loadUsers();
     } catch (err: any) {
@@ -156,6 +174,7 @@ export function UserManagement() {
 
   const handleOpenDetail = (user: any) => {
     setSelectedUser(user);
+    setFormPassword(""); // clear password from previous selection
     if (user.role === 'farmer') {
       setFormProfileName(user.farmer_profile?.farm_name || "");
       setFormProfilePhone(user.farmer_profile?.phone || "");
@@ -171,6 +190,13 @@ export function UserManagement() {
     }
   };
 
+  // Pagination calculations
+  const usersPerPage = 8;
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(users.length / usersPerPage);
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
       <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
@@ -185,7 +211,7 @@ export function UserManagement() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                "px-6 py-3 text-sm font-bold transition-all border-b-2 cursor-pointer",
                 activeTab === tab ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:bg-surface-container-low"
               )}
             >
@@ -228,7 +254,7 @@ export function UserManagement() {
           </div>
           <button 
             onClick={handleOpenAddUser}
-            className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-sm"
+            className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary-container transition-all shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add User
           </button>
@@ -236,12 +262,16 @@ export function UserManagement() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             {isLoading ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium">Loading user data...</div>
+              <div className="p-12 text-center text-on-surface-variant font-medium animate-pulse">Loading user data...</div>
             ) : users.length === 0 ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium">No users found.</div>
+              <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+                <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+                <p className="text-sm font-bold">No users match your criteria.</p>
+                <p className="text-xs">Try broadening your search term or filter rules.</p>
+              </div>
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
@@ -254,7 +284,7 @@ export function UserManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {users.map((user) => (
+                  {currentUsers.map((user) => (
                     <tr 
                       key={user.id}
                       onClick={() => handleOpenDetail(user)}
@@ -304,26 +334,51 @@ export function UserManagement() {
               </table>
             )}
           </div>
+
+          {/* Pagination Footer */}
+          {!isLoading && totalPages > 1 && (
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
+              <span className="text-xs text-on-surface-variant font-bold">
+                Showing {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, users.length)} of {users.length} users
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       <DetailDrawer
         isOpen={!!selectedUser}
         onClose={() => setSelectedUser(null)}
-        title={selectedUser === 'new' ? "Add New User" : "Record Details"}
-        subtitle={selectedUser && selectedUser !== 'new' ? `${selectedUser.email} • Role: ${selectedUser.role}` : 'Create a client or farmer account'}
+        title={selectedUser === 'new' ? "Add New User" : "User Profile Details"}
+        subtitle={selectedUser && selectedUser !== 'new' ? `${selectedUser.email} • Role: ${selectedUser.role}` : 'Create a client, farmer, or admin account'}
         footer={
           selectedUser === 'new' ? (
             <div className="flex gap-3 w-full">
               <button 
                 onClick={handleCreateUser}
-                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all"
+                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer"
               >
                 Create User
               </button>
               <button 
                 onClick={() => setSelectedUser(null)}
-                className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all"
+                className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -332,13 +387,13 @@ export function UserManagement() {
             <div className="flex gap-3 w-full">
               <button 
                 onClick={handleSaveChanges}
-                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all"
+                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer"
               >
                 Save Changes
               </button>
               <button 
                 onClick={() => setSelectedUser(null)}
-                className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all"
+                className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -355,7 +410,7 @@ export function UserManagement() {
                 value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
               />
             </div>
             <div>
@@ -365,7 +420,7 @@ export function UserManagement() {
                 value={formUsername}
                 onChange={(e) => setFormUsername(e.target.value)}
                 placeholder="username"
-                className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
               />
             </div>
             <div>
@@ -375,7 +430,7 @@ export function UserManagement() {
                 value={formPassword}
                 onChange={(e) => setFormPassword(e.target.value)}
                 placeholder="password (min 8 chars)"
-                className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
               />
             </div>
             <div>
@@ -383,7 +438,7 @@ export function UserManagement() {
               <select 
                 value={formRole} 
                 onChange={(e) => setFormRole(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
               >
                 <option value="client">Client</option>
                 <option value="farmer">Farmer</option>
@@ -412,7 +467,7 @@ export function UserManagement() {
                     value={formProfileName}
                     onChange={(e) => setFormProfileName(e.target.value)}
                     placeholder="Valley Organics"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
                 <div>
@@ -422,7 +477,7 @@ export function UserManagement() {
                     value={formProfilePhone}
                     onChange={(e) => setFormProfilePhone(e.target.value)}
                     placeholder="+1 (555) 234-8891"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
                 <div>
@@ -434,14 +489,14 @@ export function UserManagement() {
                     value={formProfileAddress}
                     onChange={(e) => setFormProfileAddress(e.target.value)}
                     placeholder="Oregon, USA"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
               </div>
             )}
           </div>
         ) : selectedUser ? (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
                 <p className="text-[10px] text-on-surface-variant uppercase font-bold">Status</p>
@@ -463,44 +518,76 @@ export function UserManagement() {
               </div>
             </div>
 
-            <section>
+            <section className="pt-2">
               <div className="flex items-center gap-2 mb-4">
                 <UserIcon className="w-5 h-5 text-primary" />
                 <h4 className="font-bold">User & Profile Information</h4>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
-                    {selectedUser.role === 'farmer' ? 'Farm Name' : 'Business Name'}
-                  </label>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase font-mono">Username</label>
                   <input 
                     type="text" 
-                    value={formProfileName}
-                    onChange={(e) => setFormProfileName(e.target.value)}
-                    placeholder="Not Set"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                    value={selectedUser.username || ''}
+                    disabled
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none text-on-surface-variant opacity-60"
                   />
                 </div>
+                {(selectedUser.role === 'farmer' || selectedUser.role === 'client') && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                        {selectedUser.role === 'farmer' ? 'Farm Name' : 'Business Name'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={formProfileName}
+                        onChange={(e) => setFormProfileName(e.target.value)}
+                        placeholder="Not Set"
+                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Phone Number</label>
+                      <input 
+                        type="text" 
+                        value={formProfilePhone}
+                        onChange={(e) => setFormProfilePhone(e.target.value)}
+                        placeholder="Not Set"
+                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
+                        {selectedUser.role === 'farmer' ? 'Location' : 'Delivery Address'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={formProfileAddress}
+                        onChange={(e) => setFormProfileAddress(e.target.value)}
+                        placeholder="Not Set"
+                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+
+            <section className="pt-6 border-t border-outline-variant/30">
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <h4 className="font-bold">Security (Force Update Password)</h4>
+              </div>
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Phone Number</label>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">New Password</label>
                   <input 
-                    type="text" 
-                    value={formProfilePhone}
-                    onChange={(e) => setFormProfilePhone(e.target.value)}
-                    placeholder="Not Set"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
-                    {selectedUser.role === 'farmer' ? 'Location' : 'Delivery Address'}
-                  </label>
-                  <input 
-                    type="text" 
-                    value={formProfileAddress}
-                    onChange={(e) => setFormProfileAddress(e.target.value)}
-                    placeholder="Not Set"
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none"
+                    type="password" 
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    placeholder="Enter new password to reset"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
               </div>

@@ -159,12 +159,15 @@ class AdminUserSerializer(serializers.ModelSerializer):
         farmer_profile_data = validated_data.pop('farmer_profile', None)
         client_profile_data = validated_data.pop('client_profile', None)
         admin_profile_data = validated_data.pop('admin_profile', None)
+        password = validated_data.pop('password', None)
 
         instance.email = validated_data.get('email', instance.email)
         instance.username = validated_data.get('username', instance.username)
         instance.role = validated_data.get('role', instance.role)
         instance.is_active = validated_data.get('is_active', instance.is_active)
         instance.is_email_verified = validated_data.get('is_email_verified', instance.is_email_verified)
+        if password:
+            instance.set_password(password)
         instance.save()
 
         if instance.role == 'farmer':

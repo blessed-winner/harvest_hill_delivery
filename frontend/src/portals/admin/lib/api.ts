@@ -77,8 +77,21 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
 }
 
 export const api = {
+  // Current User Info
+  me: () => apiRequest('/api/accounts/me/'),
+
   // Dashboard Metrics
-  dashboardSummary: () => apiRequest('/api/accounts/admin/dashboard/'),
+  dashboardSummary: (params: Record<string, string> = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/api/accounts/admin/dashboard/${query ? '?' + query : ''}`);
+  },
+
+  // Notifications
+  notifications: () => apiRequest('/api/notifications/'),
+  markAllRead: () => apiRequest('/api/notifications/mark-all-read/', { method: 'POST' }),
+  markRead: (id: string | number) => apiRequest(`/api/notifications/${id}/`, { method: 'PATCH', body: JSON.stringify({ is_read: true }) }),
+  deleteNotification: (id: string | number) => apiRequest(`/api/notifications/${id}/`, { method: 'DELETE' }),
+  deleteAllNotifications: () => apiRequest('/api/notifications/delete-all/', { method: 'DELETE' }),
 
   // User Management
   users: {

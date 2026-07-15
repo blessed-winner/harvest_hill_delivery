@@ -287,46 +287,75 @@ class AdminDashboardView(APIView):
         from apps.invoices.models import Invoice
         from apps.delivery_notes.models import DeliveryNote
         from django.db.models import Sum, Count
+        from django.utils import timezone
+        from datetime import timedelta
+
+        timeframe = request.query_params.get('timeframe', '7days')
+        now = timezone.now()
+        if timeframe == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif timeframe == '30days':
+            start_date = now - timedelta(days=30)
+        else: # '7days' default
+            start_date = now - timedelta(days=7)
 
         # 1. KPIs
-        active_orders = Order.objects.exclude(status__in=['delivered', 'cancelled']).count()
-        deliveries = Order.objects.filter(status='delivered').count()
-        revenue = Invoice.objects.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0.00
-        pending_approvals = Supply.objects.filter(status='pending').count()
+        active_orders = Order.objects.exclude(status__in=['delivered', 'cancelled']).filter(created_at__gte=start_date).count()
+        deliveries = Order.objects.filter(status__in=['delivered', 'shipped'], created_at__gte=start_date).count()
+        revenue = Invoice.objects.filter(status='paid', created_at__gte=start_date).aggregate(total=Sum('amount'))['total'] or 0.00
+        pending_approvals = Supply.objects.filter(status='pending', created_at__gte=start_date).count()
         clients_count = User.objects.filter(role='client').count()
 
-        # 2. Charts: Order volume over last 7 days
+        # 2. Charts: Order volume over timeframe
         order_volume = []
-        for i in range(6, -1, -1):
-            day = timezone.now() - timedelta(days=i)
-            day_str = day.strftime('%a').upper()
-            count = Order.objects.filter(created_at__date=day.date()).count()
-            order_volume.append({"day": day_str, "value": count})
+        if timeframe == 'today':
+            # Hourly volume for last 8 hours
+            for i in range(7, -1, -1):
+                hour = now - timedelta(hours=i)
+                count = Order.objects.filter(created_at__hour=hour.hour, created_at__date=hour.date()).count()
+                order_volume.append({"day": hour.strftime('%H:00'), "value": count})
+        elif timeframe == '30days':
+            # Daily volume for last 30 days
+            for i in range(29, -1, -1):
+                day = now - timedelta(days=i)
+                count = Order.objects.filter(created_at__date=day.date()).count()
+                order_volume.append({"day": day.strftime('%b %d'), "value": count})
+        else: # '7days' default
+            for i in range(6, -1, -1):
+                day = now - timedelta(days=i)
+                day_str = day.strftime('%a').upper()
+                count = Order.objects.filter(created_at__date=day.date()).count()
+                order_volume.append({"day": day_str, "value": count})
 
-        # 3. Charts: Orders by status
+        # 3. Charts: Orders by status (shipped merged into delivered)
         status_colors = {
             'pending': '#9ed0ab',
             'processing': '#466551',
-            'shipped': '#144227',
             'delivered': '#144227',
             'cancelled': '#ba1a1a'
         }
         status_data = []
-        total_orders = Order.objects.count()
+        total_orders = Order.objects.filter(created_at__gte=start_date).count()
         if total_orders > 0:
-            for s_choice, s_label in Order.STATUS_CHOICES:
-                count = Order.objects.filter(status=s_choice).count()
+            statuses_to_count = {
+                'Pending': Order.objects.filter(status='pending', created_at__gte=start_date).count(),
+                'Processing': Order.objects.filter(status='processing', created_at__gte=start_date).count(),
+                'Delivered': Order.objects.filter(status__in=['delivered', 'shipped'], created_at__gte=start_date).count(),
+                'Cancelled': Order.objects.filter(status='cancelled', created_at__gte=start_date).count(),
+            }
+            for label, count in statuses_to_count.items():
                 if count > 0:
                     pct = round((count / total_orders) * 100, 1)
+                    s_key = label.lower()
                     status_data.append({
-                        "name": s_label,
+                        "name": label,
                         "value": pct,
-                        "color": status_colors.get(s_choice, '#414942')
+                        "color": status_colors.get(s_key, '#414942')
                     })
 
-        # 4. Top products by volume
+        # 4. Top products by volume (filtered by timeframe)
         top_products = []
-        prod_volumes = OrderItem.objects.values('product__name').annotate(volume=Sum('quantity')).order_by('-volume')[:5]
+        prod_volumes = OrderItem.objects.filter(order__created_at__gte=start_date).values('product__name').annotate(volume=Sum('quantity')).order_by('-volume')[:5]
         max_vol = max([float(item['volume']) for item in prod_volumes] or [1.0])
         for item in prod_volumes:
             vol = float(item['volume'])

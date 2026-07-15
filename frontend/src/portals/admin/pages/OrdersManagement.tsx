@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, ShoppingCart, CheckCircle, Truck, Trash2, MoreVertical, Handshake, ChevronRight, X } from 'lucide-react';
+import { Search, Filter, Plus, ShoppingCart, CheckCircle, Truck, Trash2, MoreVertical, Handshake, ChevronRight, X, AlertCircle } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../lib/api';
 
-export function OrdersManagement() {
+interface OrdersManagementProps {
+  searchTerm?: string;
+}
+
+export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('All');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const statusMap: Record<string, string> = {
     'SUBMITTED': 'pending',
@@ -35,6 +42,10 @@ export function OrdersManagement() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
 
   const handleUpdateStatus = async (orderId: number | string, newStatus: string) => {
     try {
@@ -71,8 +82,13 @@ export function OrdersManagement() {
   };
 
   const filteredOrders = orders.filter(o => {
-    if (activeTab === 'All') return true;
-    return getFrontendStatus(o.status) === activeTab.toUpperCase();
+    const matchesTab = activeTab === 'All' ? true : getFrontendStatus(o.status) === activeTab.toUpperCase();
+    const matchesSearch = searchTerm 
+      ? String(o.id).includes(searchTerm) || 
+        (o.client_detail?.business_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (o.client_detail?.user?.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
+    return matchesTab && matchesSearch;
   });
 
   const getOrderTotal = (order: any) => {
@@ -89,6 +105,13 @@ export function OrdersManagement() {
     ];
   };
 
+  // Pagination calculations
+  const ordersPerPage = 8;
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
       <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
@@ -99,7 +122,8 @@ export function OrdersManagement() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl w-fit">
+        {/* Scrollable Filter Tabs */}
+        <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl w-full sm:w-fit overflow-x-auto max-w-full scrollbar-none">
           {['All', 'Submitted', 'Approved', 'In Delivery', 'Completed'].map((tab) => {
             const count = tab === 'All' ? orders.length : orders.filter(o => getFrontendStatus(o.status) === tab.toUpperCase()).length;
             return (
@@ -107,7 +131,7 @@ export function OrdersManagement() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all",
+                  "px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap",
                   activeTab === tab ? "bg-white shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
                 )}
               >
@@ -119,12 +143,16 @@ export function OrdersManagement() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+        <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             {isLoading ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium">Loading orders...</div>
+              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading orders...</div>
             ) : filteredOrders.length === 0 ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium">No orders found.</div>
+              <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+                <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+                <p className="text-sm font-bold">No orders found.</p>
+                <p className="text-xs">There are no orders that match your active filters or search terms.</p>
+              </div>
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
@@ -139,7 +167,7 @@ export function OrdersManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
-                  {filteredOrders.map((order) => {
+                  {currentOrders.map((order) => {
                     const frontendStatus = getFrontendStatus(order.status);
                     return (
                       <tr 
@@ -176,6 +204,31 @@ export function OrdersManagement() {
               </table>
             )}
           </div>
+
+          {/* Pagination Footer */}
+          {!isLoading && totalPages > 1 && (
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
+              <span className="text-xs text-on-surface-variant font-bold">
+                Showing {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length} orders
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -190,14 +243,14 @@ export function OrdersManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => handleGenerateDeliveryNote(selectedOrder)}
-                  className="py-3 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors"
+                  className="py-3 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors cursor-pointer"
                 >
                   Generate Delivery Note
                 </button>
                 {selectedOrder.status === 'pending' && (
                   <button 
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'processing')}
-                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all"
+                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all cursor-pointer"
                   >
                     Approve Order
                   </button>
@@ -205,7 +258,7 @@ export function OrdersManagement() {
                 {selectedOrder.status === 'processing' && (
                   <button 
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'shipped')}
-                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all"
+                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all cursor-pointer"
                   >
                     Ship Order
                   </button>
@@ -213,7 +266,7 @@ export function OrdersManagement() {
                 {selectedOrder.status === 'shipped' && (
                   <button 
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'delivered')}
-                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all"
+                    className="py-3 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all cursor-pointer"
                   >
                     Complete Order
                   </button>
@@ -221,7 +274,7 @@ export function OrdersManagement() {
               </div>
               <button 
                 onClick={() => setSelectedOrder(null)}
-                className="w-full py-3 bg-surface-container-low border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all"
+                className="w-full py-3 bg-surface-container-low border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Close
               </button>
@@ -238,75 +291,53 @@ export function OrdersManagement() {
                   <div key={step.label} className="flex gap-4 relative">
                     {i < arr.length - 1 && (
                       <div className={cn(
-                        "absolute left-[11px] top-6 w-[2px] h-6",
-                        step.status === 'completed' ? "bg-primary" : "bg-outline-variant"
+                        "absolute left-[9px] top-6 w-[2px] h-[calc(100%+16px)]",
+                        step.status === 'completed' ? "bg-primary" : "bg-outline-variant/30"
                       )} />
                     )}
                     <div className={cn(
-                      "z-10 w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-                      step.status === 'completed' ? "bg-primary text-white" :
-                      step.status === 'active' ? "border-2 border-primary bg-white" : "bg-surface-container-high"
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 shrink-0",
+                      step.status === 'completed' ? "bg-primary border-primary text-white" :
+                      step.status === 'active' ? "bg-white border-primary text-primary" :
+                      "bg-white border-outline text-outline"
                     )}>
-                      {step.status === 'completed' ? (
-                        <CheckCircle className="w-4 h-4 fill-white text-primary" />
-                      ) : step.status === 'active' ? (
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                      ) : (
-                        <div className="w-2 h-2 bg-on-surface-variant/30 rounded-full" />
-                      )}
+                      {step.status === 'completed' && <span className="text-[9px] font-bold">✓</span>}
+                      {step.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
                     </div>
                     <div>
-                      <p className={cn(
-                        "text-sm font-bold",
-                        step.status === 'upcoming' ? "text-on-surface-variant/50" : "text-on-surface"
-                      )}>{step.label}</p>
-                      <p className={cn(
-                        "text-xs mt-0.5",
-                        step.status === 'upcoming' ? "text-on-surface-variant/40" : "text-on-surface-variant"
-                      )}>{step.time}</p>
+                      <p className="text-xs font-bold">{step.label}</p>
+                      <p className="text-[10px] text-on-surface-variant">{step.time}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Itemized Breakdown</h4>
-              </div>
-              <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/30">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-outline-variant/30 bg-white/50">
-                    <tr>
-                      <th className="p-3 text-on-surface-variant/60 uppercase font-bold">Item</th>
-                      <th className="p-3 text-on-surface-variant/60 uppercase font-bold text-right">Qty</th>
-                      <th className="p-3 text-on-surface-variant/60 uppercase font-bold text-right">Negot.</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/20">
-                    {(selectedOrder.items || []).map((item: any, i: number) => (
-                      <tr key={i}>
-                        <td className="p-3 font-medium">{item.product_detail?.name || 'Crop'}</td>
-                        <td className="p-3 text-right font-mono">{item.quantity}</td>
-                        <td className="p-3 text-right font-mono font-bold text-primary">${parseFloat(item.price).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-surface-container-high/50 font-bold border-t border-outline-variant">
-                    <tr>
-                      <td className="p-3 text-right" colSpan={2}>Final Total</td>
-                      <td className="p-3 text-right font-mono text-base">${getOrderTotal(selectedOrder).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+            <section className="space-y-4">
+              <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Order Summary</h4>
+              <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 divide-y divide-outline-variant/20">
+                {(selectedOrder.items || []).map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 text-xs">
+                    <div>
+                      <p className="font-bold">{item.product_name || `Product #${item.product}`}</p>
+                      <p className="text-on-surface-variant/80 mt-0.5">{item.quantity} units • ${parseFloat(item.price).toFixed(2)}/unit</p>
+                    </div>
+                    <span className="font-mono font-bold">${(parseFloat(item.price) * parseFloat(item.quantity)).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-3 text-sm font-bold text-primary">
+                  <span>Grand Total</span>
+                  <span className="font-mono">${getOrderTotal(selectedOrder).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
               </div>
             </section>
 
-            <section className="bg-surface-container-low border border-outline-variant p-4 rounded-xl flex items-start gap-4 shadow-sm">
-              <div>
-                <h5 className="text-sm font-bold">{selectedOrder.client_detail?.business_name || 'Client Business'}</h5>
-                <p className="text-xs text-on-surface-variant">{selectedOrder.client_detail?.phone || 'No phone set'}</p>
-                <p className="text-xs text-on-surface-variant mt-1">Delivery Address: {selectedOrder.delivery_address}</p>
+            <section className="space-y-2">
+              <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Delivery Details</h4>
+              <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 text-xs space-y-1">
+                <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Client:</span> {selectedOrder.client_detail?.business_name || 'Client'}</p>
+                <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Address:</span> {selectedOrder.delivery_address || 'Not specified'}</p>
+                <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Contact Email:</span> {selectedOrder.client_detail?.user?.email}</p>
               </div>
             </section>
           </div>
