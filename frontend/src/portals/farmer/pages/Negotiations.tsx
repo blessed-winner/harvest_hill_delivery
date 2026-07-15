@@ -185,23 +185,43 @@ export default function Negotiations() {
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between flex-shrink-0">
           <div>
-            <h4 className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Market Context</h4>
+            <h4 className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+              {activeThread ? `Market Context: ${activeThread.supply_detail?.product_detail?.name || 'Product'}` : 'Market Context'}
+            </h4>
             <div className="flex items-center gap-3">
-              <span className="font-sans text-xl font-extrabold text-primary">$8.24</span>
-              <span className="flex items-center text-secondary font-bold font-mono text-[10px] uppercase">
-                <TrendingUp size={14} className="mr-1" />
-                +2.4% vs last week
+              <span className="font-sans text-xl font-extrabold text-primary">
+                {activeThread?.supply_detail?.base_price ? `$${activeThread.supply_detail.base_price}` : '—'}
               </span>
+              {activeThread?.supply_detail?.base_price ? (
+                <span className="flex items-center text-secondary font-bold font-mono text-[10px] uppercase">
+                  <TrendingUp size={14} className="mr-1" />
+                  +1.5% vs last week
+                </span>
+              ) : (
+                <span className="text-on-surface-variant font-mono text-[10px] uppercase">
+                  No active negotiation
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-end gap-1 h-10">
-            {[40, 55, 50, 70, 65, 85, 100].map((h, i) => (
-              <div 
-                key={i} 
-                style={{ height: `${h}%` }} 
-                className={cn("w-2 rounded-t-sm transition-all duration-500", i === 6 ? "bg-primary" : "bg-secondary-container")} 
-              />
-            ))}
+            {activeThread ? (
+              [40, 55, 50, 70, 65, 85, 100].map((h, i) => (
+                <div 
+                  key={i} 
+                  style={{ height: `${h}%` }} 
+                  className={cn("w-2 rounded-t-sm transition-all duration-500", i === 6 ? "bg-primary" : "bg-secondary-container")} 
+                />
+              ))
+            ) : (
+              [10, 10, 10, 10, 10, 10, 10].map((h, i) => (
+                <div 
+                  key={i} 
+                  style={{ height: `${h}%` }} 
+                  className="w-2 rounded-t-sm bg-surface-container-high transition-all" 
+                />
+              ))
+            )}
           </div>
         </div>
 

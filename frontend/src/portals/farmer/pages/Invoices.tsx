@@ -28,6 +28,7 @@ export default function Invoices() {
     outstandingCount: 0,
     lastPayment: '$0.00',
     lastPaymentDate: '—',
+    earnedChangePercentage: 0,
   });
 
   // Interactive filters
@@ -66,6 +67,7 @@ export default function Invoices() {
           outstandingCount: rows.filter((invoice: any) => invoice.status === 'PENDING').length,
           lastPayment: formatCurrency(totals?.last_payment ?? 0),
           lastPaymentDate: rows.find((invoice: any) => invoice.status === 'PAID')?.date || '—',
+          earnedChangePercentage: totals?.earned_change_percentage ?? 0,
         });
       } catch (error) {
         console.error('Failed to load invoices:', error);
@@ -145,9 +147,13 @@ export default function Invoices() {
             <p className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Total Earned</p>
             <h3 className="font-sans text-2xl font-extrabold text-primary">{summary.totalEarned}</h3>
           </div>
-          <div className="mt-6 flex items-center text-secondary text-xs font-bold font-sans">
-            <span className="bg-secondary/10 px-2 py-1 rounded-lg">+12% from last month</span>
-          </div>
+          {summary.earnedChangePercentage !== 0 && (
+            <div className="mt-6 flex items-center text-secondary text-xs font-bold font-sans">
+              <span className="bg-secondary/10 px-2 py-1 rounded-lg">
+                {summary.earnedChangePercentage > 0 ? `+${summary.earnedChangePercentage}%` : `${summary.earnedChangePercentage}%`} from last month
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="bg-surface-container-lowest p-4 sm:p-6 rounded-xl border border-outline-variant custom-shadow flex flex-col justify-between">
@@ -156,9 +162,6 @@ export default function Invoices() {
             <h3 className="font-sans text-2xl font-extrabold text-tertiary">{summary.pendingPayments}</h3>
           </div>
           <div className="mt-6">
-            <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
-              <div className="h-full bg-tertiary w-[65%]" />
-            </div>
             <p className="font-mono text-[10px] text-on-surface-variant mt-2 uppercase tracking-tight">{summary.outstandingCount} Invoices Outstanding</p>
           </div>
         </div>
