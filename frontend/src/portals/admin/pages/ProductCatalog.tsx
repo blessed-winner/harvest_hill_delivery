@@ -19,13 +19,19 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formCategory, setFormCategory] = useState("Vegetables");
   const [formUnit, setFormUnit] = useState("kg");
   const [formPrice, setFormPrice] = useState("");
-  const [formImage, setFormImage] = useState("");
   const [formIsCurrentlyNeeded, setFormIsCurrentlyNeeded] = useState(false);
   const [formUrgency, setFormUrgency] = useState("medium");
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
 
+  // File Upload states
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+
   const [activeCategory, setActiveCategory] = useState('All Products');
   const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Dairy'];
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadProducts = () => {
     setIsLoading(true);
@@ -47,6 +53,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     loadProducts();
   }, [searchTerm]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchTerm]);
+
   const handleToggleNeeded = async (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -62,10 +72,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory("Vegetables");
     setFormUnit("kg");
     setFormPrice("");
-    setFormImage("");
     setFormIsCurrentlyNeeded(false);
     setFormUrgency("medium");
     setFormQuantityNeeded("");
+    setImageFile(null);
+    setImagePreviewUrl("");
     setSelectedProduct("new");
   };
 
@@ -75,10 +86,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory(product.category || "Vegetables");
     setFormUnit(product.unit || "kg");
     setFormPrice(product.base_price ? String(product.base_price) : "");
-    setFormImage(product.image || "");
     setFormIsCurrentlyNeeded(product.is_currently_needed || false);
     setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
+    setImageFile(null);
+    setImagePreviewUrl(product.image || "");
   };
 
   const handleSaveProduct = async () => {
@@ -87,26 +99,27 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
-    const payload: any = {
-      name: formName,
-      category: formCategory,
-      unit: formUnit,
-      base_price: parseFloat(formPrice),
-      is_currently_needed: formIsCurrentlyNeeded,
-      urgency: formUrgency,
-      quantity_needed: formQuantityNeeded ? parseFloat(formQuantityNeeded) : 0,
-    };
-
-    if (formImage) {
-      payload.image = formImage;
+    const formData = new FormData();
+    formData.append('name', formName);
+    formData.append('category', formCategory);
+    formData.append('unit', formUnit);
+    formData.append('base_price', String(parseFloat(formPrice)));
+    formData.append('is_currently_needed', String(formIsCurrentlyNeeded));
+    formData.append('urgency', formUrgency);
+    formData.append('quantity_needed', formQuantityNeeded ? String(parseFloat(formQuantityNeeded)) : '0');
+    
+    if (imageFile) {
+      formData.append('image', imageFile);
     }
 
     try {
       if (selectedProduct === 'new') {
-        await api.products.create(payload);
+        await api.products.create(formData);
       } else {
-        await api.products.update(selectedProduct.id, payload);
+        await api.products.update(selectedProduct.id, formData);
       }
+      setImageFile(null);
+      setImagePreviewUrl("");
       setSelectedProduct(null);
       loadProducts();
     } catch (err: any) {
@@ -134,10 +147,28 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     return matchesCategory && matchesSearch;
   });
 
+  const getUrgencyBadgeClass = (urgency: string) => {
+    const u = (urgency || '').toLowerCase();
+    switch (u) {
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'steady': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Pagination calculations
+  const productsPerPage = 8;
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-8 shrink-0 bg-white">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div className="flex flex-col h-full bg-[#f9f9f7] pb-10">
+      <div className="p-8 shrink-0 bg-white border-b border-outline-variant">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-4">
           <div>
             <h2 className="text-2xl font-bold text-on-surface mb-4">Product Catalog</h2>
             <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-fit">
@@ -146,7 +177,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                    "px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer",
                     activeCategory === cat 
                       ? "bg-white text-primary shadow-sm" 
                       : "text-on-surface-variant hover:bg-surface-container-high"
@@ -159,93 +190,131 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
           <button 
             onClick={handleOpenAddProduct}
-            className="flex items-center px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition-all"
+            className="flex items-center px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-bold shadow-md hover:opacity-90 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-2" /> Add Product
           </button>
         </div>
+      </div>
 
+      <div className="p-8 flex-1">
         {isLoading ? (
-          <div className="p-8 text-center text-on-surface-variant font-medium">Loading catalog...</div>
+          <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading catalog...</div>
         ) : filteredProducts.length === 0 ? (
-          <div className="p-8 text-center text-on-surface-variant font-medium">No products found.</div>
+          <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+            <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+            <p className="text-sm font-bold">No products found.</p>
+            <p className="text-xs">Add new crops or change categories.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product, i) => (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                key={product.id}
-                onClick={() => handleOpenEditProduct(product)}
-                className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
-              >
-                <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
-                  {product.image ? (
-                    <img 
-                      src={product.image} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                      alt={product.name} 
-                    />
-                  ) : (
-                    <Package className="w-12 h-12 text-outline-variant" />
-                  )}
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center shadow-sm">
-                    <div className={cn(
-                      "w-2 h-2 rounded-full mr-2",
-                      product.is_currently_needed ? "bg-green-600" : "bg-outline"
-                    )} />
-                    <span className="text-[10px] font-bold text-on-surface uppercase tracking-tighter">
-                      {product.is_currently_needed ? 'Needed' : 'Normal'}
-                    </span>
-                  </div>
-                  {product.is_currently_needed && (
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                        {product.urgency || 'Medium'}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {currentProducts.map((product, i) => (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  key={product.id}
+                  onClick={() => handleOpenEditProduct(product)}
+                  className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                >
+                  <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                        alt={product.name} 
+                      />
+                    ) : (
+                      <Package className="w-12 h-12 text-outline-variant" />
+                    )}
+                    
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center shadow-sm">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full mr-2",
+                        product.is_currently_needed ? "bg-green-600 animate-pulse" : "bg-outline"
+                      )} />
+                      <span className="text-[10px] font-bold text-on-surface uppercase tracking-tighter">
+                        {product.is_currently_needed ? 'Needed' : 'Normal'}
                       </span>
                     </div>
-                  )}
-                </div>
 
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-1">
-                    <div>
-                      <p className="text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">{product.category}</p>
-                      <h3 className="font-bold text-on-surface text-base">{product.name}</h3>
-                    </div>
-                    <button 
-                      onClick={(e) => handleDeleteProduct(product, e)}
-                      className="p-1.5 text-outline hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {product.is_currently_needed && (
+                      <div className="absolute top-3 right-3">
+                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm", getUrgencyBadgeClass(product.urgency))}>
+                          {product.urgency || 'Medium'}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="flex justify-between items-end mt-4 pt-4 border-t border-outline-variant/20">
-                    <div>
-                      <span className="text-on-surface-variant text-[10px] font-bold uppercase">Base Price</span>
-                      <p className="text-xl font-bold text-primary">
-                        ${parseFloat(product.base_price).toFixed(2)} <span className="text-xs font-medium text-on-surface-variant">/ {product.unit}</span>
-                      </p>
+
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-bold text-sm truncate pr-2">{product.name}</h3>
+                      <button 
+                        onClick={(e) => handleDeleteProduct(product, e)}
+                        className="p-1 text-on-surface-variant hover:text-red-600 rounded-full hover:bg-surface-container transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div 
-                      onClick={(e) => handleToggleNeeded(product, e)}
-                      className={cn(
-                        "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
-                        product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-3 h-3 bg-white rounded-full transition-all",
-                        product.is_currently_needed ? "translate-x-5" : "translate-x-0"
-                      )} />
+                    
+                    <div className="flex justify-between items-center mt-3">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Base Price</p>
+                        <p className="font-mono text-sm font-bold text-primary">${parseFloat(product.base_price).toFixed(2)} / {product.unit}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Qty Needed</p>
+                        <p className="font-mono text-sm font-bold text-on-surface">{parseFloat(product.quantity_needed).toLocaleString()} {product.unit}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-outline-variant/30 flex justify-between items-center text-xs">
+                      <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
+                      <div 
+                        onClick={(e) => handleToggleNeeded(product, e)}
+                        className={cn(
+                          "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
+                          product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
+                          product.is_currently_needed ? "translate-x-5" : "translate-x-0"
+                        )} />
+                      </div>
                     </div>
                   </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 px-6 py-4 bg-surface-container-low border border-outline-variant rounded-xl flex items-center justify-between">
+                <span className="text-xs text-on-surface-variant font-bold">
+                  Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} crops
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    Next
+                  </button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -258,13 +327,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           <div className="flex gap-3 w-full">
             <button 
               onClick={() => setSelectedProduct(null)}
-              className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all"
+              className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button 
               onClick={handleSaveProduct}
-              className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all"
+              className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer"
             >
               Save Product
             </button>
@@ -272,15 +341,43 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         }
       >
         <div className="space-y-6">
+          {/* File Upload Preview Panel */}
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Image URL</label>
-            <input 
-              type="text" 
-              placeholder="e.g. https://images.unsplash.com/photo-..."
-              value={formImage}
-              onChange={(e) => setFormImage(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
-            />
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Photo</label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[140px] items-center">
+              <div className="space-y-1 text-center">
+                {imagePreviewUrl ? (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                    <p className="text-white text-xs font-bold">Change Image</p>
+                  </div>
+                ) : null}
+                {imagePreviewUrl ? (
+                  <img src={imagePreviewUrl} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
+                ) : (
+                  <>
+                    <ImageIcon className="mx-auto h-12 w-12 text-outline-variant" />
+                    <div className="flex text-sm text-on-surface-variant justify-center mt-2">
+                      <label className="relative cursor-pointer bg-transparent rounded-md font-semibold text-primary hover:text-primary-container focus-within:outline-none">
+                        <span>Upload a image file</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-on-surface-variant/70">PNG, JPG, GIF up to 5MB</p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreviewUrl(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -299,7 +396,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <select 
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="Vegetables">Vegetables</option>
                 <option value="Fruits">Fruits</option>
@@ -312,7 +409,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <select 
                 value={formUnit}
                 onChange={(e) => setFormUnit(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="kg">kg</option>
                 <option value="crate">crate</option>
@@ -359,7 +456,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               )}
             >
               <div className={cn(
-                "w-3 h-3 bg-white rounded-full transition-all",
+                "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
                 formIsCurrentlyNeeded ? "translate-x-5" : "translate-x-0"
               )} />
             </div>
@@ -371,11 +468,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <select 
                 value={formUrgency}
                 onChange={(e) => setFormUrgency(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
+                <option value="steady">Steady</option>
               </select>
             </div>
           )}

@@ -9,7 +9,8 @@ from .views import (
     UserProfileView,
     RegisterView,
     AdminUserViewSet,
-    AdminDashboardView
+    AdminDashboardView,
+    AdminReportsView
 )
 
 router = DefaultRouter()
@@ -18,6 +19,7 @@ router.register('admin/users', AdminUserViewSet, basename='admin-users')
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
+    path('admin/reports/', AdminReportsView.as_view(), name='admin-reports'),
     path('login/', LoginView.as_view(), name='login'),
     path('register/', RegisterView.as_view(), name='register'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),

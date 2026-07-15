@@ -454,3 +454,110 @@ class AdminDashboardView(APIView):
             "needs_attention": needs_attention[:5],
             "recent_activity": recent_activity
         })
+
+
+class AdminReportsView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        from apps.supplies.models import Supply
+        from apps.orders.models import Order, OrderItem
+        from apps.accounts.models import FarmerProfile, ClientProfile
+        from django.db.models import Sum, Count, Q
+
+        # 1. Farmer Performance / Supply Volume (farmerData)
+        farmerData = []
+        farmers = FarmerProfile.objects.all()
+        for farmer in farmers:
+            supplies = Supply.objects.filter(farmer=farmer, status__in=['accepted', 'delivered', 'invoiced'])
+            total_yield = float(supplies.aggregate(total=Sum('quantity'))['total'] or 0)
+            
+            total_count = supplies.count()
+            high_quality_count = supplies.filter(quality_grade__in=['premium', 'standard']).count()
+            quality_pct = int((high_quality_count / total_count * 100)) if total_count > 0 else 0
+            
+            if total_yield > 0:
+                farmerData.append({
+                    "name": farmer.farm_name or farmer.user.username or farmer.user.email,
+                    "yield": total_yield,
+                    "quality": quality_pct
+                })
+        
+        if not farmerData:
+            farmerData = [{"name": "No Suppliers yet", "yield": 0, "quality": 0}]
+
+        # 2. Sales Analysis (Sales volume grouped by product category)
+        salesData = []
+        categories = ['Vegetables', 'Fruits', 'Dairy', 'Grains']
+        for cat in categories:
+            items = OrderItem.objects.filter(product__category=cat, order__status='delivered')
+            total_sales = sum(float(x.price * x.quantity) for x in items)
+            salesData.append({
+                "name": cat,
+                "value": total_sales
+            })
+
+        # 3. Supplier Rankings
+        supplier_rankings = []
+        for farmer in FarmerProfile.objects.all():
+            supplies = Supply.objects.filter(farmer=farmer)
+            total_yield = float(supplies.filter(status__in=['accepted', 'delivered', 'invoiced']).aggregate(total=Sum('quantity'))['total'] or 0)
+            
+            total_count = supplies.filter(status__in=['accepted', 'delivered', 'invoiced']).count()
+            high_quality_count = supplies.filter(status__in=['accepted', 'delivered', 'invoiced'], quality_grade__in=['premium', 'standard']).count()
+            quality_pct = (high_quality_count / total_count * 100) if total_count > 0 else 0.0
+            
+            if total_yield > 0 or total_count > 0:
+                perf = int(70 + (quality_pct * 0.3))
+                supplier_rankings.append({
+                    "name": farmer.farm_name or farmer.user.username or farmer.user.email,
+                    "region": farmer.location or "Unknown",
+                    "yield": total_yield,
+                    "quality": f"{quality_pct:.1f}%",
+                    "class": "Class A" if quality_pct >= 90 else "Class B",
+                    "perf": perf
+                })
+        supplier_rankings.sort(key=lambda x: x['perf'], reverse=True)
+        
+        # 4. Client Rankings
+        client_rankings = []
+        for client in ClientProfile.objects.all():
+            orders = Order.objects.filter(client=client)
+            total_orders_val = sum(sum(float(item.price * item.quantity) for item in o.items.all()) for o in orders.filter(status='delivered'))
+            
+            total_count = orders.count()
+            delivered_count = orders.filter(status='delivered').count()
+            completed_pct = (delivered_count / total_count * 100) if total_count > 0 else 0.0
+            
+            if total_orders_val > 0 or total_count > 0:
+                perf = int(70 + (completed_pct * 0.3))
+                client_rankings.append({
+                    "name": client.business_name or client.user.username or client.user.email,
+                    "region": client.delivery_address or "Unknown",
+                    "yield": total_orders_val,
+                    "quality": f"{completed_pct:.1f}%",
+                    "class": "Class A" if completed_pct >= 90 else "Class B",
+                    "perf": perf
+                })
+        client_rankings.sort(key=lambda x: x['perf'], reverse=True)
+
+        # 5. Global Stats
+        all_supplies = Supply.objects.filter(status__in=['accepted', 'delivered', 'invoiced'])
+        total_supplies = all_supplies.count()
+        premium_supplies = all_supplies.filter(quality_grade__in=['premium', 'standard']).count()
+        global_avg_quality = f"{(premium_supplies / total_supplies * 100):.1f}%" if total_supplies > 0 else "0.0%"
+        
+        active_suppliers_count = FarmerProfile.objects.count()
+        active_clients_count = ClientProfile.objects.count()
+
+        return Response({
+            "farmerData": farmerData,
+            "salesData": salesData,
+            "supplier_rankings": supplier_rankings,
+            "client_rankings": client_rankings,
+            "global_stats": {
+                "global_avg_quality": global_avg_quality,
+                "active_suppliers_count": active_suppliers_count,
+                "active_clients_count": active_clients_count
+            }
+        })

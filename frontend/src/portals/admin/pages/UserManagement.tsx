@@ -16,7 +16,6 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [roleFilter, setRoleFilter] = useState("All Roles");
   const [activeTab, setActiveTab] = useState("All Users");
 
   // Pagination state
@@ -44,10 +43,6 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     if (statusFilter === "Active") params.is_active = "true";
     else if (statusFilter === "Suspended") params.is_active = "false";
     
-    if (roleFilter !== "All Roles") {
-      params.role = roleFilter.toLowerCase();
-    }
-
     if (activeTab === "Clients") {
       params.role = "client";
     } else if (activeTab === "Farmers & Suppliers") {
@@ -68,12 +63,12 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
 
   useEffect(() => {
     loadUsers();
-  }, [searchQuery, statusFilter, roleFilter, activeTab, searchTerm]);
+  }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
   // Reset to first page when query / filter updates
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, roleFilter, activeTab, searchTerm]);
+  }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
   const handleToggleStatus = async (user: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -240,16 +235,6 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
               <option value="All">Status: All</option>
               <option value="Active">Active</option>
               <option value="Suspended">Suspended</option>
-            </select>
-            <select 
-              value={roleFilter} 
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant outline-none"
-            >
-              <option value="All Roles">Role: All Roles</option>
-              <option value="Farmer">Farmer</option>
-              <option value="Client">Client</option>
-              <option value="Admin">Admin</option>
             </select>
           </div>
           <button 

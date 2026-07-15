@@ -110,8 +110,20 @@ export const api = {
       const query = new URLSearchParams(params).toString();
       return apiRequest(`/api/products/${query ? '?' + query : ''}`);
     },
-    create: (payload: any) => apiRequest('/api/products/', { method: 'POST', body: JSON.stringify(payload) }),
-    update: (id: string | number, payload: any) => apiRequest(`/api/products/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    create: (payload: any) => {
+      const isFormData = payload instanceof FormData;
+      return apiRequest('/api/products/', {
+        method: 'POST',
+        body: isFormData ? payload : JSON.stringify(payload)
+      });
+    },
+    update: (id: string | number, payload: any) => {
+      const isFormData = payload instanceof FormData;
+      return apiRequest(`/api/products/${id}/`, {
+        method: 'PATCH',
+        body: isFormData ? payload : JSON.stringify(payload)
+      });
+    },
     delete: (id: string | number) => apiRequest(`/api/products/${id}/`, { method: 'DELETE' }),
   },
 
@@ -139,5 +151,10 @@ export const api = {
   invoices: {
     list: () => apiRequest('/api/invoices/'),
     update: (id: string | number, payload: any) => apiRequest(`/api/invoices/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  },
+
+  // Reports Management
+  reports: {
+    get: () => apiRequest('/api/accounts/admin/reports/'),
   },
 };

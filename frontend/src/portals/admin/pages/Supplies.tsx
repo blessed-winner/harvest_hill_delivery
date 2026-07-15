@@ -17,6 +17,12 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
+  const safeParseFloat = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   const statusMap: Record<string, string> = {
     'Pending Review': 'pending',
     'Accepted': 'accepted',
@@ -140,8 +146,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-primary">${parseFloat(s.price).toFixed(2)}</span>
-                        <span className="text-[10px] text-on-surface-variant font-bold">vs ${parseFloat(s.base_price || 0).toFixed(2)}</span>
+                        <span className="font-mono text-sm font-bold text-primary">${safeParseFloat(s.price || s.proposed_price).toFixed(2)}</span>
+                        <span className="text-[10px] text-on-surface-variant font-bold">vs ${safeParseFloat(s.base_price || s.product_detail?.base_price).toFixed(2)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -241,16 +247,16 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Proposed Price</span>
-                <span className="text-sm font-extrabold text-primary">${parseFloat(selectedSupply.price).toFixed(2)} / {selectedSupply.unit}</span>
+                <span className="text-sm font-extrabold text-primary">${safeParseFloat(selectedSupply.price || selectedSupply.proposed_price).toFixed(2)} / {selectedSupply.unit}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Market Base Price</span>
-                <span className="text-sm font-extrabold text-outline">${parseFloat(selectedSupply.base_price || 0).toFixed(2)} / {selectedSupply.unit}</span>
+                <span className="text-sm font-extrabold text-outline">${safeParseFloat(selectedSupply.base_price || selectedSupply.product_detail?.base_price).toFixed(2)} / {selectedSupply.unit}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Total Valued Price</span>
                 <span className="text-sm font-extrabold text-secondary">
-                  ${(parseFloat(selectedSupply.price) * parseFloat(selectedSupply.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
