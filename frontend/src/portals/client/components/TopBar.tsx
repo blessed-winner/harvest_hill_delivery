@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, History, Bell, ShoppingCart, Menu } from 'lucide-react';
+import { User, History, Bell, ShoppingCart, Menu } from 'lucide-react';
 import Link from 'next/link';
 
 interface TopBarProps {
@@ -10,7 +10,6 @@ interface TopBarProps {
 }
 
 export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClick }: TopBarProps) {
-  const isCatalog = activeScreen === 'catalog';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -45,6 +44,12 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
 
         {/* Category Nav Links */}
         <nav className="flex items-center gap-6 overflow-x-auto py-1 scrollbar-hide">
+          <button
+            onClick={() => onNavigate('landing')}
+            className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
+          >
+            Home
+          </button>
           {[
             { name: 'Fruits', action: () => onNavigate('catalog') },
             { name: 'Vegetables', action: () => onNavigate('catalog') },
@@ -65,18 +70,6 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
 
         {/* Right Action Bar */}
         <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
-          {/* Search bar */}
-          <div className="relative w-full max-w-[280px]">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-[#717971]" />
-            </span>
-            <input
-              type="text"
-              placeholder={isCatalog ? "Search catalog..." : "Search harvest..."}
-              className="w-full pl-9 pr-4 py-2 border border-[#c1c9c0] rounded-full bg-[#f6f3ec]/40 text-sm placeholder-[#717971] focus:outline-none focus:border-[#144227] focus:ring-1 focus:ring-[#144227] transition-all"
-            />
-          </div>
-
           {/* Action Icons / Login options */}
           <div className="flex items-center gap-3 sm:gap-4 text-[#414942]">
             {isLoggedIn ? (
