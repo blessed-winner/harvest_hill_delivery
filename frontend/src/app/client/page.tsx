@@ -31,6 +31,10 @@ export default function ClientPage() {
         router.push('/login');
       } else {
         setAuthorized(true);
+        const storedScreen = localStorage.getItem('client_active_screen');
+        if (storedScreen) {
+          setActiveScreen(storedScreen);
+        }
       }
     }
   }, [router]);
