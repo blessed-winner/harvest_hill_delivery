@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Product
 from .serializers import ProductSerializer
+from .utils import delete_cloudinary_image
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -27,8 +28,12 @@ class ProductViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_update(self, serializer):
-        # If no new image file was uploaded, don't overwrite the existing image
-        if 'image' not in self.request.FILES:
-            serializer.save()
-        else:
+        # If a new image is being uploaded, delete the old one from Cloudinary
+        if 'image' in self.request.FILES:
+            instance = self.get_object()
+            if instance.image:
+                delete_cloudinary_image(instance.image)
             serializer.save(image=self.request.FILES['image'])
+        else:
+            # If no new image file was uploaded, don't overwrite the existing image
+            serializer.save()

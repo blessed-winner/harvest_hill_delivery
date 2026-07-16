@@ -1,0 +1,327 @@
+"""
+Client Portal API Views
+Provides endpoints for client dashboard, orders, favorites, and product browsing
+"""
+from decimal import Decimal
+from django.db.models import Sum, Count, Q, F
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
+
+from .models import Order, OrderItem
+from .serializers import OrderSerializer, OrderItemSerializer
+from apps.products.models import Product
+from apps.products.serializers import ProductSerializer
+
+
+class IsClient(IsAuthenticated):
+    """Permission class to ensure user is a client"""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role == 'client'
+
+
+class ClientDashboardViewSet(viewsets.ViewSet):
+    """
+    Client Dashboard API
+    Provides dashboard statistics, recent orders, and recommendations
+    """
+    permission_classes = [IsClient]
+
+    @extend_schema(
+        summary="Get client dashboard summary",
+        description="Returns dashboard statistics including monthly spend, total deliveries, savings, and recent orders",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "monthly_spend": {"type": "number", "example": 1240.50},
+                    "total_orders": {"type": "integer", "example": 18},
+                    "next_delivery": {"type": "string", "example": "Tomorrow, 9AM"},
+                    "savings": {"type": "number", "example": 142.20},
+                    "spend_trend": {"type": "number", "example": 12},
+                    "recent_orders": {"type": "array"},
+                    "urgent_products": {"type": "array"}
+                }
+            }
+        },
+        tags=['Client Portal']
+    )
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get dashboard summary statistics"""
+        client = request.user.client_profile
+        
+        # Calculate date ranges
+        now = timezone.now()
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        
+        # Current month stats
+        current_month_orders = Order.objects.filter(
+            client=client,
+            created_at__gte=current_month_start
+        )
+        
+        # Calculate monthly spend
+        monthly_spend = OrderItem.objects.filter(
+            order__in=current_month_orders
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'))
+        )['total'] or Decimal('0.00')
+        
+        # Last month spend for trend calculation
+        last_month_orders = Order.objects.filter(
+            client=client,
+            created_at__gte=last_month_start,
+            created_at__lt=current_month_start
+        )
+        last_month_spend = OrderItem.objects.filter(
+            order__in=last_month_orders
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'))
+        )['total'] or Decimal('0.00')
+        
+        # Calculate trend percentage
+        if last_month_spend > 0:
+            spend_trend = float(((monthly_spend - last_month_spend) / last_month_spend) * 100)
+        else:
+            spend_trend = 0.0
+        
+        # Total orders count
+        total_orders = current_month_orders.count()
+        
+        # Next delivery (get the next pending/processing order)
+        next_order = Order.objects.filter(
+            client=client,
+            status__in=['pending', 'processing']
+        ).order_by('created_at').first()
+        
+        next_delivery = "No pending deliveries"
+        if next_order:
+            delivery_date = next_order.created_at + timedelta(days=1)
+            if delivery_date.date() == (now + timedelta(days=1)).date():
+                next_delivery = f"Tomorrow, {delivery_date.strftime('%I%p')}"
+            else:
+                next_delivery = delivery_date.strftime('%B %d, %I%p')
+        
+        # Calculate savings (mock for now - could be based on bulk discounts)
+        savings = float(monthly_spend) * 0.05  # 5% savings rate
+        
+        # Recent orders
+        recent_orders = Order.objects.filter(client=client).order_by('-created_at')[:5]
+        recent_orders_data = OrderSerializer(recent_orders, many=True).data
+        
+        # Urgent products (high urgency needed products)
+        urgent_products = Product.objects.filter(
+            is_currently_needed=True,
+            urgency='high'
+        )[:5]
+        urgent_products_data = ProductSerializer(urgent_products, many=True).data
+        
+        return Response({
+            'monthly_spend': float(monthly_spend),
+            'total_orders': total_orders,
+            'next_delivery': next_delivery,
+            'savings': round(savings, 2),
+            'spend_trend': round(spend_trend, 1),
+            'recent_orders': recent_orders_data,
+            'urgent_products': urgent_products_data
+        })
+
+    @extend_schema(
+        summary="Get volume by category",
+        description="Returns order volume breakdown by product category for charts",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "categories": {"type": "array", "items": {
+                        "type": "object",
+                        "properties": {
+                            "label": {"type": "string"},
+                            "value": {"type": "number"},
+                            "percentage": {"type": "number"}
+                        }
+                    }}
+                }
+            }
+        },
+        tags=['Client Portal']
+    )
+    @action(detail=False, methods=['get'])
+    def volume_by_category(self, request):
+        """Get order volume breakdown by category"""
+        client = request.user.client_profile
+        
+        # Get orders from last 6 months
+        six_months_ago = timezone.now() - timedelta(days=180)
+        orders = Order.objects.filter(client=client, created_at__gte=six_months_ago)
+        
+        # Aggregate by category
+        category_volumes = OrderItem.objects.filter(
+            order__in=orders
+        ).values('product__category').annotate(
+            total_quantity=Sum('quantity')
+        ).order_by('-total_quantity')
+        
+        # Calculate total for percentages
+        total_volume = sum(item['total_quantity'] or 0 for item in category_volumes)
+        
+        # Format response
+        categories = []
+        for item in category_volumes:
+            quantity = float(item['total_quantity'] or 0)
+            percentage = (quantity / float(total_volume) * 100) if total_volume > 0 else 0
+            categories.append({
+                'label': item['product__category'] or 'Other',
+                'value': quantity,
+                'percentage': round(percentage, 1)
+            })
+        
+        return Response({'categories': categories})
+
+
+class ClientOrderViewSet(viewsets.ModelViewSet):
+    """
+    Client Order Management API
+    CRUD operations for client orders
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [IsClient]
+
+    def get_queryset(self):
+        """Filter orders to only show client's own orders"""
+        return Order.objects.filter(
+            client=self.request.user.client_profile
+        ).order_by('-created_at')
+
+    @extend_schema(
+        summary="List client orders",
+        description="Get all orders for the authenticated client with optional status filtering",
+        parameters=[
+            OpenApiParameter(
+                name='status',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter by order status',
+                enum=['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+            )
+        ],
+        tags=['Client Portal']
+    )
+    def list(self, request, *args, **kwargs):
+        status_filter = request.query_params.get('status')
+        queryset = self.get_queryset()
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new order",
+        description="Create a new order with items",
+        request={
+            "type": "object",
+            "properties": {
+                "delivery_address": {"type": "string"},
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {"type": "integer"},
+                            "quantity": {"type": "number"}
+                        }
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                'Order Creation Example',
+                value={
+                    "delivery_address": "123 Main St, City, State 12345",
+                    "items": [
+                        {"product_id": 1, "quantity": 10.5},
+                        {"product_id": 2, "quantity": 5.0}
+                    ]
+                }
+            )
+        ],
+        tags=['Client Portal']
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        """Automatically set the client when creating an order"""
+        serializer.save(client=self.request.user.client_profile)
+
+
+class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Client Product Browsing API
+    Browse and search available products
+    """
+    queryset = Product.objects.filter(is_currently_needed=True)
+    serializer_class = ProductSerializer
+    permission_classes = [IsClient]
+
+    @extend_schema(
+        summary="Browse available products",
+        description="Get list of products currently available for ordering",
+        parameters=[
+            OpenApiParameter(
+                name='category',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter by product category'
+            ),
+            OpenApiParameter(
+                name='search',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Search products by name'
+            ),
+            OpenApiParameter(
+                name='urgency',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter by urgency level',
+                enum=['low', 'medium', 'high', 'steady']
+            )
+        ],
+        tags=['Client Portal']
+    )
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        
+        # Apply filters
+        category = request.query_params.get('category')
+        search = request.query_params.get('search')
+        urgency = request.query_params.get('urgency')
+        
+        if category:
+            queryset = queryset.filter(category__iexact=category)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        if urgency:
+            queryset = queryset.filter(urgency__iexact=urgency)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Get product details",
+        description="Get detailed information about a specific product",
+        tags=['Client Portal']
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)

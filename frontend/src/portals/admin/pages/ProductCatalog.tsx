@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MoreVertical, AlertCircle, Trash2, Package, ArrowRight, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -28,6 +28,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   // File Upload states
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+
+  // UI states
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const [activeCategory, setActiveCategory] = useState('All Products');
   const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Dairy'];
@@ -79,6 +83,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormQuantityNeeded("");
     setImageFile(null);
     setImagePreviewUrl("");
+    setErrorMessage("");
     setSelectedProduct("new");
   };
 
@@ -94,13 +99,17 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setImageFile(null);
     // Use the Cloudinary image_url for display preview
     setImagePreviewUrl(product.image_url || "");
+    setErrorMessage("");
   };
 
   const handleSaveProduct = async () => {
     if (!formName || !formPrice) {
-      alert("Name and price are required.");
+      setErrorMessage("Name and price are required.");
       return;
     }
+
+    setIsSaving(true);
+    setErrorMessage("");
 
     const formData = new FormData();
     formData.append('name', formName);
@@ -124,11 +133,20 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       // Clear the form state
       setImageFile(null);
       setImagePreviewUrl("");
+      setErrorMessage("");
       setSelectedProduct(null);
       // Reload products to get fresh data including new image URLs
       loadProducts();
     } catch (err: any) {
-      alert(err.message || "Failed to save product.");
+      // Handle duplicate validation error
+      const errMsg = err.message || "Failed to save product.";
+      if (errMsg.includes("already exists") || errMsg.includes("duplicate")) {
+        setErrorMessage("This product already exists with the same details. Please modify at least one field.");
+      } else {
+        setErrorMessage(errMsg);
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -329,19 +347,38 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         title={selectedProduct === 'new' ? "Add New Product" : "Edit Product Specifications"}
         subtitle="Configure product metrics, base pricing, and market urgency levels"
         footer={
-          <div className="flex gap-3 w-full">
-            <button 
-              onClick={() => setSelectedProduct(null)}
-              className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleSaveProduct}
-              className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer"
-            >
-              Save Product
-            </button>
+          <div className="w-full space-y-3">
+            {errorMessage && (
+              <div className="px-4 py-3 bg-error/10 border border-error/30 rounded-lg">
+                <p className="text-sm text-error font-medium">{errorMessage}</p>
+              </div>
+            )}
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setErrorMessage("");
+                }}
+                disabled={isSaving}
+                className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveProduct}
+                disabled={isSaving}
+                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  'Save Product'
+                )}
+              </button>
+            </div>
           </div>
         }
       >

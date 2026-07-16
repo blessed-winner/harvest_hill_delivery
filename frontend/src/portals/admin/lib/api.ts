@@ -72,7 +72,18 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
     try {
       const errData = await response.json();
-      errMsg = errData.error || errData.detail || JSON.stringify(errData);
+      const errors = errData.errors ?? errData;
+      if (errors?.non_field_errors?.length) {
+        errMsg = errors.non_field_errors[0];
+      } else if (typeof errors === 'object' && errors !== null) {
+        const firstKey = Object.keys(errors)[0];
+        if (firstKey) {
+          const value = errors[firstKey];
+          errMsg = Array.isArray(value) ? value[0] : String(value);
+        }
+      } else {
+        errMsg = errData.error || errData.detail || errMsg;
+      }
     } catch {}
     throw new Error(errMsg);
   }
