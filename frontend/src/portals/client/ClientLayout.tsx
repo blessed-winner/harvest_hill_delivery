@@ -20,7 +20,7 @@ interface ClientLayoutProps {
 }
 
 export default function ClientLayout({ children, activeScreen, onNavigate, cartCount }: ClientLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Start open by default
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
       {/* Sidebar Backdrop for Mobile */}
       {showSidebar && isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[998] lg:hidden transition-all duration-300"
+          className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[998] lg:hidden transition-all duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -68,7 +68,8 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
             fixed lg:sticky top-24 bottom-4 lg:bottom-auto left-6 h-[calc(100vh-120px)] lg:h-[calc(100vh-120px)] w-64 
             bg-[#144227]/95 backdrop-blur-md rounded-2xl border border-[#9ed0ab]/30 shadow-2xl p-6 z-[999] 
             flex flex-col justify-between transition-all duration-300 ease-in-out shrink-0
-            ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-[110%] lg:translate-x-0 lg:opacity-100'}
+            lg:translate-x-0 lg:opacity-100
+            ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-[110%] opacity-0 lg:translate-x-0 lg:opacity-100'}
           `}>
             <div>
               <div className="flex items-center justify-between mb-8">
@@ -84,7 +85,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
                 </button>
               </div>
 
-              <nav className="space-y-1.5 overflow-y-auto max-h-[calc(100vh-260px)] pr-1 custom-scrollbar">
+              <nav className="space-y-1.5 overflow-y-none max-h-[calc(100vh-210px)] pr-1 custom-scrollbar">
                 {screens.map((screen) => {
                   const isActive = activeScreen === screen.id;
                   const Icon = screen.icon;
@@ -93,7 +94,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
                       key={screen.id}
                       onClick={() => {
                         onNavigate(screen.id);
-                        setIsSidebarOpen(false);
+                        // Don't auto-close sidebar on navigation
                       }}
                       className={`
                         w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer
