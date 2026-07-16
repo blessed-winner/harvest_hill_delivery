@@ -1,8 +1,10 @@
 "use client";
 
-import { ReactNode } from 'react';
-import TopBar from './components/TopBar';
-import Footer from './components/Footer';
+import { ReactNode, useState } from 'react';
+import Sidebar from './components/Sidebar';
+
+// Export ClientView type for the Sidebar component
+export type ClientView = 'dashboard' | 'browse' | 'orders' | 'favorites' | 'cart' | 'settings';
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -12,6 +14,8 @@ interface ClientLayoutProps {
 }
 
 export default function ClientLayout({ children, activeScreen, onNavigate, cartCount }: ClientLayoutProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const screens = [
     { id: 'landing', label: '1. Landing' },
     { id: 'dashboard', label: '2. Dashboard' },
@@ -21,21 +25,55 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
     { id: 'checkout', label: '6. Checkout' },
     { id: 'delivery-note', label: '7. Delivery Note' },
     { id: 'order-history', label: '8. History' },
-    { id: 'invoices', label: '9. Invoices' }
+    { id: 'invoices', label: '9. Invoices' },
+    { id: 'favorites', label: '10. Favorites' },
+    { id: 'settings', label: '11. Settings' }
   ];
+
+  // Map activeScreen to ClientView for the sidebar
+  const mapToClientView = (screen: string): ClientView => {
+    const viewMap: Record<string, ClientView> = {
+      'dashboard': 'dashboard',
+      'catalog': 'browse',
+      'product-detail': 'browse',
+      'cart': 'cart',
+      'checkout': 'cart',
+      'order-history': 'orders',
+      'delivery-note': 'orders',
+      'invoices': 'orders',
+      'favorites': 'favorites',
+      'settings': 'settings',
+    };
+    return viewMap[screen] || 'dashboard';
+  };
+
+  // Handle navigation from sidebar
+  const handleSidebarNavigate = (view: ClientView) => {
+    const screenMap: Record<ClientView, string> = {
+      'dashboard': 'dashboard',
+      'browse': 'catalog',
+      'orders': 'order-history',
+      'favorites': 'favorites',
+      'cart': 'cart',
+      'settings': 'settings',
+    };
+    onNavigate(screenMap[view]);
+  };
 
   return (
     <div className="bg-[#fcf9f2] min-h-screen flex flex-col font-sans selection:bg-[#9ed0ab] selection:text-[#144227]">
-      {/* Header Navigation */}
-      <TopBar activeScreen={activeScreen} onNavigate={onNavigate} cartCount={cartCount} />
+      {/* Floating Sidebar */}
+      <Sidebar
+        currentView={mapToClientView(activeScreen)}
+        onViewChange={handleSidebarNavigate}
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
 
-      {/* Main Content Area */}
-      <main className="flex-grow pb-24">
+      {/* Main Content Area - Add left margin for sidebar on large screens */}
+      <main className="flex-grow lg:ml-80 transition-all duration-300">
         {children}
       </main>
-
-      {/* Footer Navigation */}
-      <Footer activeScreen={activeScreen} onNavigate={onNavigate} />
 
       {/* Floating Screen Preview Switcher */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#144227]/95 backdrop-blur-md px-8 py-4 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center gap-3 border border-[#9ed0ab]/30 z-[9999] w-max max-w-[95vw] transition-all hover:scale-[1.01]">
