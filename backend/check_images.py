@@ -22,7 +22,7 @@ def check_products(token):
     with urllib.request.urlopen(req) as r:
         prods = json.loads(r.read())
         for p in prods[:3]:
-            print(f"  [{p['id']}] {p['name']} — image: {p.get('image')}")
+            print(f"  [{p['id']}] {p['name']} — image: {p.get('image')} — image_url: {p.get('image_url')}")
 
 try:
     token = login()

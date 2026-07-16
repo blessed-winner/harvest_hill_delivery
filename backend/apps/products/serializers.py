@@ -8,7 +8,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'name', 'category', 'is_currently_needed', 'urgency', 'unit', 'base_price', 'image', 'image_url', 'quantity_needed']
         extra_kwargs = {
-            'image': {'write_only': True, 'required': False, 'allow_null': True},
+            'image': {'required': False, 'allow_null': True},
         }
 
     def get_image_url(self, obj):
@@ -34,7 +34,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'category', 'unit', 'image_url']
+        fields = ['id', 'name', 'category', 'unit', 'image', 'image_url']
 
     def get_image_url(self, obj):
         if not obj.image:
