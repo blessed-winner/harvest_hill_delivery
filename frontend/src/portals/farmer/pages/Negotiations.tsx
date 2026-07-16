@@ -154,7 +154,11 @@ export default function Negotiations() {
               >
                 <div className="flex gap-4 mb-3">
                   <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-outline-variant">
-                    <img src={neg.supply_detail?.product_detail?.image} alt={neg.supply_detail?.product_detail?.name} className="w-full h-full object-cover" />
+                    <img
+                      src={neg.supply_detail?.product_detail?.image_url || neg.supply_detail?.product_detail?.image || ''}
+                      alt={neg.supply_detail?.product_detail?.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="min-w-0">
                     <h3 className={cn("font-sans text-sm font-bold truncate", neg.id.toString() === activeNegId ? "text-primary" : "text-on-surface")}>

@@ -10,7 +10,8 @@ export interface Product {
   name: string;
   batch?: string;
   category: string;
-  image: string;
+  image?: string; // Legacy field, prefer image_url
+  image_url?: string; // Cloudinary URL from backend
   quantityNeeded?: string;
   quantityAvailable?: string;
   price: string;

@@ -41,7 +41,7 @@ export default function MySupplies() {
     if (name.includes('roma') || name.includes('tomato')) {
       return romaTomatoesImage;
     }
-    return supply?.photo || supply?.product_detail?.image || '';
+    return supply?.photo || supply?.product_detail?.image_url || supply?.product_detail?.image || '';
   };
 
   async function loadSupplies() {

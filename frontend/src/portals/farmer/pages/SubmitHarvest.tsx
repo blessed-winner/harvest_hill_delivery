@@ -13,6 +13,7 @@ type DemandProduct = {
   unit: string;
   base_price?: string | number;
   image?: string | null;
+  image_url?: string | null;
   quantity_needed?: string | number | null;
   urgency?: 'high' | 'steady' | string;
   description?: string;
@@ -129,7 +130,7 @@ export default function SubmitHarvest() {
         setDemands(
           (data || []).map((item: DemandProduct) => ({
             ...item,
-            image: getReferenceImage(item.name) || item.image || '',
+            image: item.image_url || item.image || getReferenceImage(item.name) || '',
           }))
         );
       } catch (error) {
@@ -357,7 +358,7 @@ export default function SubmitHarvest() {
             )}
           >
             <div className="relative rounded-lg overflow-hidden h-40 mb-3">
-              <img src={getReferenceImage(product.name) || product.image || ''} alt={product.name} className="w-full h-full object-cover" />
+              <img src={product.image || getReferenceImage(product.name) || ''} alt={product.name} className="w-full h-full object-cover" />
               {getBadgeMeta(product.name, product.urgency) && (
                 <div className="absolute top-4 right-4">
                   <span className={cn(

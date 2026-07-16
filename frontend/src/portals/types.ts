@@ -52,7 +52,8 @@ export interface Product {
   unit: string;
   status: 'active' | 'inactive';
   season: string;
-  image: string;
+  image?: string; // Legacy field
+  image_url?: string; // Cloudinary URL from backend
   isPriority?: boolean;
 }
 

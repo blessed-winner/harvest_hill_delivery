@@ -472,7 +472,7 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
               >
                 <div className="h-32 overflow-hidden relative">
                   <img
-                    src={referenceProductImages[demand.name] || demand.image || ''}
+                    src={demand.image_url || demand.image || referenceProductImages[demand.name] || ''}
                     alt={demand.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
