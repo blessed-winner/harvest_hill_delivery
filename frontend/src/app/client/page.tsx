@@ -12,8 +12,6 @@ import Checkout from '../../portals/client/pages/Checkout';
 import DeliveryNote from '../../portals/client/pages/DeliveryNote';
 import OrderHistory from '../../portals/client/pages/OrderHistory';
 import Invoices from '../../portals/client/pages/Invoices';
-import Favorites from '../../portals/client/pages/Favorites';
-import Settings from '../../portals/client/pages/Settings';
 import { CurrencyProvider } from '../../context/CurrencyContext';
 
 export default function ClientPage() {
@@ -77,10 +75,6 @@ export default function ClientPage() {
         return <OrderHistory onNavigate={handleNavigate} />;
       case 'invoices':
         return <Invoices onNavigate={handleNavigate} />;
-      case 'favorites':
-        return <Favorites />;
-      case 'settings':
-        return <Settings />;
       case 'dashboard':
       default:
         return <Dashboard onNavigate={handleNavigate} addToCart={handleAddToCart} />;
