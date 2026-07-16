@@ -92,8 +92,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
     setImageFile(null);
-    // Use the product's image URL from the backend (Cloudinary)
-    setImagePreviewUrl(product.image || "");
+    // Use the Cloudinary image_url for display preview
+    setImagePreviewUrl(product.image_url || "");
   };
 
   const handleSaveProduct = async () => {
@@ -224,9 +224,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
                 >
                   <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
-                    {product.image ? (
+                    {product.image_url ? (
                       <img 
-                        src={product.image} 
+                        src={product.image_url} 
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                         alt={product.name} 
                       />
