@@ -386,39 +386,60 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           {/* File Upload Preview Panel */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Photo</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[140px] items-center">
-              <div className="space-y-1 text-center">
-                {imagePreviewUrl ? (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                    <p className="text-white text-xs font-bold">Change Image</p>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[180px] items-center">
+              {imagePreviewUrl ? (
+                <div className="w-full h-full relative">
+                  <img src={imagePreviewUrl} className="w-full h-full object-cover rounded-lg" alt="Preview" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
+                    <p className="text-white text-xs font-bold">Click to change image</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImageFile(null);
+                        setImagePreviewUrl("");
+                      }}
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
+                    >
+                      Remove Image
+                    </button>
                   </div>
-                ) : null}
-                {imagePreviewUrl ? (
-                  <img src={imagePreviewUrl} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
-                ) : (
-                  <>
-                    <ImageIcon className="mx-auto h-12 w-12 text-outline-variant" />
-                    <div className="flex text-sm text-on-surface-variant justify-center mt-2">
-                      <label className="relative cursor-pointer bg-transparent rounded-md font-semibold text-primary hover:text-primary-container focus-within:outline-none">
-                        <span>Upload a image file</span>
-                      </label>
-                    </div>
-                    <p className="text-xs text-on-surface-variant/70">PNG, JPG, GIF up to 5MB</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setImageFile(file);
-                      setImagePreviewUrl(URL.createObjectURL(file));
-                    }
-                  }}
-                />
-              </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                        setImagePreviewUrl(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1 text-center w-full">
+                  <ImageIcon className="mx-auto h-12 w-12 text-outline-variant" />
+                  <div className="flex text-sm text-on-surface-variant justify-center mt-2">
+                    <label className="relative cursor-pointer bg-transparent rounded-md font-semibold text-primary hover:text-primary-container focus-within:outline-none">
+                      <span>Upload an image file</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-on-surface-variant/70">PNG, JPG, GIF up to 5MB</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                        setImagePreviewUrl(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
