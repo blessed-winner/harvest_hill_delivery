@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { Grid, List, ChevronRight, SlidersHorizontal, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart, Loader2, Package } from 'lucide-react';
+import { clientApi } from '../lib/api';
 
 interface CatalogProps {
   onNavigate: (screen: string) => void;
@@ -9,73 +10,58 @@ interface CatalogProps {
 }
 
 export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
-  const [organicOnly, setOrganicOnly] = useState(true);
+  // State
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filters
+  const [organicOnly, setOrganicOnly] = useState(false);
   const [inSeason, setInSeason] = useState(false);
   const [bulkAvailable, setBulkAvailable] = useState(false);
-  const [priceMax, setPriceMax] = useState(35); // slider
-  const [selectedCategory, setSelectedCategory] = useState('stone');
-  const [sortBy, setSortBy] = useState('Freshness First');
+  const [priceMax, setPriceMax] = useState(100);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const products = [
-    {
-      id: 'cherries',
-      badge: 'SEASONAL',
-      badgeColor: 'bg-[#9ed0ab] text-[#00210f]',
-      name: 'Organic Bing Cherries',
-      farm: 'Oak Grove Farms',
-      price: '$12.50',
-      unit: 'per 2lb basket',
-      img: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400&q=80'
-    },
-    {
-      id: 'apricots',
-      badge: 'NEW ARRIVAL',
-      badgeColor: 'bg-[#ffdcc5] text-[#301400]',
-      name: 'Sun-Ripened Apricots',
-      farm: 'Hillside Orchards',
-      price: '$8.75',
-      unit: 'per dozen',
-      img: 'https://images.unsplash.com/photo-1501159724905-a56cbcd5b8c3?w=400&q=80'
-    },
-    {
-      id: 'grapes',
-      badge: 'BEST SELLER',
-      badgeColor: 'bg-[#144227] text-white',
-      name: 'Concord Table Grapes',
-      farm: 'Vineyard Valley',
-      price: '$5.40',
-      unit: 'per lb',
-      img: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=400&q=80'
-    },
-    {
-      id: 'apples',
-      badge: null,
-      name: 'Honeycrisp Apples',
-      farm: 'Northern Ridge',
-      price: '$14.00',
-      unit: '5lb bag',
-      img: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80'
-    },
-    {
-      id: 'berries',
-      badge: null,
-      name: 'Mixed Berry Basket',
-      farm: 'Berry Patch Co.',
-      price: '$18.90',
-      unit: 'Variety Pack',
-      img: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&q=80'
-    },
-    {
-      id: 'pears',
-      badge: null,
-      name: 'Heritage Anjou Pears',
-      farm: 'River Bend Farms',
-      price: '$9.20',
-      unit: 'per 3lb',
-      img: 'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?w=400&q=80'
-    }
-  ];
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params: Record<string, string> = {};
+        if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
+        if (searchQuery) params.search = searchQuery;
+        if (inSeason) params.urgency = 'HIGH';
+        if (sortBy) params.ordering = sortBy;
+        
+        const response = await clientApi.products.list(params);
+        let fetchedProducts = response?.results || [];
+        
+        // Apply client-side filters
+        if (organicOnly) {
+          fetchedProducts = fetchedProducts.filter((p: any) => 
+            p.name?.toLowerCase().includes('organic') || p.description?.toLowerCase().includes('organic')
+          );
+        }
+        if (priceMax < 100) {
+          fetchedProducts = fetchedProducts.filter((p: any) => (p.price || 0) <= priceMax);
+        }
+        
+        setProducts(fetchedProducts);
+      } catch (err: any) {
+        console.error('Failed to fetch products:', err);
+        setError(err.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, priceMax]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -91,8 +77,10 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
 
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Seasonal Fruits</h1>
-        <p className="text-xs text-[#717971] mt-1">Showing 1-24 of 142 products from certified local suppliers.</p>
+        <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Product Catalog</h1>
+        <p className="text-xs text-[#717971] mt-1">
+          {loading ? 'Loading...' : `Showing ${products.length} products from certified local suppliers`}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -106,10 +94,11 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
             
             <div className="space-y-3">
               {[
-                { id: 'stone', label: 'Stone Fruits', count: 42 },
-                { id: 'berries', label: 'Berries', count: 28 },
-                { id: 'citrus', label: 'Citrus', count: 19 },
-                { id: 'apples', label: 'Apples & Pears', count: 35 },
+                { id: 'all', label: 'All Products', count: products.length },
+                { id: 'Fruits', label: 'Fruits', count: 0 },
+                { id: 'Vegetables', label: 'Vegetables', count: 0 },
+                { id: 'Dairy', label: 'Dairy', count: 0 },
+                { id: 'Grains', label: 'Grains', count: 0 },
               ].map((cat) => (
                 <label key={cat.id} className="flex items-center justify-between cursor-pointer group">
                   <div className="flex items-center gap-2.5">
@@ -129,7 +118,9 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
                     </div>
                     <span className="text-xs text-[#414942] font-semibold group-hover:text-[#144227]">{cat.label}</span>
                   </div>
-                  <span className="text-[10px] text-[#717971] bg-[#f0eee7] px-1.5 py-0.5 rounded-full font-bold">({cat.count})</span>
+                  <span className="text-[10px] text-[#717971] bg-[#f0eee7] px-1.5 py-0.5 rounded-full font-bold">
+                    {cat.id === 'all' ? products.length : cat.count}
+                  </span>
                 </label>
               ))}
             </div>
@@ -250,9 +241,10 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-transparent font-bold text-[#144227] focus:outline-none cursor-pointer border-none p-0 ml-1 focus:ring-0"
               >
-                <option value="Freshness First">Freshness First</option>
-                <option value="Price: Low to High">Price: Low to High</option>
-                <option value="Price: High to Low">Price: High to Low</option>
+                <option value="name">Name (A-Z)</option>
+                <option value="-name">Name (Z-A)</option>
+                <option value="price">Price: Low to High</option>
+                <option value="-price">Price: High to Low</option>
               </select>
             </div>
 
@@ -277,70 +269,121 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
           </div>
 
           {/* Product Grid */}
-          <div className={
-            layoutMode === 'grid'
-              ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-              : "space-y-4"
-          }>
-            {products.map((prod) => (
-              <div
-                key={prod.id}
-                onClick={() => onNavigate('product-detail')}
-                className={`bg-white border border-[#e5e2db] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex ${
-                  layoutMode === 'grid' ? 'flex-col justify-between max-w-[260px] w-full mx-auto' : 'flex-row items-center p-4 gap-4'
-                }`}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 text-[#144227] animate-spin mx-auto mb-4" />
+                <p className="text-sm text-[#717971]">Loading products...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center">
+              <Package className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-[#1c1c18] mb-2">Unable to Load Products</h3>
+              <p className="text-sm text-[#717971] mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
               >
-                {/* Product Image */}
-                <div 
-                  className={`relative bg-[#f6f3ec] overflow-hidden ${
-                    layoutMode === 'grid' ? 'w-full' : 'w-24 h-24 rounded-lg'
-                  }`}
-                  style={layoutMode === 'grid' ? { aspectRatio: '26 / 24' } : undefined}
-                >
-                  <img
-                    src={prod.img}
-                    alt={prod.name}
-                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                  />
-                  {prod.badge && (
-                    <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${prod.badgeColor}`}>
-                      {prod.badge}
-                    </span>
-                  )}
-                </div>
-
-                {/* Content Panel */}
-                <div className={`flex-grow flex flex-col justify-between ${
-                  layoutMode === 'grid' ? 'p-3.5' : 'p-0'
-                }`}>
-                  <div>
-                    <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">{prod.farm}</span>
-                    <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">{prod.name}</h3>
-                  </div>
-
-                  <div className={`flex items-center justify-between border-t border-[#f0eee7] ${
-                    layoutMode === 'grid' ? 'mt-2.5 pt-2' : 'mt-2 pt-2'
-                  }`}>
-                    <div>
-                      <span className="block text-xs font-bold text-[#144227]">{prod.price}</span>
-                      <span className="block text-[8px] text-[#717971] uppercase font-semibold">{prod.unit}</span>
+                Retry
+              </button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center">
+              <Package className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-[#1c1c18] mb-2">No Products Found</h3>
+              <p className="text-sm text-[#717971] mb-4">Try adjusting your filters or search criteria</p>
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSearchQuery('');
+                  setOrganicOnly(false);
+                  setInSeason(false);
+                  setPriceMax(100);
+                }}
+                className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            <div className={
+              layoutMode === 'grid'
+                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+                : "space-y-4"
+            }>
+              {products.map((prod: any) => {
+                const urgencyBadge = prod.urgency === 'HIGH' ? 'SEASONAL' : prod.urgency === 'MEDIUM' ? 'LIMITED' : null;
+                const badgeColor = prod.urgency === 'HIGH' ? 'bg-[#9ed0ab] text-[#00210f]' : 'bg-[#ffdcc5] text-[#301400]';
+                
+                return (
+                  <div
+                    key={prod.id}
+                    onClick={() => onNavigate('product-detail')}
+                    className={`bg-white border border-[#e5e2db] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex ${
+                      layoutMode === 'grid' ? 'flex-col justify-between max-w-[260px] w-full mx-auto' : 'flex-row items-center p-4 gap-4'
+                    }`}
+                  >
+                    {/* Product Image */}
+                    <div 
+                      className={`relative bg-[#f6f3ec] overflow-hidden ${
+                        layoutMode === 'grid' ? 'w-full' : 'w-24 h-24 rounded-lg'
+                      }`}
+                      style={layoutMode === 'grid' ? { aspectRatio: '26 / 24' } : undefined}
+                    >
+                      <img
+                        src={prod.image_url || prod.image || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80'}
+                        alt={prod.name}
+                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                      />
+                      {urgencyBadge && (
+                        <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${badgeColor}`}>
+                          {urgencyBadge}
+                        </span>
+                      )}
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart();
-                      }}
-                      className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
-                    >
-                      <ShoppingCart size={11} /> Add to Cart
-                    </button>
-                  </div>
-                </div>
+                    {/* Content Panel */}
+                    <div className={`flex-grow flex flex-col justify-between ${
+                      layoutMode === 'grid' ? 'p-3.5' : 'p-0'
+                    }`}>
+                      <div>
+                        <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">
+                          {prod.category || 'Product'}
+                        </span>
+                        <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">
+                          {prod.name}
+                        </h3>
+                      </div>
 
-              </div>
-            ))}
-          </div>
+                      <div className={`flex items-center justify-between border-t border-[#f0eee7] ${
+                        layoutMode === 'grid' ? 'mt-2.5 pt-2' : 'mt-2 pt-2'
+                      }`}>
+                        <div>
+                          <span className="block text-xs font-bold text-[#144227]">
+                            ${prod.price?.toFixed(2) || '0.00'}
+                          </span>
+                          <span className="block text-[8px] text-[#717971] uppercase font-semibold">
+                            {prod.unit || 'per unit'}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart();
+                          }}
+                          className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart size={11} /> Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="flex items-center justify-center gap-1.5 pt-4">
