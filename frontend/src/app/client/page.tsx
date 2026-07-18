@@ -17,6 +17,7 @@ import { CurrencyProvider } from '../../context/CurrencyContext';
 export default function ClientPage() {
   const router = useRouter();
   const [activeScreen, setActiveScreen] = useState('landing'); // Default view is now the Marketplace Home
+  const [selectedCategory, setSelectedCategory] = useState<string>('all'); // Track selected category
   const [cartCount, setCartCount] = useState(17); // Set to 17 items as in the Cart order summary screenshot
   const [authorized, setAuthorized] = useState(false);
 
@@ -47,8 +48,11 @@ export default function ClientPage() {
     );
   }
 
-  const handleNavigate = (screen: string) => {
+  const handleNavigate = (screen: string, category?: string) => {
     setActiveScreen(screen);
+    if (category) {
+      setSelectedCategory(category);
+    }
     // Smooth scroll to top on page transition
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -66,7 +70,7 @@ export default function ClientPage() {
       case 'landing':
         return <Landing onNavigate={handleNavigate} addToCart={handleAddToCart} />;
       case 'catalog':
-        return <Catalog onNavigate={handleNavigate} addToCart={handleAddToCart} />;
+        return <Catalog onNavigate={handleNavigate} addToCart={handleAddToCart} initialCategory={selectedCategory} />;
       case 'product-detail':
         return <ProductDetail onNavigate={handleNavigate} addToCart={handleAddToCart} />;
       case 'cart':

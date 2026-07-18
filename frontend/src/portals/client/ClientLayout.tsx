@@ -15,7 +15,7 @@ import {
 interface ClientLayoutProps {
   children: ReactNode;
   activeScreen: string;
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, category?: string) => void;
   cartCount: number;
 }
 
