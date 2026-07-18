@@ -129,6 +129,7 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
         </div>
       )}
 
+      {!error && orders.length > 0 && (
         {/* Split Layout: Left Table, Right Preview Drawer */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         
@@ -295,11 +296,11 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
             <div className="flex justify-between items-start gap-4">
               <div>
                 <h3 className="text-lg font-black text-[#144227]">Harvest Hill</h3>
-                <p className="text-[9px] uppercase font-bold tracking-widest text-[#717971] mt-0.5">Freshly Cultivated Supply Chain</p>
+                <p className="text-[9px] uppercase font-bold tracking-widest text-[#717971] mt-0.5">Fresh Farm Delivery Platform</p>
               </div>
               <div className="text-right">
                 <span className="block text-xs uppercase font-extrabold text-[#717971]">INVOICE</span>
-                <span className="block text-xs font-mono font-bold text-[#1c1c18]">{activeInvoice.id}</span>
+                <span className="block text-xs font-mono font-bold text-[#1c1c18]">#{activeOrder?.id || 'N/A'}</span>
               </div>
             </div>
 
@@ -309,17 +310,17 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                 <span className="block font-bold uppercase tracking-wider text-[#717971] mb-1">From:</span>
                 <p className="font-bold text-[#1c1c18]">Harvest Hill Supply Co.</p>
                 <p className="text-[#414942] leading-relaxed mt-0.5">
-                  482 Orchard Lane<br />
-                  Napa Valley, CA 94558<br />
-                  billing@harvestnapa.com
+                  Fresh Farm Platform<br />
+                  Online Marketplace<br />
+                  support@harvesthill.com
                 </p>
               </div>
               <div>
                 <span className="block font-bold uppercase tracking-wider text-[#717971] mb-1">Bill To:</span>
-                <p className="font-bold text-[#144227]">{activeInvoice.billTo}</p>
+                <p className="font-bold text-[#144227]">Client</p>
                 <p className="text-[#414942] leading-relaxed mt-0.5">
-                  {activeInvoice.billToAddr}<br />
-                  {activeInvoice.billToEmail}
+                  {activeOrder?.delivery_address || 'Address not provided'}<br />
+                  Order Date: {activeOrder?.created_at ? new Date(activeOrder.created_at).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             </div>
@@ -336,12 +337,12 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0eee7]">
-                  {activeInvoice.items.map((item, idx) => (
+                  {activeOrder?.items?.map((item: any, idx: number) => (
                     <tr key={idx}>
-                      <td className="py-2 font-bold text-[#1c1c18]">{item.desc}</td>
-                      <td className="py-2 text-center font-semibold text-[#414942]">{item.qty}</td>
-                      <td className="py-2 text-right text-[#414942]">${item.rate.toFixed(2)}</td>
-                      <td className="py-2 text-right font-bold text-[#1c1c18]">${item.amount.toFixed(2)}</td>
+                      <td className="py-2 font-bold text-[#1c1c18]">{item.product_name || 'Product'}</td>
+                      <td className="py-2 text-center font-semibold text-[#414942]">{item.quantity}</td>
+                      <td className="py-2 text-right text-[#414942]">{formatCurrency(item.price)}</td>
+                      <td className="py-2 text-right font-bold text-[#1c1c18]">{formatCurrency(item.price * item.quantity)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -352,19 +353,12 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
             <div className="border-t border-[#c1c9c0] pt-4 space-y-2 text-[10px] text-right ml-auto max-w-[200px]">
               <div className="flex justify-between text-[#414942]">
                 <span>Subtotal</span>
-                <span className="font-bold text-[#1c1c18]">${activeInvoice.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <span className="font-bold text-[#1c1c18]">{formatCurrency(activeOrder?.total_price)}</span>
               </div>
-              
-              {activeInvoice.processing > 0 && (
-                <div className="flex justify-between text-[#414942]">
-                  <span>Processing (0.5%)</span>
-                  <span className="font-bold text-[#1c1c18]">${activeInvoice.processing.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                </div>
-              )}
 
               <div className="border-t border-[#f0eee7] pt-2 flex justify-between text-xs font-black text-[#1c1c18]">
                 <span>Total</span>
-                <span className="text-[#144227] text-sm">${activeInvoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <span className="text-[#144227] text-sm">{formatCurrency(activeOrder?.total_price)}</span>
               </div>
             </div>
 
