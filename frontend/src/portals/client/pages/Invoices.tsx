@@ -130,6 +130,7 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
       )}
 
       {!error && orders.length > 0 && (
+        <>
         {/* Split Layout: Left Table, Right Preview Drawer */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         
@@ -372,6 +373,8 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
 
         </div>
 
+        </div>
+        </>
       )}
 
     </div>
