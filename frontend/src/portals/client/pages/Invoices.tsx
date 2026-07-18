@@ -1,99 +1,87 @@
 "use client";
 
-import { useState } from 'react';
-import { ChevronRight, Search, FileDown, Printer, Share2, FileText, ChevronLeft, X, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronRight, Search, FileDown, Printer, Share2, FileText, ChevronLeft, Loader2, Package } from 'lucide-react';
+import { clientApi, formatCurrency } from '../lib/api';
 
 interface InvoicesProps {
   onNavigate: (screen: string) => void;
 }
 
 export default function Invoices({ onNavigate }: InvoicesProps) {
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState('#INV-2024-0892');
+  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const invoices = [
-    {
-      id: '#INV-2024-0892',
-      order: 'Summer Heirloom Bundle',
-      orderId: 'ORD-9921-X',
-      date: 'Oct 12, 2023',
-      amount: 1420.50,
-      status: 'PAID',
-      billTo: 'Green Plate Catering',
-      billToAddr: '722 Market St, Suite 400, San Francisco, CA 94103',
-      billToEmail: 'accounting@greenplate.io',
-      items: [
-        { desc: 'Organic Heirloom Tomatoes', qty: '200 lbs', rate: 4.50, amount: 900.00 },
-        { desc: 'Baby Spinach Bunches', qty: '100 units', rate: 2.75, amount: 275.00 },
-        { desc: 'Cold Storage Shipping', qty: '1', rate: 145.50, amount: 145.50 }
-      ],
-      subtotal: 1320.50,
-      processing: 100.00
-    },
-    {
-      id: '#INV-2024-0893',
-      order: 'Bulk Organic Grains',
-      orderId: 'ORD-9945-S',
-      date: 'Oct 14, 2023',
-      amount: 3210.00,
-      status: 'PENDING',
-      billTo: 'Grains & Oats Bakery',
-      billToAddr: '58 Baker Avenue, Oakland, CA 94602',
-      billToEmail: 'billing@grainsoats.co',
-      items: [
-        { desc: 'Red Winter Wheat Bulk', qty: '800 lbs', rate: 2.50, amount: 2000.00 },
-        { desc: 'Organic Rolled Oats', qty: '500 lbs', rate: 2.10, amount: 1050.00 },
-        { desc: 'Freight Dry Shipping', qty: '1', rate: 160.00, amount: 160.00 }
-      ],
-      subtotal: 3210.00, // Processing is zero for pending or included
-      processing: 0.00
-    },
-    {
-      id: '#INV-2024-0894',
-      order: 'Artisan Dairy Selection',
-      orderId: 'ORD-9988-K',
-      date: 'Oct 15, 2023',
-      amount: 845.20,
-      status: 'PAID',
-      billTo: 'Green Plate Catering',
-      billToAddr: '722 Market St, Suite 400, San Francisco, CA 94103',
-      billToEmail: 'accounting@greenplate.io',
-      items: [
-        { desc: 'Aged Sharp Cheddar Blocks', qty: '40 blocks', rate: 8.75, amount: 350.00 },
-        { desc: 'Grass-fed Salted Butter', qty: '60 lbs', rate: 6.50, amount: 390.00 },
-        { desc: 'Refrigerated Shipping', qty: '1', rate: 105.20, amount: 105.20 }
-      ],
-      subtotal: 845.20,
-      processing: 0.00
-    },
-    {
-      id: '#INV-2024-0895',
-      order: 'Spring Root Harvest',
-      orderId: 'ORD-1002-L',
-      date: 'Oct 16, 2023',
-      amount: 2100.00,
-      status: 'PENDING',
-      billTo: 'Urban Greens Café',
-      billToAddr: '109 Valencia St, San Francisco, CA 94103',
-      billToEmail: 'finance@urbangreens.com',
-      items: [
-        { desc: 'Rainbow Carrots Multi-pack', qty: '300 lbs', rate: 3.10, amount: 930.00 },
-        { desc: 'Red Ember Shallots Bulk', qty: '400 lbs', rate: 2.75, amount: 1100.00 },
-        { desc: 'Standard Logistics fee', qty: '1', rate: 70.00, amount: 70.00 }
-      ],
-      subtotal: 2100.00,
-      processing: 0.00
-    }
-  ];
+  // Load orders (invoices are based on completed/delivered orders)
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await clientApi.orders.list();
+        // Filter for orders that would have invoices (completed, delivered, cancelled)
+        const invoiceOrders = data.filter((order: any) => 
+          ['completed', 'delivered', 'cancelled'].includes(order.status)
+        );
+        setOrders(invoiceOrders || []);
+        if (invoiceOrders.length > 0) {
+          setSelectedOrderId(invoiceOrders[0].id);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch invoices:', err);
+        setError(err.message || 'Failed to load invoices');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Find active selected invoice details
-  const activeInvoice = invoices.find(inv => inv.id === selectedInvoiceId) || invoices[0];
+    fetchOrders();
+  }, []);
 
-  const filteredInvoices = invoices.filter(inv =>
-    inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.order.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.orderId.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter and pagination
+  const filteredOrders = orders.filter(order =>
+    String(order.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Find active selected order details
+  const activeOrder = orders.find(order => order.id === selectedOrderId) || orders[0];
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'delivered':
+        return { bg: 'bg-[#bceec8]', text: 'text-[#00210f]', label: 'PAID' };
+      case 'pending':
+        return { bg: 'bg-[#ffdcc5]', text: 'text-[#301400]', label: 'PENDING' };
+      case 'cancelled':
+        return { bg: 'bg-[#f0eee7]', text: 'text-[#717971]', label: 'CANCELLED' };
+      default:
+        return { bg: 'bg-[#f0eee7]', text: 'text-[#717971]', label: status.toUpperCase() };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#144227] animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[#717971]">Loading invoices...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-x-hidden">
@@ -108,11 +96,41 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Billing & Invoices</h1>
-        <p className="text-xs text-[#717971] mt-0.5">Review and manage your farm-to-table procurement history.</p>
+        <p className="text-xs text-[#717971] mt-0.5">Review and manage your order invoices.</p>
       </div>
 
-      {/* Split Layout: Left Table, Right Preview Drawer */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+      {error && (
+        <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center">
+          <Package className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-[#1c1c18] mb-2">Unable to Load Invoices</h2>
+          <p className="text-sm text-[#717971] mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!error && orders.length === 0 && (
+        <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center">
+          <FileText className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-[#1c1c18] mb-2">No Invoices Yet</h2>
+          <p className="text-sm text-[#717971] mb-4">
+            You don't have any invoices yet. Invoices will appear here once orders are completed.
+          </p>
+          <button
+            onClick={() => onNavigate('catalog')}
+            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+          >
+            Browse Products
+          </button>
+        </div>
+      )}
+
+        {/* Split Layout: Left Table, Right Preview Drawer */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
         
         {/* Left Table Section */}
         <div className="xl:col-span-2 space-y-4">
@@ -155,40 +173,43 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0eee7] text-xs">
-                  {filteredInvoices.map((inv) => {
-                    const isSelected = selectedInvoiceId === inv.id;
-                    const isPaid = inv.status === 'PAID';
+                  {paginatedOrders.map((order) => {
+                    const isSelected = selectedOrderId === order.id;
+                    const statusBadge = getStatusBadge(order.status);
                     
                     return (
                       <tr
-                        key={inv.id}
-                        onClick={() => setSelectedInvoiceId(inv.id)}
+                        key={order.id}
+                        onClick={() => setSelectedOrderId(order.id)}
                         className={`hover:bg-[#f2efe7]/40 cursor-pointer transition-colors ${
                           isSelected ? 'bg-[#bceec8]/10' : ''
                         }`}
                       >
-                        <td className="px-3 py-3 font-bold text-[#1c1c18]">{inv.id}</td>
+                        <td className="px-3 py-3 font-bold text-[#1c1c18]">#{order.id}</td>
                         <td className="px-3 py-3 hidden sm:table-cell">
-                          <span className="block font-bold text-[#1c1c18]">{inv.order}</span>
-                          <span className="block text-[10px] text-[#717971] font-mono mt-0.5">{inv.orderId}</span>
+                          <span className="block font-bold text-[#1c1c18]">{order.items?.length || 0} items</span>
+                          <span className="block text-[10px] text-[#717971] font-mono mt-0.5">Order #{order.id}</span>
                         </td>
-                        <td className="px-3 py-3 hidden md:table-cell text-[#414942] font-semibold">{inv.date}</td>
-                        <td className="px-3 py-3 font-extrabold text-[#1c1c18]">${inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        <td className="px-3 py-3 hidden md:table-cell text-[#414942] font-semibold">
+                          {order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }) : 'N/A'}
+                        </td>
+                        <td className="px-3 py-3 font-extrabold text-[#1c1c18]">
+                          {formatCurrency(order.total_price)}
+                        </td>
                         <td className="px-3 py-3">
-                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            isPaid
-                              ? 'bg-[#bceec8] text-[#00210f]'
-                              : 'bg-[#ffdcc5] text-[#301400]'
-                          }`}>
-                            {isPaid ? <CheckCircle size={10} /> : <Clock size={10} />}
-                            {inv.status}
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${statusBadge.bg} ${statusBadge.text}`}>
+                            {statusBadge.label}
                           </span>
                         </td>
                         <td className="px-3 py-3 text-center">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedInvoiceId(inv.id);
+                              setSelectedOrderId(order.id);
                             }}
                             className={`p-1.5 rounded-lg border transition-colors ${
                               isSelected
@@ -203,7 +224,7 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                     );
                   })}
                   
-                  {filteredInvoices.length === 0 && (
+                  {paginatedOrders.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-5 py-8 text-center text-xs text-[#717971] italic">
                         No invoices found matching search.
@@ -216,14 +237,24 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
 
             {/* Pagination / Count Row */}
             <div className="bg-[#f6f3ec]/30 border-t border-[#e5e2db] px-5 py-4 flex items-center justify-between text-xs text-[#717971]">
-              <span>Showing {filteredInvoices.length} of 128 invoices</span>
+              <span>Showing {paginatedOrders.length} of {filteredOrders.length} invoices</span>
               
               <div className="flex items-center gap-1.5">
-                <button className="p-1 border border-[#c1c9c0] rounded hover:bg-white disabled:opacity-40" disabled>
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1 border border-[#c1c9c0] rounded hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <ChevronLeft size={14} />
                 </button>
-                <span className="font-bold text-[#1c1c18] px-2 text-[11px]">1 / 32</span>
-                <button className="p-1 border border-[#c1c9c0] rounded hover:bg-white">
+                <span className="font-bold text-[#1c1c18] px-2 text-[11px]">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="p-1 border border-[#c1c9c0] rounded hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <ChevronRight size={14} />
                 </button>
               </div>
@@ -340,14 +371,14 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
             {/* Terms and conditions */}
             <div className="bg-[#fcf9f2] rounded-xl p-3 border border-[#e5e2db] text-[9px] text-[#717971] leading-relaxed">
               <span className="block font-bold uppercase tracking-wider text-[#1c1c18] mb-1">Terms & Conditions</span>
-              Please make all checks payable to <span className="font-bold text-[#144227]">Harvest Hill Supply Co.</span> Payment is due within 30 days of the invoice issue date.
+              Payment is processed at the time of order. All sales are final. For questions about your order, please contact support.
             </div>
 
           </div>
 
         </div>
 
-      </div>
+      )}
 
     </div>
   );

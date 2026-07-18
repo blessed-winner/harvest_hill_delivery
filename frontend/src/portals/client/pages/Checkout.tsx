@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { MapPin, Clock, CreditCard, ChevronRight, X, ArrowRight, Leaf, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Clock, X, ArrowRight, Leaf, Loader2, Package } from 'lucide-react';
+import { clientApi, formatCurrency } from '../lib/api';
 
 interface CheckoutProps {
   onNavigate: (screen: string) => void;
@@ -9,38 +10,135 @@ interface CheckoutProps {
 }
 
 export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checkoutData, setCheckoutData] = useState<any>(null);
+  
   // Input fields
-  const [name, setName] = useState('Jane Doe');
-  const [phone, setPhone] = useState('+1 (555) 012-3456');
-  const [street, setStreet] = useState('123 Farmview Lane');
-  const [city, setCity] = useState('Greenfield');
-  const [state, setState] = useState('CA');
-  const [zip, setZip] = useState('90210');
-
-  // Schedule States
-  const [selectedDay, setSelectedDay] = useState('tomorrow');
-  const [selectedTime, setSelectedTime] = useState('morning');
-
-  // Payment State
-  const [paymentSaved, setPaymentSaved] = useState(true);
-
-  // Success dialog/state
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [selectedDay, setSelectedDay] = useState<string>('mon');
+  const [selectedTime, setSelectedTime] = useState<string>('morning');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  
+  // Success state
   const [orderPlaced, setOrderPlaced] = useState(false);
 
-  const days = [
-    { id: 'tomorrow', label: 'Tomorrow', date: 'Oct 24' },
-    { id: 'friday', label: 'Friday', date: 'Oct 25' },
-    { id: 'saturday', label: 'Saturday', date: 'Oct 26' },
-    { id: 'monday', label: 'Monday', date: 'Oct 28' },
-  ];
-
-  const handlePlaceOrder = () => {
-    setOrderPlaced(true);
-    setTimeout(() => {
-      clearCart();
-      onNavigate('delivery-note');
-    }, 2500);
+  // Generate next 4 weekdays
+  const getNextDays = () => {
+    const days = [];
+    const today = new Date();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    for (let i = 1; i <= 4; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      days.push({
+        id: dayNames[date.getDay()].toLowerCase(),
+        label: dayNames[date.getDay()],
+        date: `${date.getMonth() + 1}/${date.getDate()}`
+      });
+    }
+    return days;
   };
+
+  const days = getNextDays();
+
+  // Load checkout data from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('checkout_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setCheckoutData(data);
+        setDeliveryDate(data.deliveryDate || '');
+      } else {
+        setError('No items in checkout');
+      }
+    } catch (err) {
+      setError('Failed to load checkout data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handlePlaceOrder = async () => {
+    if (!deliveryAddress.trim()) {
+      setError('Please enter a delivery address');
+      return;
+    }
+
+    if (!checkoutData?.items || checkoutData.items.length === 0) {
+      setError('Cart is empty');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      // Get selected day date
+      const selectedDayInfo = days.find(d => d.id === selectedDay);
+      const deliverySchedule = selectedDayInfo 
+        ? `${selectedDayInfo.date} ${selectedTime === 'morning' ? '8:00 AM - 12:00 PM' : '1:00 PM - 5:00 PM'}`
+        : '';
+
+      // Create order payload
+      const orderPayload = {
+        delivery_address: `${deliveryAddress}${deliverySchedule ? ` | Delivery: ${deliverySchedule}` : ''}`,
+        items: checkoutData.items.map((item: any) => ({
+          product_id: item.product_id,
+          quantity: item.qty
+        }))
+      };
+
+      // Submit order to backend
+      await clientApi.orders.create(orderPayload);
+      
+      setOrderPlaced(true);
+      
+      // Clear cart and redirect after short delay
+      setTimeout(() => {
+        clearCart();
+        localStorage.removeItem('checkout_data');
+        onNavigate('order-history');
+      }, 2500);
+      
+    } catch (err: any) {
+      console.error('Failed to place order:', err);
+      setError(err.message || 'Failed to place order. Please try again.');
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#144227] animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[#717971]">Loading checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !checkoutData) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center">
+          <Package className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-[#1c1c18] mb-2">Unable to Load Checkout</h2>
+          <p className="text-sm text-[#717971] mb-4">{error}</p>
+          <button
+            onClick={() => onNavigate('cart')}
+            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+          >
+            Back to Cart
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -72,9 +170,9 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
           <div className="w-16 h-16 bg-[#bceec8] text-[#00210f] rounded-full flex items-center justify-center mx-auto shadow-md">
             <Leaf className="w-8 h-8 animate-bounce" />
           </div>
-          <h2 className="text-2xl font-bold text-[#144227]">Placing Your Order...</h2>
+          <h2 className="text-2xl font-bold text-[#144227]">Order Placed Successfully!</h2>
           <p className="text-xs text-[#717971]">
-            We are confirming details with Greenfield local suppliers. Sending you to the Delivery Note Confirmation...
+            Your order has been confirmed. Redirecting you to order history...
           </p>
         </div>
       ) : (
@@ -90,63 +188,15 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                 <h2 className="text-sm font-bold text-[#1c1c18]">Delivery Address</h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Street Address</label>
-                  <input
-                    type="text"
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">City</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">State</label>
-                    <input
-                      type="text"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Zip Code</label>
-                    <input
-                      type="text"
-                      value={zip}
-                      onChange={(e) => setZip(e.target.value)}
-                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Full Delivery Address</label>
+                <textarea
+                  rows={3}
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Enter complete delivery address..."
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white text-[#1c1c18] font-medium"
+                />
               </div>
             </div>
 
@@ -157,7 +207,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                 <h2 className="text-sm font-bold text-[#1c1c18]">Delivery Schedule</h2>
               </div>
 
-              {/* Day Tabs */}
+              {/* Day Options */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {days.map((day) => {
                   const isSelected = selectedDay === day.id;
@@ -165,6 +215,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                     <button
                       key={day.id}
                       onClick={() => setSelectedDay(day.id)}
+                      type="button"
                       className={`border px-4 py-3 rounded-xl transition-all cursor-pointer flex flex-col items-center gap-1 ${
                         isSelected
                           ? 'border-[#376847] bg-[#bceec8]/30 text-[#144227]'
@@ -191,13 +242,8 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                         name="time-window"
                         checked={selectedTime === 'morning'}
                         onChange={() => setSelectedTime('morning')}
-                        className="sr-only"
+                        className="w-4 h-4 text-[#144227] focus:ring-[#144227]"
                       />
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                        selectedTime === 'morning' ? 'border-[#144227] bg-[#144227]' : 'border-[#c1c9c0] group-hover:border-[#144227]'
-                      }`}>
-                        {selectedTime === 'morning' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
-                      </div>
                       <span className="text-xs font-bold text-[#1c1c18]">Morning (8:00 AM - 12:00 PM)</span>
                     </div>
                     <span className="text-[9px] font-bold tracking-wider bg-[#bceec8] text-[#00210f] px-2 py-0.5 rounded-full uppercase">Free</span>
@@ -211,57 +257,13 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                         name="time-window"
                         checked={selectedTime === 'afternoon'}
                         onChange={() => setSelectedTime('afternoon')}
-                        className="sr-only"
+                        className="w-4 h-4 text-[#144227] focus:ring-[#144227]"
                       />
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                        selectedTime === 'afternoon' ? 'border-[#144227] bg-[#144227]' : 'border-[#c1c9c0] group-hover:border-[#144227]'
-                      }`}>
-                        {selectedTime === 'afternoon' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
-                      </div>
                       <span className="text-xs font-bold text-[#1c1c18]">Afternoon (1:00 PM - 5:00 PM)</span>
                     </div>
-                    <span className="text-[9px] font-bold tracking-wider bg-[#f0eee7] text-[#414942] px-2 py-0.5 rounded-full uppercase">$5.00</span>
+                    <span className="text-[9px] font-bold tracking-wider bg-[#f0eee7] text-[#414942] px-2 py-0.5 rounded-full uppercase">Standard</span>
                   </label>
                 </div>
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="bg-white border border-[#e5e2db] rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 border-b border-[#f0eee7] pb-3 text-[#144227]">
-                <CreditCard size={18} />
-                <h2 className="text-sm font-bold text-[#1c1c18]">Payment Method</h2>
-              </div>
-
-              <div className="space-y-4">
-                {paymentSaved ? (
-                  <div className="bg-[#bceec8]/30 border border-[#bceec8] rounded-xl px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-white border border-[#c1c9c0] rounded-lg text-[#144227] font-bold text-xs shadow-sm tracking-widest">
-                        VISA
-                      </div>
-                      <div>
-                        <span className="block text-xs font-extrabold text-[#1c1c18]">•••• •••• •••• 4242</span>
-                        <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">Expires 12/26</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => alert("Edit payment mode details...")}
-                      className="text-xs font-bold text-[#144227] hover:underline cursor-pointer"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-xs text-[#717971] italic text-center py-4">No active payment methods.</div>
-                )}
-
-                <button
-                  onClick={() => alert("Add payment modal...")}
-                  className="w-full py-4 border-2 border-dashed border-[#c1c9c0] hover:border-[#144227] rounded-xl text-center text-xs font-bold text-[#414942] hover:text-[#144227] transition-all cursor-pointer bg-white"
-                >
-                  + Add New Payment Method
-                </button>
               </div>
             </div>
 
@@ -276,65 +278,73 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
 
               {/* Items List */}
               <div className="space-y-4">
-                
-                {/* Item 1 */}
-                <div className="flex justify-between items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#f6f3ec] rounded-lg overflow-hidden flex-shrink-0">
-                      <img src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=200&q=80" alt="Fuji Apples" className="w-full h-full object-cover" />
+                {checkoutData?.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#f6f3ec] rounded-lg overflow-hidden flex-shrink-0">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#717971] text-xs">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <span className="block text-xs font-bold text-[#1c1c18]">{item.name}</span>
+                        <span className="block text-[10px] text-[#717971] mt-0.5">Qty: {item.qty} {item.unit || ''}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="block text-xs font-bold text-[#1c1c18]">Organic Fuji Apples</span>
-                      <span className="block text-[10px] text-[#717971] mt-0.5">Qty: 2 lbs</span>
-                    </div>
+                    <span className="text-xs font-bold text-[#1c1c18]">{formatCurrency(item.price * item.qty)}</span>
                   </div>
-                  <span className="text-xs font-bold text-[#1c1c18]">$8.50</span>
-                </div>
-
-                {/* Item 2 */}
-                <div className="flex justify-between items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#f6f3ec] rounded-lg overflow-hidden flex-shrink-0">
-                      <img src="https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200&q=80" alt="Kale" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <span className="block text-xs font-bold text-[#1c1c18]">Lacinato Kale</span>
-                      <span className="block text-[10px] text-[#717971] mt-0.5">Qty: 1 Bunch</span>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-[#1c1c18]">$3.75</span>
-                </div>
-
+                ))}
               </div>
 
               {/* Calculations */}
               <div className="border-t border-[#f0eee7] pt-4 space-y-2 text-xs">
                 <div className="flex justify-between text-[#414942]">
                   <span>Subtotal</span>
-                  <span className="font-bold text-[#1c1c18]">$12.25</span>
+                  <span className="font-bold text-[#1c1c18]">${checkoutData?.subtotal?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between text-[#414942]">
                   <span>Delivery Fee</span>
-                  <span className="font-bold text-[#376847]">FREE</span>
+                  <span className="font-bold text-[#376847]">${checkoutData?.deliveryFee?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between text-[#414942]">
                   <span>Estimated Tax</span>
-                  <span className="font-bold text-[#1c1c18]">$0.98</span>
+                  <span className="font-bold text-[#1c1c18]">${checkoutData?.taxes?.toFixed(2) || '0.00'}</span>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="border-t border-[#f0eee7] pt-4 flex justify-between text-sm font-extrabold text-[#1c1c18]">
                 <span>Total</span>
-                <span className="text-[#144227] text-lg">$13.23</span>
+                <span className="text-[#144227] text-lg">${checkoutData?.grandTotal?.toFixed(2) || '0.00'}</span>
               </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-[#ffdad6] border border-[#ba1a1a] text-[#93000a] p-3 rounded-lg text-xs">
+                  {error}
+                </div>
+              )}
 
               {/* Order Button */}
               <button
                 onClick={handlePlaceOrder}
-                className="w-full bg-[#144227] text-white py-3.5 rounded-xl font-bold text-xs hover:bg-[#376847] flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer hover:shadow-lg mt-2"
+                disabled={submitting || !deliveryAddress.trim()}
+                className="w-full bg-[#144227] text-white py-3.5 rounded-xl font-bold text-xs hover:bg-[#376847] flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer hover:shadow-lg mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Place Your Order <ArrowRight size={16} />
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Place Your Order <ArrowRight size={16} />
+                  </>
+                )}
               </button>
 
               <p className="text-[9px] text-[#717971] leading-relaxed text-center">
@@ -349,7 +359,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
               </span>
               <div>
                 <p className="text-xs font-semibold text-[#1c1c18] leading-normal">
-                  Your order supports <span className="font-bold text-[#144227]">3 local family farms</span> in the Greenfield valley.
+                  Your order supports local family farms delivering fresh produce.
                 </p>
               </div>
             </div>
