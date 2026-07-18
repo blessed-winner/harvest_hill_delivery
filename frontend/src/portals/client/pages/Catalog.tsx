@@ -7,9 +7,10 @@ import { clientApi } from '../lib/api';
 interface CatalogProps {
   onNavigate: (screen: string) => void;
   addToCart: () => void;
+  initialCategory?: string;
 }
 
-export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
+export default function Catalog({ onNavigate, addToCart, initialCategory }: CatalogProps) {
   // State
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +21,17 @@ export default function Catalog({ onNavigate, addToCart }: CatalogProps) {
   const [inSeason, setInSeason] = useState(false);
   const [bulkAvailable, setBulkAvailable] = useState(false);
   const [priceMax, setPriceMax] = useState(100);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Update category when initialCategory prop changes
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [initialCategory]);
 
   // Fetch products
   useEffect(() => {

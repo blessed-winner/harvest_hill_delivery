@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 interface TopBarProps {
   activeScreen: string;
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: string, category?: string) => void;
   cartCount: number;
   onMenuClick?: () => void;
 }
@@ -51,16 +51,16 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
             Home
           </button>
           {[
-            { name: 'Fruits', action: () => onNavigate('catalog') },
-            { name: 'Vegetables', action: () => onNavigate('catalog') },
-            { name: 'Dairy', action: () => onNavigate('catalog') },
-            { name: 'Grains', action: () => onNavigate('catalog') },
-            { name: 'Herbs', action: () => onNavigate('catalog') },
-            { name: 'Seasonal', action: () => onNavigate('catalog') },
+            { name: 'Fruits', category: 'Fruits' },
+            { name: 'Vegetables', category: 'Vegetables' },
+            { name: 'Dairy', category: 'Dairy' },
+            { name: 'Grains', category: 'Grains' },
+            { name: 'Herbs', category: 'Herbs' },
+            { name: 'Seasonal', category: 'all' },
           ].map((item) => (
             <button
               key={item.name}
-              onClick={item.action}
+              onClick={() => onNavigate('catalog', item.category)}
               className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
             >
               {item.name}
