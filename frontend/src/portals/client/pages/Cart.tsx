@@ -93,7 +93,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   };
 
   // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const subtotal = items.reduce((sum, item) => sum + ((item.price || 0) * item.qty), 0);
   const deliveryFee = items.length > 0 ? 12.00 : 0.00;
   const taxes = subtotal * 0.08; // 8% tax
   const grandTotal = subtotal + deliveryFee + taxes;
@@ -165,7 +165,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                     {/* Price on right */}
                     <div className="text-right">
                       <span className="block text-sm font-black text-[#1c1c18]">
-                        ${item.price.toFixed(2)}
+                        ${(item.price || 0).toFixed(2)}
                       </span>
                       <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">
                         per {item.unit || 'unit'}
@@ -195,7 +195,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-[#1c1c18]">
-                        ${(item.price * item.qty).toFixed(2)}
+                        ${((item.price || 0) * item.qty).toFixed(2)}
                       </span>
                       <button
                         onClick={() => removeItem(item.id)}
