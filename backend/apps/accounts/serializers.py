@@ -145,13 +145,23 @@ class AdminUserSerializer(serializers.ModelSerializer):
         if password:
             user.set_password(password)
             user.save()
-            
+        
+        # Note: Profiles are automatically created by signals, so we just update them if data is provided
         if user.role == 'farmer' and farmer_profile_data:
-            FarmerProfile.objects.create(user=user, **farmer_profile_data)
+            profile = user.farmer_profile
+            for attr, value in farmer_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
         elif user.role == 'client' and client_profile_data:
-            ClientProfile.objects.create(user=user, **client_profile_data)
+            profile = user.client_profile
+            for attr, value in client_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
         elif user.role == 'admin' and admin_profile_data:
-            AdminProfile.objects.create(user=user, **admin_profile_data)
+            profile = user.admin_profile
+            for attr, value in admin_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
             
         return user
 
