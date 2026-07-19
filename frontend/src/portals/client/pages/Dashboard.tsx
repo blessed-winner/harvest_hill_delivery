@@ -26,6 +26,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   const [autoReorder, setAutoReorder] = useState(true);
   const [earlyAccess, setEarlyAccess] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Active Settings Tab State
   const [activeTab, setActiveTab] = useState('profile');
@@ -71,6 +72,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSaving(true);
       const nameParts = fullName.trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
@@ -87,6 +89,8 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to save profile:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -444,9 +448,17 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 </div>
                 <button
                   type="submit"
-                  className="bg-[#144227] text-white px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-[#376847] shadow-sm hover:shadow transition-all cursor-pointer"
+                  disabled={saving}
+                  className="bg-[#144227] text-white px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-[#376847] shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Save Changes
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </button>
               </div>
 

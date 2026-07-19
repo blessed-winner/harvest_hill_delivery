@@ -6,10 +6,11 @@ import { clientApi } from '../lib/api';
 
 interface ProductDetailProps {
   onNavigate: (screen: string) => void;
-  addToCart: () => void;
+  addToCart: (product?: any) => void;
+  productId?: number | null;
 }
 
-export default function ProductDetail({ onNavigate, addToCart }: ProductDetailProps) {
+export default function ProductDetail({ onNavigate, addToCart, productId }: ProductDetailProps) {
   const [qty, setQty] = useState(1);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [product, setProduct] = useState<any>(null);
@@ -23,13 +24,18 @@ export default function ProductDetail({ onNavigate, addToCart }: ProductDetailPr
         setLoading(true);
         setError(null);
         
-        // For now, fetch the first product as demo
-        // In a real app, you'd get the product ID from URL params or props
-        const products = await clientApi.products.list({ limit: '1' });
-        if (products?.results && products.results.length > 0) {
-          setProduct(products.results[0]);
+        if (productId) {
+          // Fetch specific product
+          const fetchedProduct = await clientApi.products.get(productId);
+          setProduct(fetchedProduct);
         } else {
-          setError('Product not found');
+          // Fallback: fetch first product as demo
+          const products = await clientApi.products.list({ limit: '1' });
+          if (products?.results && products.results.length > 0) {
+            setProduct(products.results[0]);
+          } else {
+            setError('Product not found');
+          }
         }
       } catch (err: any) {
         console.error('Failed to fetch product:', err);
@@ -40,7 +46,7 @@ export default function ProductDetail({ onNavigate, addToCart }: ProductDetailPr
     };
 
     fetchProduct();
-  }, []);
+  }, [productId]);
 
   const images = product?.image_url 
     ? [product.image_url]
@@ -184,7 +190,14 @@ export default function ProductDetail({ onNavigate, addToCart }: ProductDetailPr
             </div>
 
             <button
-              onClick={addToCart}
+              onClick={() => {
+                // Add product to cart with quantity
+                for (let i = 0; i < qty; i++) {
+                  addToCart(product);
+                }
+                // Navigate to cart
+                onNavigate('cart');
+              }}
               className="flex-grow bg-[#144227] text-white py-3.5 px-6 rounded-xl font-bold text-xs hover:bg-[#376847] flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer hover:shadow-lg"
             >
               <ShoppingCart size={16} /> Add to Cart
