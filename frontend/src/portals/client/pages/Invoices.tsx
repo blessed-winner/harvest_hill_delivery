@@ -282,7 +282,101 @@ export default function Invoices({ onNavigate }: InvoicesProps) {
                 <Share2 size={14} />
               </button>
               <button
-                onClick={() => alert("Downloading PDF...")}
+                onClick={() => {
+                  // Create printable invoice
+                  const printWindow = window.open('', '_blank');
+                  if (printWindow && activeOrder) {
+                    printWindow.document.write(`
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <title>Invoice #${activeOrder.id}</title>
+                        <style>
+                          body { font-family: Arial, sans-serif; padding: 40px; color: #1c1c18; }
+                          .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+                          .company { font-size: 24px; font-weight: bold; color: #144227; }
+                          .invoice-label { text-transform: uppercase; font-size: 12px; color: #717971; }
+                          .invoice-id { font-size: 14px; font-weight: bold; }
+                          .section { margin: 20px 0; }
+                          .section-title { font-size: 10px; text-transform: uppercase; color: #717971; margin-bottom: 10px; }
+                          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                          th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f0eee7; }
+                          th { font-size: 10px; text-transform: uppercase; color: #717971; }
+                          td { font-size: 12px; }
+                          .total-row { font-weight: bold; font-size: 14px; }
+                          .terms { background: #fcf9f2; padding: 15px; border-radius: 8px; font-size: 10px; margin-top: 30px; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <div>
+                            <div class="company">Harvest Hill</div>
+                            <div style="font-size: 10px; color: #717971;">Fresh Farm Delivery Platform</div>
+                          </div>
+                          <div style="text-align: right;">
+                            <div class="invoice-label">INVOICE</div>
+                            <div class="invoice-id">#${activeOrder.id}</div>
+                          </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; margin: 30px 0;">
+                          <div class="section">
+                            <div class="section-title">From:</div>
+                            <div style="font-weight: bold;">Harvest Hill Supply Co.</div>
+                            <div style="font-size: 11px; color: #414942; line-height: 1.6;">
+                              Fresh Farm Platform<br/>
+                              Online Marketplace<br/>
+                              support@harvesthill.com
+                            </div>
+                          </div>
+                          <div class="section" style="text-align: right;">
+                            <div class="section-title">Bill To:</div>
+                            <div style="font-weight: bold; color: #144227;">Client</div>
+                            <div style="font-size: 11px; color: #414942; line-height: 1.6;">
+                              ${(activeOrder.delivery_address || 'Address not provided').replace(/\n/g, '<br/>')}<br/>
+                              Order Date: ${activeOrder.created_at ? new Date(activeOrder.created_at).toLocaleDateString() : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Item Description</th>
+                              <th style="text-align: center;">Qty</th>
+                              <th style="text-align: right;">Rate</th>
+                              <th style="text-align: right;">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${(activeOrder.items || []).map((item: any) => `
+                              <tr>
+                                <td>${item.product_name || 'Product'}</td>
+                                <td style="text-align: center;">${item.quantity}</td>
+                                <td style="text-align: right;">$${(item.price || 0).toFixed(2)}</td>
+                                <td style="text-align: right;">$${((item.price || 0) * item.quantity).toFixed(2)}</td>
+                              </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                              <td colspan="3" style="text-align: right;">Total</td>
+                              <td style="text-align: right; color: #144227;">$${(activeOrder.total_price || 0).toFixed(2)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        
+                        <div class="terms">
+                          <div style="font-weight: bold; margin-bottom: 5px;">Terms & Conditions</div>
+                          Payment is processed at the time of order. All sales are final. For questions about your order, please contact support.
+                        </div>
+                      </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    setTimeout(() => {
+                      printWindow.print();
+                    }, 250);
+                  }
+                }}
                 className="bg-[#144227] text-white hover:bg-[#376847] px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
               >
                 <FileDown size={12} /> PDF

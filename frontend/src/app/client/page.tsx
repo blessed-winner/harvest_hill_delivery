@@ -18,6 +18,7 @@ export default function ClientPage() {
   const router = useRouter();
   const [activeScreen, setActiveScreen] = useState('landing'); // Default view is now the Marketplace Home
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // Track selected category
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null); // Track selected product
   const [cartCount, setCartCount] = useState(17); // Set to 17 items as in the Cart order summary screenshot
   const [authorized, setAuthorized] = useState(false);
 
@@ -48,17 +49,57 @@ export default function ClientPage() {
     );
   }
 
-  const handleNavigate = (screen: string, category?: string) => {
+  const handleNavigate = (screen: string, category?: string, productId?: number) => {
     setActiveScreen(screen);
     if (category) {
       setSelectedCategory(category);
+    }
+    if (productId !== undefined) {
+      setSelectedProductId(productId);
     }
     // Smooth scroll to top on page transition
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAddToCart = () => {
-    setCartCount((prev) => prev + 1);
+  const handleAddToCart = (product?: any) => {
+    if (product) {
+      // Add product to localStorage cart
+      try {
+        const savedCart = localStorage.getItem('cart_items');
+        const cartItems = savedCart ? JSON.parse(savedCart) : [];
+        
+        // Check if product already exists in cart
+        const existingIndex = cartItems.findIndex((item: any) => item.product_id === product.id);
+        
+        if (existingIndex >= 0) {
+          // Increment quantity
+          cartItems[existingIndex].qty += 1;
+        } else {
+          // Add new product
+          cartItems.push({
+            id: `cart-${Date.now()}-${product.id}`,
+            product_id: product.id,
+            name: product.name,
+            category: product.category,
+            price: product.price,
+            unit: product.unit,
+            qty: 1,
+            image_url: product.image_url || product.image
+          });
+        }
+        
+        localStorage.setItem('cart_items', JSON.stringify(cartItems));
+        
+        // Update cart count
+        const totalQty = cartItems.reduce((sum: number, item: any) => sum + item.qty, 0);
+        setCartCount(totalQty);
+      } catch (err) {
+        console.error('Failed to add to cart:', err);
+      }
+    } else {
+      // Legacy: just increment counter
+      setCartCount((prev) => prev + 1);
+    }
   };
 
   const handleClearCart = () => {
@@ -72,7 +113,7 @@ export default function ClientPage() {
       case 'catalog':
         return <Catalog onNavigate={handleNavigate} addToCart={handleAddToCart} initialCategory={selectedCategory} />;
       case 'product-detail':
-        return <ProductDetail onNavigate={handleNavigate} addToCart={handleAddToCart} />;
+        return <ProductDetail onNavigate={handleNavigate} addToCart={handleAddToCart} productId={selectedProductId} />;
       case 'cart':
         return <Cart onNavigate={handleNavigate} cartCount={cartCount} setCartCount={setCartCount} />;
       case 'checkout':

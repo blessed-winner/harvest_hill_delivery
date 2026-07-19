@@ -5,8 +5,8 @@ import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, Shoppin
 import { clientApi } from '../lib/api';
 
 interface CatalogProps {
-  onNavigate: (screen: string) => void;
-  addToCart: () => void;
+  onNavigate: (screen: string, category?: string, productId?: number) => void;
+  addToCart: (product?: any) => void;
   initialCategory?: string;
 }
 
@@ -15,6 +15,9 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   
   // Filters
   const [organicOnly, setOrganicOnly] = useState(false);
@@ -25,6 +28,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
 
   // Update category when initialCategory prop changes
   useEffect(() => {
@@ -45,6 +49,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         if (searchQuery) params.search = searchQuery;
         if (inSeason) params.urgency = 'HIGH';
         if (sortBy) params.ordering = sortBy;
+        if (farmerFilter) params.farmer = farmerFilter;
         
         const response = await clientApi.products.list(params);
         let fetchedProducts = response?.results || [];
@@ -60,6 +65,8 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         }
         
         setProducts(fetchedProducts);
+        setTotalCount(fetchedProducts.length);
+        setCurrentPage(1); // Reset to first page on filter change
       } catch (err: any) {
         console.error('Failed to fetch products:', err);
         setError(err.message || 'Failed to load products');
@@ -69,7 +76,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, priceMax]);
+  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, priceMax, farmerFilter]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -220,13 +227,14 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
             <div>
               <h4 className="text-lg font-bold">Hillside Orchards</h4>
               <p className="text-xs text-white/80 leading-relaxed mt-1">
-                Direct from Sonoma Valley. Get 15% off bulk cherry orders.
+                Direct from Sonoma Valley. Get 15% off bulk orders this month.
               </p>
             </div>
             <button
               onClick={() => {
-                setOrganicOnly(true);
-                setSelectedCategory('stone');
+                setFarmerFilter('Hillside Orchards');
+                setSelectedCategory('all');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="flex items-center gap-1.5 text-xs font-bold text-[#9ed0ab] hover:underline underline-offset-4 cursor-pointer"
             >
@@ -308,6 +316,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                   setOrganicOnly(false);
                   setInSeason(false);
                   setPriceMax(100);
+                  setFarmerFilter(null);
                 }}
                 className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
               >
@@ -320,14 +329,16 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                 ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
                 : "space-y-4"
             }>
-              {products.map((prod: any) => {
+              {products
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((prod: any) => {
                 const urgencyBadge = prod.urgency === 'HIGH' ? 'SEASONAL' : prod.urgency === 'MEDIUM' ? 'LIMITED' : null;
                 const badgeColor = prod.urgency === 'HIGH' ? 'bg-[#9ed0ab] text-[#00210f]' : 'bg-[#ffdcc5] text-[#301400]';
                 
                 return (
                   <div
                     key={prod.id}
-                    onClick={() => onNavigate('product-detail')}
+                    onClick={() => onNavigate('product-detail', undefined, prod.id)}
                     className={`bg-white border border-[#e5e2db] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex ${
                       layoutMode === 'grid' ? 'flex-col justify-between max-w-[260px] w-full mx-auto' : 'flex-row items-center p-4 gap-4'
                     }`}
@@ -379,7 +390,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            addToCart();
+                            addToCart(prod);
                           }}
                           className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
                         >
@@ -394,19 +405,56 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
           )}
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-1.5 pt-4">
-            <button className="p-2 border border-[#c1c9c0] rounded-lg hover:bg-white text-[#414942] disabled:opacity-50 cursor-pointer" disabled>
-              <ChevronLeft size={16} />
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#144227] text-white text-xs font-bold">1</button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#c1c9c0] hover:bg-white text-xs text-[#414942] cursor-pointer">2</button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#c1c9c0] hover:bg-white text-xs text-[#414942] cursor-pointer">3</button>
-            <span className="text-xs text-[#717971] px-1">...</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#c1c9c0] hover:bg-white text-xs text-[#414942] cursor-pointer">12</button>
-            <button className="p-2 border border-[#c1c9c0] rounded-lg hover:bg-white text-[#414942] cursor-pointer">
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          {!loading && !error && products.length > 0 && totalCount > itemsPerPage && (
+            <div className="flex items-center justify-center gap-1.5 pt-4">
+              <button 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-[#c1c9c0] rounded-lg hover:bg-white text-[#414942] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              {/* Dynamic page buttons */}
+              {Array.from({ length: Math.ceil(totalCount / itemsPerPage) }, (_, i) => i + 1)
+                .filter(page => {
+                  // Show first page, last page, current page, and pages around current
+                  const totalPages = Math.ceil(totalCount / itemsPerPage);
+                  return page === 1 || 
+                         page === totalPages || 
+                         Math.abs(page - currentPage) <= 1;
+                })
+                .map((page, index, array) => {
+                  // Add ellipsis between non-consecutive pages
+                  const prevPage = array[index - 1];
+                  const showEllipsis = prevPage && page - prevPage > 1;
+                  
+                  return (
+                    <div key={page} className="flex items-center gap-1.5">
+                      {showEllipsis && <span className="text-xs text-[#717971] px-1">...</span>}
+                      <button
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                          currentPage === page
+                            ? 'bg-[#144227] text-white'
+                            : 'border border-[#c1c9c0] hover:bg-white text-[#414942] cursor-pointer'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    </div>
+                  );
+                })}
+              
+              <button 
+                onClick={() => setCurrentPage(Math.min(Math.ceil(totalCount / itemsPerPage), currentPage + 1))}
+                disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+                className="p-2 border border-[#c1c9c0] rounded-lg hover:bg-white text-[#414942] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
 
         </div>
 
