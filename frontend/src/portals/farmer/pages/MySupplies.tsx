@@ -4,12 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { api, apiRequest } from '../lib/api';
+import { api } from '../lib/api';
 
 const romaTomatoesImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA';
-
-// Removed fallbackSupplies mock data
 
 export default function MySupplies() {
   const [supplies, setSupplies] = useState<any[]>([]);
@@ -35,6 +33,12 @@ export default function MySupplies() {
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Inline Validation Errors
+  const [validationErrors, setValidationErrors] = useState<{
+    quantity?: string;
+    price?: string;
+  }>({});
 
   const getSupplyImage = (supply: any) => {
     const name = String(supply?.product_detail?.name || '').trim().toLowerCase();
@@ -81,7 +85,6 @@ export default function MySupplies() {
         setSupplies(supplies.filter(s => s.id !== deleteConfirmId));
       } catch (err) {
         console.error("Failed to delete supply record:", err);
-        // Fallback local deletion
         setSupplies(supplies.filter(s => s.id !== deleteConfirmId));
       }
       setDeleteConfirmId(null);
@@ -91,12 +94,13 @@ export default function MySupplies() {
   const handleEditClick = (supply: any) => {
     setEditSupply(supply);
     setEditQuantity(supply.quantity || '');
-    setEditPrice(supply.proposed_price || '');
+    setEditPrice(supply.proposed_price || supply.price || '');
     setEditDate(supply.available_date || '');
     setEditQuality(supply.quality_grade || 'standard');
     setEditNotes(supply.notes || '');
     setEditPhoto(null);
     setEditPhotoPreview(supply.photo || null);
+    setValidationErrors({});
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,12 +114,35 @@ export default function MySupplies() {
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editSupply) return;
+
+    // Validate inputs
+    const qty = Number(editQuantity);
+    const priceVal = Number(editPrice);
+    
+    let hasErrors = false;
+    const errors: typeof validationErrors = {};
+
+    if (isNaN(qty) || qty < 50) {
+      errors.quantity = "Quantity must be at least 50 kg.";
+      hasErrors = true;
+    }
+
+    if (isNaN(priceVal) || priceVal <= 0) {
+      errors.price = "Price must be greater than zero.";
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setValidationErrors(errors);
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
       const payload: Record<string, any> = {
-        quantity: Number(editQuantity),
-        proposed_price: Number(editPrice),
+        quantity: qty,
+        price: priceVal,
         available_date: editDate || null,
         quality_grade: editQuality,
         notes: editNotes,
@@ -128,9 +155,10 @@ export default function MySupplies() {
       await api.updateSupply(editSupply.id, payload);
       setEditSupply(null);
       await loadSupplies(); // Reload records
+      setValidationErrors({});
     } catch (err) {
       console.error("Failed to update supply record:", err);
-      alert("Could not update record. Please try again.");
+      alert("Could not update record. Please check validation limits.");
     } finally {
       setIsUpdating(false);
     }
@@ -149,7 +177,6 @@ export default function MySupplies() {
     
     const matchesStatus = statusFilter === 'All Statuses' || item.status.toLowerCase() === statusFilter.toLowerCase();
     
-    // category classification
     const isVeg = name.toLowerCase().includes('tomato') || 
                   name.toLowerCase().includes('kale') || 
                   name.toLowerCase().includes('lettuce') || 
@@ -164,7 +191,6 @@ export default function MySupplies() {
 
     const matchesCategory = categoryFilter === 'All Categories' || category === categoryFilter;
     
-    // Date classification
     const date = new Date(item.created_at || item.submitted_at);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -179,7 +205,6 @@ export default function MySupplies() {
     return matchesSearch && matchesStatus && matchesCategory && matchesDate;
   });
 
-  // Pagination
   const totalEntries = filteredSupplies.length;
   const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
   const paginatedSupplies = filteredSupplies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -209,7 +234,6 @@ export default function MySupplies() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Status Filter */}
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -223,7 +247,6 @@ export default function MySupplies() {
             <option>draft</option>
           </select>
 
-          {/* Category Filter */}
           <select 
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -236,7 +259,6 @@ export default function MySupplies() {
             <option>Other</option>
           </select>
 
-          {/* Date Filter */}
           <select 
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
@@ -297,7 +319,7 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-mono text-sm font-bold text-on-surface">${supply.proposed_price}</span>
+                      <span className="font-mono text-sm font-bold text-on-surface">${supply.proposed_price || supply.price}</span>
                       {supply.status === 'accepted' && (
                         <span className="text-[9px] text-tertiary font-bold uppercase tracking-tighter">Negotiated</span>
                       )}
@@ -392,7 +414,6 @@ export default function MySupplies() {
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className="fixed inset-0 m-auto w-[90vw] max-w-md h-fit bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col"
             >
-              {/* Forest Green Header Card */}
               <div className="bg-[#144227] px-6 py-5 flex items-center gap-4 text-white">
                 <div className="p-2 bg-white/10 rounded-xl">
                   <AlertTriangle size={22} className="text-[#b6edc2]" />
@@ -403,7 +424,6 @@ export default function MySupplies() {
                 </div>
               </div>
 
-              {/* Message Block */}
               <div className="p-6 space-y-4">
                 <p className="text-xs text-on-surface-variant leading-relaxed">
                   You are about to permanently delete the supply record for <span className="font-sans font-bold text-[#1c1c18]">{selectedDeleteSupply.product_detail?.name}</span> ({selectedDeleteSupply.quantity} {selectedDeleteSupply.unit}).
@@ -413,7 +433,6 @@ export default function MySupplies() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="px-6 pb-6 pt-2 flex gap-3 justify-end">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
@@ -451,7 +470,6 @@ export default function MySupplies() {
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className="fixed inset-0 m-auto w-[92vw] max-w-lg h-[85vh] bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col"
             >
-              {/* Forest Green Header */}
               <div className="bg-[#144227] px-6 py-5 flex items-center justify-between text-white shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/10 rounded-xl">
@@ -481,10 +499,27 @@ export default function MySupplies() {
                       type="number"
                       required
                       value={editQuantity}
-                      onChange={(e) => setEditQuantity(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditQuantity(val);
+                        const qNum = Number(val);
+                        if (val && (isNaN(qNum) || qNum < 50)) {
+                          setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 50 kg." }));
+                        } else {
+                          setValidationErrors(prev => ({ ...prev, quantity: undefined }));
+                        }
+                      }}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all",
+                        validationErrors.quantity ? "border-error focus:ring-error" : "border-outline-variant"
+                      )}
                       placeholder="e.g. 500"
                     />
+                    {validationErrors.quantity && (
+                      <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                        {validationErrors.quantity}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-primary font-sans">Asking Price ($ per unit)</label>
@@ -493,10 +528,27 @@ export default function MySupplies() {
                       step="0.01"
                       required
                       value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditPrice(val);
+                        const pNum = Number(val);
+                        if (val && (isNaN(pNum) || pNum <= 0)) {
+                          setValidationErrors(prev => ({ ...prev, price: "Price must be greater than zero." }));
+                        } else {
+                          setValidationErrors(prev => ({ ...prev, price: undefined }));
+                        }
+                      }}
+                      className={cn(
+                        "w-full px-4 py-3 rounded-xl border bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all",
+                        validationErrors.price ? "border-error focus:ring-error" : "border-outline-variant"
+                      )}
                       placeholder="e.g. 2.50"
                     />
+                    {validationErrors.price && (
+                      <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                        {validationErrors.price}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -537,7 +589,7 @@ export default function MySupplies() {
                   />
                 </div>
 
-                {/* 4. Photo Upload (Cloudinary Linked) */}
+                {/* 4. Photo Upload */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-primary font-sans">Update Harvest Photo</label>
                   <div className="flex gap-4 items-center">
@@ -570,7 +622,8 @@ export default function MySupplies() {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-extrabold font-sans text-xs shadow-md hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    disabled={isUpdating || !!validationErrors.quantity || !!validationErrors.price}
+                    className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-extrabold font-sans text-xs shadow-md hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isUpdating ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
