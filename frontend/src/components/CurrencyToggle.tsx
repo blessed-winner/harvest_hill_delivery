@@ -19,7 +19,7 @@ export function CurrencyToggle() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const codes = Object.keys(CURRENCIES) as CurrencyCode[];
+  const codes: CurrencyCode[] = ['USD', 'RWF'];
 
   return (
     <div ref={ref} className="relative">

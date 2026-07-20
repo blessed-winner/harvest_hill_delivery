@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
-import { useCurrency } from '../../../context/CurrencyContext';
 
 type DemandProduct = {
   id: number;
@@ -95,7 +94,8 @@ export default function SubmitHarvest() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-  const { formatPrice, currency, setCurrency } = useCurrency();
+  // Local currency conversion toggles per product ID
+  const [convertedProducts, setConvertedProducts] = useState<Record<number, boolean>>({});
 
   // Custom success modal dialog state
   const [successModal, setSuccessModal] = useState<{
@@ -159,10 +159,15 @@ export default function SubmitHarvest() {
 
   const openProduct = (product: DemandProduct) => {
     setSelectedProduct(product);
+    const isRwf = convertedProducts[product.id] || false;
+    const initialAskingPrice = isRwf 
+      ? String(Math.round(Number(product.base_price || 0) * 1300))
+      : product.base_price ? String(product.base_price) : '';
+
     setForm({
       quantity: product.quantity_needed ? String(product.quantity_needed).split(' ')[0] : '',
       availableDate: new Date().toISOString().slice(0, 10),
-      askingPrice: product.base_price ? String(product.base_price) : '',
+      askingPrice: initialAskingPrice,
       qualityGrade: 'premium',
       notes: '',
       photo: null,
@@ -175,12 +180,16 @@ export default function SubmitHarvest() {
 
     setIsSubmitting(true);
 
+    // Convert asking price back to USD if it was set in RWF in the form
+    const isRwf = convertedProducts[selectedProduct.id] || false;
+    const askingPriceUSD = isRwf ? Number(form.askingPrice) / 1300 : Number(form.askingPrice);
+
     try {
       await api.submitSupply({
         product: selectedProduct.id,
         quantity: Number(form.quantity),
         unit: selectedProduct.unit,
-        proposed_price: Number(form.askingPrice),
+        proposed_price: askingPriceUSD,
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
         notes: form.notes,
@@ -188,7 +197,6 @@ export default function SubmitHarvest() {
         status: isDraft ? 'draft' : 'pending',
       });
 
-      // Open beautiful success dialog
       setSuccessModal({
         isOpen: true,
         productName: selectedProduct.name,
@@ -217,6 +225,8 @@ export default function SubmitHarvest() {
       (priceFilter === 'Over $1.00' && Number(product.base_price || 0) >= 1.00);
     return matchesSearch && matchesCategory && matchesUrgency && matchesPrice;
   });
+
+  const isSelectedProductRwf = selectedProduct ? (convertedProducts[selectedProduct.id] || false) : false;
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
@@ -355,82 +365,100 @@ export default function SubmitHarvest() {
                 : 'Harvest Hill will post new demands soon. Check back later.'}
             </p>
           </div>
-        ) : filteredDemands.map((product) => (
-          <motion.div
-            key={product.id}
-            whileHover={{ scale: 1.02 }}
-            onClick={() => openProduct(product)}
-            className={cn(
-              'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
-              selectedProduct?.id === product.id || product.name.toLowerCase().includes('roma')
-                ? 'border-primary'
-                : 'border-outline-variant'
-            )}
-          >
-            <div>
-              <div className="relative rounded-lg overflow-hidden h-40 mb-3">
-                <img src={product.image || getReferenceImage(product.name) || ''} alt={product.name} className="w-full h-full object-cover" />
-                {getBadgeMeta(product.name, product.urgency) && (
-                  <div className="absolute top-4 right-4">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
-                      getBadgeMeta(product.name, product.urgency)?.className
-                    )}>
-                      {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
-                        <Bolt size={12} fill="currentColor" />
-                      )}
-                      {getBadgeMeta(product.name, product.urgency)?.label}
+        ) : filteredDemands.map((product) => {
+          const isRwf = convertedProducts[product.id] || false;
+          const formattedPrice = isRwf
+            ? `RWF ${(Number(product.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+            : `$${Number(product.base_price || 0).toFixed(2)}`;
+
+          return (
+            <motion.div
+              key={product.id}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => openProduct(product)}
+              className={cn(
+                'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
+                selectedProduct?.id === product.id || product.name.toLowerCase().includes('roma')
+                  ? 'border-primary'
+                  : 'border-outline-variant'
+              )}
+            >
+              <div>
+                <div className="relative rounded-lg overflow-hidden h-40 mb-3">
+                  <img src={product.image || getReferenceImage(product.name) || ''} alt={product.name} className="w-full h-full object-cover" />
+                  {getBadgeMeta(product.name, product.urgency) && (
+                    <div className="absolute top-4 right-4">
+                      <span className={cn(
+                        "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
+                        getBadgeMeta(product.name, product.urgency)?.className
+                      )}>
+                        {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
+                          <Bolt size={12} fill="currentColor" />
+                        )}
+                        {getBadgeMeta(product.name, product.urgency)?.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="px-2 pb-2">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
+                    <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
+                      {product.category}
                     </span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex flex-col">
+                      <span className="text-on-surface-variant font-mono text-[10px] uppercase tracking-wider">Quantity Needed</span>
+                      <span className="font-sans text-lg font-extrabold text-primary">
+                        {String(product.quantity_needed ?? '0').split(' ')[0]}
+                        <span className="text-xs font-normal ml-1">{product.unit}</span>
+                      </span>
+                    </div>
+                    <div
+                      className={cn(
+                        'p-2 rounded-lg transition-colors group-hover:translate-x-1 duration-300',
+                        selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
+                      )}
+                    >
+                      <ArrowRight size={18} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="px-2 pb-2">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
-                  <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
-                    {product.category}
+
+              {/* Localized Card Base Price & Conversion Toggle */}
+              <div className="mt-3 pt-3 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
+                <div>
+                  <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block">Base Price</span>
+                  <span className="font-sans font-bold text-primary">
+                    {formattedPrice} / {product.unit}
                   </span>
                 </div>
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex flex-col">
-                    <span className="text-on-surface-variant font-mono text-[10px] uppercase tracking-wider">Quantity Needed</span>
-                    <span className="font-sans text-lg font-extrabold text-primary">
-                      {String(product.quantity_needed ?? '0').split(' ')[0]}
-                      <span className="text-xs font-normal ml-1">{product.unit}</span>
-                    </span>
-                  </div>
-                  <div
-                    className={cn(
-                      'p-2 rounded-lg transition-colors group-hover:translate-x-1 duration-300',
-                      selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
-                    )}
-                  >
-                    <ArrowRight size={18} />
-                  </div>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConvertedProducts(prev => {
+                      const nextState = { ...prev, [product.id]: !prev[product.id] };
+                      // If drawer is currently open for this product, sync drawer input values
+                      if (selectedProduct?.id === product.id) {
+                        const newIsRwf = nextState[product.id];
+                        const convertedAskingVal = newIsRwf
+                          ? String(Math.round(Number(form.askingPrice || 0) * 1300))
+                          : String(Number(form.askingPrice || 0) / 1300);
+                        setForm(current => ({ ...current, askingPrice: convertedAskingVal }));
+                      }
+                      return nextState;
+                    });
+                  }}
+                  className="font-mono text-[9px] uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-1 rounded-full hover:bg-primary/20 transition-all font-bold cursor-pointer"
+                >
+                  Convert ({isRwf ? 'USD' : 'RWF'})
+                </button>
               </div>
-            </div>
-
-            {/* In-Card Base Price & Conversion Toggle */}
-            <div className="mt-3 pt-3 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
-              <div>
-                <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block">Base Price</span>
-                <span className="font-sans font-bold text-primary">
-                  {formatPrice(product.base_price)} / {product.unit}
-                </span>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrency(currency === 'USD' ? 'RWF' : 'USD');
-                }}
-                className="font-mono text-[9px] uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-1 rounded-full hover:bg-primary/20 transition-all font-bold cursor-pointer"
-              >
-                Convert ({currency === 'USD' ? 'RWF' : 'USD'})
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       <AnimatePresence>
@@ -461,7 +489,10 @@ export default function SubmitHarvest() {
                   <div>
                     <h3 className="font-sans text-lg sm:text-xl font-extrabold text-primary">Submit: {selectedProduct.name}</h3>
                     <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                      Demand Base Price: {formatPrice(selectedProduct.base_price)}
+                      Demand Base Price: {isSelectedProductRwf 
+                        ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        : `$${Number(selectedProduct.base_price || 0).toFixed(2)}`
+                      }
                     </p>
                   </div>
                 </div>
@@ -526,10 +557,10 @@ export default function SubmitHarvest() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                     <div className="relative flex-1">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">
-                        {currency === 'RWF' ? 'RWF' : '$'}
+                        {isSelectedProductRwf ? 'RWF' : '$'}
                       </span>
                       <input
-                        className="w-full pl-8 pr-4 py-3 rounded-xl border border-outline-variant bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-outline-variant bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary"
                         type="text"
                         value={form.askingPrice}
                         onChange={(event) => setForm((current) => ({ ...current, askingPrice: event.target.value }))}
@@ -538,7 +569,10 @@ export default function SubmitHarvest() {
                     <div className="flex-1">
                       <span className="font-mono text-[10px] text-on-surface-variant block mb-1 uppercase tracking-tight">Market Avg</span>
                       <span className="font-sans text-xl font-extrabold text-primary">
-                        {formatPrice(selectedProduct.base_price)} - {formatPrice(Number(selectedProduct.base_price || 0) * 1.1)}
+                        {isSelectedProductRwf 
+                          ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })} - RWF ${(Number(selectedProduct.base_price || 0) * 1.1 * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                          : `$${Number(selectedProduct.base_price || 0).toFixed(2)} - $${(Number(selectedProduct.base_price || 0) * 1.1).toFixed(2)}`
+                        }
                       </span>
                     </div>
                   </div>
