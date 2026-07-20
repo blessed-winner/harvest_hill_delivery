@@ -33,8 +33,14 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
         const savedCart = localStorage.getItem('cart_items');
         if (savedCart) {
           const parsedItems = JSON.parse(savedCart);
-          setItems(parsedItems);
-          const totalQty = parsedItems.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
+          // Ensure all prices are numbers
+          const validatedItems = parsedItems.map((item: any) => ({
+            ...item,
+            price: typeof item.price === 'string' ? parseFloat(item.price) : (item.price || 0),
+            qty: typeof item.qty === 'string' ? parseInt(item.qty) : (item.qty || 1)
+          }));
+          setItems(validatedItems);
+          const totalQty = validatedItems.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
           setCartCount(totalQty);
         }
         
@@ -93,7 +99,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   };
 
   // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + ((item.price || 0) * item.qty), 0);
+  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * item.qty), 0);
   const deliveryFee = items.length > 0 ? 12.00 : 0.00;
   const taxes = subtotal * 0.08; // 8% tax
   const grandTotal = subtotal + deliveryFee + taxes;
@@ -165,7 +171,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                     {/* Price on right */}
                     <div className="text-right">
                       <span className="block text-sm font-black text-[#1c1c18]">
-                        ${(item.price || 0).toFixed(2)}
+                        ${parseFloat(item.price || 0).toFixed(2)}
                       </span>
                       <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">
                         per {item.unit || 'unit'}
@@ -195,7 +201,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-[#1c1c18]">
-                        ${((item.price || 0) * item.qty).toFixed(2)}
+                        ${(parseFloat(item.price || 0) * item.qty).toFixed(2)}
                       </span>
                       <button
                         onClick={() => removeItem(item.id)}

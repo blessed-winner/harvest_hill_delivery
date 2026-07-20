@@ -17,6 +17,8 @@ from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderItemSerializer
 from apps.products.models import Product
 from apps.products.serializers import ProductSerializer
+from apps.supplies.models import Supply
+from apps.supplies.views import SupplySerializer
 
 
 class IsClient(IsAuthenticated):
@@ -268,15 +270,15 @@ class ClientOrderViewSet(viewsets.ModelViewSet):
 class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Client Product Browsing API
-    Browse and search available products
+    Browse and search available products from farmer supplies
     """
-    queryset = Product.objects.filter(is_currently_needed=True)
-    serializer_class = ProductSerializer
+    queryset = Supply.objects.filter(status='accepted', is_archived=False).select_related('product', 'farmer')
+    serializer_class = SupplySerializer
     permission_classes = [IsClient]
 
     @extend_schema(
         summary="Browse available products",
-        description="Get list of products currently available for ordering",
+        description="Get list of products currently available for ordering from farmer supplies",
         parameters=[
             OpenApiParameter(
                 name='category',
@@ -309,13 +311,28 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
         urgency = request.query_params.get('urgency')
         
         if category:
-            queryset = queryset.filter(category__iexact=category)
+            queryset = queryset.filter(product__category__iexact=category)
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            queryset = queryset.filter(product__name__icontains=search)
         if urgency:
-            queryset = queryset.filter(urgency__iexact=urgency)
+            queryset = queryset.filter(product__urgency__iexact=urgency)
         
         serializer = self.get_serializer(queryset, many=True)
+        # Return data in paginated format for frontend compatibility
+        return Response({
+            'results': serializer.data,
+            'count': len(serializer.data)
+        })
+
+    @extend_schema(
+        summary="Get product details",
+        description="Retrieve detailed information about a specific farmer supply",
+        tags=['Client Portal']
+    )
+    def retrieve(self, request, *args, **kwargs):
+        """Get a single supply by ID"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
     @extend_schema(

@@ -57,11 +57,11 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         // Apply client-side filters
         if (organicOnly) {
           fetchedProducts = fetchedProducts.filter((p: any) => 
-            p.name?.toLowerCase().includes('organic') || p.description?.toLowerCase().includes('organic')
+            p.product_detail?.name?.toLowerCase().includes('organic') || p.notes?.toLowerCase().includes('organic')
           );
         }
         if (priceMax < 100) {
-          fetchedProducts = fetchedProducts.filter((p: any) => (p.base_price || 0) <= priceMax);
+          fetchedProducts = fetchedProducts.filter((p: any) => parseFloat(p.price || 0) <= priceMax);
         }
         
         setProducts(fetchedProducts);
@@ -332,13 +332,26 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
               {products
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((prod: any) => {
-                const urgencyBadge = prod.urgency === 'HIGH' ? 'SEASONAL' : prod.urgency === 'MEDIUM' ? 'LIMITED' : null;
-                const badgeColor = prod.urgency === 'HIGH' ? 'bg-[#9ed0ab] text-[#00210f]' : 'bg-[#ffdcc5] text-[#301400]';
+                // Map supply fields to product fields for display
+                const product = {
+                  id: prod.id,
+                  name: prod.product_detail?.name || prod.name,
+                  category: prod.product_detail?.category || prod.category,
+                  urgency: prod.product_detail?.urgency || prod.urgency,
+                  unit: prod.unit,
+                  price: prod.price,
+                  image_url: prod.photo || prod.product_detail?.image_url,
+                  farmer_name: prod.farmer_name,
+                  quantity: prod.quantity
+                };
+                
+                const urgencyBadge = product.urgency === 'high' ? 'SEASONAL' : product.urgency === 'medium' ? 'LIMITED' : null;
+                const badgeColor = product.urgency === 'high' ? 'bg-[#9ed0ab] text-[#00210f]' : 'bg-[#ffdcc5] text-[#301400]';
                 
                 return (
                   <div
-                    key={prod.id}
-                    onClick={() => onNavigate('product-detail', undefined, prod.id)}
+                    key={product.id}
+                    onClick={() => onNavigate('product-detail', undefined, product.id)}
                     className={`bg-white border border-[#e5e2db] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex ${
                       layoutMode === 'grid' ? 'flex-col justify-between max-w-[260px] w-full mx-auto' : 'flex-row items-center p-4 gap-4'
                     }`}
@@ -351,8 +364,8 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                       style={layoutMode === 'grid' ? { aspectRatio: '26 / 24' } : undefined}
                     >
                       <img
-                        src={prod.image_url || prod.image || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80'}
-                        alt={prod.name}
+                        src={product.image_url || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80'}
+                        alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                       />
                       {urgencyBadge && (
@@ -368,10 +381,10 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                     }`}>
                       <div>
                         <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">
-                          {prod.category || 'Product'}
+                          {product.category || 'Product'}
                         </span>
                         <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">
-                          {prod.name}
+                          {product.name}
                         </h3>
                       </div>
 
@@ -380,17 +393,17 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                       }`}>
                         <div>
                           <span className="block text-xs font-bold text-[#144227]">
-                            ${prod.base_price?.toFixed(2) || '0.00'}
+                            ${parseFloat(product.price || 0).toFixed(2)}
                           </span>
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">
-                            per {prod.unit || 'unit'}
+                            per {product.unit || 'unit'}
                           </span>
                         </div>
 
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            addToCart(prod);
+                            addToCart(product);
                           }}
                           className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
                         >
