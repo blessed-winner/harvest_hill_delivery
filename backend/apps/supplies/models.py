@@ -27,6 +27,7 @@ class Supply(models.Model):
     notes = models.TextField(blank=True, default='')
     photo = models.ImageField(upload_to='supplies/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_archived = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.product.name} - {self.quantity} ({self.status})"

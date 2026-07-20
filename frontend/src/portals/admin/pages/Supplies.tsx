@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2 } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -16,6 +16,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Bulk Selection state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   // Success acceptance modal state
   const [successModal, setSuccessModal] = useState<{
@@ -58,6 +61,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedIds([]);
   }, [activeStatusTab, searchTerm]);
 
   const handleUpdateStatus = async (supplyId: number | string, newStatus: string) => {
@@ -77,15 +81,56 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const handleArchiveSupply = async (supplyId: number | string) => {
+    try {
+      await api.supplies.update(supplyId, { is_archived: true });
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      alert(err.message || "Failed to archive supply.");
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    try {
+      await Promise.all(selectedIds.map(id => api.supplies.update(id, { is_archived: true })));
+      setSelectedIds([]);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Bulk archive failed:", err);
+      alert("Failed to archive some items.");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to permanently delete the ${selectedIds.length} selected supplies?`)) return;
+    try {
+      await Promise.all(selectedIds.map(id => api.supplies.delete(id)));
+      setSelectedIds([]);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Bulk delete failed:", err);
+      alert("Failed to delete some items.");
+    }
+  };
+
   const filteredSupplies = supplies.filter(s => {
-    const backendStatus = statusMap[activeStatusTab];
-    const matchesTab = s.status === backendStatus;
+    // Archived tab shows only archived items
+    if (activeStatusTab === 'Archived') {
+      if (!s.is_archived) return false;
+    } else {
+      // Other tabs show only non-archived items
+      if (s.is_archived) return false;
+      const backendStatus = statusMap[activeStatusTab];
+      if (s.status !== backendStatus) return false;
+    }
+
     const matchesSearch = searchTerm 
       ? (s.product_detail?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.farmer_name || s.farmer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.product_detail?.category || '').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-    return matchesTab && matchesSearch;
+    return matchesSearch;
   });
 
   // Pagination calculations
@@ -103,7 +148,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
         </div>
         <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-          {['Pending Review', 'Accepted', 'Delivered'].map((t) => (
+          {['Pending Review', 'Accepted', 'Delivered', 'Archived'].map((t) => (
             <button 
               key={t} 
               onClick={() => setActiveStatusTab(t)}
@@ -118,6 +163,37 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 bg-primary/10 border border-primary/20 rounded-xl px-5 py-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+          <span className="text-xs font-bold text-primary font-sans">
+            {selectedIds.length} items selected
+          </span>
+          <div className="flex gap-2">
+            {activeStatusTab !== 'Archived' && (
+              <button
+                onClick={handleBulkArchive}
+                className="px-3.5 py-1.5 bg-[#144227] text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Archive size={12} /> Archive
+              </button>
+            )}
+            <button
+              onClick={handleBulkDelete}
+              className="px-3.5 py-1.5 bg-[#8a3333] text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3.5 py-1.5 bg-white border border-[#c1c9c0] text-[#414942] rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-surface-container-low font-bold transition-all cursor-pointer"
+            >
+              Deselect
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
         <div className="overflow-x-auto custom-scrollbar">
           {isLoading ? (
@@ -131,6 +207,22 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
             <table className="w-full text-left border-collapse">
               <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
                 <tr className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                  <th className="px-4 py-3 text-center w-10">
+                    <input 
+                      type="checkbox"
+                      checked={currentSupplies.length > 0 && currentSupplies.every(s => selectedIds.includes(s.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const idsToSelect = currentSupplies.map(s => s.id);
+                          setSelectedIds(prev => Array.from(new Set([...prev, ...idsToSelect])));
+                        } else {
+                          const idsToRemove = currentSupplies.map(s => s.id);
+                          setSelectedIds(prev => prev.filter(id => !idsToRemove.includes(id)));
+                        }
+                      }}
+                      className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                    />
+                  </th>
                   <th className="px-6 py-3">Product</th>
                   <th className="px-6 py-3">Farmer</th>
                   <th className="px-6 py-3 text-right">Quantity</th>
@@ -146,6 +238,20 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     onClick={() => setSelectedSupply(s)}
                     className="hover:bg-surface-container-low transition-colors cursor-pointer group"
                   >
+                    <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedIds.includes(s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(prev => [...prev, s.id]);
+                          } else {
+                            setSelectedIds(prev => prev.filter(id => id !== s.id));
+                          }
+                        }}
+                        className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-bold">{s.product_detail?.name || 'Crop'}</p>
@@ -174,7 +280,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         s.status === 'delivered' ? "bg-blue-100 text-blue-800 border-blue-200" :
                         "bg-surface-container-highest text-on-surface-variant"
                       )}>
-                        {s.status}
+                        {s.is_archived ? 'Archived' : s.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -221,7 +327,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         footer={
           selectedSupply && (
             <div className="space-y-3 w-full">
-              {selectedSupply.status === 'pending' && (
+              {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => handleUpdateStatus(selectedSupply.id, 'accepted')}
@@ -237,12 +343,20 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   </button>
                 </div>
               )}
-              {selectedSupply.status === 'accepted' && (
+              {selectedSupply.status === 'accepted' && !selectedSupply.is_archived && (
                 <button 
                   onClick={() => handleUpdateStatus(selectedSupply.id, 'delivered')}
                   className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Archive className="w-5 h-5" /> Mark as Received
+                </button>
+              )}
+              {!selectedSupply.is_archived && (
+                <button 
+                  onClick={() => handleArchiveSupply(selectedSupply.id)}
+                  className="w-full py-3 bg-surface-container-highest text-primary rounded-lg font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#c1c9c0]"
+                >
+                  <Archive className="w-5 h-5" /> Archive Supply Record
                 </button>
               )}
               <button 
