@@ -14,7 +14,7 @@ import { useCurrency } from '../../../context/CurrencyContext';
 export function Reports() {
   const [activeReport, setActiveReport] = useState('Farmer Performance');
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const { formatPrice, currency, currencyInfo } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
   
   const [reportData, setReportData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +46,9 @@ export function Reports() {
     if (activeReport === 'Sales Analysis') {
       return reportData.salesData || [];
     }
+    if (activeReport === 'Supply Volume') {
+      return reportData.supplyVolumeData || [];
+    }
     return reportData.farmerData || [];
   };
 
@@ -60,15 +63,12 @@ export function Reports() {
     const rankings = getRankings();
     const chartData = getChartData();
     
-    // BOM for Excel compatibility
     let csv = '\uFEFF';
     
-    // Report header
     csv += `Harvest Hill — ${activeReport} Report\r\n`;
     csv += `Generated: ${new Date().toLocaleString()}\r\n`;
     csv += `Currency: ${currency}\r\n\r\n`;
 
-    // Chart data section
     if (activeReport === 'Sales Analysis') {
       csv += `Category Revenue Analysis\r\n`;
       csv += `Category,Revenue (${currency})\r\n`;
@@ -77,15 +77,14 @@ export function Reports() {
       });
     } else {
       csv += `${activeReport} — Yield vs Quality\r\n`;
-      csv += `Supplier,Yield (T),Quality %\r\n`;
+      csv += `Supplier/Product,Yield (kg/T),Quality %\r\n`;
       chartData.forEach((d: any) => {
-        csv += `"${d.name}",${d.yield},${d.quality}%\r\n`;
+        csv += `"${d.name}",${d.yield},${d.quality || 0}%\r\n`;
       });
     }
     
     csv += `\r\n`;
 
-    // Rankings section
     csv += `${rankingType === 'supplier' ? 'Supplier' : 'Client'} Rankings\r\n`;
     csv += rankingType === 'supplier' 
       ? `Farmer Name,Region,Yield (T),Quality,Class,Performance %\r\n`
@@ -127,7 +126,7 @@ export function Reports() {
       });
     } else {
       chartData.forEach((d: any) => {
-        chartRows += `<tr><td>${d.name}</td><td style="text-align:right">${d.yield}</td><td style="text-align:right">${d.quality}%</td></tr>`;
+        chartRows += `<tr><td>${d.name}</td><td style="text-align:right">${d.yield}</td><td style="text-align:right">${d.quality || 0}%</td></tr>`;
       });
     }
 
@@ -189,13 +188,13 @@ export function Reports() {
   </div>
 
   <div class="section">
-    <h2>${isSales ? 'Category Revenue Analysis' : 'Yield vs Quality Benchmark'}</h2>
+    <h2>${isSales ? 'Category Revenue Analysis' : 'Yield / Supply Analysis'}</h2>
     <table>
       <thead>
         <tr>
           ${isSales
             ? '<th>Category</th><th style="text-align:right">Revenue</th>'
-            : '<th>Supplier</th><th style="text-align:right">Yield (T)</th><th style="text-align:right">Quality %</th>'
+            : '<th>Supplier / Product</th><th style="text-align:right">Yield</th><th style="text-align:right">Quality %</th>'
           }
         </tr>
       </thead>
@@ -229,7 +228,6 @@ export function Reports() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden bg-[#f9f9f7]">
-      {/* Horizontal Report Builder Bar */}
       <div className="shrink-0 px-6 pt-5 pb-4 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -252,9 +250,7 @@ export function Reports() {
           </div>
         </div>
 
-        {/* Horizontal Controls Row */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Report Type Pills */}
           <div className="flex bg-white border border-[#c1c9c0] rounded-xl p-1 gap-1">
             {['Sales Analysis', 'Supply Volume', 'Farmer Performance'].map((type) => (
               <button
@@ -274,7 +270,6 @@ export function Reports() {
 
           <div className="w-px h-6 bg-[#c1c9c0] hidden sm:block" />
 
-          {/* Date Range */}
           <select 
             value={dateRange} 
             onChange={(e) => setDateRange(e.target.value)}
@@ -284,7 +279,6 @@ export function Reports() {
             <option value="last_30">Last 30 Days</option>
           </select>
 
-          {/* Refresh */}
           <button 
             onClick={loadReportData}
             className="px-4 py-2 bg-white border border-[#c1c9c0] rounded-lg text-xs font-bold text-[#414942] hover:bg-[#f6f3ec] transition-all cursor-pointer"
@@ -294,7 +288,6 @@ export function Reports() {
         </div>
       </div>
 
-      {/* Content Area */}
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 custom-scrollbar">
         {isLoading ? (
           <div className="h-full flex items-center justify-center text-[#717971] font-bold animate-pulse">
@@ -303,12 +296,14 @@ export function Reports() {
         ) : (
           <div className="max-w-6xl mx-auto space-y-6">
             <div className="grid grid-cols-12 gap-6">
-              {/* Chart — takes more width now */}
               <div className="col-span-12 lg:col-span-8 bg-white p-6 rounded-xl shadow-sm border border-[#e8e8e5]">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h4 className="font-bold text-[#1c1c18]">{activeReport === 'Sales Analysis' ? 'Category Revenue Distribution' : 'Yield vs Quality Benchmark'}</h4>
-                    <p className="text-xs text-[#717971] font-medium">Comparison across active categories or suppliers</p>
+                    <h4 className="font-bold text-[#1c1c18]">
+                      {activeReport === 'Sales Analysis' ? 'Category Revenue Distribution' : 
+                       activeReport === 'Supply Volume' ? 'Supply Volume by Product' : 'Farmer Yield & Quality Benchmark'}
+                    </h4>
+                    <p className="text-xs text-[#717971] font-medium">Comparison across active categories, products, or suppliers</p>
                   </div>
                   <div className="flex gap-4">
                     <div className="flex items-center gap-2">
@@ -317,7 +312,7 @@ export function Reports() {
                         {activeReport === 'Sales Analysis' ? `Revenue (${currency})` : 'Yield'}
                       </span>
                     </div>
-                    {activeReport !== 'Sales Analysis' && (
+                    {activeReport === 'Farmer Performance' && (
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-sm bg-[#144227]/20" />
                         <span className="text-[10px] font-bold uppercase tracking-widest text-[#717971]">Quality %</span>
@@ -334,6 +329,8 @@ export function Reports() {
                       <Tooltip cursor={{ fill: 'transparent' }} />
                       {activeReport === 'Sales Analysis' ? (
                         <Bar dataKey="value" fill="#144227" radius={[2, 2, 0, 0]} />
+                      ) : activeReport === 'Supply Volume' ? (
+                        <Bar dataKey="yield" fill="#144227" radius={[2, 2, 0, 0]} />
                       ) : (
                         <>
                           <Bar dataKey="yield" fill="#144227" radius={[2, 2, 0, 0]} />
@@ -345,7 +342,6 @@ export function Reports() {
                 </div>
               </div>
 
-              {/* Stats Cards */}
               <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-6">
                 {[
                   { l: 'Global Avg Quality', v: reportData?.global_stats?.global_avg_quality || '0.0%', s: 'Based on premium grades' },
@@ -361,7 +357,6 @@ export function Reports() {
                 ))}
               </div>
 
-              {/* Rankings Table */}
               <div className="col-span-12 bg-white rounded-xl shadow-sm border border-[#e8e8e5] overflow-hidden">
                 <div className="px-6 py-4 border-b border-[#e8e8e5]/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#fafaf8]">
                   <div className="flex bg-[#f0ede6] p-1 rounded-xl w-fit">

@@ -17,6 +17,18 @@ if (!API_BASE) {
   throw new Error('[api.ts] NEXT_PUBLIC_API_URL is not set. Check your Vercel environment variables.');
 }
 
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}, _retry = false): Promise<any> {
   const method = (options.method ?? 'GET').toUpperCase();
   const token =
@@ -46,6 +58,17 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
     if (response.status === 401 && typeof window !== 'undefined') {
       const refreshToken = window.localStorage.getItem('refresh_token');
       if (refreshToken && !_retry) {
+        if (isRefreshing) {
+          return new Promise((resolve) => {
+            subscribeTokenRefresh((newToken) => {
+              const h = (options.headers || {}) as Record<string, string>;
+              h['Authorization'] = `Bearer ${newToken}`;
+              resolve(apiRequest(endpoint, { ...options, headers: h }, true));
+            });
+          });
+        }
+
+        isRefreshing = true;
         try {
           const refreshRes = await fetch(`${API_BASE}/api/accounts/token/refresh/`, {
             method: 'POST',
@@ -58,10 +81,14 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
             if (refreshData.refresh) {
               window.localStorage.setItem('refresh_token', refreshData.refresh);
             }
+            isRefreshing = false;
+            onRefreshed(refreshData.access);
             return apiRequest(endpoint, options, true);
           }
         } catch (refreshErr) {
           console.error("Token refresh failed:", refreshErr);
+        } finally {
+          isRefreshing = false;
         }
       }
       window.localStorage.removeItem('access_token');

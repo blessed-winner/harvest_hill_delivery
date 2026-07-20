@@ -20,7 +20,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState("Vegetables");
   const [formUnit, setFormUnit] = useState("kg");
-  const [formPrice, setFormPrice] = useState("");
+  const [formPrice, setFormPrice] = useState(""); // Holds entered price
+  const [formCurrencyCode, setFormCurrencyCode] = useState<'USD' | 'RWF'>('USD'); // Custom toggle state
   const [formIsCurrentlyNeeded, setFormIsCurrentlyNeeded] = useState(false);
   const [formUrgency, setFormUrgency] = useState("medium");
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
@@ -38,6 +39,22 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Custom Dialog Modal State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText: string;
+    confirmColor?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    confirmText: 'Confirm'
+  });
 
   const loadProducts = () => {
     setIsLoading(true);
@@ -78,6 +95,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory("Vegetables");
     setFormUnit("kg");
     setFormPrice("");
+    setFormCurrencyCode("USD");
     setFormIsCurrentlyNeeded(false);
     setFormUrgency("medium");
     setFormQuantityNeeded("");
@@ -93,18 +111,44 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory(product.category || "Vegetables");
     setFormUnit(product.unit || "kg");
     setFormPrice(product.base_price ? String(product.base_price) : "");
+    setFormCurrencyCode("USD");
     setFormIsCurrentlyNeeded(product.is_currently_needed || false);
     setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
     setImageFile(null);
-    // Use the Cloudinary image_url for display preview
     setImagePreviewUrl(product.image_url || "");
     setErrorMessage("");
   };
 
   const handleSaveProduct = async () => {
-    if (!formName || !formPrice) {
-      setErrorMessage("Name and price are required.");
+    if (!formName || !formPrice || !formQuantityNeeded) {
+      setErrorMessage("Name, price and quantity needed are required.");
+      return;
+    }
+
+    const priceVal = parseFloat(formPrice);
+    const qtyVal = parseFloat(formQuantityNeeded);
+
+    // Convert price to USD if it was typed in RWF
+    const priceInUSD = formCurrencyCode === 'RWF' ? priceVal / 1300 : priceVal;
+
+    // Validate bounds on the client side
+    if (priceInUSD <= 0) {
+      setErrorMessage("Base price must be greater than zero.");
+      return;
+    }
+    if (qtyVal < 50) {
+      setErrorMessage("Quantity needed must be at least 50 kg.");
+      return;
+    }
+
+    // Check duplicate name case-insensitively on client side
+    const isDuplicate = products.some(p => 
+      p.name.toLowerCase() === formName.toLowerCase() && 
+      (!selectedProduct || p.id !== selectedProduct.id)
+    );
+    if (isDuplicate) {
+      setErrorMessage("A product with this name already exists in the catalog.");
       return;
     }
 
@@ -115,10 +159,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formData.append('name', formName);
     formData.append('category', formCategory);
     formData.append('unit', formUnit);
-    formData.append('base_price', String(parseFloat(formPrice)));
+    formData.append('base_price', String(priceInUSD));
     formData.append('is_currently_needed', String(formIsCurrentlyNeeded));
     formData.append('urgency', formUrgency);
-    formData.append('quantity_needed', formQuantityNeeded ? String(parseFloat(formQuantityNeeded)) : '0');
+    formData.append('quantity_needed', String(qtyVal));
     
     if (imageFile) {
       formData.append('image', imageFile);
@@ -130,36 +174,36 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       } else {
         await api.products.update(selectedProduct.id, formData);
       }
-      // Clear the form state
       setImageFile(null);
       setImagePreviewUrl("");
       setErrorMessage("");
       setSelectedProduct(null);
-      // Reload products to get fresh data including new image URLs
       loadProducts();
     } catch (err: any) {
-      // Handle duplicate validation error
-      const errMsg = err.message || "Failed to save product.";
-      if (errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-        setErrorMessage("This product already exists with the same details. Please modify at least one field.");
-      } else {
-        setErrorMessage(errMsg);
-      }
+      setErrorMessage(err.message || "Failed to save product.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteProduct = async (product: any, e: React.MouseEvent) => {
+  const handleDeleteProduct = (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete ${product.name}?`)) return;
-    try {
-      await api.products.delete(product.id);
-      setSelectedProduct(null);
-      loadProducts();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product.");
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Product Spec',
+      message: `Are you sure you want to permanently delete the product spec for ${product.name}?`,
+      confirmText: 'Delete crop',
+      confirmColor: 'bg-red-600',
+      onConfirm: async () => {
+        try {
+          await api.products.delete(product.id);
+          setSelectedProduct(null);
+          loadProducts();
+        } catch (err: any) {
+          alert(err.message || "Failed to delete product.");
+        }
+      }
+    });
   };
 
   const filteredProducts = products.filter(p => {
@@ -349,8 +393,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         footer={
           <div className="w-full space-y-3">
             {errorMessage && (
-              <div className="px-4 py-3 bg-error/10 border border-error/30 rounded-lg">
-                <p className="text-sm text-error font-medium">{errorMessage}</p>
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-600 font-semibold">{errorMessage}</p>
               </div>
             )}
             <div className="flex gap-3 w-full">
@@ -360,23 +404,16 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   setErrorMessage("");
                 }}
                 disabled={isSaving}
-                className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveProduct}
                 disabled={isSaving}
-                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  'Save Product'
-                )}
+                {isSaving ? 'Creating...' : 'Save Product'}
               </button>
             </div>
           </div>
@@ -448,7 +485,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Name</label>
               <input 
                 type="text" 
-                placeholder="e.g. Organic Blueberries"
+                placeholder="e.g. Roma Tomatoes"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
@@ -484,21 +521,42 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Base Price ($)</label>
-              <input 
-                type="number" 
-                placeholder="0.00" 
-                step="0.01"
-                value={formPrice}
-                onChange={(e) => setFormPrice(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
-              />
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                  Base Price ({formCurrencyCode})
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setFormCurrencyCode(prev => prev === 'USD' ? 'RWF' : 'USD')}
+                  className="font-sans text-[10px] text-primary font-bold hover:underline"
+                >
+                  Toggle Currency
+                </button>
+              </div>
+              <div className="relative">
+                <input 
+                  type="number" 
+                  placeholder="0.00" 
+                  step="0.01"
+                  value={formPrice}
+                  onChange={(e) => setFormPrice(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                />
+                {formPrice && (
+                  <p className="mt-1 text-[10px] text-on-surface-variant font-bold">
+                    {formCurrencyCode === 'USD' 
+                      ? `≈ RWF ${(parseFloat(formPrice) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      : `≈ USD ${(parseFloat(formPrice) / 1300).toFixed(2)}`
+                    }
+                  </p>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
               <input 
                 type="number" 
-                placeholder="0.00"
+                placeholder="Min 50 kg"
                 value={formQuantityNeeded}
                 onChange={(e) => setFormQuantityNeeded(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
@@ -542,6 +600,36 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           )}
         </div>
       </DetailDrawer>
+
+      {/* Premium Confirm Dialog Modal */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 transform scale-100 transition-all space-y-4">
+            <h3 className="text-lg font-extrabold text-primary">{confirmDialog.title}</h3>
+            <p className="text-sm text-on-surface-variant leading-relaxed">{confirmDialog.message}</p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-xs font-bold text-white shadow-md hover:opacity-90 transition-all cursor-pointer",
+                  confirmDialog.confirmColor || "bg-primary"
+                )}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,14 @@ class SupplySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at']
 
+    def validate(self, attrs):
+        quantity = attrs.get('quantity', 0)
+        price = attrs.get('price', 0)
+        if float(price) <= 0:
+            raise serializers.ValidationError({"price": "Price must be greater than zero."})
+        if float(quantity) < 50:
+            raise serializers.ValidationError({"quantity": "Quantity must be at least 50 kg."})
+        return attrs
 
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Supply.objects.all()
@@ -23,3 +31,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(farmer=self.request.user.farmer_profile)
+        # Log supply submission in AuditLog
+        from apps.common.utils import log_action
+        log_action(self.request, actor=self.request.user, action="supply_submitted", target_model="Supply", target_id=serializer.instance.id)

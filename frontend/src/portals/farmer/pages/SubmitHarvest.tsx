@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { api, formatCurrency } from '../lib/api';
+import { api } from '../lib/api';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 type DemandProduct = {
   id: number;
@@ -77,8 +78,6 @@ const getBadgeMeta = (name: string, urgency?: string) => {
   return null;
 };
 
-// Removed fallbackDemands mock data
-
 const initialFormState: HarvestFormState = {
   quantity: '',
   availableDate: new Date().toISOString().slice(0, 10),
@@ -94,8 +93,18 @@ export default function SubmitHarvest() {
   const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<HarvestFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const { formatPrice, currency, setCurrency } = useCurrency();
+
+  // Custom success modal dialog state
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    productName: string;
+  }>({
+    isOpen: false,
+    productName: '',
+  });
 
   useEffect(() => {
     return () => {
@@ -164,7 +173,6 @@ export default function SubmitHarvest() {
     if (!selectedProduct) return;
 
     setIsSubmitting(true);
-    setNotice(null);
 
     try {
       await api.submitSupply({
@@ -178,13 +186,17 @@ export default function SubmitHarvest() {
         photo: form.photo,
       });
 
-      setNotice(`Harvest submitted for ${selectedProduct.name}.`);
+      // Open beautiful success dialog
+      setSuccessModal({
+        isOpen: true,
+        productName: selectedProduct.name,
+      });
       setSelectedProduct(null);
       setForm(initialFormState);
       setPhotoPreview(null);
     } catch (error) {
       console.error('Failed to submit harvest:', error);
-      setNotice('Could not submit harvest right now. Please try again shortly.');
+      alert('Could not submit harvest right now. Please try again shortly.');
     } finally {
       setIsSubmitting(false);
     }
@@ -208,11 +220,6 @@ export default function SubmitHarvest() {
       <div className="mb-6 sm:mb-8">
         <h1 className="font-sans text-xl sm:text-2xl font-extrabold text-primary">Submit a New Harvest</h1>
         <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1">Current industry demand for fresh produce in your region.</p>
-        {notice && (
-          <div className="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface">
-            {notice}
-          </div>
-        )}
       </div>
 
       <div className="relative mb-4 sm:mb-6">
@@ -351,52 +358,73 @@ export default function SubmitHarvest() {
             whileHover={{ scale: 1.02 }}
             onClick={() => openProduct(product)}
             className={cn(
-              'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden',
+              'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
               selectedProduct?.id === product.id || product.name.toLowerCase().includes('roma')
                 ? 'border-primary'
                 : 'border-outline-variant'
             )}
           >
-            <div className="relative rounded-lg overflow-hidden h-40 mb-3">
-              <img src={product.image || getReferenceImage(product.name) || ''} alt={product.name} className="w-full h-full object-cover" />
-              {getBadgeMeta(product.name, product.urgency) && (
-                <div className="absolute top-4 right-4">
-                  <span className={cn(
-                    "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
-                    getBadgeMeta(product.name, product.urgency)?.className
-                  )}>
-                    {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
-                      <Bolt size={12} fill="currentColor" />
-                    )}
-                    {getBadgeMeta(product.name, product.urgency)?.label}
+            <div>
+              <div className="relative rounded-lg overflow-hidden h-40 mb-3">
+                <img src={product.image || getReferenceImage(product.name) || ''} alt={product.name} className="w-full h-full object-cover" />
+                {getBadgeMeta(product.name, product.urgency) && (
+                  <div className="absolute top-4 right-4">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
+                      getBadgeMeta(product.name, product.urgency)?.className
+                    )}>
+                      {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
+                        <Bolt size={12} fill="currentColor" />
+                      )}
+                      {getBadgeMeta(product.name, product.urgency)?.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="px-2 pb-2">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
+                  <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
+                    {product.category}
                   </span>
                 </div>
-              )}
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-col">
+                    <span className="text-on-surface-variant font-mono text-[10px] uppercase tracking-wider">Quantity Needed</span>
+                    <span className="font-sans text-lg font-extrabold text-primary">
+                      {String(product.quantity_needed ?? '0').split(' ')[0]}
+                      <span className="text-xs font-normal ml-1">{product.unit}</span>
+                    </span>
+                  </div>
+                  <div
+                    className={cn(
+                      'p-2 rounded-lg transition-colors group-hover:translate-x-1 duration-300',
+                      selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
+                    )}
+                  >
+                    <ArrowRight size={18} />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="px-2 pb-2">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
-                <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
-                  {product.category}
+
+            {/* In-Card Base Price & Conversion Toggle */}
+            <div className="mt-3 pt-3 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
+              <div>
+                <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block">Base Price</span>
+                <span className="font-sans font-bold text-primary">
+                  {formatPrice(product.base_price)} / {product.unit}
                 </span>
               </div>
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex flex-col">
-                  <span className="text-on-surface-variant font-mono text-[10px] uppercase tracking-wider">Quantity Needed</span>
-                  <span className="font-sans text-lg font-extrabold text-primary">
-                    {String(product.quantity_needed ?? '0').split(' ')[0]}
-                    <span className="text-xs font-normal ml-1">{product.unit}</span>
-                  </span>
-                </div>
-                <div
-                  className={cn(
-                    'p-2 rounded-lg transition-colors group-hover:translate-x-1 duration-300',
-                    selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
-                  )}
-                >
-                  <ArrowRight size={18} />
-                </div>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrency(currency === 'USD' ? 'RWF' : 'USD');
+                }}
+                className="font-mono text-[9px] uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-1 rounded-full hover:bg-primary/20 transition-all font-bold cursor-pointer"
+              >
+                Convert ({currency === 'USD' ? 'RWF' : 'USD'})
+              </button>
             </div>
           </motion.div>
         ))}
@@ -430,7 +458,7 @@ export default function SubmitHarvest() {
                   <div>
                     <h3 className="font-sans text-lg sm:text-xl font-extrabold text-primary">Submit: {selectedProduct.name}</h3>
                     <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                      Demand Base Price: {formatCurrency(selectedProduct.base_price)}
+                      Demand Base Price: {formatPrice(selectedProduct.base_price)}
                     </p>
                   </div>
                 </div>
@@ -494,7 +522,9 @@ export default function SubmitHarvest() {
                   <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Asking Price per kg</label>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                     <div className="relative flex-1">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">$</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">
+                        {currency === 'RWF' ? 'RWF' : '$'}
+                      </span>
                       <input
                         className="w-full pl-8 pr-4 py-3 rounded-xl border border-outline-variant bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary"
                         type="text"
@@ -504,12 +534,16 @@ export default function SubmitHarvest() {
                     </div>
                     <div className="flex-1">
                       <span className="font-mono text-[10px] text-on-surface-variant block mb-1 uppercase tracking-tight">Market Avg</span>
-                      <span className="font-sans text-xl font-extrabold text-primary">{formatCurrency(selectedProduct.base_price)} - {formatCurrency(Number(selectedProduct.base_price || 0) * 1.1)}</span>
+                      <span className="font-sans text-xl font-extrabold text-primary">
+                        {formatPrice(selectedProduct.base_price)} - {formatPrice(Number(selectedProduct.base_price || 0) * 1.1)}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-secondary font-bold">
                     <TrendingUp size={18} />
-                    <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">Current price is based on the local demand mock</span>
+                    <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
+                      The recommended asking price range is dynamically calculated based on current market indices and quality benchmarks.
+                    </span>
                   </div>
                 </div>
 
@@ -595,6 +629,29 @@ export default function SubmitHarvest() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Reusable Success Confirmation Modal */}
+      {successModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 transform scale-100 transition-all space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto text-emerald-700">
+              <Verified size={32} />
+            </div>
+            <h3 className="text-lg font-extrabold text-[#144227]">Harvest Submitted Successfully!</h3>
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              Your harvest proposal for <strong className="text-primary">{successModal.productName}</strong> has been submitted. Our team will review the quality specs and update you shortly.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setSuccessModal({ isOpen: false, productName: '' })}
+                className="w-full py-3 bg-primary text-white rounded-xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-md"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, MoreVertical, ShieldCheck, History, User as UserIcon, AlertCircle, Trash2, Power } from 'lucide-react';
+import { Search, Plus, MoreVertical, ShieldCheck, User as UserIcon, AlertCircle, Trash2, Power } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -24,6 +24,25 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   // Actions dropdown state
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Submission loading states
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Custom Confirmation Dialog State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText: string;
+    confirmColor?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    confirmText: 'Confirm'
+  });
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -79,34 +98,51 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     loadUsers();
   }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
-  // Reset to first page when query / filter updates
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
-  const handleToggleStatus = async (user: any) => {
-    try {
-      await api.users.update(user.id, { is_active: !user.is_active });
-      setOpenMenuId(null);
-      loadUsers();
-      if (selectedUser?.id === user.id) {
-        setSelectedUser({ ...selectedUser, is_active: !user.is_active });
+  const handleToggleStatus = (user: any) => {
+    const actionText = user.is_active ? 'deactivate' : 'activate';
+    setOpenMenuId(null);
+    setConfirmDialog({
+      isOpen: true,
+      title: `${user.is_active ? 'Deactivate' : 'Activate'} User`,
+      message: `Are you sure you want to ${actionText} the account for ${user.email}?`,
+      confirmText: user.is_active ? 'Deactivate' : 'Activate',
+      confirmColor: user.is_active ? 'bg-red-600' : 'bg-primary',
+      onConfirm: async () => {
+        try {
+          await api.users.update(user.id, { is_active: !user.is_active });
+          loadUsers();
+          if (selectedUser?.id === user.id) {
+            setSelectedUser({ ...selectedUser, is_active: !user.is_active });
+          }
+        } catch (err) {
+          console.error("Failed to toggle status:", err);
+        }
       }
-    } catch (err) {
-      console.error("Failed to toggle status:", err);
-    }
+    });
   };
 
-  const handleDeleteUser = async (user: any) => {
-    if (!window.confirm(`Are you sure you want to permanently delete ${user.email}? This action cannot be undone.`)) return;
-    try {
-      await api.users.delete(user.id);
-      setOpenMenuId(null);
-      if (selectedUser?.id === user.id) setSelectedUser(null);
-      loadUsers();
-    } catch (err) {
-      console.error("Failed to delete user:", err);
-    }
+  const handleDeleteUser = (user: any) => {
+    setOpenMenuId(null);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Permanently Delete User',
+      message: `Are you sure you want to permanently delete ${user.email}? This action cannot be undone.`,
+      confirmText: 'Delete Permanently',
+      confirmColor: 'bg-red-600',
+      onConfirm: async () => {
+        try {
+          await api.users.delete(user.id);
+          if (selectedUser?.id === user.id) setSelectedUser(null);
+          loadUsers();
+        } catch (err) {
+          console.error("Failed to delete user:", err);
+        }
+      }
+    });
   };
 
   const handleOpenAddUser = () => {
@@ -127,6 +163,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       return;
     }
     
+    setIsSaving(true);
     const payload: any = {
       email: formEmail,
       username: formUsername || formEmail.split('@')[0],
@@ -155,12 +192,15 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       loadUsers();
     } catch (err: any) {
       alert(err.message || "Failed to create user.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleSaveChanges = async () => {
     if (!selectedUser || selectedUser === 'new') return;
     
+    setIsSaving(true);
     const payload: any = {
       is_active: selectedUser.is_active,
     };
@@ -185,17 +225,19 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
 
     try {
       await api.users.update(selectedUser.id, payload);
-      setFormPassword(""); // reset password input field
+      setFormPassword("");
       setSelectedUser(null);
       loadUsers();
     } catch (err: any) {
       alert(err.message || "Failed to save user changes.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleOpenDetail = (user: any) => {
     setSelectedUser(user);
-    setFormPassword(""); // clear password from previous selection
+    setFormPassword("");
     if (user.role === 'farmer') {
       setFormProfileName(user.farmer_profile?.farm_name || "");
       setFormProfilePhone(user.farmer_profile?.phone || "");
@@ -321,8 +363,8 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         <span className={cn(
                           "px-2.5 py-1 text-[10px] font-bold rounded-full border",
                           user.is_active 
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                            : "bg-red-50 text-red-700 border-red-200"
+                             ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                             : "bg-red-50 text-red-700 border-red-200"
                         )}>
                           {user.is_active ? 'Active' : 'Inactive'}
                         </span>
@@ -403,12 +445,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <div className="flex gap-3 w-full">
               <button 
                 onClick={handleCreateUser}
-                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer"
+                disabled={isSaving}
+                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer disabled:opacity-75"
               >
-                Create User
+                {isSaving ? 'Creating...' : 'Create User'}
               </button>
               <button 
                 onClick={() => setSelectedUser(null)}
+                disabled={isSaving}
                 className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Cancel
@@ -418,12 +462,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <div className="flex gap-3 w-full">
               <button 
                 onClick={handleSaveChanges}
-                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer"
+                disabled={isSaving}
+                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold shadow-sm hover:brightness-110 transition-all cursor-pointer disabled:opacity-75"
               >
-                Save Changes
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
               <button 
                 onClick={() => setSelectedUser(null)}
+                disabled={isSaving}
                 className="px-6 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer"
               >
                 Close
@@ -488,7 +534,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
 
             {(formRole === 'farmer' || formRole === 'client') && (
               <div className="pt-4 border-t border-outline-variant space-y-4">
-                <h4 className="font-bold text-sm text-primary">Profile Information</h4>
+                <h4 className="font-bold text-sm text-primary">Profile Information (Rwanda Localized)</h4>
                 <div>
                   <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
                     {formRole === 'farmer' ? 'Farm Name' : 'Business Name'}
@@ -497,7 +543,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     type="text" 
                     value={formProfileName}
                     onChange={(e) => setFormProfileName(e.target.value)}
-                    placeholder="Valley Organics"
+                    placeholder="e.g. Kigali Farms Ltd / Nyagatare Milk Coop"
                     className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
@@ -507,7 +553,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     type="text" 
                     value={formProfilePhone}
                     onChange={(e) => setFormProfilePhone(e.target.value)}
-                    placeholder="+1 (555) 234-8891"
+                    placeholder="e.g. +250 788 123 456"
                     className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
@@ -519,7 +565,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     type="text" 
                     value={formProfileAddress}
                     onChange={(e) => setFormProfileAddress(e.target.value)}
-                    placeholder="Oregon, USA"
+                    placeholder="e.g. Gasabo, Kigali, Rwanda / Musanze, Northern Province"
                     className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
@@ -552,7 +598,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <section className="pt-2">
               <div className="flex items-center gap-2 mb-4">
                 <UserIcon className="w-5 h-5 text-primary" />
-                <h4 className="font-bold">User & Profile Information</h4>
+                <h4 className="font-bold">User & Profile Information (Rwanda Localized)</h4>
               </div>
               <div className="space-y-4">
                 <div>
@@ -584,7 +630,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         type="text" 
                         value={formProfilePhone}
                         onChange={(e) => setFormProfilePhone(e.target.value)}
-                        placeholder="Not Set"
+                        placeholder="e.g. +250 788 123 456"
                         className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                       />
                     </div>
@@ -596,7 +642,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         type="text" 
                         value={formProfileAddress}
                         onChange={(e) => setFormProfileAddress(e.target.value)}
-                        placeholder="Not Set"
+                        placeholder="e.g. Gasabo, Kigali, Rwanda"
                         className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                       />
                     </div>
@@ -626,6 +672,36 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
           </div>
         ) : null}
       </DetailDrawer>
+
+      {/* Premium Confirm Dialog Modal */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 transform scale-100 transition-all space-y-4">
+            <h3 className="text-lg font-extrabold text-primary">{confirmDialog.title}</h3>
+            <p className="text-sm text-on-surface-variant leading-relaxed">{confirmDialog.message}</p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-xs font-bold text-white shadow-md hover:opacity-90 transition-all cursor-pointer",
+                  confirmDialog.confirmColor || "bg-primary"
+                )}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

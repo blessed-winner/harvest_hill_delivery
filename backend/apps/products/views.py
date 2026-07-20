@@ -27,6 +27,11 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(name__icontains=search)
         return queryset
 
+    def perform_create(self, serializer):
+        product = serializer.save()
+        from apps.common.utils import log_action
+        log_action(self.request, actor=self.request.user, action="product_added", target_model="Product", target_id=product.id)
+
     def perform_update(self, serializer):
         # If a new image is being uploaded, delete the old one from Cloudinary
         if 'image' in self.request.FILES:
@@ -35,5 +40,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 delete_cloudinary_image(instance.image)
             serializer.save(image=self.request.FILES['image'])
         else:
-            # If no new image file was uploaded, don't overwrite the existing image
             serializer.save()
+
+    def perform_destroy(self, instance):
+        prod_id = instance.id
+        from apps.common.utils import log_action
+        instance.delete()
+        log_action(self.request, actor=self.request.user, action="product_removed", target_model="Product", target_id=prod_id)

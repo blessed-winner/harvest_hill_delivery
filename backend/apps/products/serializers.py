@@ -21,44 +21,23 @@ class ProductSerializer(serializers.ModelSerializer):
         instance = getattr(self, 'instance', None)
 
         name = attrs.get('name', instance.name if instance else None)
-        category = attrs.get('category', instance.category if instance else None)
-        unit = attrs.get('unit', instance.unit if instance else 'kg')
         base_price = attrs.get('base_price', instance.base_price if instance else 0)
         quantity_needed = attrs.get('quantity_needed', instance.quantity_needed if instance else 0)
-        is_currently_needed = attrs.get(
-            'is_currently_needed',
-            instance.is_currently_needed if instance else False,
-        )
-        urgency = attrs.get('urgency', instance.urgency if instance else 'low')
 
-        if 'image' in attrs:
-            has_image = _product_has_image(attrs.get('image'))
-        elif instance:
-            has_image = _product_has_image(instance.image)
-        else:
-            has_image = False
+        # 1. Base price check (> 0)
+        if float(base_price) <= 0:
+            raise serializers.ValidationError({"base_price": "Base price must be greater than zero."})
 
-        duplicates = Product.objects.filter(
-            name__iexact=name,
-            category=category,
-            unit=unit,
-            base_price=base_price,
-            quantity_needed=quantity_needed,
-            is_currently_needed=is_currently_needed,
-            urgency=urgency,
-        )
+        # 2. Quantity check (>= 50 kg)
+        if float(quantity_needed) < 50:
+            raise serializers.ValidationError({"quantity_needed": "Quantity needed must be at least 50 kg."})
+
+        # 3. Duplicate product name check (case-insensitive)
+        name_duplicates = Product.objects.filter(name__iexact=name)
         if instance:
-            duplicates = duplicates.exclude(pk=instance.pk)
-
-        if has_image:
-            duplicates = duplicates.exclude(Q(image__isnull=True) | Q(image=''))
-        else:
-            duplicates = duplicates.filter(Q(image__isnull=True) | Q(image=''))
-
-        if duplicates.exists():
-            raise serializers.ValidationError(
-                'This product already exists with the same details.'
-            )
+            name_duplicates = name_duplicates.exclude(pk=instance.pk)
+        if name_duplicates.exists():
+            raise serializers.ValidationError({"name": "A product with this name already exists in the catalog."})
 
         return attrs
 

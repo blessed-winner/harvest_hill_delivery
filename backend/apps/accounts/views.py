@@ -294,6 +294,19 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             )
         return queryset
 
+    def perform_create(self, serializer):
+        user = serializer.save()
+        log_action(self.request, actor=self.request.user, action="user_created", target_model="User", target_id=user.id)
+
+    def perform_update(self, serializer):
+        user = serializer.save()
+        log_action(self.request, actor=self.request.user, action="user_updated", target_model="User", target_id=user.id)
+
+    def perform_destroy(self, instance):
+        user_id = instance.id
+        instance.delete()
+        log_action(self.request, actor=self.request.user, action="user_removed", target_model="User", target_id=user_id)
+
 
 class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
@@ -416,33 +429,38 @@ class AdminDashboardView(APIView):
                 "icon": "Clock"
             })
 
-        # 6. Recent Activity (up to 5 items)
+        # 6. Recent Activity (up to 5 items from AuditLog for any accountable activity)
         recent_activity = []
-        # Let's pull recently created orders, supplies, and delivery notes
-        activities = []
-        for o in Order.objects.order_by('-created_at')[:3]:
-            activities.append({
-                "t": f"Order #{o.id} Created",
-                "time": o.created_at,
-                "color": "bg-primary"
-            })
-        for s in Supply.objects.order_by('-created_at')[:3]:
-            activities.append({
-                "t": f"Supply: {s.product.name} submitted",
-                "time": s.created_at,
-                "color": "bg-emerald-600"
-            })
-        for dn in DeliveryNote.objects.order_by('-created_at')[:3]:
-            activities.append({
-                "t": f"Delivery Note #{dn.id} update",
-                "time": dn.created_at,
-                "color": "bg-outline-variant"
-            })
+        from apps.common.models import AuditLog
         
-        # Sort activities by time desc
-        activities.sort(key=lambda x: x['time'], reverse=True)
-        for act in activities[:5]:
-            time_diff = timezone.now() - act['time']
+        db_activities = AuditLog.objects.order_by('-timestamp')[:5]
+        action_map = {
+            "user_registration": "New user registered",
+            "user_created": "New user added by admin",
+            "user_removed": "User removed from system",
+            "product_added": "New product added to catalog",
+            "product_removed": "Product removed from catalog",
+            "login_success": "User logged in",
+            "logout_success": "User logged out",
+            "password_reset_requested": "Password reset requested",
+            "password_reset_confirmed": "Password reset confirmed",
+            "supply_submitted": "New supply submitted",
+            "negotiation_finalized": "Negotiation finalized",
+        }
+        for log in db_activities:
+            title = action_map.get(log.action, log.action.replace('_', ' ').capitalize())
+            if log.target_model and log.target_id:
+                title += f" ({log.target_model} #{log.target_id})"
+                
+            color = "bg-primary"
+            if "remove" in log.action or "delete" in log.action:
+                color = "bg-red-500"
+            elif "success" in log.action or "register" in log.action or "create" in log.action or "add" in log.action:
+                color = "bg-emerald-600"
+            elif "negotiation" in log.action:
+                color = "bg-indigo-600"
+
+            time_diff = timezone.now() - log.timestamp
             if time_diff.total_seconds() < 60:
                 time_str = "Just now"
             elif time_diff.total_seconds() < 3600:
@@ -451,9 +469,9 @@ class AdminDashboardView(APIView):
                 time_str = f"{int(time_diff.total_seconds() / 3600)} hours ago"
 
             recent_activity.append({
-                "t": act['t'],
+                "t": title,
                 "time": time_str,
-                "color": act['color']
+                "color": color
             })
 
         return Response({
@@ -480,9 +498,10 @@ class AdminReportsView(APIView):
         from apps.supplies.models import Supply
         from apps.orders.models import Order, OrderItem
         from apps.accounts.models import FarmerProfile, ClientProfile
+        from apps.products.models import Product
         from django.db.models import Sum, Count, Q
 
-        # 1. Farmer Performance / Supply Volume (farmerData)
+        # 1. Farmer Performance (farmerData)
         farmerData = []
         farmers = FarmerProfile.objects.all()
         for farmer in farmers:
@@ -502,6 +521,19 @@ class AdminReportsView(APIView):
         
         if not farmerData:
             farmerData = [{"name": "No Suppliers yet", "yield": 0, "quality": 0}]
+
+        # 1b. Supply Volume Report (supplyVolumeData - distinct from farmer performance)
+        supplyVolumeData = []
+        for product in Product.objects.all():
+            supplies = Supply.objects.filter(product=product, status__in=['accepted', 'delivered', 'invoiced'])
+            total_qty = float(supplies.aggregate(total=Sum('quantity'))['total'] or 0)
+            if total_qty > 0:
+                supplyVolumeData.append({
+                    "name": product.name,
+                    "yield": total_qty
+                })
+        if not supplyVolumeData:
+            supplyVolumeData = [{"name": "No Supplies", "yield": 0}]
 
         # 2. Sales Analysis (Sales volume grouped by product category)
         salesData = []
@@ -569,6 +601,7 @@ class AdminReportsView(APIView):
 
         return Response({
             "farmerData": farmerData,
+            "supplyVolumeData": supplyVolumeData,
             "salesData": salesData,
             "supplier_rankings": supplier_rankings,
             "client_rankings": client_rankings,
