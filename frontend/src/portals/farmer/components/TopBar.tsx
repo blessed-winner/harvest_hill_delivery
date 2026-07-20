@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { Bell, Menu, Clock, AlertCircle, Handshake, Package, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
-import { CurrencyToggle } from '../../../components/CurrencyToggle';
 
 interface TopBarProps {
   activeView?: string;
@@ -109,7 +108,6 @@ export default function TopBar({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6 relative" ref={dropdownRef}>
-        <CurrencyToggle />
         {/* Bell Button */}
         <button
           onClick={() => setIsOpen(prev => !prev)}

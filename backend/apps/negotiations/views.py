@@ -77,12 +77,27 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             }
         )
 
-        # Send live notification
+        # Send live notification to the farmer
         from apps.notifications.utils import send_live_notification
         send_live_notification(
             user=thread.supply.farmer.user,
             title="Agreement Reached",
             message=f"Negotiation finalized for supply #{thread.supply.id} ({thread.supply.product.name})."
         )
+
+        # Send live notification to all admins (admin role in approving bypassed, they are just notified)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        admins = User.objects.filter(role='admin')
+        for admin in admins:
+            send_live_notification(
+                user=admin,
+                title="Negotiation Finalized",
+                message=f"Negotiation for supply #{thread.supply.id} ({thread.supply.product.name}) has been finalized at ${thread.supply.price}/kg for {thread.supply.quantity} kg."
+            )
+
+        # Log action to AuditLog
+        from apps.common.utils import log_action
+        log_action(request, actor=request.user, action="negotiation_finalized", target_model="Supply", target_id=thread.supply.id)
 
         return Response(NegotiationThreadSerializer(thread).data)

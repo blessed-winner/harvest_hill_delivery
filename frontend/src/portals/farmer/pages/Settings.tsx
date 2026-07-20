@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Sprout, CreditCard, BellRing, Info, Save, Banknote, CheckCircle2, MapPin } from 'lucide-react';
+import { Sprout, CreditCard, BellRing, Info, Save, Banknote, CheckCircle2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { cn } from '../lib/utils';
 
 type ProfileForm = {
   farm_name: string;
@@ -79,7 +80,6 @@ export default function Settings() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Load Leaflet assets dynamically from CDN
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -94,7 +94,6 @@ export default function Settings() {
       const currentLat = profile.latitude || -1.9441;
       const currentLng = profile.longitude || 30.0619;
 
-      // Avoid double initialization
       if (mapRef.current) {
         mapRef.current.setView([currentLat, currentLng], 13);
         if (markerRef.current) {
@@ -144,8 +143,6 @@ export default function Settings() {
     setIsSaving(true);
     setStatusMessage(null);
 
-    // Validate Rwandan Phone Number
-    // Accepts format: +250 788 000 000 or +250788000000 (starts with +250 followed by 7 and 8 digits)
     const phoneClean = profile.phone.replace(/\s+/g, '');
     const phoneRegex = /^\+2507[2389]\d{7}$/;
     if (!phoneRegex.test(phoneClean)) {
@@ -251,16 +248,48 @@ export default function Settings() {
           </div>
 
           <div className="space-y-4">
-            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Active Certifications (optional)</label>
+            <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Active Certifications</label>
             <div className="space-y-3">
               <input 
                 className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all" 
                 type="text" 
                 value={profile.certificationsText} 
                 onChange={(event) => setProfile((current) => ({ ...current, certificationsText: event.target.value }))}
-                placeholder="USDA Organic, Fair Trade (comma separated)"
+                placeholder="Rwanda GAP, RSB Organic, USDA Organic, Fair Trade"
               />
-              <div className="flex flex-wrap gap-2">
+              
+              {/* Rwanda-specific Certification Selection Pills */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                {['Rwanda GAP', 'RSB Organic', 'Fair Trade', 'USDA Organic'].map((certOption) => {
+                  const currentCerts = profile.certificationsText.split(',').map(c => c.trim().toLowerCase());
+                  const isSelected = currentCerts.includes(certOption.toLowerCase());
+                  return (
+                    <button
+                      key={certOption}
+                      type="button"
+                      onClick={() => {
+                        let newCerts = profile.certificationsText.split(',').map(c => c.trim()).filter(Boolean);
+                        if (isSelected) {
+                          newCerts = newCerts.filter(c => c.toLowerCase() !== certOption.toLowerCase());
+                        } else {
+                          newCerts.push(certOption);
+                        }
+                        setProfile(current => ({ ...current, certificationsText: newCerts.join(', ') }));
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full border transition-all font-sans font-bold cursor-pointer text-xs",
+                        isSelected 
+                          ? "bg-primary text-white border-primary" 
+                          : "bg-white border-outline-variant text-on-surface-variant hover:bg-surface-container-low"
+                      )}
+                    >
+                      {isSelected ? '✓ ' : ''}{certOption}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
                 {profile.certificationsText.split(',').map(cert => cert.trim()).filter(Boolean).map(cert => (
                   <span key={cert} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-mono text-[9px] uppercase font-extrabold flex items-center gap-1.5 border border-primary/20">
                     <CheckCircle2 size={12} className="text-primary" />

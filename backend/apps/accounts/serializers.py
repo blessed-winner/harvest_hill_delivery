@@ -1,19 +1,53 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import FarmerProfile, ClientProfile, AdminProfile
 
 User = get_user_model()
 
+def check_phone_unique(phone, exclude_user=None):
+    if not phone:
+        return
+    # Check FarmerProfile
+    qs_farmer = FarmerProfile.objects.filter(phone=phone)
+    if exclude_user:
+        qs_farmer = qs_farmer.exclude(user=exclude_user)
+    if qs_farmer.exists():
+        raise serializers.ValidationError("This phone number is already in use by another user.")
+    
+    # Check ClientProfile
+    qs_client = ClientProfile.objects.filter(phone=phone)
+    if exclude_user:
+        qs_client = qs_client.exclude(user=exclude_user)
+    if qs_client.exists():
+        raise serializers.ValidationError("This phone number is already in use by another user.")
+
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProfile
-        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'latitude', 'longitude']
+        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received']
+
+    def validate_phone(self, value):
+        user = None
+        if self.instance and self.instance.user:
+            user = self.instance.user
+        check_phone_unique(value, exclude_user=user)
+        return value
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
         fields = ['business_name', 'delivery_address', 'phone']
+
+    def validate_phone(self, value):
+        user = None
+        if self.instance and self.instance.user:
+            user = self.instance.user
+        check_phone_unique(value, exclude_user=user)
+        return value
 
 
 class AdminProfileSerializer(serializers.ModelSerializer):
@@ -27,21 +61,28 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'role', 'is_email_verified', 'date_joined', 'profile']
-        read_only_fields = ['id', 'email', 'username', 'role', 'is_email_verified', 'date_joined']
+        fields = ['id', 'username', 'email', 'role', 'first_name', 'last_name', 'date_joined', 'is_active', 'profile']
 
     def get_profile(self, obj):
-        if obj.role == 'farmer' and hasattr(obj, 'farmer_profile'):
-            return FarmerProfileSerializer(obj.farmer_profile).data
-        elif obj.role == 'client' and hasattr(obj, 'client_profile'):
-            return ClientProfileSerializer(obj.client_profile).data
-        elif obj.role == 'admin' and hasattr(obj, 'admin_profile'):
-            return AdminProfileSerializer(obj.admin_profile).data
+        if obj.role == 'farmer':
+            try:
+                return FarmerProfileSerializer(obj.farmer_profile).data
+            except Exception:
+                return None
+        elif obj.role == 'client':
+            try:
+                return ClientProfileSerializer(obj.client_profile).data
+            except Exception:
+                return None
+        elif obj.role == 'admin':
+            try:
+                return AdminProfileSerializer(obj.admin_profile).data
+            except Exception:
+                return None
         return None
 
 
 class LoginSerializer(serializers.Serializer):
-    # Accepts either email address or username
     username_or_email = serializers.CharField()
     password = serializers.CharField(write_only=True)
     remember_me = serializers.BooleanField(required=False, default=False)
@@ -54,57 +95,71 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
-    new_password = serializers.CharField(write_only=True, min_length=10)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    full_name = serializers.CharField(required=True)
-    username = serializers.CharField(required=True)
-    phone = serializers.CharField(required=False, allow_blank=True, default='')
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='client')
+    business_name = serializers.CharField(required=False, allow_blank=True)
+    farm_name = serializers.CharField(required=False, allow_blank=True)
+    delivery_address = serializers.CharField(required=False, allow_blank=True)
+    location = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'role', 'full_name', 'username', 'phone']
+        fields = ['username', 'email', 'password', 'role', 'business_name', 'farm_name', 'delivery_address', 'location', 'phone']
 
-    def validate_username(self, value):
-        if User.objects.filter(username__iexact=value).exists():
-            raise serializers.ValidationError("This username is already taken.")
-        # Only alphanumeric, underscores, dots, hyphens
-        import re
-        if not re.match(r'^[\w.@+-]+$', value):
-            raise serializers.ValidationError("Username may only contain letters, numbers, and @/./+/-/_ characters.")
-        return value.lower()
+    def validate_phone(self, value):
+        check_phone_unique(value)
+        return value
 
     def create(self, validated_data):
-        full_name = validated_data.pop('full_name')
+        role = validated_data.get('role', 'client')
+        username = validated_data.get('username')
+        email = validated_data.get('email')
+        password = validated_data.get('password')
+
+        # Pop profile-specific fields
+        business_name = validated_data.pop('business_name', '')
+        farm_name = validated_data.pop('farm_name', '')
+        delivery_address = validated_data.pop('delivery_address', '')
+        location = validated_data.pop('location', '')
         phone = validated_data.pop('phone', '')
-        username = validated_data.pop('username')
 
+        # Create user
         user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            role=validated_data['role']
+            username=username,
+            email=email,
+            password=password,
+            role=role
         )
-        user.username = username
-        user.save(update_fields=['username'])
 
-        # Update profile properties based on role
-        if user.role == 'farmer':
-            profile = user.farmer_profile
-            profile.farm_name = full_name
-            profile.save()
-        elif user.role == 'client':
-            profile = user.client_profile
-            profile.business_name = full_name
-            profile.phone = phone
-            profile.save()
+        # Create specific profile
+        if role == 'farmer':
+            FarmerProfile.objects.create(
+                user=user,
+                farm_name=farm_name,
+                location=location,
+                phone=phone
+            )
+        elif role == 'client':
+            ClientProfile.objects.create(
+                user=user,
+                business_name=business_name,
+                delivery_address=delivery_address,
+                phone=phone
+            )
+        elif role == 'admin':
+            AdminProfile.objects.create(user=user)
 
         return user
 
-
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
@@ -122,81 +177,63 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
     farmer_profile = FarmerProfileSerializer(required=False)
     client_profile = ClientProfileSerializer(required=False)
-    admin_profile = AdminProfileSerializer(required=False)
-    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = [
-            'id', 'email', 'username', 'role', 'is_active', 'is_email_verified',
-            'password', 'date_joined', 'farmer_profile', 'client_profile', 'admin_profile'
-        ]
+        fields = ['id', 'username', 'email', 'role', 'is_active', 'date_joined', 'password', 'farmer_profile', 'client_profile']
         read_only_fields = ['id', 'date_joined']
 
     def create(self, validated_data):
-        farmer_profile_data = validated_data.pop('farmer_profile', None)
-        client_profile_data = validated_data.pop('client_profile', None)
-        admin_profile_data = validated_data.pop('admin_profile', None)
-        
         password = validated_data.pop('password', None)
-        user = User.objects.create_user(**validated_data)
+        farmer_data = validated_data.pop('farmer_profile', None)
+        client_data = validated_data.pop('client_profile', None)
+        role = validated_data.get('role', 'client')
+
+        user = User(**validated_data)
         if password:
             user.set_password(password)
-            user.save()
-        
-        # Note: Profiles are automatically created by signals, so we just update them if data is provided
-        if user.role == 'farmer' and farmer_profile_data:
-            profile = user.farmer_profile
-            for attr, value in farmer_profile_data.items():
-                setattr(profile, attr, value)
-            profile.save()
-        elif user.role == 'client' and client_profile_data:
-            profile = user.client_profile
-            for attr, value in client_profile_data.items():
-                setattr(profile, attr, value)
-            profile.save()
-        elif user.role == 'admin' and admin_profile_data:
-            profile = user.admin_profile
-            for attr, value in admin_profile_data.items():
-                setattr(profile, attr, value)
-            profile.save()
-            
+        else:
+            user.set_unusable_password()
+        user.save()
+
+        # Handle Profile creation
+        if role == 'farmer':
+            f_profile_data = farmer_data or {}
+            FarmerProfile.objects.create(user=user, **f_profile_data)
+        elif role == 'client':
+            c_profile_data = client_data or {}
+            ClientProfile.objects.create(user=user, **c_profile_data)
+        elif role == 'admin':
+            AdminProfile.objects.create(user=user)
+
         return user
 
     def update(self, instance, validated_data):
-        farmer_profile_data = validated_data.pop('farmer_profile', None)
-        client_profile_data = validated_data.pop('client_profile', None)
-        admin_profile_data = validated_data.pop('admin_profile', None)
         password = validated_data.pop('password', None)
+        farmer_data = validated_data.pop('farmer_profile', None)
+        client_data = validated_data.pop('client_profile', None)
 
-        instance.email = validated_data.get('email', instance.email)
-        instance.username = validated_data.get('username', instance.username)
-        instance.role = validated_data.get('role', instance.role)
-        instance.is_active = validated_data.get('is_active', instance.is_active)
-        instance.is_email_verified = validated_data.get('is_email_verified', instance.is_email_verified)
+        # Update basic user fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
         if password:
             instance.set_password(password)
         instance.save()
 
-        if instance.role == 'farmer':
+        # Update profile fields
+        if instance.role == 'farmer' and farmer_data:
             profile, _ = FarmerProfile.objects.get_or_create(user=instance)
-            if farmer_profile_data:
-                for attr, value in farmer_profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
-        elif instance.role == 'client':
+            for attr, value in farmer_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+        elif instance.role == 'client' and client_data:
             profile, _ = ClientProfile.objects.get_or_create(user=instance)
-            if client_profile_data:
-                for attr, value in client_profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
-        elif instance.role == 'admin':
-            profile, _ = AdminProfile.objects.get_or_create(user=instance)
-            if admin_profile_data:
-                for attr, value in admin_profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
+            for attr, value in client_data.items():
+                setattr(profile, attr, value)
+            profile.save()
 
         return instance

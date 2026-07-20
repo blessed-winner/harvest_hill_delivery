@@ -1,31 +1,16 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-from .managers import UserManager
 
-class User(AbstractBaseUser, PermissionsMixin):
-    ROLE_CHOICES = [
-        ("admin", "Admin"),
-        ("client", "Client"),
-        ("farmer", "Farmer")
-    ]
-    email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
-    is_active = models.BooleanField(default=True)
-    is_email_verified = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    failed_login_attempts = models.PositiveIntegerField(default=0)
+class User(AbstractUser):
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('farmer', 'Farmer'),
+        ('client', 'Client'),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='client')
+    failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
-
-    objects = UserManager()
-
-    def __str__(self):
-        return f"{self.email} ({self.role})"
 
     @property
     def is_locked(self):
@@ -44,6 +29,9 @@ class FarmerProfile(models.Model):
     certifications = models.TextField(blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    notify_new_demand = models.BooleanField(default=True)
+    notify_negotiation_update = models.BooleanField(default=True)
+    notify_payment_received = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.farm_name or self.user.email}"
