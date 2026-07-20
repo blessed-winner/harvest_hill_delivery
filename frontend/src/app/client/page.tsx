@@ -68,8 +68,8 @@ export default function ClientPage() {
         const savedCart = localStorage.getItem('cart_items');
         const cartItems = savedCart ? JSON.parse(savedCart) : [];
         
-        // Check if product already exists in cart
-        const existingIndex = cartItems.findIndex((item: any) => item.product_id === product.id);
+        // Check if product already exists in cart (use supply ID for uniqueness)
+        const existingIndex = cartItems.findIndex((item: any) => item.id === product.id);
         
         if (existingIndex >= 0) {
           // Increment quantity
@@ -77,8 +77,8 @@ export default function ClientPage() {
         } else {
           // Add new product
           cartItems.push({
-            id: `cart-${Date.now()}-${product.id}`,
-            product_id: product.id,
+            id: product.id, // Supply ID for cart identification
+            product_id: product.product_id || product.id, // Actual product ID for orders
             name: product.name,
             category: product.category,
             price: product.price,

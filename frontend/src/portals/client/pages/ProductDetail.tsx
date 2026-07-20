@@ -30,6 +30,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           // Map supply fields to product structure
           const mappedProduct = {
             id: fetchedSupply.id,
+            product_id: fetchedSupply.product, // Store the actual product ID for orders
             name: fetchedSupply.product_detail?.name || fetchedSupply.name,
             category: fetchedSupply.product_detail?.category || fetchedSupply.category,
             urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
