@@ -17,6 +17,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Success acceptance modal state
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    productName: string;
+  }>({
+    isOpen: false,
+    productName: '',
+  });
+
   const safeParseFloat = (val: any): number => {
     if (val === null || val === undefined) return 0;
     const parsed = parseFloat(val);
@@ -54,8 +63,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const handleUpdateStatus = async (supplyId: number | string, newStatus: string) => {
     try {
       await api.supplies.update(supplyId, { status: newStatus });
+      const supplyObj = supplies.find(s => s.id === supplyId);
       setSelectedSupply(null);
       loadSupplies();
+      if (newStatus === 'accepted') {
+        setSuccessModal({
+          isOpen: true,
+          productName: supplyObj?.product_detail?.name || 'Supply',
+        });
+      }
     } catch (err: any) {
       alert(err.message || "Failed to update supply status.");
     }
@@ -139,7 +155,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold">{s.farmer_name || s.farmer || 'Farmer'}</p>
+                      <p className="text-sm font-bold">{s.farmer_name || 'Farmer'}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <p className="font-mono text-sm font-bold">{s.quantity} {s.unit}</p>
@@ -152,9 +168,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter",
-                        s.status === 'pending' ? "bg-amber-100 text-amber-800" :
-                        s.status === 'delivered' ? "bg-emerald-100 text-emerald-800" :
+                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
+                        s.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-200" :
+                        s.status === 'accepted' ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
+                        s.status === 'delivered' ? "bg-blue-100 text-blue-800 border-blue-200" :
                         "bg-surface-container-highest text-on-surface-variant"
                       )}>
                         {s.status}
@@ -213,7 +230,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     <Check className="w-5 h-5" /> Accept Proposal
                   </button>
                   <button 
-                    onClick={() => handleUpdateStatus(selectedSupply.id, 'cancelled')}
+                    onClick={() => handleUpdateStatus(selectedSupply.id, 'rejected')}
                     className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-red-600 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all cursor-pointer"
                   >
                     <X className="w-5 h-5" /> Reject Proposal
@@ -241,6 +258,14 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         {selectedSupply && (
           <div className="space-y-6">
             <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-xs text-on-surface-variant font-bold">Farmer</span>
+                <span className="text-sm font-extrabold">{selectedSupply.farmer_name || 'Farmer'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-on-surface-variant font-bold">Location</span>
+                <span className="text-sm font-extrabold text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Quantity</span>
                 <span className="text-sm font-extrabold">{selectedSupply.quantity} {selectedSupply.unit}</span>
@@ -281,6 +306,31 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Success Modal Pop-up */}
+      {successModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 transform scale-100 transition-all space-y-4 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto text-emerald-700">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-lg font-extrabold text-[#144227]">
+              Proposal Accepted!
+            </h3>
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              The supply proposal for <strong className="text-primary">{successModal.productName}</strong> has been accepted successfully.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setSuccessModal({ isOpen: false, productName: '' })}
+                className="w-full py-3 bg-primary text-white rounded-xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-md"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
