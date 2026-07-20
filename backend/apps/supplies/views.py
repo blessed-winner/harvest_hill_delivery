@@ -1,4 +1,4 @@
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets, serializers, permissions
 from apps.common.mixins import RoleScopedQuerysetMixin
 from apps.products.serializers import ProductShortSerializer
 from .models import Supply
@@ -28,6 +28,7 @@ class SupplySerializer(serializers.ModelSerializer):
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Supply.objects.all()
     serializer_class = SupplySerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(farmer=self.request.user.farmer_profile)
