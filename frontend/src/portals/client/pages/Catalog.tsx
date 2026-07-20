@@ -61,7 +61,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
           );
         }
         if (priceMax < 100) {
-          fetchedProducts = fetchedProducts.filter((p: any) => (p.price || 0) <= priceMax);
+          fetchedProducts = fetchedProducts.filter((p: any) => (p.base_price || 0) <= priceMax);
         }
         
         setProducts(fetchedProducts);
@@ -380,10 +380,10 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                       }`}>
                         <div>
                           <span className="block text-xs font-bold text-[#144227]">
-                            ${prod.price?.toFixed(2) || '0.00'}
+                            ${prod.base_price?.toFixed(2) || '0.00'}
                           </span>
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">
-                            {prod.unit || 'per unit'}
+                            per {prod.unit || 'unit'}
                           </span>
                         </div>
 

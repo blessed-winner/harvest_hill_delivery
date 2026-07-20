@@ -430,18 +430,18 @@ class AdminDashboardView(APIView):
             })
 
         # 6. Recent Activity (up to 5 items from AuditLog for any accountable activity)
+        # Exclude login/logout activities
         recent_activity = []
         from apps.common.models import AuditLog
         
-        db_activities = AuditLog.objects.order_by('-timestamp')[:5]
+        excluded_actions = ['login_success', 'logout_success']
+        db_activities = AuditLog.objects.exclude(action__in=excluded_actions).order_by('-timestamp')[:5]
         action_map = {
             "user_registration": "New user registered",
             "user_created": "New user added by admin",
             "user_removed": "User removed from system",
             "product_added": "New product added to catalog",
             "product_removed": "Product removed from catalog",
-            "login_success": "User logged in",
-            "logout_success": "User logged out",
             "password_reset_requested": "Password reset requested",
             "password_reset_confirmed": "Password reset confirmed",
             "supply_submitted": "New supply submitted",
