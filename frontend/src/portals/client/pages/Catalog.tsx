@@ -335,6 +335,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                 // Map supply fields to product fields for display
                 const product = {
                   id: prod.id,
+                  product_id: prod.product, // Store the actual product ID for orders
                   name: prod.product_detail?.name || prod.name,
                   category: prod.product_detail?.category || prod.category,
                   urgency: prod.product_detail?.urgency || prod.urgency,
