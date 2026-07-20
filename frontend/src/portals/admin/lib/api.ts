@@ -1,21 +1,4 @@
-export function formatCurrency(value: unknown, fallback = '$0.00') {
-  if (value === null || value === undefined || value === '') return fallback;
-  if (typeof value === 'string') {
-    if (value.startsWith('$')) return value;
-    const parsed = Number(value);
-    return Number.isFinite(parsed)
-      ? `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : value;
-  }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-if (!API_BASE) {
-  throw new Error('[api.ts] NEXT_PUBLIC_API_URL is not set. Check your Vercel environment variables.');
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];
@@ -30,39 +13,37 @@ function onRefreshed(token: string) {
 }
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}, _retry = false): Promise<any> {
-  const method = (options.method ?? 'GET').toUpperCase();
   const token =
     typeof window !== 'undefined'
       ? window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken')
       : null;
 
-  const headers: Record<string, string> = {
-    ...((options.headers as Record<string, string>) || {}),
-  };
+  const headers = new Headers(options.headers || {});
+  
+  if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (options.body && !(options.body instanceof FormData) && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const config = {
     ...options,
-    method,
     headers,
-  });
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
+    if (response.status === 401 && token && typeof window !== 'undefined') {
       const refreshToken = window.localStorage.getItem('refresh_token');
       if (refreshToken && !_retry) {
         if (isRefreshing) {
           return new Promise((resolve) => {
             subscribeTokenRefresh((newToken) => {
-              const h = (options.headers || {}) as Record<string, string>;
-              h['Authorization'] = `Bearer ${newToken}`;
+              const h = new Headers(options.headers || {});
+              h.set('Authorization', `Bearer ${newToken}`);
               resolve(apiRequest(endpoint, { ...options, headers: h }, true));
             });
           });
@@ -70,7 +51,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
 
         isRefreshing = true;
         try {
-          const refreshRes = await fetch(`${API_BASE}/api/accounts/token/refresh/`, {
+          const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/token/refresh/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh: refreshToken }),
@@ -86,27 +67,27 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
             return apiRequest(endpoint, options, true);
           }
         } catch (refreshErr) {
-          console.error("Token refresh failed:", refreshErr);
+          console.error("Token refresh failed, redirecting to login:", refreshErr);
         } finally {
           isRefreshing = false;
         }
       }
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
-      window.localStorage.removeItem('user_role');
       window.location.href = '/login';
+      throw new Error("Session expired. Please log in again.");
     }
-    let errMsg = `Request failed: ${response.status} ${response.statusText}`;
+
+    let errMsg = `Request failed with status ${response.status}`;
     try {
       const errData = await response.json();
-      const errors = errData.errors ?? errData;
-      if (errors?.non_field_errors?.length) {
-        errMsg = errors.non_field_errors[0];
-      } else if (typeof errors === 'object' && errors !== null) {
-        const firstKey = Object.keys(errors)[0];
-        if (firstKey) {
-          const value = errors[firstKey];
-          errMsg = Array.isArray(value) ? value[0] : String(value);
+      if (errData.errors) {
+        const firstKey = Object.keys(errData.errors)[0];
+        const val = errData.errors[firstKey];
+        if (Array.isArray(val)) {
+          errMsg = val[0];
+        } else {
+          errMsg = String(val);
         }
       } else {
         errMsg = errData.error || errData.detail || errMsg;
@@ -138,13 +119,10 @@ export const api = {
 
   // User Management
   users: {
-    list: (params: Record<string, string> = {}) => {
-      const query = new URLSearchParams(params).toString();
-      return apiRequest(`/api/accounts/admin/users/${query ? '?' + query : ''}`);
-    },
-    create: (payload: any) => apiRequest('/api/accounts/admin/users/', { method: 'POST', body: JSON.stringify(payload) }),
-    update: (id: string | number, payload: any) => apiRequest(`/api/accounts/admin/users/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
-    delete: (id: string | number) => apiRequest(`/api/accounts/admin/users/${id}/`, { method: 'DELETE' }),
+    list: () => apiRequest('/api/accounts/admin/users/'),
+    create: (payload: any) => apiRequest('/api/accounts/admin/users/create/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: string | number, payload: any) => apiRequest(`/api/accounts/admin/users/${id}/update/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    delete: (id: string | number) => apiRequest(`/api/accounts/admin/users/${id}/delete/`, { method: 'DELETE' }),
   },
 
   // Product Catalog
@@ -174,6 +152,7 @@ export const api = {
   supplies: {
     list: () => apiRequest('/api/supplies/'),
     update: (id: string | number, payload: any) => apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),
   },
 
   // Orders Management
