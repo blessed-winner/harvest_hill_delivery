@@ -7,22 +7,34 @@ class SupplySerializer(serializers.ModelSerializer):
     proposed_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2, read_only=True)
     base_price = serializers.DecimalField(source='product.base_price', max_digits=10, decimal_places=2, read_only=True)
     product_detail = ProductShortSerializer(source='product', read_only=True)
+    farmer_name = serializers.CharField(source='farmer.farm_name', read_only=True)
+    farmer_location = serializers.CharField(source='farmer.location', read_only=True)
 
     class Meta:
         model = Supply
         fields = [
             'id', 'product', 'product_detail', 'quantity', 'price', 'proposed_price', 'base_price', 
-            'status', 'available_date', 'quality_grade', 'notes', 'photo', 'created_at'
+            'status', 'available_date', 'quality_grade', 'notes', 'photo', 'created_at',
+            'farmer_name', 'farmer_location'
         ]
         read_only_fields = ['created_at']
 
     def validate(self, attrs):
-        quantity = attrs.get('quantity', 0)
-        price = attrs.get('price', 0)
-        if float(price) <= 0:
-            raise serializers.ValidationError({"price": "Price must be greater than zero."})
-        if float(quantity) < 50:
-            raise serializers.ValidationError({"quantity": "Quantity must be at least 50 kg."})
+        # Only validate fields if they are provided (handles partial updates/PATCH cleanly)
+        if 'price' in attrs:
+            price = attrs['price']
+            if float(price) <= 0:
+                raise serializers.ValidationError({"price": "Price must be greater than zero."})
+        elif not self.instance:
+            raise serializers.ValidationError({"price": "Price is required."})
+
+        if 'quantity' in attrs:
+            quantity = attrs['quantity']
+            if float(quantity) < 50:
+                raise serializers.ValidationError({"quantity": "Quantity must be at least 50 kg."})
+        elif not self.instance:
+            raise serializers.ValidationError({"quantity": "Quantity is required."})
+
         return attrs
 
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
