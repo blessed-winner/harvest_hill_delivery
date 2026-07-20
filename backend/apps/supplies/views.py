@@ -9,13 +9,14 @@ class SupplySerializer(serializers.ModelSerializer):
     product_detail = ProductShortSerializer(source='product', read_only=True)
     farmer_name = serializers.CharField(source='farmer.farm_name', read_only=True)
     farmer_location = serializers.CharField(source='farmer.location', read_only=True)
+    unit = serializers.CharField(source='product.unit', read_only=True)
 
     class Meta:
         model = Supply
         fields = [
-            'id', 'product', 'product_detail', 'quantity', 'price', 'proposed_price', 'base_price', 
+            'id', 'product', 'product_detail', 'quantity', 'unit', 'price', 'proposed_price', 'base_price', 
             'status', 'available_date', 'quality_grade', 'notes', 'photo', 'created_at',
-            'farmer_name', 'farmer_location'
+            'farmer_name', 'farmer_location', 'is_archived'
         ]
         read_only_fields = ['created_at']
 

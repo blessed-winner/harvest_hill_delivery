@@ -38,6 +38,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const statusMap: Record<string, string> = {
     'Pending Review': 'pending',
     'Accepted': 'accepted',
+    'Rejected': 'rejected',
     'Delivered': 'delivered',
   };
 
@@ -148,7 +149,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
         </div>
         <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-          {['Pending Review', 'Accepted', 'Delivered', 'Archived'].map((t) => (
+          {['Pending Review', 'Accepted', 'Rejected', 'Delivered', 'Archived'].map((t) => (
             <button 
               key={t} 
               onClick={() => setActiveStatusTab(t)}
@@ -277,6 +278,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
                         s.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-200" :
                         s.status === 'accepted' ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
+                        s.status === 'rejected' ? "bg-red-100 text-red-800 border-red-200" :
                         s.status === 'delivered' ? "bg-blue-100 text-blue-800 border-blue-200" :
                         "bg-surface-container-highest text-on-surface-variant"
                       )}>
@@ -352,12 +354,30 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 </button>
               )}
               {!selectedSupply.is_archived && (
-                <button 
-                  onClick={() => handleArchiveSupply(selectedSupply.id)}
-                  className="w-full py-3 bg-surface-container-highest text-primary rounded-lg font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#c1c9c0]"
-                >
-                  <Archive className="w-5 h-5" /> Archive Supply Record
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => handleArchiveSupply(selectedSupply.id)}
+                    className="w-full py-3 bg-surface-container-highest text-primary rounded-lg font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#c1c9c0]"
+                  >
+                    <Archive className="w-5 h-5" /> Archive
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to permanently delete this supply?`)) {
+                        try {
+                          await api.supplies.delete(selectedSupply.id);
+                          setSelectedSupply(null);
+                          loadSupplies();
+                        } catch (err: any) {
+                          alert(err.message || "Failed to delete supply.");
+                        }
+                      }
+                    }}
+                    className="w-full py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-5 h-5" /> Delete
+                  </button>
+                </div>
               )}
               <button 
                 onClick={() => setSelectedSupply(null)}
