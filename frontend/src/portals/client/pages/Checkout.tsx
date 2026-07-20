@@ -87,8 +87,9 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
       const orderPayload = {
         delivery_address: `${deliveryAddress}${deliverySchedule ? ` | Delivery: ${deliverySchedule}` : ''}`,
         items: checkoutData.items.map((item: any) => ({
-          product_id: item.product_id,
-          quantity: item.qty
+          product: item.product_id,
+          quantity: item.qty,
+          price: parseFloat(item.price || 0)
         }))
       };
 
