@@ -33,4 +33,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         serializer.save(farmer=self.request.user.farmer_profile)
         # Log supply submission in AuditLog
         from apps.common.utils import log_action
-        log_action(self.request, actor=self.request.user, action="supply_submitted", target_model="Supply", target_id=serializer.instance.id)
+        status_val = serializer.instance.status
+        action_name = "supply_draft_saved" if status_val == 'draft' else "supply_submitted"
+        log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=serializer.instance.id)
