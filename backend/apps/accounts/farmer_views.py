@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum, Count
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from apps.supplies.models import Supply
 from apps.negotiations.models import NegotiationThread
 from apps.invoices.models import Invoice
@@ -80,11 +80,11 @@ class FarmerDashboardSupplyVolumeView(APIView):
                 month_offset += 12
                 year_offset -= 1
             
-            month_start = timezone.datetime(year_offset, month_offset, 1, tzinfo=timezone.utc)
+            month_start = timezone.make_aware(datetime(year_offset, month_offset, 1))
             if month_offset == 12:
-                month_end = timezone.datetime(year_offset + 1, 1, 1, tzinfo=timezone.utc) - timedelta(seconds=1)
+                month_end = timezone.make_aware(datetime(year_offset + 1, 1, 1)) - timedelta(seconds=1)
             else:
-                month_end = timezone.datetime(year_offset, month_offset + 1, 1, tzinfo=timezone.utc) - timedelta(seconds=1)
+                month_end = timezone.make_aware(datetime(year_offset, month_offset + 1, 1)) - timedelta(seconds=1)
 
             volume = Supply.objects.filter(
                 farmer=profile,
