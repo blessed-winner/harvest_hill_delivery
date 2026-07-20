@@ -101,6 +101,7 @@ export default function SubmitHarvest() {
   const [successModal, setSuccessModal] = useState<{
     isOpen: boolean;
     productName: string;
+    isDraft?: boolean;
   }>({
     isOpen: false,
     productName: '',
@@ -169,7 +170,7 @@ export default function SubmitHarvest() {
     setPhotoPreview(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isDraft = false) => {
     if (!selectedProduct) return;
 
     setIsSubmitting(true);
@@ -184,12 +185,14 @@ export default function SubmitHarvest() {
         quality_grade: form.qualityGrade,
         notes: form.notes,
         photo: form.photo,
+        status: isDraft ? 'draft' : 'pending',
       });
 
       // Open beautiful success dialog
       setSuccessModal({
         isOpen: true,
         productName: selectedProduct.name,
+        isDraft,
       });
       setSelectedProduct(null);
       setForm(initialFormState);
@@ -609,18 +612,27 @@ export default function SubmitHarvest() {
               </div>
 
               <div className="p-4 sm:p-6 bg-surface-container-low border-t border-outline-variant flex flex-col gap-3 sm:gap-4 sticky bottom-0 z-20">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !form.quantity || !form.askingPrice}
-                  className="w-full py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <span>{isSubmitting ? 'Submitting...' : 'Submit for Review'}</span>
-                  <Send size={20} />
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleSubmit(true)}
+                    disabled={isSubmitting || !form.quantity || !form.askingPrice}
+                    className="flex-1 py-3 border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-center"
+                  >
+                    Save as Draft
+                  </button>
+                  <button
+                    onClick={() => handleSubmit(false)}
+                    disabled={isSubmitting || !form.quantity || !form.askingPrice}
+                    className="flex-1 py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span>{isSubmitting ? 'Submitting...' : 'Submit Review'}</span>
+                    <Send size={16} />
+                  </button>
+                </div>
                 <button
                   onClick={() => setSelectedProduct(null)}
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-white border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-colors active:scale-[0.98] disabled:opacity-60"
+                  className="w-full py-3 bg-white border border-outline-variant text-on-surface-variant rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-colors active:scale-[0.98] disabled:opacity-60 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -637,9 +649,11 @@ export default function SubmitHarvest() {
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto text-emerald-700">
               <Verified size={32} />
             </div>
-            <h3 className="text-lg font-extrabold text-[#144227]">Harvest Submitted Successfully!</h3>
+            <h3 className="text-lg font-extrabold text-[#144227]">
+              {successModal.isDraft ? 'Draft Saved Successfully!' : 'Harvest Submitted Successfully!'}
+            </h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Your harvest proposal for <strong className="text-primary">{successModal.productName}</strong> has been submitted. Our team will review the quality specs and update you shortly.
+              Your harvest proposal for <strong className="text-primary">{successModal.productName}</strong> has been {successModal.isDraft ? 'saved as a draft' : 'submitted for review'}.
             </p>
             <div className="pt-2">
               <button
