@@ -154,16 +154,16 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
             <div className="flex items-center gap-4 pt-1">
               <div className="text-2xl font-black text-[#1c1c18]">
-                ${product.price?.toFixed(2) || '0.00'} 
-                <span className="text-xs font-bold text-[#717971]"> {product.unit || 'per unit'}</span>
+                ${product.base_price?.toFixed(2) || '0.00'} 
+                <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'unit'}</span>
               </div>
-              {product.quantity && product.quantity > 0 ? (
+              {product.quantity_needed && product.quantity_needed > 0 ? (
                 <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-                  In Stock: {product.quantity}
+                  Available
                 </span>
               ) : (
                 <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-                  Out of Stock
+                  Check Availability
                 </span>
               )}
             </div>

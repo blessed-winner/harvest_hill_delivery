@@ -81,7 +81,7 @@ export default function ClientPage() {
             product_id: product.id,
             name: product.name,
             category: product.category,
-            price: product.price,
+            price: product.base_price || product.price,
             unit: product.unit,
             qty: 1,
             image_url: product.image_url || product.image

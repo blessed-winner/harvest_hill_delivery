@@ -50,3 +50,32 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         status_val = serializer.instance.status
         action_name = "supply_draft_saved" if status_val == 'draft' else "supply_submitted"
         log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=serializer.instance.id)
+
+    def perform_update(self, serializer):
+        old_status = self.get_object().status
+        instance = serializer.save()
+        new_status = instance.status
+        
+        # When supply is accepted, make the product visible in customer catalog
+        if old_status != 'accepted' and new_status == 'accepted':
+            product = instance.product
+            product.is_currently_needed = True
+            # Update the product image if supply has a photo and product doesn't
+            if instance.photo and not product.image:
+                product.image = instance.photo
+            product.save()
+        
+        # When supply is rejected or archived, check if product should still be visible
+        if new_status in ['rejected', 'delivered'] or instance.is_archived:
+            product = instance.product
+            # Check if there are other accepted, non-archived supplies for this product
+            has_other_accepted = Supply.objects.filter(
+                product=product,
+                status='accepted',
+                is_archived=False
+            ).exclude(id=instance.id).exists()
+            
+            # If no other accepted supplies, hide the product from customer catalog
+            if not has_other_accepted:
+                product.is_currently_needed = False
+                product.save()
