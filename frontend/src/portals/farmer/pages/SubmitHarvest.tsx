@@ -97,6 +97,12 @@ export default function SubmitHarvest() {
   // Local currency conversion toggles per product ID
   const [convertedProducts, setConvertedProducts] = useState<Record<number, boolean>>({});
 
+  // Inline Validation Errors
+  const [validationErrors, setValidationErrors] = useState<{
+    quantity?: string;
+    askingPrice?: string;
+  }>({});
+
   // Custom success modal dialog state
   const [successModal, setSuccessModal] = useState<{
     isOpen: boolean;
@@ -173,23 +179,43 @@ export default function SubmitHarvest() {
       photo: null,
     });
     setPhotoPreview(null);
+    setValidationErrors({});
   };
 
   const handleSubmit = async (isDraft = false) => {
     if (!selectedProduct) return;
 
-    setIsSubmitting(true);
-
-    // Convert asking price back to USD if it was set in RWF in the form
+    // Validate fields and set inline errors
+    const qty = Number(form.quantity);
     const isRwf = convertedProducts[selectedProduct.id] || false;
     const askingPriceUSD = isRwf ? Number(form.askingPrice) / 1300 : Number(form.askingPrice);
+
+    let hasErrors = false;
+    const errors: typeof validationErrors = {};
+
+    if (isNaN(qty) || qty < 50) {
+      errors.quantity = "Quantity must be at least 50 kg.";
+      hasErrors = true;
+    }
+
+    if (isNaN(askingPriceUSD) || askingPriceUSD <= 0) {
+      errors.askingPrice = "Asking price must be greater than zero.";
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       await api.submitSupply({
         product: selectedProduct.id,
-        quantity: Number(form.quantity),
+        quantity: qty,
         unit: selectedProduct.unit,
-        proposed_price: askingPriceUSD,
+        price: askingPriceUSD,
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
         notes: form.notes,
@@ -205,6 +231,7 @@ export default function SubmitHarvest() {
       setSelectedProduct(null);
       setForm(initialFormState);
       setPhotoPreview(null);
+      setValidationErrors({});
     } catch (error) {
       console.error('Failed to submit harvest:', error);
       alert('Could not submit harvest right now. Please try again shortly.');
@@ -504,14 +531,31 @@ export default function SubmitHarvest() {
                     <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Quantity Available</label>
                     <div className="relative">
                       <input
-                        className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest font-sans text-xl font-extrabold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                        className={cn(
+                          "w-full px-4 py-3 rounded-xl border bg-surface-container-lowest font-sans text-xl font-extrabold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all",
+                          validationErrors.quantity ? "border-error focus:ring-error" : "border-outline-variant"
+                        )}
                         placeholder="0.00"
                         type="number"
                         value={form.quantity}
-                        onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          setForm((current) => ({ ...current, quantity: val }));
+                          const qtyNum = Number(val);
+                          if (val && (isNaN(qtyNum) || qtyNum < 50)) {
+                            setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 50 kg." }));
+                          } else {
+                            setValidationErrors(prev => ({ ...prev, quantity: undefined }));
+                          }
+                        }}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-xs text-on-surface-variant">{selectedProduct.unit}</span>
                     </div>
+                    {validationErrors.quantity && (
+                      <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                        {validationErrors.quantity}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Ready Date</label>
@@ -560,10 +604,24 @@ export default function SubmitHarvest() {
                         {isSelectedProductRwf ? 'RWF' : '$'}
                       </span>
                       <input
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-outline-variant bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary"
+                        className={cn(
+                          "w-full pl-12 pr-4 py-3 rounded-xl border bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary",
+                          validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant"
+                        )}
                         type="text"
                         value={form.askingPrice}
-                        onChange={(event) => setForm((current) => ({ ...current, askingPrice: event.target.value }))}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          setForm((current) => ({ ...current, askingPrice: val }));
+                          const priceNum = Number(val);
+                          const isRwf = convertedProducts[selectedProduct.id] || false;
+                          const usdPrice = isRwf ? priceNum / 1300 : priceNum;
+                          if (val && (isNaN(priceNum) || usdPrice <= 0)) {
+                            setValidationErrors(prev => ({ ...prev, askingPrice: "Price must be greater than zero." }));
+                          } else {
+                            setValidationErrors(prev => ({ ...prev, askingPrice: undefined }));
+                          }
+                        }}
                       />
                     </div>
                     <div className="flex-1">
@@ -576,6 +634,11 @@ export default function SubmitHarvest() {
                       </span>
                     </div>
                   </div>
+                  {validationErrors.askingPrice && (
+                    <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                      {validationErrors.askingPrice}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 text-secondary font-bold">
                     <TrendingUp size={18} />
                     <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
@@ -649,14 +712,14 @@ export default function SubmitHarvest() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleSubmit(true)}
-                    disabled={isSubmitting || !form.quantity || !form.askingPrice}
+                    disabled={isSubmitting || !form.quantity || !form.askingPrice || !!validationErrors.quantity || !!validationErrors.askingPrice}
                     className="flex-1 py-3 border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-center"
                   >
                     Save as Draft
                   </button>
                   <button
                     onClick={() => handleSubmit(false)}
-                    disabled={isSubmitting || !form.quantity || !form.askingPrice}
+                    disabled={isSubmitting || !form.quantity || !form.askingPrice || !!validationErrors.quantity || !!validationErrors.askingPrice}
                     className="flex-1 py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <span>{isSubmitting ? 'Submitting...' : 'Submit Review'}</span>
