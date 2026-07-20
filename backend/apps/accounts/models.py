@@ -52,6 +52,7 @@ class FarmerProfile(models.Model):
 class ClientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="client_profile")
     business_name = models.CharField(max_length=255, blank=True)
+    business_title = models.CharField(max_length=255, blank=True)  # Job title/position
     delivery_address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
 

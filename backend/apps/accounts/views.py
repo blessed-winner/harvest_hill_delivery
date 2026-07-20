@@ -228,6 +228,13 @@ class UserProfileView(APIView):
 
     def put(self, request):
         user = request.user
+        
+        # Update user basic fields if provided
+        user_fields = ['first_name', 'last_name', 'email', 'username']
+        for field in user_fields:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+        
         if user.role == 'farmer':
             try:
                 profile = user.farmer_profile
@@ -237,6 +244,7 @@ class UserProfileView(APIView):
             serializer = FarmerProfileSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                user.save()  # Save user basic fields
                 return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -245,12 +253,21 @@ class UserProfileView(APIView):
                 profile = user.client_profile
             except AttributeError:
                 return Response({"detail": "Client profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Handle business_title specially
+            if 'business_title' in request.data:
+                profile.business_title = request.data['business_title']
                 
             serializer = ClientProfileSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                user.save()  # Save user basic fields
                 return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # For admin or other roles, just update user fields
+        user.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
 
 class AdminUserViewSet(viewsets.ModelViewSet):
