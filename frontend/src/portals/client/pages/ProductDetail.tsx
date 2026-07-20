@@ -25,14 +25,42 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         setError(null);
         
         if (productId) {
-          // Fetch specific product
-          const fetchedProduct = await clientApi.products.get(productId);
-          setProduct(fetchedProduct);
+          // Fetch specific supply (acting as product)
+          const fetchedSupply = await clientApi.products.get(productId);
+          // Map supply fields to product structure
+          const mappedProduct = {
+            id: fetchedSupply.id,
+            name: fetchedSupply.product_detail?.name || fetchedSupply.name,
+            category: fetchedSupply.product_detail?.category || fetchedSupply.category,
+            urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
+            unit: fetchedSupply.unit,
+            price: fetchedSupply.price,
+            image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+            farmer_name: fetchedSupply.farmer_name,
+            farmer_location: fetchedSupply.farmer_location,
+            quantity: fetchedSupply.quantity,
+            quality_grade: fetchedSupply.quality_grade,
+            notes: fetchedSupply.notes,
+            available_date: fetchedSupply.available_date
+          };
+          setProduct(mappedProduct);
         } else {
           // Fallback: fetch first product as demo
           const products = await clientApi.products.list({ limit: '1' });
           if (products?.results && products.results.length > 0) {
-            setProduct(products.results[0]);
+            const fetchedSupply = products.results[0];
+            const mappedProduct = {
+              id: fetchedSupply.id,
+              name: fetchedSupply.product_detail?.name || fetchedSupply.name,
+              category: fetchedSupply.product_detail?.category || fetchedSupply.category,
+              urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
+              unit: fetchedSupply.unit,
+              price: fetchedSupply.price,
+              image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+              farmer_name: fetchedSupply.farmer_name,
+              quantity: fetchedSupply.quantity
+            };
+            setProduct(mappedProduct);
           } else {
             setError('Product not found');
           }
@@ -154,12 +182,12 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
             <div className="flex items-center gap-4 pt-1">
               <div className="text-2xl font-black text-[#1c1c18]">
-                ${product.base_price?.toFixed(2) || '0.00'} 
+                ${parseFloat(product.price || 0).toFixed(2)} 
                 <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'unit'}</span>
               </div>
-              {product.quantity_needed && product.quantity_needed > 0 ? (
+              {product.quantity && product.quantity > 0 ? (
                 <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-                  Available
+                  Available: {product.quantity} {product.unit}
                 </span>
               ) : (
                 <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
