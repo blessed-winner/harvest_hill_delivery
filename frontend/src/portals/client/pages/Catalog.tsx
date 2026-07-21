@@ -23,12 +23,36 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [organicOnly, setOrganicOnly] = useState(false);
   const [inSeason, setInSeason] = useState(false);
   const [bulkAvailable, setBulkAvailable] = useState(false);
-  const [priceMax, setPriceMax] = useState(100);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
+  const [topFarmer, setTopFarmer] = useState<any>(null);
+
+  // Check for farmer filter from sessionStorage (set by Farmer of the Month)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedFarmerFilter = sessionStorage.getItem('catalog_farmer_filter');
+      if (savedFarmerFilter) {
+        setFarmerFilter(savedFarmerFilter);
+        sessionStorage.removeItem('catalog_farmer_filter'); // Clear after using
+      }
+    }
+  }, []);
+
+  // Fetch top farmer for Farmer of the Month banner
+  useEffect(() => {
+    const fetchTopFarmer = async () => {
+      try {
+        const farmerResp = await clientApi.dashboardTopFarmer();
+        setTopFarmer(farmerResp?.farmer);
+      } catch (err) {
+        console.error('Failed to fetch top farmer:', err);
+      }
+    };
+    fetchTopFarmer();
+  }, []);
 
   // Update category when initialCategory prop changes
   useEffect(() => {
@@ -47,7 +71,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         const params: Record<string, string> = {};
         if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
         if (searchQuery) params.search = searchQuery;
-        if (inSeason) params.urgency = 'HIGH';
+        if (inSeason) params.urgency = 'high'; // Filter by high urgency for in-season products
         if (sortBy) params.ordering = sortBy;
         if (farmerFilter) params.farmer = farmerFilter;
         
@@ -60,8 +84,8 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
             p.product_detail?.name?.toLowerCase().includes('organic') || p.notes?.toLowerCase().includes('organic')
           );
         }
-        if (priceMax < 100) {
-          fetchedProducts = fetchedProducts.filter((p: any) => parseFloat(p.price || 0) <= priceMax);
+        if (bulkAvailable) {
+          fetchedProducts = fetchedProducts.filter((p: any) => parseFloat(p.quantity || 0) >= 100);
         }
         
         setProducts(fetchedProducts);
@@ -76,7 +100,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, priceMax, farmerFilter]);
+  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, bulkAvailable, farmerFilter]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -94,8 +118,21 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
       <div className="mb-6">
         <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Product Catalog</h1>
         <p className="text-xs text-[#717971] mt-1">
-          {loading ? 'Loading...' : `Showing ${products.length} products from certified local suppliers`}
+          {loading ? 'Loading...' : farmerFilter 
+            ? `Showing ${products.length} products from ${farmerFilter}` 
+            : `Showing ${products.length} products from certified local suppliers`}
         </p>
+        {farmerFilter && (
+          <div className="mt-3 inline-flex items-center gap-2 bg-[#144227] text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+            <span>Filtered by: {farmerFilter}</span>
+            <button
+              onClick={() => setFarmerFilter(null)}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -141,26 +178,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
             </div>
           </div>
 
-          {/* Price Range card */}
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-[#1c1c18] uppercase tracking-wider">Price Range</h3>
-            
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="0"
-                max="70"
-                value={priceMax}
-                onChange={(e) => setPriceMax(Number(e.target.value))}
-                className="w-full accent-[#144227] bg-[#f0eee7] h-1.5 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex items-center justify-between text-xs font-bold text-[#414942]">
-                <span>Min <span className="text-[#1c1c18]">$0.00</span></span>
-                <span>Max <span className="text-[#144227]">${priceMax.toFixed(2)}</span></span>
-              </div>
-            </div>
-          </div>
-
           {/* Toggle Switches card */}
           <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4">
             <div className="space-y-4">
@@ -203,20 +220,20 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
           </div>
 
           {/* Farmer of the Month Card (Visible from 20th of the month onwards) */}
-          {new Date().getDate() >= 20 && (
+          {topFarmer && new Date().getDate() >= 20 && (
             <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
               <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
                 Farmer of the Month
               </span>
               <div>
-                <h4 className="text-lg font-bold">Hillside Orchards</h4>
+                <h4 className="text-lg font-bold">{topFarmer.name}</h4>
                 <p className="text-xs text-white/80 leading-relaxed mt-1">
                   Top performing supplier this month based on demand fulfillment.
                 </p>
               </div>
               <button
                 onClick={() => {
-                  setFarmerFilter('Hillside Orchards');
+                  setFarmerFilter(topFarmer.farmer_name);
                   setSelectedCategory('all');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -300,7 +317,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                   setSearchQuery('');
                   setOrganicOnly(false);
                   setInSeason(false);
-                  setPriceMax(100);
+                  setBulkAvailable(false);
                   setFarmerFilter(null);
                 }}
                 className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"

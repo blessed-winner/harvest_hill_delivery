@@ -380,6 +380,12 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description='Filter by urgency level',
                 enum=['low', 'medium', 'high', 'steady']
+            ),
+            OpenApiParameter(
+                name='farmer',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter by farmer name or farm name'
             )
         ],
         tags=['Client Portal']
@@ -391,6 +397,7 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
         category = request.query_params.get('category')
         search = request.query_params.get('search')
         urgency = request.query_params.get('urgency')
+        farmer = request.query_params.get('farmer')
         
         if category:
             queryset = queryset.filter(product__category__iexact=category)
@@ -398,6 +405,13 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(product__name__icontains=search)
         if urgency:
             queryset = queryset.filter(product__urgency__iexact=urgency)
+        if farmer:
+            # Filter by farmer's farm name or username
+            queryset = queryset.filter(
+                Q(farmer__farm_name__icontains=farmer) | 
+                Q(farmer__user__username__icontains=farmer) |
+                Q(farmer__user__email__icontains=farmer)
+            )
         
         serializer = self.get_serializer(queryset, many=True)
         # Return data in paginated format for frontend compatibility
