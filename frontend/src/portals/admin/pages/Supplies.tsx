@@ -266,6 +266,11 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <p className="font-mono text-sm font-bold">{s.quantity} {s.unit}</p>
+                      {Number(s.quantity) === 0 ? (
+                        <span className="inline-block text-[9px] font-extrabold text-red-700 bg-red-100 px-2 py-0.5 rounded uppercase mt-0.5">Out of Stock</span>
+                      ) : Number(s.quantity) <= 10 ? (
+                        <span className="inline-block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-0.5">Low Stock</span>
+                      ) : null}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -276,13 +281,14 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     <td className="px-6 py-4">
                       <span className={cn(
                         "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
+                        Number(s.quantity) === 0 ? "bg-red-100 text-red-800 border-red-200" :
                         s.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-200" :
                         s.status === 'accepted' ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
                         s.status === 'rejected' ? "bg-red-100 text-red-800 border-red-200" :
                         s.status === 'delivered' ? "bg-blue-100 text-blue-800 border-blue-200" :
                         "bg-surface-container-highest text-on-surface-variant"
                       )}>
-                        {s.is_archived ? 'Archived' : s.status}
+                        {s.is_archived ? 'Archived' : (Number(s.quantity) === 0 ? 'Out of Stock' : s.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">

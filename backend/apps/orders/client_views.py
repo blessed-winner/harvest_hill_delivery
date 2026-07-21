@@ -276,7 +276,7 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     Client Product Browsing API
     Browse and search available products from farmer supplies
     """
-    queryset = Supply.objects.filter(status='accepted', is_archived=False).select_related('product', 'farmer')
+    queryset = Supply.objects.filter(status='accepted', is_archived=False, quantity__gt=10).select_related('product', 'farmer')
     serializer_class = SupplySerializer
     permission_classes = [IsClient]
 

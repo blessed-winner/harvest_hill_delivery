@@ -21,6 +21,15 @@ interface CartItem {
   image_url?: string;
 }
 
+const parsePrice = (price: any): number => {
+  if (typeof price === 'number') return isNaN(price) ? 0 : price;
+  if (typeof price === 'string') {
+    const parsed = parseFloat(price);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
 export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -36,8 +45,8 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
           // Ensure all prices are numbers
           const validatedItems = parsedItems.map((item: any) => ({
             ...item,
-            price: typeof item.price === 'string' ? parseFloat(item.price) : (item.price || 0),
-            qty: typeof item.qty === 'string' ? parseInt(item.qty) : (item.qty || 1)
+            price: parsePrice(item.price),
+            qty: typeof item.qty === 'string' ? parseInt(item.qty, 10) : (item.qty || 1)
           }));
           setItems(validatedItems);
           const totalQty = validatedItems.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
@@ -50,7 +59,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
         setDeliveryDate(tomorrow.toISOString().split('T')[0]);
       } catch (err) {
         console.error('Failed to load cart:', err);
-      } finally {
+      } fontally: () => {
         setLoading(false);
       }
     };
@@ -99,7 +108,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   };
 
   // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * item.qty), 0);
+  const subtotal = items.reduce((sum, item) => sum + (parsePrice(item.price) * item.qty), 0);
   const deliveryFee = items.length > 0 ? 12.00 : 0.00;
   const taxes = subtotal * 0.08; // 8% tax
   const grandTotal = subtotal + deliveryFee + taxes;
@@ -171,7 +180,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                     {/* Price on right */}
                     <div className="text-right">
                       <span className="block text-sm font-black text-[#1c1c18]">
-                        ${parseFloat(item.price || 0).toFixed(2)}
+                        ${parsePrice(item.price).toFixed(2)}
                       </span>
                       <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">
                         per {item.unit || 'unit'}
@@ -201,7 +210,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-[#1c1c18]">
-                        ${(parseFloat(item.price || 0) * item.qty).toFixed(2)}
+                        ${(parsePrice(item.price) * item.qty).toFixed(2)}
                       </span>
                       <button
                         onClick={() => removeItem(item.id)}
@@ -218,7 +227,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
             ))}
           </div>
 
-          {/* Right Column: Order Summary & Help */}
+          {/* Right Column: Order Summary */}
           <div className="space-y-6">
             
             {/* Order Summary card */}
@@ -272,7 +281,6 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
               <div className="space-y-2 pt-2">
                 <button
                   onClick={() => {
-                    // Save cart items and delivery date to proceed to checkout
                     localStorage.setItem('checkout_data', JSON.stringify({
                       items,
                       deliveryDate,
@@ -299,23 +307,6 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
               <div className="flex items-center justify-center gap-1 text-[9px] text-[#717971] font-semibold border-t border-[#f0eee7] pt-3">
                 <ShieldCheck size={12} className="text-[#376847]" /> Secure 256-bit SSL encrypted checkout
               </div>
-            </div>
-
-            {/* Procurement Help Card */}
-            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-white/10 rounded-lg text-[#bceec8]"><Headphones size={18} /></span>
-                <h4 className="text-xs font-bold text-[#bceec8]">Need procurement help?</h4>
-              </div>
-              <p className="text-[10px] text-white/80 leading-relaxed">
-                Our farm specialists can help you finalize pricing or find seasonal substitutions.
-              </p>
-              <button
-                onClick={() => alert("Connecting to farm specialist chat...")}
-                className="text-[10px] font-bold text-[#9ed0ab] hover:underline underline-offset-2 cursor-pointer"
-              >
-                Talk to an Expert
-              </button>
             </div>
 
           </div>
