@@ -19,7 +19,7 @@ export default function ClientPage() {
   const [activeScreen, setActiveScreen] = useState('landing'); // Default view is now the Marketplace Home
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // Track selected category
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null); // Track selected product
-  const [cartCount, setCartCount] = useState(17); // Set to 17 items as in the Cart order summary screenshot
+  const [cartCount, setCartCount] = useState(0);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -37,6 +37,15 @@ export default function ClientPage() {
         if (storedScreen) {
           setActiveScreen(storedScreen);
         }
+        // Load cart count from localStorage
+        try {
+          const savedCart = localStorage.getItem('cart_items');
+          if (savedCart) {
+            const items = JSON.parse(savedCart);
+            const totalQty = items.reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
+            setCartCount(totalQty);
+          }
+        } catch {}
       }
     }
   }, [router]);

@@ -136,9 +136,6 @@ export function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/30 h-[380px] flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-sm text-primary uppercase tracking-wider">Order volume over time</h3>
-            <button className="text-on-surface-variant hover:bg-surface-container-low p-1 rounded">
-              <MoreVertical className="w-4 h-4" />
-            </button>
           </div>
           <div className="flex-1">
             {orderData.length === 0 ? (

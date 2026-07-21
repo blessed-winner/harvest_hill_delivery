@@ -81,9 +81,32 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop('items', None)
-        instance.status = validated_data.get('status', instance.status)
+        old_status = instance.status
+        new_status = validated_data.get('status', instance.status)
+
+        instance.status = new_status
         instance.delivery_address = validated_data.get('delivery_address', instance.delivery_address)
+        instance.is_archived = validated_data.get('is_archived', instance.is_archived)
+        instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
         instance.save()
+
+        # Restore supply quantities when an order is cancelled/rejected
+        if new_status == 'cancelled' and old_status != 'cancelled':
+            from apps.supplies.models import Supply
+
+            for item in instance.items.all():
+                product = item.product
+                restore_qty = float(item.quantity)
+
+                # Find the matching active supply and add back the quantity
+                supply = Supply.objects.filter(
+                    product=product,
+                    is_archived=False,
+                ).order_by('created_at').first()
+
+                if supply:
+                    supply.quantity = float(supply.quantity) + restore_qty
+                    supply.save()
 
         if items_data is not None:
             instance.items.all().delete()

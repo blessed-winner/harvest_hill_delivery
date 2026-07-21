@@ -19,7 +19,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 8;
 
   // Active Modals state
   const [selectedItem, setSelectedItem] = useState<{ order?: any; note?: any } | null>(null);
