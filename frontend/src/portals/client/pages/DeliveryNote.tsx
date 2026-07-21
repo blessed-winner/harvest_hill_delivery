@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   ChevronRight, Calendar, AlertCircle, Loader2, Package, 
-  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye 
+  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2 
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
+import { ConfirmModal } from '../../../components/ConfirmModal';
 
 interface DeliveryNoteProps {
   onNavigate: (screen: string) => void;
@@ -16,6 +17,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -23,6 +25,9 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   const [selectedItem, setSelectedItem] = useState<{ order?: any; note?: any } | null>(null);
   const [modalMode, setModalMode] = useState<'sign' | 'dispute' | 'view' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Deletion Modal State
+  const [deleteTarget, setDeleteTarget] = useState<{ noteId?: string | number; orderId?: string | number } | null>(null);
 
   // Signature canvas state
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -57,11 +62,14 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
   // Initialize Canvas settings when modal opens for signing
   useEffect(() => {
     if (modalMode !== 'sign') return;
 
-    // Small delay to ensure modal DOM is mounted
     const timer = setTimeout(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -72,7 +80,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#144227'; // Harvest dark green ink
+      ctx.strokeStyle = '#144227';
     }, 50);
 
     return () => clearTimeout(timer);
@@ -134,7 +142,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     setHasSigned(false);
   };
 
-  // Open modal handlers
+  // Modal actions
   const handleOpenSignModal = (item: { order: any; note?: any }) => {
     setSelectedItem(item);
     setModalMode('sign');
@@ -159,6 +167,23 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     setSelectedItem(null);
     setModalMode(null);
     setSubmitting(false);
+  };
+
+  // Confirm Client Soft Delete Action
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      if (deleteTarget.noteId) {
+        await clientApi.deliveryNotes.update(deleteTarget.noteId, { is_deleted_by_client: true });
+      } else if (deleteTarget.orderId) {
+        await clientApi.orders.update(deleteTarget.orderId, { is_deleted_by_client: true });
+      }
+      fetchData();
+    } catch (err) {
+      console.error('Failed to delete delivery note:', err);
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   // Submit Sign & Confirm Delivery Note
@@ -235,25 +260,36 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     }
   };
 
-  // Combine delivered orders with existing notes
-  const combinedItems = orders.map(order => {
-    const linkedNote = deliveryNotes.find(n => n.order === order.id || n.order_detail?.id === order.id);
-    return {
-      order,
-      note: linkedNote
-    };
-  });
+  // Combine delivered orders with existing notes, filtering out client-deleted notes
+  const combinedItems = orders
+    .filter(order => !order.is_deleted_by_client)
+    .map(order => {
+      const linkedNote = deliveryNotes.find(n => (n.order === order.id || n.order_detail?.id === order.id) && !n.is_deleted_by_client);
+      return {
+        order,
+        note: linkedNote
+      };
+    });
 
-  // Include orphan delivery notes if any
   deliveryNotes.forEach(note => {
-    if (note.order && !combinedItems.some(ci => ci.order?.id === note.order)) {
+    if (note.order && !note.is_deleted_by_client && !combinedItems.some(ci => ci.order?.id === note.order)) {
       combinedItems.push({ order: note.order_detail, note });
     }
   });
 
+  // Filter items by status tabs
+  const filteredItems = combinedItems.filter(({ note }) => {
+    const status = note?.status || 'pending';
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Confirmed') return status === 'confirmed';
+    if (activeTab === 'Disputed') return status === 'discrepancy';
+    if (activeTab === 'Pending') return status === 'pending';
+    return true;
+  });
+
   // Pagination
-  const totalPages = Math.ceil(combinedItems.length / itemsPerPage) || 1;
-  const paginatedItems = combinedItems.slice(
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
+  const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -283,8 +319,40 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e5e2db] pb-5">
         <div>
           <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Delivery Notes & Signatures</h1>
-          <p className="text-xs text-[#717971] mt-1">Review delivered shipments, sign delivery receipts, and submit discrepancy disputes.</p>
+          <p className="text-xs text-[#717971] mt-1">Review delivered shipments, sign delivery receipts, and track discrepancy disputes.</p>
         </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#e5e2db] pb-3">
+        {['All', 'Confirmed', 'Disputed', 'Pending'].map((tab) => {
+          const count = combinedItems.filter(({ note }) => {
+            const status = note?.status || 'pending';
+            if (tab === 'All') return true;
+            if (tab === 'Confirmed') return status === 'confirmed';
+            if (tab === 'Disputed') return status === 'discrepancy';
+            if (tab === 'Pending') return status === 'pending';
+            return true;
+          }).length;
+
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                isActive
+                  ? 'bg-[#144227] text-white shadow-sm'
+                  : 'bg-[#f0eee7]/60 text-[#414942] hover:bg-[#f0eee7] hover:text-[#144227]'
+              }`}
+            >
+              {tab}
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-[#c1c9c0]/30 text-[#414942]'}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -301,23 +369,23 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         </div>
       )}
 
-      {!error && combinedItems.length === 0 && (
+      {!error && filteredItems.length === 0 && (
         <div className="bg-white border border-[#e5e2db] rounded-2xl p-12 text-center shadow-sm">
           <Package className="w-16 h-16 text-[#c1c9c0] mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-[#1c1c18] mb-2">No Delivered Orders Requiring Signature</h2>
+          <h2 className="text-lg font-bold text-[#1c1c18] mb-2">No Delivery Notes Found</h2>
           <p className="text-sm text-[#717971] mb-4">
-            You don't have any delivered orders yet. Delivery notes will appear here once orders are delivered.
+            No delivery notes found matching active filter status "{activeTab}".
           </p>
           <button
-            onClick={() => onNavigate('catalog')}
+            onClick={() => setActiveTab('All')}
             className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors cursor-pointer"
           >
-            Browse Catalog
+            Clear Filters
           </button>
         </div>
       )}
 
-      {!error && combinedItems.length > 0 && (
+      {!error && filteredItems.length > 0 && (
         <div className="bg-white border border-[#e5e2db] rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -399,6 +467,13 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                               </button>
                             </>
                           )}
+                          <button
+                            onClick={() => setDeleteTarget({ noteId: note?.id, orderId: order?.id })}
+                            className="p-1.5 text-[#717971] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-lg transition-colors cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -412,7 +487,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
           <div className="bg-[#f6f3ec]/30 border-t border-[#e5e2db] px-6 py-4 flex items-center justify-between text-xs text-[#717971]">
             <span>
               Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-              {Math.min(currentPage * itemsPerPage, combinedItems.length)} of {combinedItems.length} items
+              {Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length} items
             </span>
             
             <div className="flex items-center gap-2">
@@ -664,6 +739,17 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
           </div>
         </div>
       )}
+
+      {/* Custom UI Delete Confirmation Dialog */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Delivery Note"
+        message="Are you sure you want to delete this delivery note? It will be removed from your list."
+        confirmText="Delete Note"
+        cancelText="Cancel"
+      />
 
     </div>
   );

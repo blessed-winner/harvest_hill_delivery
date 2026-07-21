@@ -28,22 +28,28 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           // Fetch specific supply (acting as product)
           const fetchedSupply = await clientApi.products.get(productId);
           // Map supply fields to product structure
-          const mappedProduct = {
-            id: fetchedSupply.id,
-            product_id: fetchedSupply.product, // Store the actual product ID for orders
-            name: fetchedSupply.product_detail?.name || fetchedSupply.name,
-            category: fetchedSupply.product_detail?.category || fetchedSupply.category,
-            urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
-            unit: fetchedSupply.unit,
-            price: fetchedSupply.price,
-            image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
-            farmer_name: fetchedSupply.farmer_name,
-            farmer_location: fetchedSupply.farmer_location,
-            quantity: fetchedSupply.quantity,
-            quality_grade: fetchedSupply.quality_grade,
-            notes: fetchedSupply.notes,
-            available_date: fetchedSupply.available_date
-          };
+            const imagesList = fetchedSupply.photos || fetchedSupply.images || (fetchedSupply.photo ? [fetchedSupply.photo] : []);
+            if (fetchedSupply.product_detail?.image_url && !imagesList.includes(fetchedSupply.product_detail.image_url)) {
+              imagesList.push(fetchedSupply.product_detail.image_url);
+            }
+            
+            const mappedProduct = {
+              id: fetchedSupply.id,
+              product_id: fetchedSupply.product, // Store the actual product ID for orders
+              name: fetchedSupply.product_detail?.name || fetchedSupply.name,
+              category: fetchedSupply.product_detail?.category || fetchedSupply.category,
+              urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
+              unit: fetchedSupply.unit,
+              price: fetchedSupply.price,
+              image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+              images: imagesList.length > 0 ? imagesList : undefined,
+              farmer_name: fetchedSupply.farmer_name,
+              farmer_location: fetchedSupply.farmer_location,
+              quantity: fetchedSupply.quantity,
+              quality_grade: fetchedSupply.quality_grade,
+              notes: fetchedSupply.notes,
+              available_date: fetchedSupply.available_date
+            };
           setProduct(mappedProduct);
         } else {
           // Fallback: fetch first product as demo
@@ -77,9 +83,19 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     fetchProduct();
   }, [productId]);
 
-  const images = product?.image_url 
-    ? [product.image_url]
-    : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80'];
+  const rawImages = product?.images && product.images.length > 0 
+    ? product.images 
+    : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
+
+  // Ensure multiple gallery view items for demo produce if only 1 image present
+  const images = rawImages.length === 1 && product?.name
+    ? [
+        rawImages[0],
+        'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80',
+        'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=800&q=80',
+        'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80'
+      ]
+    : rawImages;
 
   if (loading) {
     return (

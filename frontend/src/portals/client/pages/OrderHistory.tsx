@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Loader2, Package } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Package, Trash2 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { useCurrency } from '../../../context/CurrencyContext';
+import { ConfirmModal } from '../../../components/ConfirmModal';
 
 interface OrderHistoryProps {
   onNavigate: (screen: string) => void;
@@ -17,31 +18,45 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
   const [error, setError] = useState<string | null>(null);
   const { formatPrice } = useCurrency();
 
+  // Deletion State
+  const [deleteTargetOrder, setDeleteTargetOrder] = useState<any | null>(null);
+
   const filters = ['All Orders', 'pending', 'approved', 'delivered', 'cancelled'];
 
-  // Fetch orders
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const status = activeFilter === 'All Orders' ? undefined : activeFilter;
-        const response = await clientApi.orders.list(status);
-        setOrders(response || []);
-      } catch (err: any) {
-        console.error('Failed to fetch orders:', err);
-        setError(err.message || 'Failed to load orders');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const status = activeFilter === 'All Orders' ? undefined : activeFilter;
+      const response = await clientApi.orders.list(status);
+      setOrders(response || []);
+    } catch (err: any) {
+      console.error('Failed to fetch orders:', err);
+      setError(err.message || 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchOrders();
   }, [activeFilter]);
 
   const handleToggleExpand = (id: string) => {
     setExpandedOrder(expandedOrder === id ? null : id);
+  };
+
+  const handleConfirmDeleteOrder = async () => {
+    if (!deleteTargetOrder) return;
+    try {
+      await clientApi.orders.update(deleteTargetOrder.id, { is_deleted_by_client: true });
+      fetchOrders();
+    } catch (err) {
+      console.error('Failed to delete order:', err);
+    } finally {
+      setDeleteTargetOrder(null);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -102,7 +117,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
           <h3 className="text-lg font-bold text-[#1c1c18] mb-2">Unable to Load Orders</h3>
           <p className="text-sm text-[#717971] mb-4">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={fetchOrders}
             className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors cursor-pointer"
           >
             Retry
@@ -167,8 +182,18 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                   </div>
                 </div>
 
-                {/* Right side: Caret */}
-                <div className="self-end md:self-auto text-right text-[#717971]">
+                {/* Right side: Actions & Caret */}
+                <div className="self-end md:self-auto flex items-center gap-3 text-[#717971]">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTargetOrder(order);
+                    }}
+                    className="p-2 text-[#717971] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Order"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                   {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
 
@@ -213,6 +238,17 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
         })}
       </div>
       )}
+
+      {/* Custom UI Delete Confirmation Dialog */}
+      <ConfirmModal
+        isOpen={!!deleteTargetOrder}
+        onClose={() => setDeleteTargetOrder(null)}
+        onConfirm={handleConfirmDeleteOrder}
+        title="Delete Order"
+        message={`Are you sure you want to delete Order #${deleteTargetOrder?.id}?`}
+        confirmText="Delete Order"
+        cancelText="Cancel"
+      />
 
     </div>
   );

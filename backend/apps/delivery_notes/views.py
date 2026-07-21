@@ -23,7 +23,7 @@ class DeliveryNoteViewSet(viewsets.ModelViewSet):
         elif user.role == 'client':
             try:
                 profile = user.client_profile
-                return queryset.filter(order__client=profile)
+                return queryset.filter(order__client=profile, is_deleted_by_client=False)
             except AttributeError:
                 return queryset.none()
                 

@@ -119,7 +119,10 @@ export const api = {
 
   // User Management
   users: {
-    list: () => apiRequest('/api/accounts/admin/users/'),
+    list: (params: Record<string, string> = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiRequest(`/api/accounts/admin/users/${query ? '?' + query : ''}`);
+    },
     create: (payload: any) => apiRequest('/api/accounts/admin/users/create/', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: string | number, payload: any) => apiRequest(`/api/accounts/admin/users/${id}/update/`, { method: 'PATCH', body: JSON.stringify(payload) }),
     delete: (id: string | number) => apiRequest(`/api/accounts/admin/users/${id}/delete/`, { method: 'DELETE' }),

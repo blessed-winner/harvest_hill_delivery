@@ -6,6 +6,7 @@ import {
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { ConfirmModal } from '../../../components/ConfirmModal';
 
 interface DeliveryNotesProps {
   searchTerm?: string;
@@ -20,6 +21,19 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
   // Selection state for bulk operations
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+
+  // Custom Confirmation Dialog State
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    action: () => {},
+  });
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,31 +92,42 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
     }
   };
 
-  const handleDeleteNote = async (noteId: number | string) => {
-    if (!confirm("Are you sure you want to delete this delivery note?")) return;
-    try {
-      await api.deliveryNotes.delete(noteId);
-      setSelectedNote(null);
-      loadNotes();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete delivery note.");
-    }
+  const handleDeleteNotePrompt = (noteId: number | string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Delivery Note",
+      message: `Are you sure you want to delete delivery note #DLV-${noteId}? This will remove it permanently from the database.`,
+      action: async () => {
+        try {
+          await api.deliveryNotes.delete(noteId);
+          setSelectedNote(null);
+          loadNotes();
+        } catch (err: any) {
+          alert(err.message || "Failed to delete delivery note.");
+        }
+      }
+    });
   };
 
-  // Bulk Operations
-  const handleBulkDelete = async () => {
+  // Bulk Operations with Custom Confirmation Dialog
+  const handleBulkDeletePrompt = () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected delivery notes?`)) return;
-    
-    setIsProcessingBulk(true);
-    try {
-      await Promise.all(selectedIds.map(id => api.deliveryNotes.delete(id)));
-      loadNotes();
-    } catch (err: any) {
-      alert("Error performing bulk deletion. Some items may not have been deleted.");
-    } finally {
-      setIsProcessingBulk(false);
-    }
+    setConfirmState({
+      isOpen: true,
+      title: "Bulk Delete Delivery Notes",
+      message: `Are you sure you want to delete ${selectedIds.length} selected delivery notes? This will permanently remove them from the database.`,
+      action: async () => {
+        setIsProcessingBulk(true);
+        try {
+          await Promise.all(selectedIds.map(id => api.deliveryNotes.delete(id)));
+          loadNotes();
+        } catch (err: any) {
+          alert("Error performing bulk deletion.");
+        } fontally: () => {
+          setIsProcessingBulk(false);
+        }
+      }
+    });
   };
 
   const handleBulkArchive = async (archiveState = true) => {
@@ -156,7 +181,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 font-sans">
       <div className="flex flex-col space-y-4">
         <div className="flex justify-between items-end">
           <div>
@@ -187,7 +212,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                 </button>
               )}
               <button
-                onClick={handleBulkDelete}
+                onClick={handleBulkDeletePrompt}
                 disabled={isProcessingBulk}
                 className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
               >
@@ -284,7 +309,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                             <Archive size={16} />
                           </button>
                           <button
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => handleDeleteNotePrompt(note.id)}
                             title="Delete"
                             className="p-1.5 text-on-surface-variant hover:text-red-600 transition-colors cursor-pointer rounded"
                           >
@@ -334,7 +359,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order #ORD-' + selectedNote.order : 'Supply #SUP-' + selectedNote.supply}` : ''}
         footer={
           selectedNote && (
-            <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col gap-3 w-full font-sans">
               {selectedNote.status === 'pending' && !selectedNote.is_archived && (
                 <div className="grid grid-cols-2 gap-3">
                   <button 
@@ -359,7 +384,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                   <Archive className="w-4 h-4" /> {selectedNote.is_archived ? 'Unarchive' : 'Archive'}
                 </button>
                 <button 
-                  onClick={() => handleDeleteNote(selectedNote.id)}
+                  onClick={() => handleDeleteNotePrompt(selectedNote.id)}
                   className="py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-lg font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <Trash2 className="w-4 h-4" /> Delete
@@ -376,7 +401,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         }
       >
         {selectedNote && (
-          <div className="space-y-6">
+          <div className="space-y-6 font-sans">
             <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
               <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-widest block mb-2">Details</span>
               <p className="text-sm font-medium text-on-surface leading-relaxed">
@@ -428,6 +453,17 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmState.action}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }
