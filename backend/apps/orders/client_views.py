@@ -220,6 +220,46 @@ class ClientDashboardViewSet(viewsets.ViewSet):
         
         return Response({'categories': categories})
 
+    @extend_schema(
+        summary="Get top farmer of the month",
+        description="Returns the #1 supplier by performance for the Farmer of the Month card",
+        tags=['Client Portal']
+    )
+    @action(detail=False, methods=['get'])
+    def top_farmer(self, request):
+        """Get the top-ranked farmer based on supply performance"""
+        from apps.accounts.models import FarmerProfile
+        from apps.supplies.models import Supply
+
+        top = None
+        best_perf = -1
+
+        for farmer in FarmerProfile.objects.all():
+            supplies = Supply.objects.filter(
+                farmer=farmer,
+                status__in=['accepted', 'delivered', 'invoiced']
+            )
+            total_count = supplies.count()
+            total_yield = float(supplies.aggregate(total=Sum('quantity'))['total'] or 0)
+            high_quality_count = supplies.filter(quality_grade__in=['premium', 'standard']).count()
+            quality_pct = (high_quality_count / total_count * 100) if total_count > 0 else 0.0
+            perf = int(70 + (quality_pct * 0.3)) if (total_yield > 0 or total_count > 0) else 0
+
+            if perf > best_perf:
+                best_perf = perf
+                top = {
+                    'name': farmer.farm_name or farmer.user.username or farmer.user.email,
+                    'location': farmer.location or 'Local Region',
+                    'perf': perf,
+                    'farmer_id': farmer.id,
+                    'farmer_name': farmer.farm_name or farmer.user.username or farmer.user.email,
+                }
+
+        if not top:
+            return Response({'farmer': None})
+
+        return Response({'farmer': top})
+
 
 class ClientOrderViewSet(viewsets.ModelViewSet):
     """

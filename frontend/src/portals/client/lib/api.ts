@@ -100,6 +100,7 @@ export const clientApi = {
   // ── Dashboard ──────────────────────────────────────────────────────────────
   dashboardSummary: () => apiRequest('/api/client/dashboard/summary/'),
   volumeByCategory: () => apiRequest('/api/client/dashboard/volume_by_category/'),
+  topFarmer: () => apiRequest('/api/client/dashboard/top_farmer/'),
 
   // ── Products / Browsing ────────────────────────────────────────────────────
   products: {

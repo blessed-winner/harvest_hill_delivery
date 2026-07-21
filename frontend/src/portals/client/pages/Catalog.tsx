@@ -366,9 +366,22 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                       layoutMode === 'grid' ? 'p-3.5' : 'p-0'
                     }`}>
                       <div>
-                        <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">
-                          {product.category || 'Product'}
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <span className="block text-[8px] font-bold tracking-wider text-[#717971] uppercase">
+                            {product.category || 'Product'}
+                          </span>
+                          {product.quantity != null && (
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
+                              parseFloat(product.quantity) > 50
+                                ? 'bg-[#bceec8] text-[#00210f]'
+                                : parseFloat(product.quantity) > 10
+                                  ? 'bg-[#ffdcc5] text-[#301400]'
+                                  : 'bg-red-100 text-red-800'
+                            }`}>
+                              {parseFloat(product.quantity).toFixed(0)} {product.unit || 'kg'} left
+                            </span>
+                          )}
+                        </div>
                         <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">
                           {product.name}
                         </h3>
