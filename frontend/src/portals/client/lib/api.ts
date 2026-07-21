@@ -136,6 +136,22 @@ export const clientApi = {
       }),
   },
 
+  // ── Delivery Notes ────────────────────────────────────────────────────────
+  deliveryNotes: {
+    list: () => apiRequest('/api/delivery-notes/'),
+    get: (id: string | number) => apiRequest(`/api/delivery-notes/${id}/`),
+    create: (payload: any) =>
+      apiRequest('/api/delivery-notes/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    update: (id: string | number, payload: any) =>
+      apiRequest(`/api/delivery-notes/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }),
+  },
+
   // ── Profile ────────────────────────────────────────────────────────────────
   profile: {
     get: () => apiRequest('/api/accounts/me/'),

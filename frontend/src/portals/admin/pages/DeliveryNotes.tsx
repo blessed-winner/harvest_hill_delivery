@@ -233,6 +233,30 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
               </p>
             </div>
 
+            {selectedNote.dispute_reason && (
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+                <span className="text-[10px] font-bold uppercase text-red-700 tracking-widest block mb-1">Dispute Details</span>
+                <p className="text-xs font-semibold text-red-900 leading-relaxed">
+                  {selectedNote.dispute_reason}
+                </p>
+              </div>
+            )}
+
+            {selectedNote.signed_by && (
+              <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-3">
+                <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-widest block">Recipient Confirmation</span>
+                <div className="text-xs font-bold text-on-surface">Signed By: <span className="text-primary font-semibold">{selectedNote.signed_by}</span></div>
+                {selectedNote.signature_data && (
+                  <div>
+                    <span className="text-[10px] text-on-surface-variant block mb-1 font-bold uppercase">Digital Signature</span>
+                    <div className="bg-white p-2 border border-outline-variant rounded-lg inline-block shadow-inner">
+                      <img src={selectedNote.signature_data} alt="Recipient Signature" className="max-h-24 object-contain" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
                 <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-widest block mb-1">Created At</span>

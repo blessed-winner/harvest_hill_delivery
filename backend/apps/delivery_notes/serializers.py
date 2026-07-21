@@ -1,7 +1,13 @@
 from rest_framework import serializers
 from .models import DeliveryNote
+from apps.orders.serializers import OrderSerializer
 
 class DeliveryNoteSerializer(serializers.ModelSerializer):
+    order_detail = OrderSerializer(source='order', read_only=True)
+
     class Meta:
         model = DeliveryNote
-        fields = ['id', 'order', 'supply', 'status', 'details', 'created_at']
+        fields = [
+            'id', 'order', 'order_detail', 'supply', 'status', 
+            'details', 'signed_by', 'signature_data', 'dispute_reason', 'created_at'
+        ]
