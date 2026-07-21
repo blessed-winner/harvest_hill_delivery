@@ -221,7 +221,10 @@ class ClientOrderViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         
         if status_filter:
-            queryset = queryset.filter(status=status_filter)
+            if status_filter == 'delivered':
+                queryset = queryset.filter(Q(status='delivered') | Q(status='shipped'))
+            else:
+                queryset = queryset.filter(status=status_filter)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

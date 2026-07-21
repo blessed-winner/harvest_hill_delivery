@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Loader2, Package } from 'lucide-react';
 import { clientApi } from '../lib/api';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 interface OrderHistoryProps {
   onNavigate: (screen: string) => void;
@@ -14,8 +15,9 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { formatPrice } = useCurrency();
 
-  const filters = ['All Orders', 'pending', 'approved', 'shipped', 'delivered', 'cancelled'];
+  const filters = ['All Orders', 'pending', 'approved', 'delivered', 'cancelled'];
 
   // Fetch orders
   useEffect(() => {
@@ -44,11 +46,17 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
 
   const getStatusColor = (status: string) => {
     const statusLower = status?.toLowerCase() || '';
-    if (statusLower === 'delivered') return 'bg-[#f0eee7] text-[#414942]';
-    if (statusLower === 'shipped' || statusLower === 'approved') return 'bg-[#bceec8] text-[#00210f]';
+    if (statusLower === 'delivered' || statusLower === 'shipped') return 'bg-[#bceec8] text-[#00210f]';
+    if (statusLower === 'approved') return 'bg-blue-100 text-blue-800';
     if (statusLower === 'pending') return 'bg-[#ffdcc5] text-[#301400]';
     if (statusLower === 'cancelled') return 'bg-red-100 text-red-800';
     return 'bg-[#f0eee7] text-[#414942]';
+  };
+
+  const calculateOrderTotal = (order: any) => {
+    if (order.total_amount && parseFloat(order.total_amount) > 0) return parseFloat(order.total_amount);
+    if (order.total_price && parseFloat(order.total_price) > 0) return parseFloat(order.total_price);
+    return (order.items || []).reduce((sum: number, item: any) => sum + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
   };
 
   return (
@@ -95,7 +103,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
           <p className="text-sm text-[#717971] mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors cursor-pointer"
           >
             Retry
           </button>
@@ -111,7 +119,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
           </p>
           <button
             onClick={() => onNavigate('catalog')}
-            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors cursor-pointer"
           >
             Browse Catalog
           </button>
@@ -122,7 +130,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
           const isExpanded = expandedOrder === order.id;
           const statusColor = getStatusColor(order.status);
           const itemCount = order.items?.length || 0;
-          const totalAmount = order.total_amount || 0;
+          const totalAmount = calculateOrderTotal(order);
           
           return (
             <div
@@ -145,7 +153,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="text-[10px] font-bold text-[#717971] font-mono">Order #{order.id}</span>
                       <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusColor}`}>
-                        {order.status}
+                        {order.status === 'shipped' ? 'delivered' : order.status}
                       </span>
                     </div>
                     <h3 className="text-sm font-extrabold text-[#1c1c18] mt-1">
@@ -154,7 +162,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                     <p className="text-[10px] text-[#717971] font-medium mt-0.5">
                       {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'} • 
                       {itemCount} Items • 
-                      <span className="font-bold text-[#1c1c18]"> ${totalAmount.toFixed(2)}</span>
+                      <span className="font-bold text-[#1c1c18]"> {formatPrice(totalAmount)}</span>
                     </p>
                   </div>
                 </div>
@@ -174,25 +182,28 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    {order.items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center text-xs text-[#414942]">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-[#376847] rounded-full" />
-                          <span className="font-bold text-[#1c1c18]">{item.product_name || item.product_id}</span>
+                    {order.items.map((item: any, idx: number) => {
+                      const itemTotal = parseFloat(item.price || 0) * parseFloat(item.quantity || 0);
+                      return (
+                        <div key={idx} className="flex justify-between items-center text-xs text-[#414942]">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-[#376847] rounded-full" />
+                            <span className="font-bold text-[#1c1c18]">{item.product_detail?.name || item.product_name || `Product #${item.product}`}</span>
+                          </div>
+                          <div className="flex gap-10">
+                            <span className="text-[#717971] font-semibold">Qty: {item.quantity}</span>
+                            <span className="font-bold text-[#1c1c18]">
+                              {formatPrice(itemTotal)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex gap-10">
-                          <span className="text-[#717971] font-semibold">Qty: {item.quantity}</span>
-                          <span className="font-bold text-[#1c1c18]">
-                            ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   
                   <div className="border-t border-[#f0eee7] pt-2 flex justify-between items-center">
                     <span className="text-xs font-bold text-[#1c1c18]">Total Amount</span>
-                    <span className="text-base font-bold text-[#144227]">${totalAmount.toFixed(2)}</span>
+                    <span className="text-base font-bold text-[#144227]">{formatPrice(totalAmount)}</span>
                   </div>
                 </div>
               )}

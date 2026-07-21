@@ -15,6 +15,7 @@ class DeliveryNote(models.Model):
     signed_by = models.CharField(max_length=255, blank=True, null=True)
     signature_data = models.TextField(blank=True, null=True)
     dispute_reason = models.TextField(blank=True, null=True)
+    is_archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

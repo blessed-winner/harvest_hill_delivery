@@ -160,6 +160,7 @@ export const api = {
     list: () => apiRequest('/api/orders/'),
     create: (payload: any) => apiRequest('/api/orders/', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: string | number, payload: any) => apiRequest(`/api/orders/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    delete: (id: string | number) => apiRequest(`/api/orders/${id}/`, { method: 'DELETE' }),
   },
 
   // Delivery Notes
@@ -167,6 +168,7 @@ export const api = {
     list: () => apiRequest('/api/delivery-notes/'),
     create: (payload: any) => apiRequest('/api/delivery-notes/', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: string | number, payload: any) => apiRequest(`/api/delivery-notes/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    delete: (id: string | number) => apiRequest(`/api/delivery-notes/${id}/`, { method: 'DELETE' }),
   },
 
   // Invoices Management

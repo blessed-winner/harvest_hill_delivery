@@ -14,11 +14,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     client_detail = ClientProfileSerializer(source='client', read_only=True)
+    total_price = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'client', 'client_detail', 'status', 'delivery_address', 'items', 'created_at']
+        fields = [
+            'id', 'client', 'client_detail', 'status', 'delivery_address', 
+            'items', 'total_price', 'total_amount', 'is_archived', 'created_at'
+        ]
         read_only_fields = ['client']
+
+    def get_total_price(self, obj):
+        return sum(float(item.price * item.quantity) for item in obj.items.all())
+
+    def get_total_amount(self, obj):
+        return sum(float(item.price * item.quantity) for item in obj.items.all())
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
