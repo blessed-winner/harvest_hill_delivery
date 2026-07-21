@@ -9,5 +9,5 @@ class DeliveryNoteSerializer(serializers.ModelSerializer):
         model = DeliveryNote
         fields = [
             'id', 'order', 'order_detail', 'supply', 'status', 
-            'details', 'signed_by', 'signature_data', 'dispute_reason', 'is_archived', 'created_at'
+            'details', 'signed_by', 'signature_data', 'dispute_reason', 'is_archived', 'is_deleted_by_client', 'created_at'
         ]

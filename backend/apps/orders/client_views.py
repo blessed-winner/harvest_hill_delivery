@@ -197,9 +197,10 @@ class ClientOrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsClient]
 
     def get_queryset(self):
-        """Filter orders to only show client's own orders"""
+        """Filter orders to only show client's own non-deleted orders"""
         return Order.objects.filter(
-            client=self.request.user.client_profile
+            client=self.request.user.client_profile,
+            is_deleted_by_client=False
         ).order_by('-created_at')
 
     @extend_schema(

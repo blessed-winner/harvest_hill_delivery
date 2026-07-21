@@ -119,12 +119,18 @@ export default function SubmitHarvest() {
     };
   }, [photoPreview]);
 
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<File[]>([]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm((current) => ({ ...current, photo: file }));
-      const url = URL.createObjectURL(file);
-      setPhotoPreview(url);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setPhotos(prev => [...prev, ...files]);
+      const newUrls = files.map(file => URL.createObjectURL(file));
+      setPhotoPreviews(prev => [...prev, ...newUrls]);
+      if (!form.photo) {
+        setForm((current) => ({ ...current, photo: files[0] }));
+      }
     }
   };
 

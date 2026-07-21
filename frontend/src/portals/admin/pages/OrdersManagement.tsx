@@ -6,6 +6,8 @@ import {
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { ConfirmModal } from '../../../components/ConfirmModal';
+import { SuccessModal } from '../../../components/SuccessModal';
 
 interface OrdersManagementProps {
   searchTerm?: string;
@@ -21,6 +23,30 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   
+  // Custom Confirmation Dialog State
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    action: () => {},
+  });
+
+  // Rich Success UI Dialog Box State
+  const [successDialog, setSuccessDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -68,31 +94,42 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
     }
   };
 
-  const handleDeleteOrder = async (orderId: number | string) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
-    try {
-      await api.orders.delete(orderId);
-      setSelectedOrder(null);
-      loadOrders();
-    } catch (err: any) {
-      alert(err.message || "Failed to delete order.");
-    }
+  const handleDeleteOrderPrompt = (orderId: number | string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Order",
+      message: `Are you sure you want to delete Order #${orderId}? This action will remove it permanently from the database.`,
+      action: async () => {
+        try {
+          await api.orders.delete(orderId);
+          setSelectedOrder(null);
+          loadOrders();
+        } catch (err: any) {
+          alert(err.message || "Failed to delete order.");
+        }
+      }
+    });
   };
 
-  // Bulk Operations
-  const handleBulkDelete = async () => {
+  // Bulk Operations with Custom Confirmation Dialog
+  const handleBulkDeletePrompt = () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected orders?`)) return;
-    
-    setIsProcessingBulk(true);
-    try {
-      await Promise.all(selectedIds.map(id => api.orders.delete(id)));
-      loadOrders();
-    } catch (err: any) {
-      alert("Error performing bulk deletion.");
-    } finally {
-      setIsProcessingBulk(false);
-    }
+    setConfirmState({
+      isOpen: true,
+      title: "Bulk Delete Orders",
+      message: `Are you sure you want to delete ${selectedIds.length} selected orders? This action will remove them permanently from the database.`,
+      action: async () => {
+        setIsProcessingBulk(true);
+        try {
+          await Promise.all(selectedIds.map(id => api.orders.delete(id)));
+          loadOrders();
+        } catch (err: any) {
+          alert("Error performing bulk deletion.");
+        } finally {
+          setIsProcessingBulk(false);
+        }
+      }
+    });
   };
 
   const handleBulkArchive = async (archiveState = true) => {
@@ -115,7 +152,12 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
         details: `Logistics note for Order #${order.id} shipped to ${order.delivery_address}.`,
         status: 'pending'
       });
-      alert(`Delivery note for Order #${order.id} generated successfully!`);
+
+      setSuccessDialog({
+        isOpen: true,
+        title: "Delivery Note Generated!",
+        message: `Delivery note for Order #${order.id} has been generated successfully and synced with the logistics ledger.`
+      });
     } catch (err: any) {
       alert(err.message || "Failed to generate delivery note.");
     }
@@ -192,7 +234,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7]">
+    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-[#f9f9f7] font-sans">
       <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0 space-y-5">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -223,7 +265,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                 </button>
               )}
               <button
-                onClick={handleBulkDelete}
+                onClick={handleBulkDeletePrompt}
                 disabled={isProcessingBulk}
                 className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
               >
@@ -333,7 +375,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                               <Archive size={16} />
                             </button>
                             <button
-                              onClick={() => handleDeleteOrder(order.id)}
+                              onClick={() => handleDeleteOrderPrompt(order.id)}
                               title="Delete"
                               className="p-1.5 text-on-surface-variant hover:text-red-600 transition-colors cursor-pointer rounded"
                             >
@@ -384,7 +426,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
         subtitle={selectedOrder ? `${selectedOrder.client_detail?.business_name || 'Client'} • ${(selectedOrder.items || []).length} Items` : ''}
         footer={
           selectedOrder && (
-            <div className="space-y-3 w-full">
+            <div className="space-y-3 w-full font-sans">
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => handleGenerateDeliveryNote(selectedOrder)}
@@ -425,7 +467,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                   <Archive className="w-4 h-4" /> {selectedOrder.is_archived ? 'Unarchive' : 'Archive'}
                 </button>
                 <button 
-                  onClick={() => handleDeleteOrder(selectedOrder.id)}
+                  onClick={() => handleDeleteOrderPrompt(selectedOrder.id)}
                   className="py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-lg font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <Trash2 className="w-4 h-4" /> Delete
@@ -442,7 +484,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
         }
       >
         {selectedOrder && (
-          <div className="space-y-8">
+          <div className="space-y-8 font-sans">
             <section>
               <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Order Progress</h4>
               <div className="space-y-6">
@@ -502,6 +544,26 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmState.action}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      {/* Rich Success UI Dialog Box */}
+      <SuccessModal
+        isOpen={successDialog.isOpen}
+        onClose={() => setSuccessDialog(prev => ({ ...prev, isOpen: false }))}
+        title={successDialog.title}
+        message={successDialog.message}
+        confirmText="Done"
+      />
     </div>
   );
 }

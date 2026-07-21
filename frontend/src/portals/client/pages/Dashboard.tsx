@@ -256,7 +256,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#f0eee7]">
                   <div>
                     <span className="block text-xs font-bold text-[#414942]">
-                      ${prod.price?.toFixed(2) || '0.00'}
+                      ${typeof prod.price === 'number' ? prod.price.toFixed(2) : (parseFloat(prod.price) || 0).toFixed(2)}
                     </span>
                     <span className="block text-[8px] text-[#717971] uppercase font-semibold">
                       {prod.unit || 'per unit'}
