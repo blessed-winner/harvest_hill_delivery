@@ -200,6 +200,7 @@ harvest-hill-delivery/
    - Monitor top products by volume
    - Track revenue and deliveries
    - Recent activity feed (excludes login/logout events)
+   - Supplier rankings based on performance metrics
 
 ---
 
@@ -338,12 +339,16 @@ harvest-hill-delivery/
    - Available quantities from farmers
 
 **Filtering Options:**
-- **Category:** Fruits, Vegetables, Dairy, Grains, Herbs
-- **Price Range:** Slider (0-100)
-- **Organic Only:** Toggle filter
-- **In Season:** High urgency products
-- **Farmer:** Filter by specific farmer
+- **Category:** Fruits, Vegetables, Dairy, Grains
+- **In Season:** High urgency products (urgency='high')
+- **Bulk Available:** Products with quantity >= 100kg
 - **Search:** Product name search
+
+**Farmer of the Month Banner:**
+- Appears in sidebar from 20th of each month onwards
+- Shows top-ranked farmer from supplier performance rankings
+- Click "Browse Collection" to filter catalog by that farmer's products
+- Dynamic data from actual supplier rankings (no mock data)
 
 **Product Card Shows:**
 - Product name and category
@@ -351,6 +356,7 @@ harvest-hill-delivery/
 - Price per unit (farmer's price)
 - Available quantity
 - Seasonal/Limited badges
+- Stock level indicator (green/orange/red based on quantity)
 
 #### Step 5: View Product Details
 
@@ -459,7 +465,7 @@ harvest-hill-delivery/
 
 1. Navigate to **Delivery Note** section
 2. View delivered orders
-3. Pagination: 5 items per page
+3. Pagination: 8 items per page (dynamic page creation)
 4. Details shown:
    - Delivery date
    - Items delivered
@@ -869,21 +875,28 @@ Steps:
    - Select "Vegetables"
    - ✅ Expected: Only vegetables shown
 
-2. **Price range:**
-   - Set max to $5.00
-   - ✅ Expected: Only products ≤ $5.00 shown
+2. **In Season filter:**
+   - Toggle "In Season"
+   - ✅ Expected: Only products with urgency='high' shown
+   - Seasonal badge visible on products
 
-3. **Organic filter:**
-   - Toggle "Organic Only"
-   - ✅ Expected: Only products with "organic" in name
+3. **Bulk Available filter:**
+   - Toggle "Bulk Available"
+   - ✅ Expected: Only products with quantity >= 100kg shown
 
 4. **Search:**
    - Type "tomato"
    - ✅ Expected: Only tomato products shown
 
 5. **Combined filters:**
-   - Category: Vegetables + Price: ≤ $5 + Organic
+   - Category: Vegetables + In Season + Bulk Available
    - ✅ Expected: Results match ALL filters
+
+6. **Farmer of the Month filter:**
+   - Click "Browse Collection" on Farmer of the Month banner (visible from 20th)
+   - ✅ Expected: Catalog filters to show only that farmer's products
+   - Filter badge appears in header with farmer name
+   - Click X to clear filter
 
 ---
 
