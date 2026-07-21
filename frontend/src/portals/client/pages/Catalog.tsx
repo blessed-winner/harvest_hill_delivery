@@ -165,24 +165,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
           <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4">
             <div className="space-y-4">
               
-              {/* Toggle 1: Organic */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setOrganicOnly(!organicOnly)}>
-                <div>
-                  <span className="block text-xs font-bold text-[#1c1c18]">Organic Only</span>
-                  <span className="block text-[10px] text-[#717971]">Certified farms</span>
-                </div>
-                <button
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
-                    organicOnly ? 'bg-[#9ed0ab]' : 'bg-[#e5e2db]'
-                  }`}
-                >
-                  <span className={`w-3.5 h-3.5 rounded-full bg-white shadow absolute transition-all ${
-                    organicOnly ? 'left-5' : 'left-0.5'
-                  }`} />
-                </button>
-              </div>
-
-              {/* Toggle 2: In Season */}
+              {/* Toggle 1: In Season */}
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setInSeason(!inSeason)}>
                 <div>
                   <span className="block text-xs font-bold text-[#1c1c18]">In Season</span>
@@ -199,7 +182,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                 </button>
               </div>
 
-              {/* Toggle 3: Bulk */}
+              {/* Toggle 2: Bulk */}
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setBulkAvailable(!bulkAvailable)}>
                 <div>
                   <span className="block text-xs font-bold text-[#1c1c18]">Bulk Available</span>
@@ -219,28 +202,30 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
             </div>
           </div>
 
-          {/* Farmer of the Month Card */}
-          <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
-            <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
-              Farmer of the Month
-            </span>
-            <div>
-              <h4 className="text-lg font-bold">Hillside Orchards</h4>
-              <p className="text-xs text-white/80 leading-relaxed mt-1">
-                Direct from Sonoma Valley. Get 15% off bulk orders this month.
-              </p>
+          {/* Farmer of the Month Card (Visible from 20th of the month onwards) */}
+          {new Date().getDate() >= 20 && (
+            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
+              <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
+                Farmer of the Month
+              </span>
+              <div>
+                <h4 className="text-lg font-bold">Hillside Orchards</h4>
+                <p className="text-xs text-white/80 leading-relaxed mt-1">
+                  Top performing supplier this month based on demand fulfillment.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setFarmerFilter('Hillside Orchards');
+                  setSelectedCategory('all');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-[#9ed0ab] hover:underline underline-offset-4 cursor-pointer"
+              >
+                Browse Collection <ArrowRight size={14} />
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setFarmerFilter('Hillside Orchards');
-                setSelectedCategory('all');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#9ed0ab] hover:underline underline-offset-4 cursor-pointer"
-            >
-              Browse Collection <ArrowRight size={14} />
-            </button>
-          </div>
+          )}
 
         </div>
 

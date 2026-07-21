@@ -256,7 +256,7 @@ export default function MySupplies() {
             <option>Vegetables</option>
             <option>Fruits</option>
             <option>Grains</option>
-            <option>Other</option>
+            <option>Herbs</option>
           </select>
 
           <select 

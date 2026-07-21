@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   ChevronRight, Calendar, AlertCircle, Loader2, Package, 
-  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2 
+  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload 
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
@@ -29,27 +29,35 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   // Deletion Modal State
   const [deleteTarget, setDeleteTarget] = useState<{ noteId?: string | number; orderId?: string | number } | null>(null);
 
-  // Signature canvas state
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSigned, setHasSigned] = useState(false);
+  // Signature image file state
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [clientPhone, setClientPhone] = useState('');
 
   // Form inputs
   const [receiverName, setReceiverName] = useState('');
   const [comments, setComments] = useState('');
   const [disputeReason, setDisputeReason] = useState('');
 
-  // Load delivered orders and existing delivery notes
+  // Load delivered orders, existing delivery notes, and client profile info
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [deliveredOrders, notesData] = await Promise.all([
+      const [deliveredOrders, notesData, profileData] = await Promise.all([
         clientApi.orders.list('delivered').catch(() => []),
-        clientApi.deliveryNotes.list().catch(() => [])
+        clientApi.deliveryNotes.list().catch(() => []),
+        clientApi.profile.get().catch(() => null)
       ]);
       setOrders(deliveredOrders || []);
       setDeliveryNotes(notesData || []);
+      
+      if (profileData) {
+        const ph = profileData.phone || profileData.phone_number || profileData.user?.phone_number || profileData.user?.phone || '';
+        setClientPhone(ph);
+        if (profileData.first_name || profileData.business_name) {
+          setReceiverName(profileData.first_name ? `${profileData.first_name} ${profileData.last_name || ''}`.trim() : profileData.business_name);
+        }
+      }
     } catch (err: any) {
       console.error('Failed to fetch delivery data:', err);
       setError(err.message || 'Failed to load delivery notes');
@@ -66,89 +74,13 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     setCurrentPage(1);
   }, [activeTab]);
 
-  // Initialize Canvas settings when modal opens for signing
-  useEffect(() => {
-    if (modalMode !== 'sign') return;
-
-    const timer = setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#144227';
-    }, 50);
-
-    return () => clearTimeout(timer);
-  }, [modalMode]);
-
-  // Canvas drawing handlers
-  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-
-    const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-    return {
-      x: ((clientX - rect.left) / rect.width) * canvas.width,
-      y: ((clientY - rect.top) / rect.height) * canvas.height
-    };
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const coords = getCoordinates(e);
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
-    setIsDrawing(true);
-    setHasSigned(true);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const coords = getCoordinates(e);
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSigned(false);
-  };
-
   // Modal actions
   const handleOpenSignModal = (item: { order: any; note?: any }) => {
     setSelectedItem(item);
     setModalMode('sign');
-    setReceiverName('');
+    const savedSig = localStorage.getItem('saved_signature');
+    setSignaturePreview(savedSig || null);
     setComments('');
-    setHasSigned(false);
   };
 
   const handleOpenDisputeModal = (item: { order: any; note?: any }) => {
@@ -192,14 +124,13 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       alert('Please enter recipient name');
       return;
     }
-    if (!hasSigned || !canvasRef.current) {
-      alert('Please provide a signature on the signature pad');
+    if (!signaturePreview) {
+      alert('Please upload a digital signature image file');
       return;
     }
 
     try {
       setSubmitting(true);
-      const signatureDataUrl = canvasRef.current.toDataURL('image/png');
       const orderId = selectedItem?.order?.id;
       const existingNote = selectedItem?.note;
 
@@ -207,7 +138,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         order: orderId,
         status: 'confirmed',
         signed_by: receiverName,
-        signature_data: signatureDataUrl,
+        signature_data: signaturePreview,
         details: comments || `Delivery confirmed & signed by ${receiverName}`
       };
 
@@ -237,12 +168,14 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       setSubmitting(true);
       const orderId = selectedItem?.order?.id;
       const existingNote = selectedItem?.note;
+      const contactInfo = `[Client: ${receiverName || selectedItem?.order?.client_detail?.business_name || 'Client'}${clientPhone ? ` | Phone: ${clientPhone}` : ''}]`;
+      const fullDetails = `Dispute Raised: ${disputeReason} ${contactInfo}${comments ? ` | Notes: ${comments}` : ''}`;
 
       const payload = {
         order: orderId,
         status: 'discrepancy',
         dispute_reason: disputeReason,
-        details: comments || `Dispute raised: ${disputeReason}`
+        details: fullDetails
       };
 
       if (existingNote?.id) {
@@ -542,37 +475,41 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971]">
-                    Digital Signature Pad <span className="text-[#ba1a1a]">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={clearSignature}
-                    className="text-[10px] font-bold text-[#ba1a1a] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw size={10} /> Clear Pad
-                  </button>
-                </div>
-                
-                <div className="border-2 border-dashed border-[#c1c9c0] rounded-xl p-1 bg-[#f9f8f5] relative flex justify-center">
-                  <canvas
-                    ref={canvasRef}
-                    width={440}
-                    height={160}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                    className="w-full h-40 bg-white rounded-lg cursor-crosshair touch-none"
-                  />
-                  {!hasSigned && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-xs text-[#717971]/60 font-medium">
-                      Draw your signature here with mouse or touch...
+                <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                  Upload Official Digital Signature <span className="text-[#ba1a1a]">*</span>
+                </label>
+                <div className="border-2 border-dashed border-[#c1c9c0] rounded-xl p-4 bg-[#f9f8f5] text-center relative hover:border-[#144227] transition-all">
+                  {signaturePreview ? (
+                    <div className="space-y-2">
+                      <div className="bg-white p-2 border border-[#c1c9c0] rounded-lg inline-block shadow-inner max-h-36">
+                        <img src={signaturePreview} alt="Signature Preview" className="max-h-28 object-contain mx-auto" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSignaturePreview(null)}
+                        className="text-[10px] font-bold text-[#ba1a1a] hover:underline block mx-auto cursor-pointer"
+                      >
+                        Remove / Re-upload Signature
+                      </button>
                     </div>
+                  ) : (
+                    <label className="cursor-pointer block space-y-2 py-4">
+                      <CloudUpload size={28} className="text-[#144227] mx-auto opacity-70" />
+                      <span className="block text-xs font-bold text-[#144227]">Click to upload signature image file</span>
+                      <span className="block text-[10px] text-[#717971]">PNG, JPG, or SVG scanned signature graphic</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setSignaturePreview(ev.target?.result as string);
+                            reader.readAsDataURL(e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
                   )}
                 </div>
               </div>

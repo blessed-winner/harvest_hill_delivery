@@ -26,7 +26,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
 
   // Generate next 4 weekdays
   const getNextDays = () => {
-    const days = [];
+    const days: any[] = [];
     const today = new Date();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
@@ -54,6 +54,11 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
         setDeliveryDate(data.deliveryDate || '');
       } else {
         setError('No items in checkout');
+      }
+
+      const defaultAddress = localStorage.getItem('default_shipping_address');
+      if (defaultAddress) {
+        setDeliveryAddress(defaultAddress);
       }
     } catch (err) {
       setError('Failed to load checkout data');

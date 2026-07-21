@@ -59,7 +59,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
         setDeliveryDate(tomorrow.toISOString().split('T')[0]);
       } catch (err) {
         console.error('Failed to load cart:', err);
-      } fontally: () => {
+      } finally {
         setLoading(false);
       }
     };

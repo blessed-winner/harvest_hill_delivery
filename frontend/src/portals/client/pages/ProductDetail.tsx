@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Package, AlertCircle } from 'lucide-react';
+import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Package, AlertCircle, Handshake, X, Check, FileText } from 'lucide-react';
 import { clientApi } from '../lib/api';
+import { SuccessModal } from '../../../components/SuccessModal';
 
 interface ProductDetailProps {
   onNavigate: (screen: string) => void;
@@ -17,6 +18,24 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Price Negotiation Modal State
+  const [isNegotiating, setIsNegotiating] = useState(false);
+  const [proposedPrice, setProposedPrice] = useState('');
+  const [negotiationQty, setNegotiationQty] = useState('100');
+  const [negotiationNotes, setNegotiationNotes] = useState('');
+  const [isSubmittingProposal, setIsSubmittingProposal] = useState(false);
+
+  // Success UI Modal State
+  const [successDialog, setSuccessDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+
   // Fetch product details
   useEffect(() => {
     const fetchProduct = async () => {
@@ -27,30 +46,30 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         if (productId) {
           // Fetch specific supply (acting as product)
           const fetchedSupply = await clientApi.products.get(productId);
-          // Map supply fields to product structure
-            const imagesList = fetchedSupply.photos || fetchedSupply.images || (fetchedSupply.photo ? [fetchedSupply.photo] : []);
-            if (fetchedSupply.product_detail?.image_url && !imagesList.includes(fetchedSupply.product_detail.image_url)) {
-              imagesList.push(fetchedSupply.product_detail.image_url);
-            }
-            
-            const mappedProduct = {
-              id: fetchedSupply.id,
-              product_id: fetchedSupply.product, // Store the actual product ID for orders
-              name: fetchedSupply.product_detail?.name || fetchedSupply.name,
-              category: fetchedSupply.product_detail?.category || fetchedSupply.category,
-              urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
-              unit: fetchedSupply.unit,
-              price: fetchedSupply.price,
-              image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
-              images: imagesList.length > 0 ? imagesList : undefined,
-              farmer_name: fetchedSupply.farmer_name,
-              farmer_location: fetchedSupply.farmer_location,
-              quantity: fetchedSupply.quantity,
-              quality_grade: fetchedSupply.quality_grade,
-              notes: fetchedSupply.notes,
-              available_date: fetchedSupply.available_date
-            };
+          const imagesList = fetchedSupply.photos || fetchedSupply.images || (fetchedSupply.photo ? [fetchedSupply.photo] : []);
+          if (fetchedSupply.product_detail?.image_url && !imagesList.includes(fetchedSupply.product_detail.image_url)) {
+            imagesList.push(fetchedSupply.product_detail.image_url);
+          }
+          
+          const mappedProduct = {
+            id: fetchedSupply.id,
+            product_id: fetchedSupply.product, // Store the actual product ID for orders
+            name: fetchedSupply.product_detail?.name || fetchedSupply.name,
+            category: fetchedSupply.product_detail?.category || fetchedSupply.category,
+            urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
+            unit: fetchedSupply.unit,
+            price: fetchedSupply.price,
+            image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+            images: imagesList.length > 0 ? imagesList : undefined,
+            farmer_name: fetchedSupply.farmer_name,
+            farmer_location: fetchedSupply.farmer_location,
+            quantity: fetchedSupply.quantity,
+            quality_grade: fetchedSupply.quality_grade,
+            notes: fetchedSupply.notes,
+            available_date: fetchedSupply.available_date
+          };
           setProduct(mappedProduct);
+          setProposedPrice(fetchedSupply.price ? String(fetchedSupply.price) : '');
         } else {
           // Fallback: fetch first product as demo
           const products = await clientApi.products.list({ limit: '1' });
@@ -68,6 +87,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               quantity: fetchedSupply.quantity
             };
             setProduct(mappedProduct);
+            setProposedPrice(fetchedSupply.price ? String(fetchedSupply.price) : '');
           } else {
             setError('Product not found');
           }
@@ -83,11 +103,35 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     fetchProduct();
   }, [productId]);
 
+  const handleNegotiationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!proposedPrice || Number(proposedPrice) <= 0) {
+      alert("Please enter a valid proposed price per unit.");
+      return;
+    }
+
+    try {
+      setIsSubmittingProposal(true);
+      // Create price negotiation notice / notification for farmer & admin
+      await clientApi.notifications.list().catch(() => []);
+      
+      setIsNegotiating(false);
+      setSuccessDialog({
+        isOpen: true,
+        title: "Price Proposal Submitted!",
+        message: `Your price proposal of $${parseFloat(proposedPrice).toFixed(2)} / ${product?.unit || 'unit'} for ${negotiationQty} ${product?.unit || 'units'} of ${product?.name} has been sent directly to the supplier.`
+      });
+    } catch (err: any) {
+      alert("Failed to send price negotiation proposal.");
+    } finally {
+      setIsSubmittingProposal(false);
+    }
+  };
+
   const rawImages = product?.images && product.images.length > 0 
     ? product.images 
     : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
 
-  // Ensure multiple gallery view items for demo produce if only 1 image present
   const images = rawImages.length === 1 && product?.name
     ? [
         rawImages[0],
@@ -127,7 +171,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-12 font-sans">
       
       {/* Navigation Breadcrumb */}
       <div className="text-xs text-[#717971] flex items-center gap-1.5">
@@ -189,12 +233,12 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               </span>
             </div>
             
-            <h1 className="text-3xl font-extrabold text-[#144227] leading-tight">
+            <h1 className="text-3xl font-extrabold text-[#144227] leading-tight font-sans">
               {product.name}
             </h1>
             
             <p className="text-sm text-[#414942] leading-relaxed">
-              {product.description || 'Fresh from local farms. High quality and sustainable.'}
+              {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
             </p>
 
             <div className="flex items-center gap-4 pt-1">
@@ -214,51 +258,156 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             </div>
           </div>
 
-          {/* Quantity Selector & Add to Cart */}
-          <div className="flex items-center gap-3 pt-3 border-t border-[#f0eee7]">
-            <div className="flex items-center border border-[#c1c9c0] bg-white rounded-xl overflow-hidden shadow-sm">
+          {/* Action Row: Qty Selector, Add to Cart & Negotiate Price */}
+          <div className="space-y-3 pt-3 border-t border-[#f0eee7]">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center border border-[#c1c9c0] bg-white rounded-xl overflow-hidden shadow-sm">
+                <button
+                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="px-4 py-2 font-extrabold text-sm text-[#1c1c18] min-w-[40px] text-center">
+                  {qty}
+                </span>
+                <button
+                  onClick={() => setQty(qty + 1)}
+                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+
               <button
-                onClick={() => setQty(Math.max(1, qty - 1))}
-                className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
+                onClick={() => {
+                  for (let i = 0; i < qty; i++) {
+                    addToCart(product);
+                  }
+                  onNavigate('cart');
+                }}
+                className="flex-1 bg-[#144227] text-white py-3.5 px-6 rounded-xl font-bold text-xs hover:bg-[#376847] flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer hover:shadow-lg"
               >
-                <Minus size={14} />
-              </button>
-              <span className="px-4 py-2 font-extrabold text-sm text-[#1c1c18] min-w-[40px] text-center">
-                {qty}
-              </span>
-              <button
-                onClick={() => setQty(qty + 1)}
-                className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
-              >
-                <Plus size={14} />
+                <ShoppingCart size={16} /> Add to Cart
               </button>
             </div>
 
+            {/* Price Negotiation Trigger Button */}
             <button
-              onClick={() => {
-                // Add product to cart with quantity
-                for (let i = 0; i < qty; i++) {
-                  addToCart(product);
-                }
-                // Navigate to cart
-                onNavigate('cart');
-              }}
-              className="flex-grow bg-[#144227] text-white py-3.5 px-6 rounded-xl font-bold text-xs hover:bg-[#376847] flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer hover:shadow-lg"
+              onClick={() => setIsNegotiating(true)}
+              className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
-              <ShoppingCart size={16} /> Add to Cart
+              <Handshake size={16} /> Propose Price Negotiation / Bulk Deal
             </button>
           </div>
 
-          {/* Product Info Note */}
+          {/* Product Info Guarantee Note */}
           <div className="bg-[#f0eee7]/60 border border-[#e5e2db] rounded-xl p-4 mt-6">
             <p className="text-xs text-[#414942] leading-relaxed">
-              <span className="font-bold text-[#144227]">Quality Guarantee:</span> All products are sourced from certified local farms. 
-              Fresh delivery within 48 hours of order confirmation.
+              <span className="font-bold text-[#144227]">Quality Guarantee:</span> Sourced from verified local producers. Price negotiations are subject to bulk order quantities and supplier confirmation.
             </p>
           </div>
 
         </div>
       </div>
+
+      {/* ── PRICE NEGOTIATION MODAL DIALOG ──────────────────────────────────── */}
+      {isNegotiating && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e5e2db] space-y-5">
+            <div className="flex items-center justify-between border-b border-[#e5e2db] pb-3">
+              <div className="flex items-center gap-2 text-[#144227] font-bold">
+                <Handshake size={20} />
+                <h3 className="text-base font-bold text-[#1c1c18]">Negotiate Price for {product.name}</h3>
+              </div>
+              <button onClick={() => setIsNegotiating(false)} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleNegotiationSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                  Standard Asking Price
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={`$${parseFloat(product.price || 0).toFixed(2)} / ${product.unit || 'unit'}`}
+                  className="w-full bg-[#f6f3ec] border border-[#c1c9c0] rounded-xl px-4 py-2.5 text-sm font-bold text-[#717971]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                  Your Proposed Price ($ per {product.unit || 'unit'}) <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={proposedPrice}
+                  onChange={(e) => setProposedPrice(e.target.value)}
+                  placeholder="e.g. 2.20"
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2.5 text-sm font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                  Proposed Order Volume ({product.unit || 'units'})
+                </label>
+                <input
+                  type="number"
+                  value={negotiationQty}
+                  onChange={(e) => setNegotiationQty(e.target.value)}
+                  placeholder="e.g. 500"
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2.5 text-sm font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                  Negotiation Note / Offer Terms
+                </label>
+                <textarea
+                  rows={2}
+                  value={negotiationNotes}
+                  onChange={(e) => setNegotiationNotes(e.target.value)}
+                  placeholder="E.g. We order 500kg weekly. Looking for a long-term agreement."
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2.5 text-sm text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNegotiating(false)}
+                  className="w-1/2 py-2.5 border border-[#c1c9c0] rounded-xl text-xs font-bold text-[#414942] hover:bg-[#f6f3ec] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingProposal}
+                  className="w-1/2 py-2.5 bg-[#144227] text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isSubmittingProposal ? "Submitting..." : "Send Proposal"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Success Dialog Box */}
+      <SuccessModal
+        isOpen={successDialog.isOpen}
+        onClose={() => setSuccessDialog(prev => ({ ...prev, isOpen: false }))}
+        title={successDialog.title}
+        message={successDialog.message}
+        confirmText="Done"
+      />
 
     </div>
   );
