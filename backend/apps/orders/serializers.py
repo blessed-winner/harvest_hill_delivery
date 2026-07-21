@@ -34,8 +34,49 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         order = Order.objects.create(**validated_data)
+        
+        from apps.supplies.models import Supply
+        from apps.notifications.models import Notification
+        from apps.accounts.models import User
+
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
+            product = item_data.get('product')
+            purchased_qty = float(item_data.get('quantity', 0))
+
+            if product and purchased_qty > 0:
+                # Deduct quantity from matching active farmer supplies
+                supplies = Supply.objects.filter(
+                    product=product,
+                    status='accepted',
+                    is_archived=False,
+                    quantity__gt=0
+                ).order_by('created_at')
+
+                remaining_to_deduct = purchased_qty
+                for supply in supplies:
+                    if remaining_to_deduct <= 0:
+                        break
+                    
+                    current_qty = float(supply.quantity)
+                    if current_qty >= remaining_to_deduct:
+                        supply.quantity = current_qty - remaining_to_deduct
+                        remaining_to_deduct = 0
+                    else:
+                        remaining_to_deduct -= current_qty
+                        supply.quantity = 0
+
+                    supply.save()
+
+                    # Trigger admin notification if supply reaches 10kg threshold or lower
+                    if float(supply.quantity) <= 10:
+                        admin_users = User.objects.filter(role='admin')
+                        for admin in admin_users:
+                            Notification.objects.create(
+                                user=admin,
+                                title="Inventory Threshold Reached",
+                                message=f"Product '{product.name}' (Supply #{supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
+                            )
         return order
 
     def update(self, instance, validated_data):

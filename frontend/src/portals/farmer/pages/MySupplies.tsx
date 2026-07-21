@@ -305,16 +305,24 @@ export default function MySupplies() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-sm">{supply.quantity} {supply.unit || supply.product_detail?.unit || 'kg'}</td>
+                  <td className="px-6 py-4 font-mono text-sm">
+                    {supply.quantity} {supply.unit || supply.product_detail?.unit || 'kg'}
+                    {Number(supply.quantity) === 0 ? (
+                      <span className="block text-[9px] font-extrabold text-red-700 bg-red-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">Out of Stock</span>
+                    ) : Number(supply.quantity) <= 10 ? (
+                      <span className="block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">Low Stock</span>
+                    ) : null}
+                  </td>
                   <td className="px-6 py-4 font-mono text-sm">{formatDate(supply.created_at || supply.submitted_at)}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full font-mono text-[9px] uppercase font-extrabold tracking-widest border",
+                      Number(supply.quantity) === 0 ? "bg-red-100 text-red-800 border-red-200" :
                       supply.status === 'accepted' || supply.status === 'delivered' ? "bg-secondary-container text-on-secondary-container border-secondary" :
                       supply.status === 'pending' || supply.status === 'negotiating' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-container" :
                       "bg-surface-container-highest text-on-surface border-outline"
                     )}>
-                      {supply.status}
+                      {Number(supply.quantity) === 0 ? 'Out of Stock' : supply.status}
                     </span>
                   </td>
                   <td className="px-6 py-4">
