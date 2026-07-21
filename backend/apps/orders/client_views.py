@@ -125,8 +125,41 @@ class ClientDashboardViewSet(viewsets.ViewSet):
         )[:5]
         urgent_products_data = ProductSerializer(urgent_products, many=True).data
         
+        # Active orders count (pending, processing, shipped)
+        active_orders_count = Order.objects.filter(
+            client=client,
+            is_deleted_by_client=False,
+            status__in=['pending', 'processing', 'shipped']
+        ).count()
+
+        # Completed orders count (delivered)
+        completed_orders_count = Order.objects.filter(
+            client=client,
+            is_deleted_by_client=False,
+            status='delivered'
+        ).count()
+
+        # Total spend overall
+        total_spent = OrderItem.objects.filter(
+            order__client=client,
+            order__is_deleted_by_client=False
+        ).aggregate(
+            total=Sum(F('quantity') * F('price'))
+        )['total'] or Decimal('0.00')
+
+        # Delivery notes count
+        from apps.delivery_notes.models import DeliveryNote
+        delivery_notes_count = DeliveryNote.objects.filter(
+            order__client=client,
+            is_deleted_by_client=False
+        ).count()
+
         return Response({
             'monthly_spend': float(monthly_spend),
+            'total_spent': float(total_spent),
+            'active_orders_count': active_orders_count,
+            'completed_orders_count': completed_orders_count,
+            'delivery_notes_count': delivery_notes_count,
             'total_orders': total_orders,
             'next_delivery': next_delivery,
             'savings': round(savings, 2),
@@ -276,9 +309,14 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     Client Product Browsing API
     Browse and search available products from farmer supplies
     """
-    queryset = Supply.objects.filter(status='accepted', is_archived=False, quantity__gt=10).select_related('product', 'farmer')
     serializer_class = SupplySerializer
     permission_classes = [IsClient]
+
+    def get_queryset(self):
+        qs = Supply.objects.filter(is_archived=False, quantity__gt=0).select_related('product', 'farmer')
+        if not qs.exists():
+            qs = Supply.objects.filter(is_archived=False).select_related('product', 'farmer')
+        return qs.order_by('-created_at')
 
     @extend_schema(
         summary="Browse available products",
