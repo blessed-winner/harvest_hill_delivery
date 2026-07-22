@@ -90,10 +90,8 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             message=message
         )
         
-        # Update supply price/quantity
+        # Update supply status to negotiating, but leave price and quantity as original
         thread.supply.status = 'negotiating'
-        thread.supply.price = price
-        thread.supply.quantity = quantity
         thread.supply.save()
 
         # Send live notification
@@ -108,11 +106,15 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         thread = self.get_object()
-        if thread.supply.status in ['accepted', 'delivered', 'invoiced']:
+        if thread.status == 'accepted':
             return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
 
-        thread.supply.status = 'accepted'
-        thread.supply.save()
+        last_offer = thread.offers.all().order_by('timestamp').last()
+        price = last_offer.price if last_offer else thread.supply.price
+        quantity = last_offer.quantity if last_offer else thread.supply.quantity
+
+        thread.status = 'accepted'
+        thread.save()
 
         # Automatically generate a pending invoice upon acceptance
         from apps.invoices.models import Invoice
@@ -120,7 +122,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             supply=thread.supply,
             defaults={
                 'status': 'pending',
-                'amount': thread.supply.price * thread.supply.quantity,
+                'amount': price * quantity,
                 'sync_status': 'synced'
             }
         )

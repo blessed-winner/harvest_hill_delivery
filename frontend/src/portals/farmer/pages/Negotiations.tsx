@@ -14,6 +14,7 @@ export default function Negotiations() {
   const [counterMessage, setCounterMessage] = useState("");
   const [counterPrice, setCounterPrice] = useState("8.40");
   const [counterQty, setCounterQty] = useState("500");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState('');
@@ -135,6 +136,13 @@ export default function Negotiations() {
     time: new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   })) || [];
 
+  const filteredThreads = threads.filter((neg: any) => {
+    const name = String(neg.supply_detail?.product_detail?.name || '').toLowerCase();
+    const idStr = String(neg.supply_detail?.id || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return name.includes(query) || idStr.includes(query);
+  });
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -169,6 +177,8 @@ export default function Negotiations() {
               className="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl focus:ring-1 focus:ring-primary focus:border-primary font-sans text-sm transition-all" 
               placeholder="Search negotiations..." 
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
@@ -185,7 +195,7 @@ export default function Negotiations() {
                   </div>
                 </div>
               ))
-            ) : threads.length === 0 ? (
+            ) : filteredThreads.length === 0 ? (
               <div className="py-8 text-center">
                 <div className="w-10 h-10 rounded-full bg-surface-container mx-auto flex items-center justify-center mb-3">
                   <Handshake size={18} className="text-outline" />
@@ -193,7 +203,7 @@ export default function Negotiations() {
                 <p className="font-sans text-xs font-bold text-on-surface-variant">No negotiations yet</p>
                 <p className="font-mono text-[9px] text-on-surface-variant/70 mt-1">Submit a harvest to start one</p>
               </div>
-            ) : threads.map((neg) => (
+            ) : filteredThreads.map((neg) => (
               <div 
                 key={neg.id}
                 onClick={() => {

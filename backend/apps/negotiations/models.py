@@ -3,13 +3,15 @@ from django.conf import settings
 from apps.supplies.models import Supply
 
 class NegotiationThread(models.Model):
-    supply = models.OneToOneField(Supply, on_delete=models.CASCADE, related_name='negotiation_thread')
+    supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='negotiation_threads')
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='buyer_negotiations', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_by_farmer = models.BooleanField(default=False)
     deleted_by_client = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, default='open')
 
     def __str__(self):
-        return f"Thread for Supply: {self.supply.id}"
+        return f"Thread for Supply: {self.supply.id} - Buyer: {self.buyer.email if self.buyer else 'Admin'}"
 
 
 class NegotiationOffer(models.Model):
