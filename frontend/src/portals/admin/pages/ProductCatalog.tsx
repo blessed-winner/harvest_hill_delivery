@@ -129,8 +129,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     const priceVal = parseFloat(formPrice);
     const qtyVal = parseFloat(formQuantityNeeded);
 
-    // Convert price to USD if it was typed in RWF
-    const priceInUSD = formCurrencyCode === 'RWF' ? priceVal / 1300 : priceVal;
+    // Convert price to USD if it was typed in RWF and round to 2 decimal places to prevent digit length errors
+    const priceInUSD = Math.round((formCurrencyCode === 'RWF' ? priceVal / 1300 : priceVal) * 100) / 100;
 
     // Validate bounds on the client side
     if (priceInUSD <= 0) {

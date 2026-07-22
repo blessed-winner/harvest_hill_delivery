@@ -16,7 +16,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState('Pending');
+  const [activeTab, setActiveTab] = useState('All');
   
   // Selection state for bulk operations
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
@@ -144,7 +144,14 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
   };
 
   const filteredNotes = notes.filter(n => {
-    const matchesTab = getFrontendStatus(n) === activeTab;
+    let matchesTab = false;
+    if (activeTab === 'All') {
+      matchesTab = !n.is_archived;
+    } else if (activeTab === 'Archived') {
+      matchesTab = !!n.is_archived;
+    } else {
+      matchesTab = !n.is_archived && getFrontendStatus(n) === activeTab;
+    }
     const matchesSearch = searchTerm 
       ? String(n.id).includes(searchTerm) || 
         String(n.order || '').includes(searchTerm) || 
@@ -223,8 +230,10 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         </div>
 
         <div className="flex border-b border-outline-variant gap-8">
-          {['Pending', 'Confirmed', 'Disputed', 'Archived'].map((tab) => {
-            const count = notes.filter(n => getFrontendStatus(n) === tab).length;
+          {['All', 'Pending', 'Confirmed', 'Disputed', 'Archived'].map((tab) => {
+            const count = tab === 'All' 
+              ? notes.filter(n => !n.is_archived).length
+              : notes.filter(n => getFrontendStatus(n) === tab).length;
             return (
               <button 
                 key={tab}

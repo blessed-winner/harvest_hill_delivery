@@ -12,7 +12,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
-  const [activeStatusTab, setActiveStatusTab] = useState('Pending Review');
+  const [activeStatusTab, setActiveStatusTab] = useState('All');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
