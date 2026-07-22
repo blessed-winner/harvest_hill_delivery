@@ -79,21 +79,29 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
     }
 
     let errMsg = `Request failed with status ${response.status}`;
+    let errFields: Record<string, any> = {};
     try {
       const errData = await response.json();
+      errFields = errData;
       if (errData.errors) {
+        errFields = errData.errors;
         const firstKey = Object.keys(errData.errors)[0];
         const val = errData.errors[firstKey];
-        if (Array.isArray(val)) {
-          errMsg = val[0];
-        } else {
-          errMsg = String(val);
-        }
+        errMsg = Array.isArray(val) ? val[0] : String(val);
       } else {
-        errMsg = errData.error || errData.detail || errMsg;
+        const keys = Object.keys(errData);
+        if (keys.length > 0 && keys[0] !== 'detail' && keys[0] !== 'error') {
+          const firstKey = keys[0];
+          const val = errData[firstKey];
+          errMsg = Array.isArray(val) ? val[0] : String(val);
+        } else {
+          errMsg = errData.error || errData.detail || errMsg;
+        }
       }
     } catch {}
-    throw new Error(errMsg);
+    const error: any = new Error(errMsg);
+    error.fields = errFields;
+    throw error;
   }
 
   if (response.status === 204) return null;
@@ -123,9 +131,9 @@ export const api = {
       const query = new URLSearchParams(params).toString();
       return apiRequest(`/api/accounts/admin/users/${query ? '?' + query : ''}`);
     },
-    create: (payload: any) => apiRequest('/api/accounts/admin/users/create/', { method: 'POST', body: JSON.stringify(payload) }),
-    update: (id: string | number, payload: any) => apiRequest(`/api/accounts/admin/users/${id}/update/`, { method: 'PATCH', body: JSON.stringify(payload) }),
-    delete: (id: string | number) => apiRequest(`/api/accounts/admin/users/${id}/delete/`, { method: 'DELETE' }),
+    create: (payload: any) => apiRequest('/api/accounts/admin/users/', { method: 'POST', body: JSON.stringify(payload) }),
+    update: (id: string | number, payload: any) => apiRequest(`/api/accounts/admin/users/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    delete: (id: string | number) => apiRequest(`/api/accounts/admin/users/${id}/`, { method: 'DELETE' }),
   },
 
   // Product Catalog

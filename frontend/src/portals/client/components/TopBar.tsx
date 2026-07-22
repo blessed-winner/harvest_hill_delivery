@@ -144,7 +144,7 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           {[
             { name: 'Fruits', category: 'Fruits' },
             { name: 'Vegetables', category: 'Vegetables' },
-            { name: 'Dairy', category: 'Dairy' },
+            { name: 'Animal-Based', category: 'Animal-Based' },
             { name: 'Grains', category: 'Grains' },
             { name: 'Seasonal', category: 'all' },
           ].map((item) => (

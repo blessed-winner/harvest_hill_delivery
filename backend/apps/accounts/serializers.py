@@ -140,23 +140,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             role=role
         )
 
-        # Create specific profile
+        # Create specific profile or update existing
         if role == 'farmer':
-            FarmerProfile.objects.create(
-                user=user,
-                farm_name=farm_name,
-                location=location,
-                phone=phone
-            )
+            profile, _ = FarmerProfile.objects.get_or_create(user=user)
+            profile.farm_name = farm_name
+            profile.location = location
+            profile.phone = phone
+            profile.save()
         elif role == 'client':
-            ClientProfile.objects.create(
-                user=user,
-                business_name=business_name,
-                delivery_address=delivery_address,
-                phone=phone
-            )
+            profile, _ = ClientProfile.objects.get_or_create(user=user)
+            profile.business_name = business_name
+            profile.delivery_address = delivery_address
+            profile.phone = phone
+            profile.save()
         elif role == 'admin':
-            AdminProfile.objects.create(user=user)
+            AdminProfile.objects.get_or_create(user=user)
 
         return user
 
@@ -202,12 +200,18 @@ class AdminUserSerializer(serializers.ModelSerializer):
         # Handle Profile creation
         if role == 'farmer':
             f_profile_data = farmer_data or {}
-            FarmerProfile.objects.create(user=user, **f_profile_data)
+            profile, _ = FarmerProfile.objects.get_or_create(user=user)
+            for attr, value in f_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
         elif role == 'client':
             c_profile_data = client_data or {}
-            ClientProfile.objects.create(user=user, **c_profile_data)
+            profile, _ = ClientProfile.objects.get_or_create(user=user)
+            for attr, value in c_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
         elif role == 'admin':
-            AdminProfile.objects.create(user=user)
+            AdminProfile.objects.get_or_create(user=user)
 
         return user
 
