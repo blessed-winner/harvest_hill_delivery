@@ -35,7 +35,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const [activeCategory, setActiveCategory] = useState('All Products');
-  const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Dairy'];
+  const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Animal-Based'];
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -500,7 +500,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               >
                 <option value="Vegetables">Vegetables</option>
                 <option value="Fruits">Fruits</option>
-                <option value="Dairy">Dairy</option>
+                <option value="Animal-Based">Animal-Based</option>
                 <option value="Grains">Grains</option>
               </select>
             </div>

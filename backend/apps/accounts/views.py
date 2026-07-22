@@ -537,7 +537,7 @@ class AdminReportsView(APIView):
 
         # 2. Sales Analysis (Sales volume grouped by product category)
         salesData = []
-        categories = ['Vegetables', 'Fruits', 'Dairy', 'Grains']
+        categories = ['Vegetables', 'Fruits', 'Animal-Based', 'Grains']
         for cat in categories:
             items = OrderItem.objects.filter(product__category=cat, order__status='delivered')
             total_sales = sum(float(x.price * x.quantity) for x in items)

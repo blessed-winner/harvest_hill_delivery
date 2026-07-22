@@ -36,6 +36,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     onConfirm: () => void;
     confirmText: string;
     confirmColor?: string;
+    hideCancel?: boolean;
   }>({
     isOpen: false,
     title: '',
@@ -43,6 +44,8 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     onConfirm: () => {},
     confirmText: 'Confirm'
   });
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, any>>({});
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -154,16 +157,26 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     setFormProfileName("");
     setFormProfilePhone("");
     setFormProfileAddress("");
+    setValidationErrors({});
     setSelectedUser("new");
   };
 
   const handleCreateUser = async () => {
     if (!formEmail || !formPassword) {
-      alert("Email and password are required.");
+      setConfirmDialog({
+        isOpen: true,
+        title: "Required Fields",
+        message: "Email and password are required.",
+        confirmText: "OK",
+        confirmColor: "bg-primary",
+        hideCancel: true,
+        onConfirm: () => {}
+      });
       return;
     }
     
     setIsSaving(true);
+    setValidationErrors({});
     const payload: any = {
       email: formEmail,
       username: formUsername || formEmail.split('@')[0],
@@ -190,8 +203,30 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       await api.users.create(payload);
       setSelectedUser(null);
       loadUsers();
+      
+      setConfirmDialog({
+        isOpen: true,
+        title: "User Created Successfully",
+        message: `The user account for ${formEmail} has been successfully created.`,
+        confirmText: "OK",
+        confirmColor: "bg-primary",
+        hideCancel: true,
+        onConfirm: () => {}
+      });
     } catch (err: any) {
-      alert(err.message || "Failed to create user.");
+      if (err.fields) {
+        setValidationErrors(err.fields);
+      } else {
+        setConfirmDialog({
+          isOpen: true,
+          title: "Error Creating User",
+          message: err.message || "Failed to create user.",
+          confirmText: "Close",
+          confirmColor: "bg-red-600",
+          hideCancel: true,
+          onConfirm: () => {}
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -201,6 +236,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     if (!selectedUser || selectedUser === 'new') return;
     
     setIsSaving(true);
+    setValidationErrors({});
     const payload: any = {
       is_active: selectedUser.is_active,
     };
@@ -228,8 +264,30 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       setFormPassword("");
       setSelectedUser(null);
       loadUsers();
+
+      setConfirmDialog({
+        isOpen: true,
+        title: "Changes Saved",
+        message: `Profile modifications for ${selectedUser.email} have been successfully saved.`,
+        confirmText: "OK",
+        confirmColor: "bg-primary",
+        hideCancel: true,
+        onConfirm: () => {}
+      });
     } catch (err: any) {
-      alert(err.message || "Failed to save user changes.");
+      if (err.fields) {
+        setValidationErrors(err.fields);
+      } else {
+        setConfirmDialog({
+          isOpen: true,
+          title: "Error Saving Changes",
+          message: err.message || "Failed to save user changes.",
+          confirmText: "Close",
+          confirmColor: "bg-red-600",
+          hideCancel: true,
+          onConfirm: () => {}
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -238,6 +296,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   const handleOpenDetail = (user: any) => {
     setSelectedUser(user);
     setFormPassword("");
+    setValidationErrors({});
     if (user.role === 'farmer') {
       setFormProfileName(user.farmer_profile?.farm_name || "");
       setFormProfilePhone(user.farmer_profile?.phone || "");
@@ -487,8 +546,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                 value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.email ? "border-red-500" : "border-outline-variant"
+                )}
               />
+              {validationErrors.email && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.email[0]}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Username</label>
@@ -497,8 +562,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                 value={formUsername}
                 onChange={(e) => setFormUsername(e.target.value)}
                 placeholder="username"
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.username ? "border-red-500" : "border-outline-variant"
+                )}
               />
+              {validationErrors.username && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.username[0]}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Password</label>
@@ -507,8 +578,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                 value={formPassword}
                 onChange={(e) => setFormPassword(e.target.value)}
                 placeholder="password (min 8 chars)"
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.password ? "border-red-500" : "border-outline-variant"
+                )}
               />
+              {validationErrors.password && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.password[0]}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Role</label>
@@ -554,8 +631,16 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     value={formProfilePhone}
                     onChange={(e) => setFormProfilePhone(e.target.value)}
                     placeholder="e.g. +250 788 123 456"
-                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                    className={cn(
+                      "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                      (validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) ? "border-red-500" : "border-outline-variant"
+                    )}
                   />
+                  {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
+                    <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
+                      {validationErrors.phone?.[0] || validationErrors.farmer_profile?.phone?.[0] || validationErrors.client_profile?.phone?.[0]}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
@@ -631,8 +716,16 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         value={formProfilePhone}
                         onChange={(e) => setFormProfilePhone(e.target.value)}
                         placeholder="e.g. +250 788 123 456"
-                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                        className={cn(
+                          "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                          (validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) ? "border-red-500" : "border-outline-variant"
+                        )}
                       />
+                      {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
+                        <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
+                          {validationErrors.phone?.[0] || validationErrors.farmer_profile?.phone?.[0] || validationErrors.client_profile?.phone?.[0]}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
@@ -680,12 +773,14 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <h3 className="text-lg font-extrabold text-primary">{confirmDialog.title}</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">{confirmDialog.message}</p>
             <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
+              {!confirmDialog.hideCancel && (
+                <button
+                  onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 onClick={() => {
                   confirmDialog.onConfirm();

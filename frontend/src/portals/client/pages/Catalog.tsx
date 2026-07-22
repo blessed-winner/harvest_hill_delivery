@@ -149,7 +149,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                 { id: 'all', label: 'All Products', count: products.length },
                 { id: 'Fruits', label: 'Fruits', count: 0 },
                 { id: 'Vegetables', label: 'Vegetables', count: 0 },
-                { id: 'Dairy', label: 'Dairy', count: 0 },
+                { id: 'Animal-Based', label: 'Animal-Based', count: 0 },
                 { id: 'Grains', label: 'Grains', count: 0 },
               ].map((cat) => (
                 <label key={cat.id} className="flex items-center justify-between cursor-pointer group">

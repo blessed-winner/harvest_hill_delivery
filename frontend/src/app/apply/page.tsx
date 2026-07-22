@@ -20,7 +20,7 @@ export default function ApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const cropOptions = ['Vegetables', 'Fruits', 'Dairy', 'Grains', 'Herbs'];
+  const cropOptions = ['Vegetables', 'Fruits', 'Animal-Based', 'Grains', 'Herbs'];
   const certOptions = ['Organic', 'Fair Trade', 'None'];
 
   const toggleCrop = (crop: string) => {
