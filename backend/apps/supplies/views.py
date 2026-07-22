@@ -118,8 +118,7 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             Notification.objects.create(
                 user=instance.farmer.user,
                 title="Harvest Updated",
-                message=f"Your harvest submission for {instance.product.name} has been updated by admin.",
-                notification_type="supply_updated"
+                message=f"Your harvest submission for {instance.product.name} has been updated by admin."
             )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
