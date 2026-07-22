@@ -167,8 +167,8 @@ export default function MySupplies() {
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
-    if (isNaN(qty) || qty < 50) {
-      errors.quantity = "Quantity must be at least 50 kg.";
+    if (isNaN(qty) || qty < 20) {
+      errors.quantity = "Quantity must be at least 20 kg.";
       hasErrors = true;
     }
 
@@ -222,21 +222,12 @@ export default function MySupplies() {
     
     const matchesStatus = statusFilter === 'All Statuses' || item.status.toLowerCase() === statusFilter.toLowerCase();
     
-    const isVeg = name.toLowerCase().includes('tomato') || 
-                  name.toLowerCase().includes('kale') || 
-                  name.toLowerCase().includes('lettuce') || 
-                  name.toLowerCase().includes('potato');
-    const isFruit = name.toLowerCase().includes('cherry') || name.toLowerCase().includes('berry');
-    const isGrain = name.toLowerCase().includes('wheat') || name.toLowerCase().includes('grain');
+    // Use actual product category from the data
+    const category = item.product_detail?.category || 'Other';
     
-    let category = 'Other';
-    if (isVeg) category = 'Vegetables';
-    else if (isFruit) category = 'Fruits';
-    else if (isGrain) category = 'Grains';
-
     const matchesCategory = categoryFilter === 'All Categories' || category === categoryFilter;
     
-    const date = new Date(item.created_at || item.submitted_at);
+    const date = new Date(item.created_at || item.available_date);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -301,7 +292,7 @@ export default function MySupplies() {
             <option>Vegetables</option>
             <option>Fruits</option>
             <option>Grains</option>
-            <option>Herbs</option>
+            <option>Dairy</option>
           </select>
 
           <select 
@@ -556,8 +547,8 @@ export default function MySupplies() {
                         const val = e.target.value;
                         setEditQuantity(val);
                         const qNum = Number(val);
-                        if (val && (isNaN(qNum) || qNum < 50)) {
-                          setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 50 kg." }));
+                        if (val && (isNaN(qNum) || qNum < 20)) {
+                          setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 20 kg." }));
                         } else {
                           setValidationErrors(prev => ({ ...prev, quantity: undefined }));
                         }

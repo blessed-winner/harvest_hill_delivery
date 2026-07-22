@@ -46,8 +46,17 @@ class SupplySerializer(serializers.ModelSerializer):
 
         if 'quantity' in attrs:
             quantity = attrs['quantity']
-            if float(quantity) < 50:
-                raise serializers.ValidationError({"quantity": "Quantity must be at least 50 kg."})
+            # Get the product to check its unit
+            product = attrs.get('product') or (self.instance.product if self.instance else None)
+            
+            if product and product.unit.lower() == 'kg':
+                # Only enforce 20kg minimum for kg units
+                if float(quantity) < 20:
+                    raise serializers.ValidationError({"quantity": "Quantity must be at least 20 kg."})
+            else:
+                # For non-kg units, just ensure quantity is positive
+                if float(quantity) <= 0:
+                    raise serializers.ValidationError({"quantity": "Quantity must be greater than zero."})
         elif not self.instance:
             raise serializers.ValidationError({"quantity": "Quantity is required."})
 
@@ -102,6 +111,16 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             SupplyImage.objects.create(supply=instance, image=img)
 
         new_status = instance.status
+        
+        # Send notification to farmer when admin updates their harvest
+        if self.request.user.role == 'admin':
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                user=instance.farmer.user,
+                title="Harvest Updated",
+                message=f"Your harvest submission for {instance.product.name} has been updated by admin.",
+                notification_type="supply_updated"
+            )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
         if old_status != 'accepted' and new_status == 'accepted':

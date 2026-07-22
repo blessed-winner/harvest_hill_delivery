@@ -215,9 +215,19 @@ export default function SubmitHarvest() {
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
-    if (isNaN(qty) || qty < 50) {
-      errors.quantity = "Quantity must be at least 50 kg.";
-      hasErrors = true;
+    // Check unit - only enforce 20kg minimum for kg units
+    const unit = selectedProduct.unit?.toLowerCase() || 'kg';
+    if (unit === 'kg') {
+      if (isNaN(qty) || qty < 20) {
+        errors.quantity = "Quantity must be at least 20 kg.";
+        hasErrors = true;
+      }
+    } else {
+      // For non-kg units, just ensure positive
+      if (isNaN(qty) || qty <= 0) {
+        errors.quantity = "Quantity must be greater than zero.";
+        hasErrors = true;
+      }
     }
 
     if (isNaN(askingPriceUSD) || askingPriceUSD <= 0) {
@@ -599,8 +609,21 @@ export default function SubmitHarvest() {
                           const val = event.target.value;
                           setForm((current) => ({ ...current, quantity: val }));
                           const qtyNum = Number(val);
-                          if (val && (isNaN(qtyNum) || qtyNum < 50)) {
-                            setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 50 kg." }));
+                          const unit = selectedProduct.unit?.toLowerCase() || 'kg';
+                          if (val) {
+                            if (unit === 'kg') {
+                              if (isNaN(qtyNum) || qtyNum < 20) {
+                                setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 20 kg." }));
+                              } else {
+                                setValidationErrors(prev => ({ ...prev, quantity: undefined }));
+                              }
+                            } else {
+                              if (isNaN(qtyNum) || qtyNum <= 0) {
+                                setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be greater than zero." }));
+                              } else {
+                                setValidationErrors(prev => ({ ...prev, quantity: undefined }));
+                              }
+                            }
                           } else {
                             setValidationErrors(prev => ({ ...prev, quantity: undefined }));
                           }
