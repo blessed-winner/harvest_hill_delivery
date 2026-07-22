@@ -29,6 +29,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [searchQuery, setSearchQuery] = useState('');
   const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
   const [topFarmer, setTopFarmer] = useState<any>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]); // Store all products for category list
 
   // Check for farmer filter from sessionStorage (set by Farmer of the Month)
   useEffect(() => {
@@ -60,6 +61,19 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
       setSelectedCategory(initialCategory);
     }
   }, [initialCategory]);
+
+  // Fetch all products once to get categories
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      try {
+        const response = await clientApi.products.list({});
+        setAllProducts(response?.results || []);
+      } catch (err) {
+        console.error('Failed to fetch all products:', err);
+      }
+    };
+    fetchAllProducts();
+  }, []);
 
   // Fetch products
   useEffect(() => {
@@ -101,6 +115,15 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
 
     fetchProducts();
   }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, bulkAvailable, farmerFilter]);
+
+  // Get unique categories from all products for filter
+  const categories = ['all', ...Array.from(new Set(allProducts.map((p: any) => p.product_detail?.category).filter(Boolean)))];
+  
+  // Count products per category from allProducts
+  const getCategoryCount = (categoryId: string) => {
+    if (categoryId === 'all') return allProducts.length;
+    return allProducts.filter((p: any) => p.product_detail?.category === categoryId).length;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -145,33 +168,29 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
             <h3 className="text-xs font-bold text-[#1c1c18] uppercase tracking-wider">Categories</h3>
             
             <div className="space-y-3">
-              {[
-                { id: 'all', label: 'All Products', count: products.length },
-                { id: 'Fruits', label: 'Fruits', count: 0 },
-                { id: 'Vegetables', label: 'Vegetables', count: 0 },
-                { id: 'Animal-Based', label: 'Animal-Based', count: 0 },
-                { id: 'Grains', label: 'Grains', count: 0 },
-              ].map((cat) => (
-                <label key={cat.id} className="flex items-center justify-between cursor-pointer group">
+              {categories.map((cat) => (
+                <label key={cat} className="flex items-center justify-between cursor-pointer group">
                   <div className="flex items-center gap-2.5">
                     <input
                       type="radio"
                       name="category"
-                      checked={selectedCategory === cat.id}
-                      onChange={() => setSelectedCategory(cat.id)}
+                      checked={selectedCategory === cat}
+                      onChange={() => setSelectedCategory(cat)}
                       className="sr-only"
                     />
                     <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                      selectedCategory === cat.id
+                      selectedCategory === cat
                         ? 'bg-[#144227] border-[#144227] text-white'
                         : 'border-[#c1c9c0] bg-white group-hover:border-[#144227]'
                     }`}>
-                      {selectedCategory === cat.id && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                      {selectedCategory === cat && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                     </div>
-                    <span className="text-xs text-[#414942] font-semibold group-hover:text-[#144227]">{cat.label}</span>
+                    <span className="text-xs text-[#414942] font-semibold group-hover:text-[#144227]">
+                      {cat === 'all' ? 'All Products' : cat}
+                    </span>
                   </div>
                   <span className="text-[10px] text-[#717971] bg-[#f0eee7] px-1.5 py-0.5 rounded-full font-bold">
-                    {cat.id === 'all' ? products.length : cat.count}
+                    {getCategoryCount(cat)}
                   </span>
                 </label>
               ))}
