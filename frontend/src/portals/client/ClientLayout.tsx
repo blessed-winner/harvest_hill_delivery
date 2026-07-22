@@ -112,7 +112,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
             </div>
 
             <div className="pt-4 border-t border-white/10 text-center">
-              <p className="text-[10px] text-white/50">© 2024 Harvest Hill Supply</p>
+              <p className="text-[10px] text-white/50">© 2026 Harvest Hill Supply</p>
             </div>
           </aside>
         )}
