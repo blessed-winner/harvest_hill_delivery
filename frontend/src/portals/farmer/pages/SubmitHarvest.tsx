@@ -103,6 +103,8 @@ export default function SubmitHarvest() {
     askingPrice?: string;
   }>({});
 
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Custom success modal dialog state
   const [successModal, setSuccessModal] = useState<{
     isOpen: boolean;
@@ -150,6 +152,10 @@ export default function SubmitHarvest() {
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
   const [urgencyFilter, setUrgencyFilter] = useState('All');
   const [priceFilter, setPriceFilter] = useState('All');
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, urgencyFilter, priceFilter]);
 
   useEffect(() => {
     let mounted = true;
@@ -271,6 +277,13 @@ export default function SubmitHarvest() {
       (priceFilter === 'Over $1.00' && Number(product.base_price || 0) >= 1.00);
     return matchesSearch && matchesCategory && matchesUrgency && matchesPrice;
   });
+
+  // Pagination calculations
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filteredDemands.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentDemands = filteredDemands.slice(indexOfFirstItem, indexOfLastItem);
 
   const isSelectedProductRwf = selectedProduct ? (convertedProducts[selectedProduct.id] || false) : false;
 
@@ -411,7 +424,7 @@ export default function SubmitHarvest() {
                 : 'Harvest Hill will post new demands soon. Check back later.'}
             </p>
           </div>
-        ) : filteredDemands.map((product) => {
+        ) : currentDemands.map((product) => {
           const isRwf = convertedProducts[product.id] || false;
           const formattedPrice = isRwf
             ? `RWF ${(Number(product.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -506,6 +519,31 @@ export default function SubmitHarvest() {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between bg-surface-container-lowest border border-outline-variant p-4 rounded-xl custom-shadow shrink-0">
+          <span className="text-xs text-on-surface-variant font-bold font-sans">
+            Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredDemands.length)} of {filteredDemands.length} products
+          </span>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="px-4 py-2 border border-[#c1c9c0] rounded-xl text-xs font-bold bg-white text-[#414942] hover:border-primary hover:text-primary transition-all disabled:opacity-50 cursor-pointer"
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="px-4 py-2 border border-[#c1c9c0] rounded-xl text-xs font-bold bg-white text-[#414942] hover:border-primary hover:text-primary transition-all disabled:opacity-50 cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {selectedProduct && (
