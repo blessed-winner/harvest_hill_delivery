@@ -225,7 +225,8 @@ export default function SubmitHarvest() {
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
         notes: form.notes,
-        photo: form.photo,
+        photo: photos[0] || null,
+        images: photos,
         status: isDraft ? 'draft' : 'pending',
       });
 
@@ -237,6 +238,8 @@ export default function SubmitHarvest() {
       setSelectedProduct(null);
       setForm(initialFormState);
       setPhotoPreview(null);
+      setPhotos([]);
+      setPhotoPreviews([]);
       setValidationErrors({});
     } catch (error) {
       console.error('Failed to submit harvest:', error);
@@ -605,7 +608,7 @@ export default function SubmitHarvest() {
                 <div className="space-y-4 sm:space-y-6 bg-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant">
                   <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Asking Price per kg</label>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                    <div className="relative flex-1">
+                    <div className="relative w-full">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">
                         {isSelectedProductRwf ? 'RWF' : '$'}
                       </span>
@@ -630,15 +633,6 @@ export default function SubmitHarvest() {
                         }}
                       />
                     </div>
-                    <div className="flex-1">
-                      <span className="font-mono text-[10px] text-on-surface-variant block mb-1 uppercase tracking-tight">Market Avg</span>
-                      <span className="font-sans text-xl font-extrabold text-primary">
-                        {isSelectedProductRwf 
-                          ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })} - RWF ${(Number(selectedProduct.base_price || 0) * 1.1 * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                          : `$${Number(selectedProduct.base_price || 0).toFixed(2)} - $${(Number(selectedProduct.base_price || 0) * 1.1).toFixed(2)}`
-                        }
-                      </span>
-                    </div>
                   </div>
                   {validationErrors.askingPrice && (
                     <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
@@ -648,7 +642,7 @@ export default function SubmitHarvest() {
                   <div className="flex items-center gap-2 text-secondary font-bold">
                     <TrendingUp size={18} />
                     <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
-                      The recommended asking price range is dynamically calculated based on current market indices and quality benchmarks.
+                      Recommended price is based on market value.
                     </span>
                   </div>
                 </div>
@@ -659,33 +653,40 @@ export default function SubmitHarvest() {
                     type="file"
                     id="photo-upload"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     onChange={handleFileChange}
                   />
-                  {photoPreview ? (
-                    <div className="relative border-2 border-dashed border-primary rounded-2xl overflow-hidden aspect-video bg-surface-container-lowest group">
-                      <img
-                        src={photoPreview}
-                        alt="Crop preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  {photoPreviews.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {photoPreviews.map((preview, idx) => (
+                          <div key={idx} className="relative border border-outline-variant rounded-xl overflow-hidden aspect-video bg-surface-container-lowest group">
+                            <img src={preview} alt="Crop preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+                                setPhotos(prev => prev.filter((_, i) => i !== idx));
+                                if (idx === 0) {
+                                  setForm(current => ({ ...current, photo: photos[1] || null }));
+                                }
+                              }}
+                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow flex items-center justify-center cursor-pointer"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-start">
                         <button
                           type="button"
                           onClick={() => document.getElementById('photo-upload')?.click()}
-                          className="px-4 py-2 bg-white text-primary text-xs font-bold rounded-lg hover:bg-surface-container-low transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 border border-dashed border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
                         >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setForm((current) => ({ ...current, photo: null }));
-                            setPhotoPreview(null);
-                          }}
-                          className="px-4 py-2 bg-error text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
-                        >
-                          Remove
+                          <Plus size={16} />
+                          <span>Add Another Image</span>
                         </button>
                       </div>
                     </div>

@@ -29,16 +29,23 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         
         price = request.data.get('price')
         quantity = request.data.get('quantity')
+        message = request.data.get('message', '')
         
-        if price is None or quantity is None:
-            return Response({"error": "Price and quantity are required"}, status=status.HTTP_400_BAD_REQUEST)
+        # If price/quantity are omitted, use current/last offer values
+        if price is None:
+            last_offer = thread.offers.all().order_by('timestamp').last()
+            price = last_offer.price if last_offer else thread.supply.price
+        if quantity is None:
+            last_offer = thread.offers.all().order_by('timestamp').last()
+            quantity = last_offer.quantity if last_offer else thread.supply.quantity
 
         # Create counter offer
         offer = NegotiationOffer.objects.create(
             thread=thread,
             sender=request.user,
             price=price,
-            quantity=quantity
+            quantity=quantity,
+            message=message
         )
         
         # Update supply price/quantity
@@ -51,12 +58,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         from apps.notifications.utils import send_live_notification
         send_live_notification(
             user=request.user,
-            title="Counter Offer Sent",
-            message=f"Your offer of ${price} for {quantity} of {thread.supply.product.name} has been submitted."
+            title="Negotiation Update",
+            message=f"New message/offer sent for {thread.supply.product.name}."
         )
 
         return Response(NegotiationThreadSerializer(thread).data)
-
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         thread = self.get_object()

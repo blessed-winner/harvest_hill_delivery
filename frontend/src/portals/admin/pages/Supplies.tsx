@@ -20,6 +20,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   // Bulk Selection state
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
+  // Filter states
+  const [selectedFarmer, setSelectedFarmer] = useState('All Farmers');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
   // Success acceptance modal state
   const [successModal, setSuccessModal] = useState<{
     isOpen: boolean;
@@ -63,7 +67,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [activeStatusTab, searchTerm]);
+  }, [activeStatusTab, searchTerm, selectedFarmer, selectedCategory]);
 
   const handleUpdateStatus = async (supplyId: number | string, newStatus: string) => {
     try {
@@ -124,6 +128,16 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       if (s.is_archived) return false;
       const backendStatus = statusMap[activeStatusTab];
       if (s.status !== backendStatus) return false;
+    }
+
+    if (selectedFarmer !== 'All Farmers') {
+      const name = s.farmer_name || s.farmer || '';
+      if (name.toLowerCase() !== selectedFarmer.toLowerCase()) return false;
+    }
+
+    if (selectedCategory !== 'All Categories') {
+      const cat = s.product_detail?.category || s.category || '';
+      if (cat.toLowerCase() !== selectedCategory.toLowerCase()) return false;
     }
 
     const matchesSearch = searchTerm 
@@ -196,6 +210,31 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
+        {/* Filters Bar */}
+        <div className="p-4 bg-[#fbfbfa] border-b border-outline-variant flex flex-wrap gap-4 items-center">
+          <select 
+            value={selectedFarmer}
+            onChange={(e) => setSelectedFarmer(e.target.value)}
+            className="px-4 py-2 bg-white border border-[#c1c9c0] rounded-lg font-sans text-xs cursor-pointer outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+          >
+            <option>All Farmers</option>
+            {Array.from(new Set(supplies.map(s => s.farmer_name || s.farmer).filter(Boolean))).map((farmer: any) => (
+              <option key={farmer} value={farmer}>{farmer}</option>
+            ))}
+          </select>
+
+          <select 
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 bg-white border border-[#c1c9c0] rounded-lg font-sans text-xs cursor-pointer outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+          >
+            <option>All Categories</option>
+            {Array.from(new Set(supplies.map(s => s.product_detail?.category || s.category).filter(Boolean))).map((cat: any) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="overflow-x-auto custom-scrollbar">
           {isLoading ? (
             <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading supplies...</div>
