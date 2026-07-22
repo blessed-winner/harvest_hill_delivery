@@ -353,9 +353,20 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsClient]
 
     def get_queryset(self):
-        qs = Supply.objects.filter(is_archived=False, quantity__gt=0).select_related('product', 'farmer')
+        # Only show accepted supplies that are not archived and have quantity
+        qs = Supply.objects.filter(
+            status='accepted',
+            is_archived=False,
+            quantity__gt=0
+        ).select_related('product', 'farmer')
+        
+        # Fallback: if no supplies with quantity, show accepted supplies even with 0 quantity
         if not qs.exists():
-            qs = Supply.objects.filter(is_archived=False).select_related('product', 'farmer')
+            qs = Supply.objects.filter(
+                status='accepted',
+                is_archived=False
+            ).select_related('product', 'farmer')
+        
         return qs.order_by('-created_at')
 
     @extend_schema(
