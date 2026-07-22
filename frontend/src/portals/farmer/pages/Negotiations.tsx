@@ -42,12 +42,22 @@ export default function Negotiations() {
 
   const handleSendOffer = async () => {
     if (!activeThread) return;
+    const parsedPrice = parseFloat(counterPrice);
+    const parsedQty = parseFloat(counterQty);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      alert("Please enter a valid counter price.");
+      return;
+    }
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      alert("Please enter a valid counter quantity.");
+      return;
+    }
     try {
       await apiRequest(`/api/negotiations/threads/${activeThread.id}/offer/`, {
         method: "POST",
         body: JSON.stringify({
-          price: parseFloat(counterPrice),
-          quantity: parseFloat(counterQty)
+          price: parsedPrice,
+          quantity: parsedQty
         })
       });
       loadNegotiations();

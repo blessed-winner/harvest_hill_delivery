@@ -41,7 +41,7 @@ class NegotiationThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NegotiationThread
-        fields = ['id', 'status', 'price', 'supply_detail', 'offers']
+        fields = ['id', 'status', 'price', 'supply_detail', 'offers', 'supply']
 
     def get_status(self, obj):
         if obj.supply.status in ['accepted', 'delivered', 'invoiced']:

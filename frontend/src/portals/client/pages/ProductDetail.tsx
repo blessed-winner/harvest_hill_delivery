@@ -155,12 +155,24 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     e.preventDefault();
     if (!activeThread) return;
     setIsSubmittingProposal(true);
+    const parsedPrice = parseFloat(proposedPrice);
+    const parsedQty = parseFloat(negotiationQty);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      alert("Please enter a valid proposed price.");
+      setIsSubmittingProposal(false);
+      return;
+    }
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      alert("Please enter a valid proposed quantity.");
+      setIsSubmittingProposal(false);
+      return;
+    }
     try {
       const res = await apiRequest(`/api/negotiations/threads/${activeThread.id}/offer/`, {
         method: 'POST',
         body: JSON.stringify({
-          price: parseFloat(proposedPrice),
-          quantity: parseFloat(negotiationQty),
+          price: parsedPrice,
+          quantity: parsedQty,
           message: negotiationNotes
         })
       });
