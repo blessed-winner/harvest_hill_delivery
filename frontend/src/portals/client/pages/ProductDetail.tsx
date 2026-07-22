@@ -104,7 +104,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   }, [productId]);
 
   const [activeThread, setActiveThread] = useState<any>(null);
-  const [messageText, setMessageText] = useState('');
   const [loadingThread, setLoadingThread] = useState(false);
 
   const loadNegotiationThread = async () => {
@@ -135,21 +134,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     }
   }, [isNegotiating, product?.id]);
 
-  const handleSendMessage = async () => {
-    if (!activeThread || !messageText.trim()) return;
-    try {
-      const res = await apiRequest(`/api/negotiations/threads/${activeThread.id}/offer/`, {
-        method: 'POST',
-        body: JSON.stringify({
-          message: messageText
-        })
-      });
-      setMessageText('');
-      setActiveThread(res);
-    } catch (err) {
-      console.error("Failed to send message:", err);
-    }
-  };
+
 
   const handleSendOffer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -403,8 +388,15 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               </div>
             ) : (
               <div className="flex-grow overflow-y-auto py-4 space-y-4 pr-1 scrollbar-thin flex flex-col justify-between">
-                {/* Timeline / Chat messages */}
-                <div className="space-y-3 max-h-[220px] overflow-y-auto p-2 bg-[#fcf9f2] rounded-xl border border-[#e5e2db]">
+                {activeThread?.status === 'accepted' && (
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 mb-1">
+                    <Check size={16} className="text-emerald-600 shrink-0" />
+                    <span>The farmer has accepted the terms. Agreement finalized!</span>
+                  </div>
+                )}
+
+                {/* Timeline / Counter proposals list */}
+                <div className="space-y-3 max-h-[260px] overflow-y-auto p-2 bg-[#fcf9f2] rounded-xl border border-[#e5e2db]">
                   {activeThread?.offers?.length > 0 ? (
                     activeThread.offers.map((offer: any, i: number) => {
                       const isMe = offer.sender === 'client';
@@ -423,92 +415,73 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                       );
                     })
                   ) : (
-                    <p className="text-xs text-[#717971] text-center py-6">No messages or counter-proposals yet. Start the conversation!</p>
+                    <p className="text-xs text-[#717971] text-center py-6">No counter-proposals yet. Start the negotiation below!</p>
                   )}
                 </div>
 
-                {/* Send chat message input */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSendMessage();
-                    }}
-                    placeholder="Type your message to the farmer..."
-                    className="flex-grow bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227]"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendMessage}
-                    className="bg-[#144227] text-white rounded-xl px-4 py-2 text-xs font-bold hover:bg-[#376847] cursor-pointer"
-                  >
-                    Send
-                  </button>
-                </div>
-
-                <form onSubmit={handleSendOffer} className="space-y-3 pt-3 border-t border-[#f0eee7]">
-                  <h4 className="text-xs font-bold text-[#1c1c18]">Propose Counter Offer Terms</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
-                        Your Proposed Price ($ per {product.unit || 'unit'})
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        value={proposedPrice}
-                        onChange={(e) => setProposedPrice(e.target.value)}
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
-                      />
+                {activeThread?.status !== 'accepted' && (
+                  <form onSubmit={handleSendOffer} className="space-y-3 pt-3 border-t border-[#f0eee7]">
+                    <h4 className="text-xs font-bold text-[#1c1c18]">Propose Counter Offer Terms</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                          Your Proposed Price ($ per {product.unit || 'unit'})
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={proposedPrice}
+                          onChange={(e) => setProposedPrice(e.target.value)}
+                          className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
+                          Proposed Volume ({product.unit || 'units'})
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          value={negotiationQty}
+                          onChange={(e) => setNegotiationQty(e.target.value)}
+                          className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
-                        Proposed Volume ({product.unit || 'units'})
+                        Offer Message / Custom Terms
                       </label>
                       <input
-                        type="number"
-                        required
-                        value={negotiationQty}
-                        onChange={(e) => setNegotiationQty(e.target.value)}
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs font-bold text-[#1c1c18] focus:outline-none focus:border-[#144227]"
+                        type="text"
+                        value={negotiationNotes}
+                        onChange={(e) => setNegotiationNotes(e.target.value)}
+                        placeholder="Optional details or terms..."
+                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs text-[#1c1c18] focus:outline-none"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
-                      Offer Message
-                    </label>
-                    <input
-                      type="text"
-                      value={negotiationNotes}
-                      onChange={(e) => setNegotiationNotes(e.target.value)}
-                      placeholder="Optional details or terms..."
-                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-4 py-2 text-xs text-[#1c1c18] focus:outline-none"
-                    />
-                  </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSubmittingProposal}
-                      className="flex-grow py-2.5 bg-[#144227] text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      {isSubmittingProposal ? "Submitting..." : "Send Proposal Terms"}
-                    </button>
-                    {activeThread?.status === 'open' && (
+                    <div className="flex gap-2 pt-2">
                       <button
-                        type="button"
-                        onClick={handleAcceptOffer}
-                        className="flex-grow py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        type="submit"
+                        disabled={isSubmittingProposal}
+                        className="flex-grow py-2.5 bg-[#144227] text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        Accept Farmer Terms
+                        {isSubmittingProposal ? "Submitting..." : "Send Proposal Terms"}
                       </button>
-                    )}
-                  </div>
-                </form>
+                      {activeThread?.status === 'open' && (
+                        <button
+                          type="button"
+                          onClick={handleAcceptOffer}
+                          className="flex-grow py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          Accept Farmer Terms
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                )}
               </div>
             )}
           </div>

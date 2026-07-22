@@ -27,6 +27,13 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             return Response({"error": "Supply ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         thread, created = NegotiationThread.objects.get_or_create(supply_id=supply_id)
+        if created:
+            from apps.notifications.utils import send_live_notification
+            send_live_notification(
+                user=thread.supply.farmer.user,
+                title="New Negotiation Started",
+                message=f"A buyer has initiated a price negotiation for your supply: {thread.supply.product.name}."
+            )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
