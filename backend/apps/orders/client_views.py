@@ -353,18 +353,22 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsClient]
 
     def get_queryset(self):
-        # Only show accepted supplies that are not archived and have quantity
+        # Show all supplies except rejected and draft ones
+        # Accepted supplies can be added to cart
+        # Pending/negotiating supplies can be negotiated
         qs = Supply.objects.filter(
-            status='accepted',
             is_archived=False,
             quantity__gt=0
+        ).exclude(
+            status__in=['rejected', 'draft']
         ).select_related('product', 'farmer')
         
-        # Fallback: if no supplies with quantity, show accepted supplies even with 0 quantity
+        # Fallback: if no supplies with quantity, show all non-rejected/non-draft supplies even with 0 quantity
         if not qs.exists():
             qs = Supply.objects.filter(
-                status='accepted',
                 is_archived=False
+            ).exclude(
+                status__in=['rejected', 'draft']
             ).select_related('product', 'farmer')
         
         return qs.order_by('-created_at')
