@@ -125,11 +125,21 @@ export default function SubmitHarvest() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      setPhotos(prev => [...prev, ...files]);
-      const newUrls = files.map(file => URL.createObjectURL(file));
+      const currentCount = photos.length;
+      const allowedCount = 5 - currentCount;
+      if (allowedCount <= 0) {
+        alert("You can upload a maximum of 5 images.");
+        return;
+      }
+      const filesToAdd = files.slice(0, allowedCount);
+      if (files.length > allowedCount) {
+        alert(`Only the first ${allowedCount} image(s) were added (limit: 5 images).`);
+      }
+      setPhotos(prev => [...prev, ...filesToAdd]);
+      const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
       setPhotoPreviews(prev => [...prev, ...newUrls]);
-      if (!form.photo) {
-        setForm((current) => ({ ...current, photo: files[0] }));
+      if (!form.photo && filesToAdd.length > 0) {
+        setForm((current) => ({ ...current, photo: filesToAdd[0] }));
       }
     }
   };
@@ -679,16 +689,18 @@ export default function SubmitHarvest() {
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-start">
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById('photo-upload')?.click()}
-                          className="flex items-center gap-2 px-4 py-2 border border-dashed border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
-                        >
-                          <Plus size={16} />
-                          <span>Add Another Image</span>
-                        </button>
-                      </div>
+                      {photoPreviews.length < 5 && (
+                        <div className="flex justify-start">
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('photo-upload')?.click()}
+                            className="flex items-center gap-2 px-4 py-2 border border-dashed border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
+                          >
+                            <Plus size={16} />
+                            <span>Add Another Image</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div
