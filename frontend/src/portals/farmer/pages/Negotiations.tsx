@@ -11,7 +11,7 @@ export default function Negotiations() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeNegId, setActiveNegId] = useState<string | null>(null);
   const [showListMobile, setShowListMobile] = useState(false);
-  const [messageText, setMessageText] = useState("");
+  const [counterMessage, setCounterMessage] = useState("");
   const [counterPrice, setCounterPrice] = useState("8.40");
   const [counterQty, setCounterQty] = useState("500");
 
@@ -57,9 +57,11 @@ export default function Negotiations() {
         method: "POST",
         body: JSON.stringify({
           price: parsedPrice,
-          quantity: parsedQty
+          quantity: parsedQty,
+          message: counterMessage
         })
       });
+      setCounterMessage("");
       loadNegotiations();
     } catch (err) {
       console.error("Error sending offer:", err);
@@ -75,22 +77,6 @@ export default function Negotiations() {
       loadNegotiations();
     } catch (err) {
       console.error("Error accepting offer:", err);
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!activeThread || !messageText.trim()) return;
-    try {
-      await apiRequest(`/api/negotiations/threads/${activeThread.id}/offer/`, {
-        method: "POST",
-        body: JSON.stringify({
-          message: messageText
-        })
-      });
-      setMessageText("");
-      loadNegotiations();
-    } catch (err) {
-      console.error("Error sending message:", err);
     }
   };
 
@@ -316,68 +302,65 @@ export default function Negotiations() {
         {/* Controls */}
         {activeThread?.status === 'open' && (
           <div className="p-3 sm:p-5 bg-surface-container-lowest border-t border-outline-variant flex-shrink-0 space-y-3 sm:space-y-4">
-            {/* Chat Message Input */}
-            <div className="flex gap-2">
-              <input 
-                className="flex-grow px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans text-xs sm:text-sm" 
-                placeholder="Type your message here..." 
-                type="text" 
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendMessage();
-                }}
-              />
-              <button 
-                onClick={handleSendMessage}
-                className="px-4 bg-secondary text-on-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1 hover:opacity-90 active:scale-[0.98] transition-all shrink-0 cursor-pointer"
-              >
-                <Send size={14} />
-                <span className="hidden sm:inline">Send</span>
-              </button>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
-              <div className="flex-1 space-y-1.5">
-                <label className="font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-on-surface-variant font-bold block">Propose New Terms</label>
-                <div className="flex gap-2 sm:gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">$</span>
-                      <input 
-                        className="w-full pl-8 pr-2 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
-                        type="number" 
-                        value={counterPrice}
-                        onChange={(e) => setCounterPrice(e.target.value)}
-                      />
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
+                <div className="flex-1 space-y-1.5">
+                  <label className="font-sans text-xs tracking-wide text-primary font-bold block">
+                    Propose New Terms <span className="text-[10px] text-on-surface-variant font-medium">(Original Price: ${activeThread?.supply_detail?.proposed_price || activeThread?.supply_detail?.price || 0}/{activeThread?.supply_detail?.unit || 'kg'})</span>
+                  </label>
+                  <div className="flex gap-2 sm:gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">$</span>
+                        <input 
+                          className="w-full pl-8 pr-2 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
+                          type="number" 
+                          value={counterPrice}
+                          onChange={(e) => setCounterPrice(e.target.value)}
+                        />
+                      </div>
+                      <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Price / {activeThread?.supply_detail?.unit || 'kg'}</p>
                     </div>
-                    <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Price / kg</p>
-                  </div>
-                  <div className="flex-1">
-                    <input 
-                      className="w-full px-3 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
-                      type="number" 
-                      value={counterQty}
-                      onChange={(e) => setCounterQty(e.target.value)}
-                    />
-                    <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Qty (kg)</p>
+                    <div className="flex-1">
+                      <input 
+                        className="w-full px-3 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
+                        type="number" 
+                        value={counterQty}
+                        onChange={(e) => setCounterQty(e.target.value)}
+                      />
+                      <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Qty ({activeThread?.supply_detail?.unit || 'kg'})</p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-end">
-                <button 
-                  onClick={handleSendOffer}
-                  className="w-full h-9 sm:h-11 md:h-12 px-4 bg-primary text-on-primary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md sm:shadow-lg"
-                >
-                  <Send size={14} className="sm:size-[18px]" />
-                  Send Offer
-                </button>
+
+              <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
+                <div className="flex-grow space-y-1.5">
+                  <label className="font-sans text-xs tracking-wide text-primary font-bold block">Offer Message / Custom Terms</label>
+                  <input 
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans text-xs sm:text-sm" 
+                    placeholder="Type custom terms or notes to send with offer..." 
+                    type="text" 
+                    value={counterMessage}
+                    onChange={(e) => setCounterMessage(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button 
+                    onClick={handleSendOffer}
+                    className="w-full h-9 sm:h-11 md:h-12 px-4 bg-primary text-on-primary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md sm:shadow-lg cursor-pointer"
+                  >
+                    <Send size={14} className="sm:size-[18px]" />
+                    Send Offer
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2 sm:gap-4">
+
+            <div className="flex gap-2 sm:gap-4 pt-1.5">
               <button 
                 onClick={handleAccept}
-                className="flex-1 h-9 sm:h-11 md:h-12 bg-secondary-container text-on-secondary-container border border-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-3 hover:bg-secondary-container/80 transition-all active:scale-[0.98]"
+                className="flex-1 h-9 sm:h-11 md:h-12 bg-secondary-container text-on-secondary-container border border-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-3 hover:bg-secondary-container/80 transition-all active:scale-[0.98] cursor-pointer"
               >
                 <CheckCircle2 size={14} className="sm:size-[18px]" />
                 Accept Offer
