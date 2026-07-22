@@ -110,6 +110,10 @@ export default function MySupplies() {
 
   const handleOnTheFlyUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editSupply || !e.target.files || e.target.files.length === 0) return;
+    if (editImages.length >= 5) {
+      alert("You can upload a maximum of 5 images.");
+      return;
+    }
     const file = e.target.files[0];
     setIsUploadingImage(true);
     try {
