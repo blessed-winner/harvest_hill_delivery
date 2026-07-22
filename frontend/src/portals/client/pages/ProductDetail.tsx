@@ -5,6 +5,25 @@ import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Pac
 import { clientApi, apiRequest } from '../lib/api';
 import { SuccessModal } from '../../../components/SuccessModal';
 
+const getFullImageUrl = (url: string | null | undefined) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+const normalizeUrlPath = (url: string): string => {
+  if (!url) return '';
+  try {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return new URL(url).pathname;
+    }
+  } catch (e) {}
+  return url.startsWith('/') ? url : '/' + url;
+};
+
 interface ProductDetailProps {
   onNavigate: (screen: string) => void;
   addToCart: (product?: any) => void;
@@ -46,9 +65,32 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         if (productId) {
           // Fetch specific supply (acting as product)
           const fetchedSupply = await clientApi.products.get(productId);
-          const imagesList = fetchedSupply.photos || fetchedSupply.images || (fetchedSupply.photo ? [fetchedSupply.photo] : []);
-          if (fetchedSupply.product_detail?.image_url && !imagesList.includes(fetchedSupply.product_detail.image_url)) {
-            imagesList.push(fetchedSupply.product_detail.image_url);
+          
+          const imagesList: string[] = [];
+          const seenPaths = new Set<string>();
+
+          const addImage = (url: string | null | undefined) => {
+            if (!url) return;
+            const normalized = normalizeUrlPath(url);
+            if (!seenPaths.has(normalized)) {
+              seenPaths.add(normalized);
+              imagesList.push(getFullImageUrl(url));
+            }
+          };
+
+          if (fetchedSupply.photo) {
+            addImage(fetchedSupply.photo);
+          }
+          
+          if (Array.isArray(fetchedSupply.images)) {
+            fetchedSupply.images.forEach((imgObj: any) => {
+              const url = imgObj.image_url || imgObj.image;
+              if (url) addImage(url);
+            });
+          }
+          
+          if (imagesList.length === 0 && fetchedSupply.product_detail?.image_url) {
+            addImage(fetchedSupply.product_detail.image_url);
           }
           
           const mappedProduct = {
@@ -59,7 +101,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
             unit: fetchedSupply.unit,
             price: fetchedSupply.price,
-            image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+            status: fetchedSupply.status, // Include supply status
+            image_url: fetchedSupply.photo 
+              ? getFullImageUrl(fetchedSupply.photo) 
+              : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
             images: imagesList.length > 0 ? imagesList : undefined,
             farmer_name: fetchedSupply.farmer_name,
             farmer_location: fetchedSupply.farmer_location,
@@ -75,14 +120,47 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           const products = await clientApi.products.list({ limit: '1' });
           if (products?.results && products.results.length > 0) {
             const fetchedSupply = products.results[0];
+            
+            const imagesList: string[] = [];
+            const seenPaths = new Set<string>();
+
+            const addImage = (url: string | null | undefined) => {
+              if (!url) return;
+              const normalized = normalizeUrlPath(url);
+              if (!seenPaths.has(normalized)) {
+                seenPaths.add(normalized);
+                imagesList.push(getFullImageUrl(url));
+              }
+            };
+
+            if (fetchedSupply.photo) {
+              addImage(fetchedSupply.photo);
+            }
+            
+            if (Array.isArray(fetchedSupply.images)) {
+              fetchedSupply.images.forEach((imgObj: any) => {
+                const url = imgObj.image_url || imgObj.image;
+                if (url) addImage(url);
+              });
+            }
+            
+            if (imagesList.length === 0 && fetchedSupply.product_detail?.image_url) {
+              addImage(fetchedSupply.product_detail.image_url);
+            }
+
             const mappedProduct = {
               id: fetchedSupply.id,
+              product_id: fetchedSupply.product,
               name: fetchedSupply.product_detail?.name || fetchedSupply.name,
               category: fetchedSupply.product_detail?.category || fetchedSupply.category,
               urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
               unit: fetchedSupply.unit,
               price: fetchedSupply.price,
-              image_url: fetchedSupply.photo || fetchedSupply.product_detail?.image_url,
+              status: fetchedSupply.status, // Include supply status
+              image_url: fetchedSupply.photo 
+                ? getFullImageUrl(fetchedSupply.photo) 
+                : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
+              images: imagesList.length > 0 ? imagesList : undefined,
               farmer_name: fetchedSupply.farmer_name,
               quantity: fetchedSupply.quantity
             };
@@ -225,7 +303,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
       });
       setNegotiationNotes('');
       setActiveThread(res);
-      alert("Offer proposed successfully!");
     } catch (err) {
       console.error("Failed to send offer:", err);
       alert("Failed to send counter proposal.");
@@ -247,18 +324,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     }
   };
 
-  const rawImages = product?.images && product.images.length > 0 
+  const images = product?.images && product.images.length > 0 
     ? product.images 
     : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
-
-  const images = rawImages.length === 1 && product?.name
-    ? [
-        rawImages[0],
-        'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80',
-        'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=800&q=80',
-        'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80'
-      ]
-    : rawImages;
 
   if (loading) {
     return (
@@ -418,19 +486,21 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               </button>
             </div>
 
-            {/* Price Negotiation Trigger Button */}
-            <button
-              onClick={() => setIsNegotiating(true)}
-              className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-            >
-              <Handshake size={16} /> Propose Price Negotiation / Bulk Deal
-            </button>
+            {/* Price Negotiation Trigger Button - Only show for pending/negotiating supplies */}
+            {product.status !== 'accepted' && (
+              <button
+                onClick={() => setIsNegotiating(true)}
+                className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Handshake size={16} /> Propose Price Negotiation / Bulk Deal
+              </button>
+            )}
           </div>
 
           {/* Product Info Guarantee Note */}
           <div className="bg-[#f0eee7]/60 border border-[#e5e2db] rounded-xl p-4 mt-6">
             <p className="text-xs text-[#414942] leading-relaxed">
-              <span className="font-bold text-[#144227]">Quality Guarantee:</span> Sourced from verified local producers. Price negotiations are subject to bulk order quantities and supplier confirmation.
+              <span className="font-bold text-[#144227]">Quality Guarantee:</span> Sourced from verified local producers. {product.status !== 'accepted' && 'Price negotiations are subject to bulk order quantities and supplier confirmation.'}
             </p>
           </div>
 
