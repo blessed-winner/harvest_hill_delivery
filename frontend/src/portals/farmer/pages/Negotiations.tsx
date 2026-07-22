@@ -15,6 +15,45 @@ export default function Negotiations() {
   const [counterPrice, setCounterPrice] = useState("8.40");
   const [counterQty, setCounterQty] = useState("500");
 
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editQty, setEditQty] = useState('');
+  const [editMsg, setEditMsg] = useState('');
+
+  const handleDeleteNegotiation = async (threadId: number) => {
+    if (!confirm("Are you sure you want to delete this negotiation? This will reset all proposed terms.")) return;
+    try {
+      await apiRequest(`/api/negotiations/threads/${threadId}/`, {
+        method: 'DELETE'
+      });
+      setActiveNegId(null);
+      loadNegotiations();
+      alert("Negotiation deleted successfully.");
+    } catch (err) {
+      console.error("Failed to delete negotiation:", err);
+    }
+  };
+
+  const handleEditOfferSubmit = async (threadId: number, offerId: number) => {
+    try {
+      await apiRequest(`/api/negotiations/threads/${threadId}/edit_offer/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          offer_id: offerId,
+          price: parseFloat(editPrice),
+          quantity: parseFloat(editQty),
+          message: editMsg
+        })
+      });
+      setEditingOfferId(null);
+      loadNegotiations();
+      alert("Offer updated successfully!");
+    } catch (err) {
+      console.error("Failed to update offer:", err);
+      alert("Failed to update offer.");
+    }
+  };
+
   const loadNegotiations = async () => {
     setIsLoading(true);
     try {
@@ -82,12 +121,16 @@ export default function Negotiations() {
 
   // Map thread offers to chat format
   const chatHistory = activeThread?.offers?.map((offer: any) => ({
+    id: offer.id,
     sender: offer.sender === 'farmer' ? 'SELLER' : 'BUYER',
     initials: offer.sender === 'farmer' ? 'HH' : 'WF',
     text: offer.message || (offer.sender === 'farmer' 
       ? `Farmer counter-offered price: $${offer.price}/kg for ${offer.quantity} kg.`
       : `Industry proposed price: $${offer.price}/kg for ${offer.quantity} kg.`),
     price: `$${offer.price}/kg`,
+    raw_price: offer.price,
+    quantity: offer.quantity,
+    message: offer.message,
     change: offer.sender === 'admin' ? '-1.7% from last' : undefined,
     time: new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   })) || [];
@@ -220,24 +263,34 @@ export default function Negotiations() {
               )}
             </div>
           </div>
-          <div className="flex items-end gap-1 h-10">
-            {activeThread ? (
-              [40, 55, 50, 70, 65, 85, 100].map((h, i) => (
-                <div 
-                  key={i} 
-                  style={{ height: `${h}%` }} 
-                  className={cn("w-2 rounded-t-sm transition-all duration-500", i === 6 ? "bg-primary" : "bg-secondary-container")} 
-                />
-              ))
-            ) : (
-              [10, 10, 10, 10, 10, 10, 10].map((h, i) => (
-                <div 
-                  key={i} 
-                  style={{ height: `${h}%` }} 
-                  className="w-2 rounded-t-sm bg-surface-container-high transition-all" 
-                />
-              ))
+          <div className="flex items-center gap-4">
+            {activeThread && (
+              <button 
+                onClick={() => handleDeleteNegotiation(activeThread.id)}
+                className="text-red-600 hover:text-red-700 font-bold font-sans text-xs underline cursor-pointer"
+              >
+                Delete Chat
+              </button>
             )}
+            <div className="flex items-end gap-1 h-10">
+              {activeThread ? (
+                [40, 55, 50, 70, 65, 85, 100].map((h, i) => (
+                  <div 
+                    key={i} 
+                    style={{ height: `${h}%` }} 
+                    className={cn("w-2 rounded-t-sm transition-all duration-500", i === 6 ? "bg-primary" : "bg-secondary-container")} 
+                  />
+                ))
+              ) : (
+                [10, 10, 10, 10, 10, 10, 10].map((h, i) => (
+                  <div 
+                    key={i} 
+                    style={{ height: `${h}%` }} 
+                    className="w-2 rounded-t-sm bg-surface-container-high transition-all" 
+                  />
+                ))
+              )}
+            </div>
           </div>
         </div>
 
@@ -262,40 +315,104 @@ export default function Negotiations() {
             <span className="px-4 py-1 bg-surface-container-high rounded-full font-mono text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Offer Timeline</span>
           </div>
 
-          {chatHistory.map((msg: any, i: number) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, x: msg.sender === 'BUYER' ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={cn("flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-xl", msg.sender === 'SELLER' && "ml-auto flex-row-reverse")}
-            >
-              <div className={cn(
-                "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 font-bold font-sans text-xs sm:text-sm",
-                msg.sender === 'BUYER' ? "bg-secondary text-on-secondary" : "bg-primary text-on-primary"
-              )}>
-                {msg.initials}
-              </div>
-              <div className={cn(
-                "relative p-3 sm:p-4 rounded-2xl custom-shadow border",
-                msg.sender === 'BUYER' 
-                  ? "bg-white border-outline-variant rounded-tl-none" 
-                  : "bg-primary-container border-primary text-white rounded-tr-none"
-              )}>
-                <p className="font-sans text-xs sm:text-sm leading-relaxed">{msg.text}</p>
-                {msg.price && (
+          {chatHistory.map((msg: any, i: number) => {
+            const isMe = msg.sender === 'SELLER';
+            const isEditingThis = editingOfferId === msg.id;
+
+            if (isEditingThis) {
+              return (
+                <div key={i} className={cn("flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-xl", isMe && "ml-auto flex-row-reverse")}>
                   <div className={cn(
-                    "flex items-center gap-6 pt-3 mt-3 border-t",
-                    msg.sender === 'BUYER' ? "border-outline-variant" : "border-white/20"
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 font-bold font-sans text-xs sm:text-sm bg-primary text-on-primary"
                   )}>
+                    {msg.initials}
+                  </div>
+                  <div className="bg-white p-3.5 rounded-2xl border border-outline-variant space-y-2 w-full custom-shadow">
                     <div>
-                      <p className={cn("font-mono text-[8px] sm:text-[9px] uppercase tracking-widest mb-0.5 opacity-70")}>Price</p>
-                      <p className="font-sans text-base sm:text-lg font-bold">{msg.price}</p>
+                      <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Price</label>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        value={editPrice} 
+                        onChange={(e) => setEditPrice(e.target.value)} 
+                        className="w-full px-2 py-1 border rounded text-xs outline-none font-bold" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Quantity</label>
+                      <input 
+                        type="number" 
+                        value={editQty} 
+                        onChange={(e) => setEditQty(e.target.value)} 
+                        className="w-full px-2 py-1 border rounded text-xs outline-none font-bold" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Message / Terms</label>
+                      <input 
+                        type="text" 
+                        value={editMsg} 
+                        onChange={(e) => setEditMsg(e.target.value)} 
+                        className="w-full px-2 py-1 border rounded text-xs outline-none" 
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button onClick={() => setEditingOfferId(null)} className="px-2.5 py-1 text-[10px] border rounded hover:bg-surface-container-low cursor-pointer">Cancel</button>
+                      <button onClick={() => handleEditOfferSubmit(activeThread.id, msg.id)} className="px-2.5 py-1 text-[10px] bg-[#144227] text-white rounded hover:opacity-90 cursor-pointer">Save</button>
                     </div>
                   </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              );
+            }
+
+            return (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, x: msg.sender === 'BUYER' ? -20 : 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={cn("flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-xl", msg.sender === 'SELLER' && "ml-auto flex-row-reverse")}
+              >
+                <div className={cn(
+                  "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 font-bold font-sans text-xs sm:text-sm",
+                  msg.sender === 'BUYER' ? "bg-secondary text-on-secondary" : "bg-primary text-on-primary"
+                )}>
+                  {msg.initials}
+                </div>
+                <div className={cn(
+                  "relative p-3 sm:p-4 rounded-2xl custom-shadow border",
+                  msg.sender === 'BUYER' 
+                    ? "bg-white border-outline-variant rounded-tl-none" 
+                    : "bg-primary-container border-primary text-white rounded-tr-none"
+                )}>
+                  <p className="font-sans text-xs sm:text-sm leading-relaxed">{msg.text}</p>
+                  {msg.price && (
+                    <div className={cn(
+                      "flex items-center gap-6 pt-3 mt-3 border-t",
+                      msg.sender === 'BUYER' ? "border-outline-variant" : "border-white/20"
+                    )}>
+                      <div>
+                        <p className={cn("font-mono text-[8px] sm:text-[9px] uppercase tracking-widest mb-0.5 opacity-70")}>Price</p>
+                        <p className="font-sans text-base sm:text-lg font-bold">{msg.price}</p>
+                      </div>
+                    </div>
+                  )}
+                  {isMe && activeThread.status !== 'accepted' && (
+                    <button 
+                      onClick={() => {
+                        setEditingOfferId(msg.id);
+                        setEditPrice(String(msg.raw_price));
+                        setEditQty(String(msg.quantity));
+                        setEditMsg(msg.message || '');
+                      }} 
+                      className="mt-2 text-[9px] underline block text-white/80 hover:text-white cursor-pointer"
+                    >
+                      Edit Terms
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
         )}
 

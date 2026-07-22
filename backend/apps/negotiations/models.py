@@ -5,6 +5,8 @@ from apps.supplies.models import Supply
 class NegotiationThread(models.Model):
     supply = models.OneToOneField(Supply, on_delete=models.CASCADE, related_name='negotiation_thread')
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_by_farmer = models.BooleanField(default=False)
+    deleted_by_client = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Thread for Supply: {self.supply.id}"
