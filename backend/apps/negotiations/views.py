@@ -16,9 +16,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         if self.request.user.role == 'farmer':
             try:
                 profile = self.request.user.farmer_profile
-                queryset = queryset.filter(supply__farmer=profile)
+                queryset = queryset.filter(supply__farmer=profile, deleted_by_farmer=False)
             except AttributeError:
                 queryset = queryset.none()
+        elif self.request.user.role == 'client':
+            queryset = queryset.filter(deleted_by_client=False)
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -27,7 +29,12 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             return Response({"error": "Supply ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         thread, created = NegotiationThread.objects.get_or_create(supply_id=supply_id)
-        if created:
+        if not created:
+            if thread.deleted_by_client or thread.deleted_by_farmer:
+                thread.deleted_by_client = False
+                thread.deleted_by_farmer = False
+                thread.save()
+        else:
             from apps.notifications.utils import send_live_notification
             send_live_notification(
                 user=thread.supply.farmer.user,
@@ -36,6 +43,25 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        thread = self.get_object()
+        user_role = request.user.role
+        
+        if user_role == 'farmer':
+            thread.deleted_by_farmer = True
+        elif user_role == 'client':
+            thread.deleted_by_client = True
+        else:
+            thread.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+            
+        thread.save()
+        
+        if thread.deleted_by_farmer and thread.deleted_by_client:
+            thread.delete()
+            
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
     def offer(self, request, pk=None):
@@ -122,4 +148,34 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         from apps.common.utils import log_action
         log_action(request, actor=request.user, action="negotiation_finalized", target_model="Supply", target_id=thread.supply.id)
 
+        return Response(NegotiationThreadSerializer(thread).data)
+
+    @action(detail=True, methods=['post'])
+    def edit_offer(self, request, pk=None):
+        thread = self.get_object()
+        offer_id = request.data.get('offer_id')
+        price = request.data.get('price')
+        quantity = request.data.get('quantity')
+        message = request.data.get('message')
+        
+        try:
+            offer = thread.offers.get(id=offer_id, sender=request.user)
+        except NegotiationOffer.DoesNotExist:
+            return Response({"error": "Offer not found or permission denied"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if price is not None:
+            offer.price = price
+        if quantity is not None:
+            offer.quantity = quantity
+        if message is not None:
+            offer.message = message
+        offer.save()
+        
+        # Update supply if this is the last offer in the thread
+        last_offer = thread.offers.all().order_by('timestamp').last()
+        if last_offer and last_offer.id == offer.id:
+            thread.supply.price = offer.price
+            thread.supply.quantity = offer.quantity
+            thread.supply.save()
+            
         return Response(NegotiationThreadSerializer(thread).data)

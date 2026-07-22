@@ -106,6 +106,47 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   const [activeThread, setActiveThread] = useState<any>(null);
   const [loadingThread, setLoadingThread] = useState(false);
 
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editQty, setEditQty] = useState('');
+  const [editMsg, setEditMsg] = useState('');
+
+  const handleDeleteNegotiation = async () => {
+    if (!activeThread) return;
+    if (!confirm("Are you sure you want to delete this negotiation? This will reset all proposed terms.")) return;
+    try {
+      await apiRequest(`/api/negotiations/threads/${activeThread.id}/`, {
+        method: 'DELETE'
+      });
+      setActiveThread(null);
+      setIsNegotiating(false);
+      alert("Negotiation deleted successfully.");
+    } catch (err) {
+      console.error("Failed to delete negotiation:", err);
+    }
+  };
+
+  const handleEditOfferSubmit = async (offerId: number) => {
+    if (!activeThread) return;
+    try {
+      const res = await apiRequest(`/api/negotiations/threads/${activeThread.id}/edit_offer/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          offer_id: offerId,
+          price: parseFloat(editPrice),
+          quantity: parseFloat(editQty),
+          message: editMsg
+        })
+      });
+      setEditingOfferId(null);
+      setActiveThread(res);
+      alert("Offer updated successfully!");
+    } catch (err) {
+      console.error("Failed to update offer:", err);
+      alert("Failed to update offer.");
+    }
+  };
+
   const loadNegotiationThread = async () => {
     if (!product?.id) return;
     setLoadingThread(true);
@@ -377,9 +418,20 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 <Handshake size={20} />
                 <h3 className="text-base font-bold text-[#1c1c18]">Negotiate Price for {product.name}</h3>
               </div>
-              <button onClick={() => setIsNegotiating(false)} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-3">
+                {activeThread && (
+                  <button 
+                    onClick={handleDeleteNegotiation} 
+                    className="text-red-600 hover:text-red-700 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                    title="Delete this negotiation"
+                  >
+                    Delete Chat
+                  </button>
+                )}
+                <button onClick={() => setIsNegotiating(false)} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {loadingThread ? (
@@ -400,14 +452,74 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                   {activeThread?.offers?.length > 0 ? (
                     activeThread.offers.map((offer: any, i: number) => {
                       const isMe = offer.sender === 'client';
+                      const isEditingThis = editingOfferId === offer.id;
+                      
+                      if (isEditingThis) {
+                        return (
+                          <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} w-full space-y-1.5`}>
+                            <div className="bg-white p-3 rounded-xl border border-[#e5e2db] space-y-2 w-full max-w-[85%]">
+                              <div>
+                                <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Price</label>
+                                <input 
+                                  type="number" 
+                                  step="0.01"
+                                  value={editPrice} 
+                                  onChange={(e) => setEditPrice(e.target.value)} 
+                                  className="w-full px-2 py-1 border rounded text-xs outline-none" 
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Quantity</label>
+                                <input 
+                                  type="number" 
+                                  value={editQty} 
+                                  onChange={(e) => setEditQty(e.target.value)} 
+                                  className="w-full px-2 py-1 border rounded text-xs outline-none" 
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8px] uppercase tracking-wider font-bold mb-0.5 text-primary">Message / Terms</label>
+                                <input 
+                                  type="text" 
+                                  value={editMsg} 
+                                  onChange={(e) => setEditMsg(e.target.value)} 
+                                  className="w-full px-2 py-1 border rounded text-xs outline-none" 
+                                />
+                              </div>
+                              <div className="flex gap-2 justify-end pt-1">
+                                <button onClick={() => setEditingOfferId(null)} className="px-2.5 py-1 text-[10px] border rounded hover:bg-surface-container-low cursor-pointer">Cancel</button>
+                                <button onClick={() => handleEditOfferSubmit(offer.id)} className="px-2.5 py-1 text-[10px] bg-[#144227] text-white rounded hover:opacity-90 cursor-pointer">Save</button>
+                              </div>
+                            </div>
+                            <span className="text-[9px] text-[#717971] mt-0.5 px-1">Editing...</span>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                           <div className={`p-3 rounded-xl max-w-[85%] text-xs border ${
                             isMe ? 'bg-[#144227] text-white border-[#144227]' : 'bg-white text-[#1c1c18] border-[#e5e2db]'
                           }`}>
                             <p className="font-semibold">{offer.message || `Proposing $${offer.price}/kg for ${offer.quantity} kg.`}</p>
+                            {offer.message && (
+                              <p className="mt-1 text-[10px] opacity-75 font-semibold">Terms: ${offer.price} | Qty: {offer.quantity}</p>
+                            )}
                             {!offer.message && (
                               <p className="mt-1 text-[10px] opacity-75">Price: ${offer.price} | Qty: {offer.quantity}</p>
+                            )}
+                            {isMe && activeThread?.status !== 'accepted' && (
+                              <button 
+                                onClick={() => {
+                                  setEditingOfferId(offer.id);
+                                  setEditPrice(String(offer.price));
+                                  setEditQty(String(offer.quantity));
+                                  setEditMsg(offer.message || '');
+                                }} 
+                                className="mt-1.5 text-[9px] underline block text-white/80 hover:text-white cursor-pointer"
+                              >
+                                Edit Offer Terms
+                              </button>
                             )}
                           </div>
                           <span className="text-[9px] text-[#717971] mt-0.5 px-1">{isMe ? 'You' : 'Farmer'}</span>
