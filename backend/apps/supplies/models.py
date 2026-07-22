@@ -31,3 +31,13 @@ class Supply(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.quantity} ({self.status})"
+
+
+class SupplyImage(models.Model):
+    supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='supplies/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for Supply: {self.supply.id}"
+

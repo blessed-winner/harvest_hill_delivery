@@ -395,7 +395,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                                   ? 'bg-[#ffdcc5] text-[#301400]'
                                   : 'bg-red-100 text-red-800'
                             }`}>
-                              {parseFloat(product.quantity).toFixed(0)} {product.unit || 'kg'} left
+                              {parseFloat(product.quantity).toFixed(0)} {product.unit || 'kg'}
                             </span>
                           )}
                         </div>

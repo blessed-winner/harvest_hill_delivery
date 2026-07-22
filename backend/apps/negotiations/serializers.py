@@ -12,7 +12,11 @@ class NegotiationOfferSerializer(serializers.ModelSerializer):
         fields = ['id', 'sender', 'price', 'quantity', 'message', 'created_at']
 
     def get_sender(self, obj):
-        return 'farmer' if obj.sender.role == 'farmer' else 'admin'
+        if obj.sender.role == 'farmer':
+            return 'farmer'
+        elif obj.sender.role == 'client':
+            return 'client'
+        return 'admin'
 
     def get_created_at(self, obj):
         return obj.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')

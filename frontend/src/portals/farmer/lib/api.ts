@@ -123,11 +123,17 @@ export const api = {
   supplies: () => apiRequest('/api/supplies/'),
 
   submitSupply: (payload: Record<string, any>) => {
-    if (payload.photo && typeof payload.photo !== 'string') {
+    if ((payload.photo && typeof payload.photo !== 'string') || payload.images) {
       const formData = new FormData();
       Object.entries(payload).forEach(([key, val]) => {
         if (val !== null && val !== undefined) {
-          formData.append(key, key === 'photo' ? (val as File) : String(val));
+          if (key === 'images' && Array.isArray(val)) {
+            val.forEach(file => {
+              formData.append('images', file);
+            });
+          } else {
+            formData.append(key, key === 'photo' ? (val as File) : String(val));
+          }
         }
       });
       return apiRequest('/api/supplies/', { method: 'POST', body: formData });
@@ -136,11 +142,17 @@ export const api = {
   },
 
   updateSupply: (supplyId: string | number, payload: Record<string, any>) => {
-    if (payload.photo && typeof payload.photo !== 'string') {
+    if ((payload.photo && typeof payload.photo !== 'string') || payload.images) {
       const formData = new FormData();
       Object.entries(payload).forEach(([key, val]) => {
         if (val !== null && val !== undefined) {
-          formData.append(key, key === 'photo' ? (val as File) : String(val));
+          if (key === 'images' && Array.isArray(val)) {
+            val.forEach(file => {
+              formData.append('images', file);
+            });
+          } else {
+            formData.append(key, key === 'photo' ? (val as File) : String(val));
+          }
         }
       });
       return apiRequest(`/api/supplies/${supplyId}/`, { method: 'PATCH', body: formData });

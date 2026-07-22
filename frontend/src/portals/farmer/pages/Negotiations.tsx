@@ -68,13 +68,29 @@ export default function Negotiations() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!activeThread || !messageText.trim()) return;
+    try {
+      await apiRequest(`/api/negotiations/threads/${activeThread.id}/offer/`, {
+        method: "POST",
+        body: JSON.stringify({
+          message: messageText
+        })
+      });
+      setMessageText("");
+      loadNegotiations();
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
+
   // Map thread offers to chat format
   const chatHistory = activeThread?.offers?.map((offer: any) => ({
     sender: offer.sender === 'farmer' ? 'SELLER' : 'BUYER',
     initials: offer.sender === 'farmer' ? 'HH' : 'WF',
-    text: offer.sender === 'farmer' 
+    text: offer.message || (offer.sender === 'farmer' 
       ? `Farmer counter-offered price: $${offer.price}/kg for ${offer.quantity} kg.`
-      : `Industry proposed price: $${offer.price}/kg for ${offer.quantity} kg.`,
+      : `Industry proposed price: $${offer.price}/kg for ${offer.quantity} kg.`),
     price: `$${offer.price}/kg`,
     change: offer.sender === 'admin' ? '-1.7% from last' : undefined,
     time: new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -298,8 +314,14 @@ export default function Negotiations() {
                 type="text" 
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendMessage();
+                }}
               />
-              <button className="px-4 bg-secondary text-on-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1 hover:opacity-90 active:scale-[0.98] transition-all shrink-0">
+              <button 
+                onClick={handleSendMessage}
+                className="px-4 bg-secondary text-on-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1 hover:opacity-90 active:scale-[0.98] transition-all shrink-0 cursor-pointer"
+              >
                 <Send size={14} />
                 <span className="hidden sm:inline">Send</span>
               </button>

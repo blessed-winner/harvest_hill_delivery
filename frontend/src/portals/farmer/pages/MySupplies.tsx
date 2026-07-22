@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { api } from '../lib/api';
+import { api, apiRequest } from '../lib/api';
 
 const romaTomatoesImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA';
@@ -41,11 +41,12 @@ export default function MySupplies() {
   }>({});
 
   const getSupplyImage = (supply: any) => {
+    if (supply?.photo) return supply.photo;
     const name = String(supply?.product_detail?.name || '').trim().toLowerCase();
     if (name.includes('roma') || name.includes('tomato')) {
       return romaTomatoesImage;
     }
-    return supply?.photo || supply?.product_detail?.image_url || supply?.product_detail?.image || '';
+    return supply?.product_detail?.image_url || supply?.product_detail?.image || '';
   };
 
   async function loadSupplies() {
@@ -91,6 +92,9 @@ export default function MySupplies() {
     }
   };
 
+  const [editImages, setEditImages] = useState<any[]>([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const handleEditClick = (supply: any) => {
     setEditSupply(supply);
     setEditQuantity(supply.quantity || '');
@@ -100,14 +104,51 @@ export default function MySupplies() {
     setEditNotes(supply.notes || '');
     setEditPhoto(null);
     setEditPhotoPreview(supply.photo || null);
+    setEditImages(supply.images || []);
     setValidationErrors({});
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setEditPhoto(file);
-      setEditPhotoPreview(URL.createObjectURL(file));
+  const handleOnTheFlyUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editSupply || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await apiRequest(`/api/supplies/${editSupply.id}/upload-image/`, {
+        method: 'POST',
+        body: formData
+      });
+      setEditImages(prev => [...prev, res]);
+      if (!editPhotoPreview) {
+        setEditPhotoPreview(res.image_url || res.image);
+      }
+      loadSupplies();
+    } catch (err) {
+      console.error("Failed to upload image on the fly:", err);
+      alert("Failed to upload image.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleOnTheFlyDelete = async (imageId: number) => {
+    if (!editSupply) return;
+    try {
+      await apiRequest(`/api/supplies/${editSupply.id}/delete-image/`, {
+        method: 'POST',
+        body: JSON.stringify({ image_id: imageId })
+      });
+      const remaining = editImages.filter(img => img.id !== imageId);
+      setEditImages(remaining);
+      const deletedImg = editImages.find(img => img.id === imageId);
+      if (deletedImg && (editPhotoPreview === deletedImg.image || editPhotoPreview === deletedImg.image_url)) {
+        setEditPhotoPreview(remaining[0]?.image_url || remaining[0]?.image || null);
+      }
+      loadSupplies();
+    } catch (err) {
+      console.error("Failed to delete image on the fly:", err);
+      alert("Failed to delete image.");
     }
   };
 
@@ -599,21 +640,38 @@ export default function MySupplies() {
 
                 {/* 4. Photo Upload */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-primary font-sans">Update Harvest Photo</label>
+                  <label className="block text-xs font-bold text-primary font-sans">Harvest Photos (Update on the Fly)</label>
+                  
+                  {/* Grid showing current images */}
+                  {editImages.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {editImages.map((img) => (
+                        <div key={img.id} className="relative w-20 h-20 rounded-xl border border-outline-variant overflow-hidden bg-surface-container-high group">
+                          <img src={img.image_url || img.image} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleOnTheFlyDelete(img.id)}
+                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow flex items-center justify-center cursor-pointer"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex gap-4 items-center">
-                    {editPhotoPreview && (
-                      <div className="w-20 h-20 rounded-xl border border-outline-variant overflow-hidden shrink-0 bg-surface-container-high">
-                        <img src={editPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
                     <label className="flex-1 border border-dashed border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center bg-surface-container-low hover:border-primary cursor-pointer transition-all">
                       <CloudUpload size={20} className="text-primary mb-1" />
-                      <span className="font-sans text-xs text-primary font-extrabold">Upload New Photo</span>
+                      <span className="font-sans text-xs text-primary font-extrabold">
+                        {isUploadingImage ? 'Uploading...' : 'Upload New Photo (+)'}
+                      </span>
                       <input 
                         type="file"
                         accept="image/*"
-                        onChange={handleFileChange}
+                        onChange={handleOnTheFlyUpload}
                         className="hidden"
+                        disabled={isUploadingImage}
                       />
                     </label>
                   </div>
