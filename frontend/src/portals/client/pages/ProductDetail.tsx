@@ -105,11 +105,32 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
   const [activeThread, setActiveThread] = useState<any>(null);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [negotiatedPrice, setNegotiatedPrice] = useState<number | null>(null);
 
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [editQty, setEditQty] = useState('');
   const [editMsg, setEditMsg] = useState('');
+
+  useEffect(() => {
+    const checkNegotiatedPrice = async () => {
+      if (!productId) return;
+      try {
+        const threads = await apiRequest('/api/negotiations/threads/');
+        const thread = threads.find((t: any) => t.supply_detail?.id === Number(productId));
+        if (thread && thread.status === 'accepted') {
+          const lastOffer = thread.offers?.[thread.offers.length - 1];
+          const price = lastOffer ? lastOffer.price : thread.supply_detail?.proposed_price;
+          setNegotiatedPrice(Number(price));
+        } else {
+          setNegotiatedPrice(null);
+        }
+      } catch (err) {
+        console.error("Error checking negotiated price:", err);
+      }
+    };
+    checkNegotiatedPrice();
+  }, [productId, isNegotiating, activeThread]);
 
   const handleDeleteNegotiation = async () => {
     if (!activeThread) return;
@@ -340,8 +361,15 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             </p>
 
             <div className="flex items-center gap-4 pt-1">
-              <div className="text-2xl font-black text-[#1c1c18]">
-                ${parseFloat(product.price || 0).toFixed(2)} 
+              <div className="text-2xl font-black text-[#1c1c18] flex items-baseline gap-2">
+                {negotiatedPrice !== null ? (
+                  <>
+                    <span className="line-through text-red-600">${parseFloat(product.price || 0).toFixed(2)}</span>
+                    <span className="text-emerald-700 font-extrabold text-2xl">${negotiatedPrice.toFixed(2)}</span>
+                  </>
+                ) : (
+                  <span>${parseFloat(product.price || 0).toFixed(2)}</span>
+                )}
                 <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'unit'}</span>
               </div>
               {product.quantity && product.quantity > 0 ? (

@@ -44,9 +44,7 @@ class NegotiationThreadSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'price', 'supply_detail', 'offers', 'supply']
 
     def get_status(self, obj):
-        if obj.supply.status in ['accepted', 'delivered', 'invoiced']:
-            return 'accepted'
-        return 'open'
+        return obj.status
 
     def get_price(self, obj):
         last_offer = obj.offers.all().order_by('timestamp').last()
