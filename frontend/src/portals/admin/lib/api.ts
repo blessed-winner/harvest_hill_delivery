@@ -111,6 +111,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
 export const api = {
   // Current User Info
   me: () => apiRequest('/api/accounts/me/'),
+  updateMe: (payload: any) => apiRequest('/api/accounts/me/', { method: 'PUT', body: JSON.stringify(payload) }),
+  changePassword: (payload: any) => apiRequest('/api/accounts/change-password/', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Dashboard Metrics
   dashboardSummary: (params: Record<string, string> = {}) => {

@@ -1,7 +1,25 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, DollarSign, Leaf, ChevronRight, User, MapPin, LogOut, ShoppingCart, Check, FileText, Loader2, Package, Save } from 'lucide-react';
+import { 
+  TrendingUp, 
+  Calendar, 
+  DollarSign, 
+  Leaf, 
+  ChevronRight, 
+  User, 
+  MapPin, 
+  LogOut, 
+  ShoppingCart, 
+  Check, 
+  FileText, 
+  Loader2, 
+  Package, 
+  Save, 
+  Edit2, 
+  Trash2, 
+  AlertTriangle 
+} from 'lucide-react';
 import { clientApi } from '../lib/api';
 
 interface DashboardProps {
@@ -28,6 +46,16 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   const [earlyAccess, setEarlyAccess] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Inline edit states for profile fields
+  const [editName, setEditName] = useState(false);
+  const [editEmail, setEditEmail] = useState(false);
+  const [editTitle, setEditTitle] = useState(false);
+  const [editPhone, setEditPhone] = useState(false);
+
+  // Account deletion states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Shipping Address State
   const [streetAddress, setStreetAddress] = useState('');
@@ -60,10 +88,12 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
         // Fetch profile
         const profile = await clientApi.profile.get();
         setProfileData(profile);
-        setFullName(profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : profile.business_name || profile.email || '');
-        setEmail(profile.email || profile.user?.email || '');
-        setBusinessTitle(profile.business_title || profile.business_type || '');
-        const phoneVal = profile.phone || profile.phone_number || profile.user?.phone_number || profile.user?.phone || '';
+        
+        const cp = profile.profile || {};
+        setFullName(profile.first_name || profile.last_name ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : cp.business_name || profile.username || profile.email || '');
+        setEmail(profile.email || '');
+        setBusinessTitle(cp.business_title || '');
+        const phoneVal = cp.phone || cp.phone_number || '';
         setPhone(phoneVal);
 
         // Load saved preferences
@@ -113,6 +143,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
         phone,
         phone_number: phone,
         business_title: businessTitle,
+        business_name: fullName,
       });
 
       // Save preferences to localStorage
@@ -122,11 +153,38 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       }));
       
       setSaveSuccess(true);
+      // Turn off edit states
+      setEditName(false);
+      setEditEmail(false);
+      setEditTitle(false);
+      setEditPhone(false);
+      
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to save profile:', err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAccountDeletion = async () => {
+    try {
+      setDeletingAccount(true);
+      // Call DELETE on user profile endpoint which schedules deactivation
+      await clientApi.profile.delete();
+      
+      // Clear localStorage session tokens
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user_role');
+      
+      alert("Your account deletion has been scheduled. You will be logged out now.");
+      window.location.href = '/login';
+    } catch (err: any) {
+      alert(err.message || "Failed to schedule account deletion");
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -243,6 +301,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 return (
                   <button
                     key={tab.id}
+                    type="button"
                     onClick={tab.action}
                     className={`flex items-center gap-3 px-4 py-3.5 text-xs font-semibold border-b border-[#f0eee7] transition-colors cursor-pointer text-left ${
                       isActive
@@ -257,16 +316,26 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
               })}
               
               <button
+                type="button"
                 onClick={() => {
                   localStorage.removeItem('access_token');
                   localStorage.removeItem('refresh_token');
                   localStorage.removeItem('user_role');
                   window.location.href = '/login';
                 }}
-                className="flex items-center gap-3 px-4 py-3.5 text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6]/20 transition-colors cursor-pointer text-left"
+                className="flex items-center gap-3 px-4 py-3.5 text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6]/20 transition-colors cursor-pointer text-left border-b border-[#f0eee7]"
               >
                 <LogOut size={16} />
                 Sign Out
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-3 px-4 py-3.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100/50 transition-colors cursor-pointer text-left"
+              >
+                <Trash2 size={16} />
+                Delete Account
               </button>
             </nav>
           </div>
@@ -279,48 +348,90 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 <h3 className="text-base font-bold text-[#1c1c18] pb-3 border-b border-[#f0eee7]">Profile Details</h3>
                 
                 <form onSubmit={handleSave} className="mt-6 space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Full Name / Business Name</label>
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                    {/* Full Name Field */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Full Name / Business Name</label>
+                      {editName ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditName(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{fullName || "Not set"}</span>
+                          <button type="button" onClick={() => setEditName(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                    {/* Email Address Field */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Email Address</label>
+                      {editEmail ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditEmail(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{email || "Not set"}</span>
+                          <button type="button" onClick={() => setEditEmail(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Business Title / Role</label>
-                      <input
-                        type="text"
-                        value={businessTitle}
-                        onChange={(e) => setBusinessTitle(e.target.value)}
-                        placeholder="E.g. Procurement Officer"
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                    {/* Business Title Field */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Business Title / Role</label>
+                      {editTitle ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={businessTitle}
+                            onChange={(e) => setBusinessTitle(e.target.value)}
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditTitle(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{businessTitle || "Not set"}</span>
+                          <button type="button" onClick={() => setEditTitle(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Contact Phone Number</label>
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="E.g. +250 788 123 456"
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                    {/* Contact Phone Number Field */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Contact Phone Number</label>
+                      {editPhone ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditPhone(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{phone || "Not set"}</span>
+                          <button type="button" onClick={() => setEditPhone(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Official Digital Signature Upload */}
@@ -382,8 +493,8 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                           {autoReorder && <Check size={12} strokeWidth={3} />}
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-[#1c1c18]">Automatic Re-ordering</span>
-                          <span className="block text-[10px] text-[#717971]">Re-order essentials when stock is predicted to be low.</span>
+                          <span className="block text-xs font-bold text-[#1c1c18]">Receive Email Notifications</span>
+                          <span className="block text-[10px] text-[#717971]">Receive automated email updates regarding order deliveries.</span>
                         </div>
                       </label>
 
@@ -403,8 +514,8 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                           {earlyAccess && <Check size={12} strokeWidth={3} />}
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-[#1c1c18]">Early Seasonal Access</span>
-                          <span className="block text-[10px] text-[#717971]">Get notified 24 hours before new seasonal crops go public.</span>
+                          <span className="block text-xs font-bold text-[#1c1c18]">Receive Inventory Low Alerts</span>
+                          <span className="block text-[10px] text-[#717971]">Notify when preferred fresh catalog products are running low in stock.</span>
                         </div>
                       </label>
                     </div>
@@ -508,6 +619,48 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
 
         </div>
       </div>
+
+      {/* ACCOUNT DELETION CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#e5e2db] shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="p-2 bg-red-50 rounded-xl">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-base font-extrabold text-[#1c1c18]">Confirm Account Deletion</h3>
+            </div>
+            
+            <p className="text-xs text-[#717971] leading-relaxed">
+              Are you absolutely sure you want to request account deletion? Your account will be deactivated immediately, and all your personal profiles, records, and access rights will be permanently deleted after <strong>10 days</strong>.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-[#c1c9c0] text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={handleAccountDeletion}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-2"
+              >
+                {deletingAccount ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Scheduling...
+                  </>
+                ) : (
+                  "Yes, Delete Account"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

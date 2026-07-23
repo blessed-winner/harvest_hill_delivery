@@ -38,6 +38,19 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const handleScroll = (id: string) => {
+    if (activeScreen !== 'landing') {
+      onNavigate('landing');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    } else {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const loadNotifications = async () => {
     try {
       const data = await clientApi.notifications.list();
@@ -141,21 +154,44 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           >
             Home
           </button>
-          {[
-            { name: 'Fruits', category: 'Fruits' },
-            { name: 'Vegetables', category: 'Vegetables' },
-            { name: 'Animal-Based', category: 'Animal-Based' },
-            { name: 'Grains', category: 'Grains' },
-            { name: 'Seasonal', category: 'all' },
-          ].map((item) => (
-            <button
-              key={item.name}
-              onClick={() => onNavigate('catalog', item.category)}
-              className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
-            >
-              {item.name}
-            </button>
-          ))}
+          {isLoggedIn ? (
+            /* Logged in Client Portal Navigation */
+            <>
+              {[
+                { name: 'Fruits', category: 'Fruits' },
+                { name: 'Vegetables', category: 'Vegetables' },
+                { name: 'Animal-Based', category: 'Animal-Based' },
+                { name: 'Grains', category: 'Grains' },
+                { name: 'Seasonal', category: 'all' },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => onNavigate('catalog', item.category)}
+                  className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </>
+          ) : (
+            /* Guest / Landing Page Section Navigation */
+            <>
+              {[
+                { name: 'How It Works', target: 'how-it-works' },
+                { name: 'Shop Categories', target: 'categories' },
+                { name: 'Testimonials', target: 'testimonials' },
+                { name: 'FAQ', target: 'faq' },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => handleScroll(item.target)}
+                  className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </>
+          )}
         </nav>
 
         {/* Right Action Bar */}

@@ -11,6 +11,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='client')
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+    scheduled_deletion_date = models.DateTimeField(null=True, blank=True)
 
     @property
     def is_locked(self):

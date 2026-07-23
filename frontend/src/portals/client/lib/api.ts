@@ -162,6 +162,10 @@ export const clientApi = {
         method: 'PUT',
         body: JSON.stringify(payload),
       }),
+    delete: () =>
+      apiRequest('/api/accounts/me/', {
+        method: 'DELETE',
+      }),
   },
 
   // ── Notifications ──────────────────────────────────────────────────────────
