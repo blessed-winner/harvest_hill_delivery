@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { 
   ChevronRight, Calendar, AlertCircle, Loader2, Package, 
-  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload 
+  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload, Clock, Lock 
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
@@ -45,12 +45,21 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     try {
       setLoading(true);
       setError(null);
-      const [deliveredOrders, notesData, profileData] = await Promise.all([
-        clientApi.orders.list('delivered').catch(() => []),
+      const [allOrders, notesData, profileData] = await Promise.all([
+        clientApi.orders.list().catch(() => []),
         clientApi.deliveryNotes.list().catch(() => []),
         clientApi.profile.get().catch(() => null)
       ]);
-      setOrders(deliveredOrders || []);
+      // Show all orders that have a linked delivery note, regardless of delivery status
+      const ordersWithNotes = (allOrders || []).filter((o: any) =>
+        (notesData || []).some((n: any) => n.order === o.id || n.order_detail?.id === o.id)
+      );
+      // Also include delivered orders even without a note (for sign flow)
+      const deliveredWithoutNote = (allOrders || []).filter((o: any) =>
+        o.status === 'delivered' &&
+        !(notesData || []).some((n: any) => n.order === o.id || n.order_detail?.id === o.id)
+      );
+      setOrders([...ordersWithNotes, ...deliveredWithoutNote]);
       setDeliveryNotes(notesData || []);
       
       if (profileData) {
@@ -200,15 +209,12 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
     }
   };
 
-  // Combine delivered orders with existing notes, filtering out client-deleted notes
+  // Combine orders with existing notes, filtering out client-deleted records
   const combinedItems = orders
     .filter(order => !order.is_deleted_by_client)
     .map(order => {
       const linkedNote = deliveryNotes.find(n => (n.order === order.id || n.order_detail?.id === order.id) && !n.is_deleted_by_client);
-      return {
-        order,
-        note: linkedNote
-      };
+      return { order, note: linkedNote };
     });
 
   deliveryNotes.forEach(note => {
@@ -326,6 +332,17 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       )}
 
       {!error && filteredItems.length > 0 && (
+        <>
+        {/* Info banner: show when any notes are in locked/preparation state */}
+        {combinedItems.some(({ order, note }) => note && order?.status !== 'delivered') && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
+            <Clock size={16} className="mt-0.5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-bold">Delivery notes in preparation</p>
+              <p className="mt-0.5 text-amber-700">Some notes are visible below but locked for signing. You'll be able to sign them once your order is marked as delivered.</p>
+            </div>
+          </div>
+        )}
         <div className="bg-white border border-[#e5e2db] rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -371,7 +388,12 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                             <AlertTriangle size={12} /> Disputed
                           </span>
                         )}
-                        {!isConfirmed && !isDisputed && (
+                        {!isConfirmed && !isDisputed && order?.status !== 'delivered' && (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
+                            <Clock size={12} /> In Preparation
+                          </span>
+                        )}
+                        {!isConfirmed && !isDisputed && order?.status === 'delivered' && (
                           <span className="inline-flex items-center gap-1.5 bg-[#fff8e1] text-[#b78103] text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
                             <PenTool size={12} /> Pending Signature
                           </span>
@@ -384,7 +406,13 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          {isConfirmed || isDisputed ? (
+                          {/* LOCKED: note exists but order not yet delivered */}
+                          {order?.status !== 'delivered' && note ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 font-bold rounded-lg text-xs">
+                              <Lock size={13} />
+                              Available on delivery
+                            </span>
+                          ) : isConfirmed || isDisputed ? (
                             <button
                               onClick={() => handleOpenViewModal({ order, note })}
                               className="px-3 py-1.5 bg-[#f6f3ec] hover:bg-[#e5e2db] text-[#144227] font-bold rounded-lg transition-all flex items-center gap-1 text-xs cursor-pointer"
@@ -453,7 +481,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         </div>
       )}
 
-      {/* ── MODAL: SIGN DELIVERY NOTE ────────────────────────────────────────── */}
+      {/* â”€â”€ MODAL: SIGN DELIVERY NOTE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {modalMode === 'sign' && selectedItem && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#e5e2db] space-y-5">
@@ -557,7 +585,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         </div>
       )}
 
-      {/* ── MODAL: FILE DISPUTE ─────────────────────────────────────────────── */}
+      {/* â”€â”€ MODAL: FILE DISPUTE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {modalMode === 'dispute' && selectedItem && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#e5e2db] space-y-5">
@@ -625,7 +653,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         </div>
       )}
 
-      {/* ── MODAL: VIEW DETAILS ─────────────────────────────────────────────── */}
+      {/* â”€â”€ MODAL: VIEW DETAILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {modalMode === 'view' && selectedItem && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#e5e2db] space-y-5">

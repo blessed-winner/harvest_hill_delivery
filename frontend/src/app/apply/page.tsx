@@ -12,6 +12,8 @@ export default function ApplyPage() {
   const [farmName, setFarmName] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   // Interactive pills
   const [crops, setCrops] = useState<string[]>([]);
@@ -51,6 +53,20 @@ export default function ApplyPage() {
     setSubmitting(true);
     setError('');
 
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please check and try again.');
+      setSubmitting(false);
+      return;
+    }
+
+    // Validate password strength (minimum 6 characters)
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/accounts/farmer-applications/apply/`, {
         method: 'POST',
@@ -65,7 +81,8 @@ export default function ApplyPage() {
           location,
           crops: crops.join(', '),
           certifications: certs.join(', '),
-          description
+          description,
+          password: password
         })
       });
 
@@ -201,6 +218,33 @@ export default function ApplyPage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="(555) 000-0000"
+                      className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-4 py-3 text-sm focus:outline-none transition-all placeholder-[#c1c9c0]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#414942]">Platform Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      minLength={6}
+                      className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-4 py-3 text-sm focus:outline-none transition-all placeholder-[#c1c9c0]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#414942]">Confirm Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter password"
+                      minLength={6}
                       className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-4 py-3 text-sm focus:outline-none transition-all placeholder-[#c1c9c0]"
                     />
                   </div>
