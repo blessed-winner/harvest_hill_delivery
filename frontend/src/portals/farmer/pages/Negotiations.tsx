@@ -5,8 +5,10 @@ import { motion } from 'motion/react';
 import { Search, Send, CheckCircle2, TrendingUp, Handshake } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { apiRequest } from '../lib/api';
+import { useAlert } from '../../../context/AlertContext';
 
 export default function Negotiations() {
+  const { toast, showConfirm } = useAlert();
   const [threads, setThreads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeNegId, setActiveNegId] = useState<string | null>(null);
@@ -22,14 +24,18 @@ export default function Negotiations() {
   const [editMsg, setEditMsg] = useState('');
 
   const handleDeleteNegotiation = async (threadId: number) => {
-    if (!confirm("Are you sure you want to delete this negotiation? This will reset all proposed terms.")) return;
+    const confirmed = await showConfirm(
+      "Delete Negotiation",
+      "Are you sure you want to delete this negotiation? This will reset all proposed terms."
+    );
+    if (!confirmed) return;
     try {
       await apiRequest(`/api/negotiations/threads/${threadId}/`, {
         method: 'DELETE'
       });
       setActiveNegId(null);
       loadNegotiations();
-      alert("Negotiation deleted successfully.");
+      toast("Negotiation deleted successfully.", "success");
     } catch (err) {
       console.error("Failed to delete negotiation:", err);
     }
@@ -48,10 +54,10 @@ export default function Negotiations() {
       });
       setEditingOfferId(null);
       loadNegotiations();
-      alert("Offer updated successfully!");
+      toast("Offer updated successfully!", "success");
     } catch (err) {
       console.error("Failed to update offer:", err);
-      alert("Failed to update offer.");
+      toast("Failed to update offer.", "error");
     }
   };
 
@@ -85,11 +91,11 @@ export default function Negotiations() {
     const parsedPrice = parseFloat(counterPrice);
     const parsedQty = parseFloat(counterQty);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      alert("Please enter a valid counter price.");
+      toast("Please enter a valid counter price.", "warning");
       return;
     }
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      alert("Please enter a valid counter quantity.");
+      toast("Please enter a valid counter quantity.", "warning");
       return;
     }
     try {

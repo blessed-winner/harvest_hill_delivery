@@ -7,12 +7,14 @@ import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
+import { useAlert } from '../../../context/AlertContext';
 
 interface DeliveryNotesProps {
   searchTerm?: string;
 }
 
 export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
+  const { toast } = useAlert();
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
@@ -78,7 +80,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
       setSelectedNote(null);
       loadNotes();
     } catch (err: any) {
-      alert(err.message || "Failed to update delivery note status.");
+      toast(err.message || "Failed to update delivery note status.", "error");
     }
   };
 
@@ -88,7 +90,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
       setSelectedNote(null);
       loadNotes();
     } catch (err: any) {
-      alert(err.message || "Failed to update archive status.");
+      toast(err.message || "Failed to update archive status.", "error");
     }
   };
 
@@ -103,7 +105,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
           setSelectedNote(null);
           loadNotes();
         } catch (err: any) {
-          alert(err.message || "Failed to delete delivery note.");
+          toast(err.message || "Failed to delete delivery note.", "error");
         }
       }
     });
@@ -122,7 +124,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
           await Promise.all(selectedIds.map(id => api.deliveryNotes.delete(id)));
           loadNotes();
         } catch (err: any) {
-          alert("Error performing bulk deletion.");
+          toast("Error performing bulk deletion.", "error");
         } fontally: () => {
           setIsProcessingBulk(false);
         }
@@ -137,7 +139,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
       await Promise.all(selectedIds.map(id => api.deliveryNotes.update(id, { is_archived: archiveState })));
       loadNotes();
     } catch (err: any) {
-      alert("Error performing bulk archive.");
+      toast("Error performing bulk archive.", "error");
     } finally {
       setIsProcessingBulk(false);
     }

@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
+import { useAlert } from '../../../context/AlertContext';
 
 const romaTomatoesImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAYiimUpH1IFm39l3pnZTBX7tbAQR_aWtolqnXVfboxPqr8MJz9pLBe5CILjBLqm6QIz5161fz4Gh7uTafn3uQA1DyPdwhFX7WaRmQSkeRDy2KKPDZ0RGDpPcnCV09hCAdrNsXSzyDpkD27PXewpXBfJ0kb06ODeplODn-tSr2WmbjmcOb78uNKOU2Ow1kGtSp9wtTq1RJbY2ROo9SLCKoBXXoRYNi0fF7q1_-pLo9QpQlnjxNmUM8CXA';
 
 export default function MySupplies() {
+  const { toast } = useAlert();
   const [supplies, setSupplies] = useState<any[]>([]);
 
   // Filter & modal states
@@ -111,7 +113,7 @@ export default function MySupplies() {
   const handleOnTheFlyUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editSupply || !e.target.files || e.target.files.length === 0) return;
     if (editImages.length >= 5) {
-      alert("You can upload a maximum of 5 images.");
+      toast("You can upload a maximum of 5 images.", "warning");
       return;
     }
     const file = e.target.files[0];
@@ -130,7 +132,7 @@ export default function MySupplies() {
       loadSupplies();
     } catch (err) {
       console.error("Failed to upload image on the fly:", err);
-      alert("Failed to upload image.");
+      toast("Failed to upload image.", "error");
     } finally {
       setIsUploadingImage(false);
     }
@@ -152,7 +154,7 @@ export default function MySupplies() {
       loadSupplies();
     } catch (err) {
       console.error("Failed to delete image on the fly:", err);
-      alert("Failed to delete image.");
+      toast("Failed to delete image.", "error");
     }
   };
 
@@ -203,7 +205,7 @@ export default function MySupplies() {
       setValidationErrors({});
     } catch (err) {
       console.error("Failed to update supply record:", err);
-      alert("Could not update record. Please check validation limits.");
+      toast("Could not update record. Please check validation limits.", "error");
     } finally {
       setIsUpdating(false);
     }

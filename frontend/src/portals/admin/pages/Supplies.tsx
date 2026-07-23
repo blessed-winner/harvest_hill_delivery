@@ -3,12 +3,14 @@ import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, Refre
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { useAlert } from '../../../context/AlertContext';
 
 interface SuppliesProps {
   searchTerm?: string;
 }
 
 export function Supplies({ searchTerm = '' }: SuppliesProps) {
+  const { toast, showConfirm } = useAlert();
   const [supplies, setSupplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
@@ -80,7 +82,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         });
       }
     } catch (err: any) {
-      alert(err.message || "Failed to update supply status.");
+      toast(err.message || "Failed to update supply status.", "error");
     }
   };
 
@@ -90,7 +92,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       setSelectedSupply(null);
       loadSupplies();
     } catch (err: any) {
-      alert(err.message || "Failed to archive supply.");
+      toast(err.message || "Failed to archive supply.", "error");
     }
   };
 
@@ -101,19 +103,23 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       loadSupplies();
     } catch (err: any) {
       console.error("Bulk archive failed:", err);
-      alert("Failed to archive some items.");
+      toast("Failed to archive some items.", "error");
     }
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to permanently delete the ${selectedIds.length} selected supplies?`)) return;
+    const confirmed = await showConfirm(
+      "Bulk Delete Supplies",
+      `Are you sure you want to permanently delete the ${selectedIds.length} selected supplies?`
+    );
+    if (!confirmed) return;
     try {
       await Promise.all(selectedIds.map(id => api.supplies.delete(id)));
       setSelectedIds([]);
       loadSupplies();
     } catch (err: any) {
       console.error("Bulk delete failed:", err);
-      alert("Failed to delete some items.");
+      toast("Failed to delete some items.", "error");
     }
   };
 
@@ -373,13 +379,17 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   </button>
                   <button 
                     onClick={async () => {
-                      if (window.confirm(`Are you sure you want to permanently delete this supply?`)) {
+                      const confirmed = await showConfirm(
+                        "Delete Supply",
+                        "Are you sure you want to permanently delete this supply?"
+                      );
+                      if (confirmed) {
                         try {
                           await api.supplies.delete(selectedSupply.id);
                           setSelectedSupply(null);
                           loadSupplies();
                         } catch (err: any) {
-                          alert(err.message || "Failed to delete supply.");
+                          toast(err.message || "Failed to delete supply.", "error");
                         }
                       }
                     }}

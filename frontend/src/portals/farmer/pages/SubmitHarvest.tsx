@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { useAlert } from '../../../context/AlertContext';
 
 type DemandProduct = {
   id: number;
@@ -87,6 +88,7 @@ const initialFormState: HarvestFormState = {
 };
 
 export default function SubmitHarvest() {
+  const { toast } = useAlert();
   const [selectedProduct, setSelectedProduct] = useState<DemandProduct | null>(null);
   const [demands, setDemands] = useState<DemandProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,12 +132,12 @@ export default function SubmitHarvest() {
       const currentCount = photos.length;
       const allowedCount = 5 - currentCount;
       if (allowedCount <= 0) {
-        alert("You can upload a maximum of 5 images.");
+        toast("You can upload a maximum of 5 images.", "warning");
         return;
       }
       const filesToAdd = files.slice(0, allowedCount);
       if (files.length > allowedCount) {
-        alert(`Only the first ${allowedCount} image(s) were added (limit: 5 images).`);
+        toast(`Only the first ${allowedCount} image(s) were added (limit: 5 images).`, "warning");
       }
       setPhotos(prev => [...prev, ...filesToAdd]);
       const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
@@ -269,7 +271,7 @@ export default function SubmitHarvest() {
       setValidationErrors({});
     } catch (error) {
       console.error('Failed to submit harvest:', error);
-      alert('Could not submit harvest right now. Please try again shortly.');
+      toast('Could not submit harvest right now. Please try again shortly.', 'error');
     } finally {
       setIsSubmitting(false);
     }

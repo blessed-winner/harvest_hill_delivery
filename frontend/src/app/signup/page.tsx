@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAlert } from '../../context/AlertContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { toast } = useAlert();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -120,7 +122,7 @@ export default function SignupPage() {
           {/* Social signup */}
           <button 
             type="button"
-            onClick={() => alert("Google authentication is placeholder in this view.")}
+            onClick={() => toast("Google authentication is placeholder in this view.", "info")}
             className="w-full flex items-center justify-center gap-2 bg-white border border-[#c1c9c0] hover:bg-[#f6f3ec]/40 text-[#414942] px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">

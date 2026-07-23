@@ -5,12 +5,14 @@ import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { api } from '../lib/api';
 import { useCurrency } from '../../../context/CurrencyContext';
+import { useAlert } from '../../../context/AlertContext';
 
 interface ProductCatalogProps {
   searchTerm?: string;
 }
 
 export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
+  const { toast } = useAlert();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -200,7 +202,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           setSelectedProduct(null);
           loadProducts();
         } catch (err: any) {
-          alert(err.message || "Failed to delete product.");
+          toast(err.message || "Failed to delete product.", "error");
         }
       }
     });
