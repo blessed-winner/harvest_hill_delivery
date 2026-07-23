@@ -32,9 +32,9 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('preferred_currency') as CurrencyCode) || 'USD';
+      return (localStorage.getItem('preferred_currency') as CurrencyCode) || 'RWF';
     }
-    return 'USD';
+    return 'RWF';
   });
 
   const setCurrency = useCallback((code: CurrencyCode) => {

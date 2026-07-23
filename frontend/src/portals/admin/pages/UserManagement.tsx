@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, MoreVertical, ShieldCheck, User as UserIcon, AlertCircle, Trash2, Power } from 'lucide-react';
+import { Search, Plus, MoreVertical, ShieldCheck, User as UserIcon, AlertCircle, Trash2, Power, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -17,6 +17,11 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [activeTab, setActiveTab] = useState("All Users");
+
+  // Farmer Applications state
+  const [applications, setApplications] = useState<any[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,6 +109,75 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, activeTab, searchTerm]);
+
+  const loadApplications = () => {
+    setAppsLoading(true);
+    api.farmerApplications.list()
+      .then(res => setApplications(res?.results || res || []))
+      .catch(err => console.error('Failed to load farmer applications:', err))
+      .finally(() => setAppsLoading(false));
+  };
+
+  useEffect(() => {
+    if (activeTab === 'Applications') {
+      loadApplications();
+    }
+  }, [activeTab]);
+
+  const handleApproveApplication = (app: any) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Approve Farmer Application',
+      message: `Approve ${app.full_name}'s application for ${app.farm_name}? A farmer account will be created automatically.`,
+      confirmText: 'Approve',
+      confirmColor: 'bg-primary',
+      onConfirm: async () => {
+        try {
+          const result = await api.farmerApplications.approve(app.id);
+          loadApplications();
+          if (result?.temporary_password) {
+            setConfirmDialog({
+              isOpen: true,
+              title: 'Farmer Account Created',
+              message: `Account created successfully!\n\nUsername: ${result.username}\nTemporary Password: ${result.temporary_password}\n\nPlease share these credentials with the farmer securely.`,
+              confirmText: 'OK',
+              confirmColor: 'bg-primary',
+              hideCancel: true,
+              onConfirm: () => {}
+            });
+          }
+        } catch (err: any) {
+          setConfirmDialog({
+            isOpen: true,
+            title: 'Error',
+            message: err.message || 'Failed to approve application.',
+            confirmText: 'Close',
+            confirmColor: 'bg-red-600',
+            hideCancel: true,
+            onConfirm: () => {}
+          });
+        }
+      }
+    });
+  };
+
+  const handleRejectApplication = (app: any) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Reject Farmer Application',
+      message: `Reject ${app.full_name}'s application? This action cannot be undone.`,
+      confirmText: 'Reject',
+      confirmColor: 'bg-red-600',
+      onConfirm: async () => {
+        try {
+          await api.farmerApplications.reject(app.id);
+          loadApplications();
+        } catch (err: any) {
+          console.error('Reject failed:', err);
+        }
+      }
+    });
+  };
 
   const handleToggleStatus = (user: any) => {
     const actionText = user.is_active ? 'deactivate' : 'activate';
@@ -328,7 +402,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         </div>
         
         <div className="flex border-b border-outline-variant">
-          {['All Users', 'Clients', 'Farmers & Suppliers'].map((tab) => (
+          {['All Users', 'Clients', 'Farmers & Suppliers', 'Applications'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -337,11 +411,12 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                 activeTab === tab ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:bg-surface-container-low"
               )}
             >
-              {tab}
+              {tab}{tab === 'Applications' && applications.filter(a => a.status === 'pending').length > 0 ? ` (${applications.filter(a => a.status === 'pending').length})` : ''}
             </button>
           ))}
         </div>
 
+        {activeTab !== 'Applications' && (
         <div className="py-2 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
@@ -371,12 +446,104 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <Plus className="w-4 h-4" /> Add User
           </button>
         </div>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
         <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            {isLoading ? (
+
+            {/* ── APPLICATIONS TAB ── */}
+            {activeTab === 'Applications' ? (
+              appsLoading ? (
+                <div className="p-12 text-center text-on-surface-variant font-medium animate-pulse">Loading applications...</div>
+              ) : applications.length === 0 ? (
+                <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+                  <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+                  <p className="text-sm font-bold">No farmer applications yet.</p>
+                  <p className="text-xs">Applications submitted via the farmer registration form will appear here.</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Applicant</th>
+                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Farm</th>
+                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {applications.map((app) => (
+                      <tr
+                        key={app.id}
+                        onClick={() => setSelectedApp(app)}
+                        className="hover:bg-surface-container-high/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
+                              {app.full_name?.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-on-surface">{app.full_name}</p>
+                              <p className="text-xs text-on-surface-variant">{app.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-on-surface">{app.farm_name}</p>
+                          <p className="text-xs text-on-surface-variant">{app.crops}</p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">{app.location}</td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-2.5 py-1 text-[10px] font-bold rounded-full border",
+                            app.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                            app.status === 'approved' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                            "bg-red-50 text-red-700 border-red-200"
+                          )}>
+                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedApp(app)}
+                              title="View details"
+                              className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {app.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveApplication(app)}
+                                  title="Approve"
+                                  className="p-1.5 hover:bg-emerald-50 rounded-lg transition-colors text-emerald-600 cursor-pointer"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleRejectApplication(app)}
+                                  title="Reject"
+                                  className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-500 cursor-pointer"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            ) : (
+            // ── USERS TABS ──
+            isLoading ? (
               <div className="p-12 text-center text-on-surface-variant font-medium animate-pulse">Loading user data...</div>
             ) : users.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
@@ -464,11 +631,11 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                   ))}
                 </tbody>
               </table>
-            )}
+            ))}
           </div>
 
           {/* Pagination Footer */}
-          {!isLoading && totalPages > 1 && (
+          {activeTab !== 'Applications' && !isLoading && totalPages > 1 && (
             <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
               <span className="text-xs text-on-surface-variant font-bold">
                 Showing {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, users.length)} of {users.length} users
@@ -766,6 +933,85 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         ) : null}
       </DetailDrawer>
 
+      {/* Application Detail Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSelectedApp(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-outline-variant/50 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-outline-variant flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-extrabold text-primary">Farmer Application</h3>
+                <p className="text-xs text-on-surface-variant mt-0.5">Review applicant details before approval</p>
+              </div>
+              <span className={cn(
+                "px-3 py-1 text-xs font-bold rounded-full border",
+                selectedApp.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                selectedApp.status === 'approved' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                "bg-red-50 text-red-700 border-red-200"
+              )}>
+                {selectedApp.status.charAt(0).toUpperCase() + selectedApp.status.slice(1)}
+              </span>
+            </div>
+            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Full Name', value: selectedApp.full_name },
+                  { label: 'Email', value: selectedApp.email },
+                  { label: 'Phone', value: selectedApp.phone || '—' },
+                  { label: 'Farm Name', value: selectedApp.farm_name },
+                  { label: 'Farm Location', value: selectedApp.location },
+                  { label: 'Crops', value: selectedApp.crops },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">{label}</p>
+                    <p className="text-sm font-semibold text-on-surface">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {selectedApp.certifications && (
+                <div>
+                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Certifications</p>
+                  <p className="text-sm text-on-surface">{selectedApp.certifications}</p>
+                </div>
+              )}
+              {selectedApp.description && (
+                <div>
+                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Description</p>
+                  <p className="text-sm text-on-surface leading-relaxed">{selectedApp.description}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Date Applied</p>
+                <p className="text-sm text-on-surface">{selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center gap-3 justify-end">
+              <button
+                onClick={() => setSelectedApp(null)}
+                className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              {selectedApp.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => { setSelectedApp(null); handleRejectApplication(selectedApp); }}
+                    className="px-4 py-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-all cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => { setSelectedApp(null); handleApproveApplication(selectedApp); }}
+                    className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:brightness-110 transition-all cursor-pointer shadow-sm"
+                  >
+                    Approve & Create Account
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Premium Confirm Dialog Modal */}
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -800,3 +1046,4 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     </div>
   );
 }
+

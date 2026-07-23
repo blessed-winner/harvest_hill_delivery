@@ -154,27 +154,7 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Role selection tabs */}
-            <div className="grid grid-cols-2 gap-1.5 p-0.5 bg-[#f0eee7] rounded-lg">
-              <button
-                type="button"
-                onClick={() => setRole('client')}
-                className={`py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                  role === 'client' ? 'bg-[#144227] text-white' : 'text-[#414942] hover:text-[#144227]'
-                }`}
-              >
-                Client
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('farmer')}
-                className={`py-1.5 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                  role === 'farmer' ? 'bg-[#144227] text-white' : 'text-[#414942] hover:text-[#144227]'
-                }`}
-              >
-                Farmer
-              </button>
-            </div>
+
 
             <div className="space-y-0.5">
               <label className="block text-[10px] font-bold text-[#1c1c18]">Full Name</label>
@@ -303,14 +283,25 @@ export default function SignupPage() {
           </form>
 
           {/* Login link */}
-          <div className="text-center text-xs text-[#414942] font-medium">
-            Already have an account?{' '}
-            <Link 
-              href="/login" 
-              className="font-bold text-[#144227] hover:underline underline-offset-2"
-            >
-              Log in
-            </Link>
+          <div className="text-center text-xs text-[#414942] font-medium space-y-2">
+            <div>
+              Already have an account?{' '}
+              <Link 
+                href="/login" 
+                className="font-bold text-[#144227] hover:underline underline-offset-2"
+              >
+                Log in
+              </Link>
+            </div>
+            <div className="pt-2 border-t border-[#e5e2db] text-[11px] text-[#717971]">
+              Are you a grower or supplier?{' '}
+              <Link 
+                href="/apply" 
+                className="font-bold text-[#144227] hover:underline"
+              >
+                Apply to become a supplier
+              </Link>
+            </div>
           </div>
 
         </div>

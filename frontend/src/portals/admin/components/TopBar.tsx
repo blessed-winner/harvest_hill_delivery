@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle } from 'lucide-react';
+import { Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle, User } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
 
@@ -279,8 +279,8 @@ export function TopBar({
               className="w-8 h-8 rounded-full object-cover border border-outline-variant shadow-sm"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-outline-variant flex items-center justify-center font-bold text-xs shadow-sm">
-              {(adminName || 'A').charAt(0).toUpperCase()}
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-outline-variant flex items-center justify-center shadow-sm">
+              <User className="w-4 h-4 text-primary" />
             </div>
           )}
         </div>

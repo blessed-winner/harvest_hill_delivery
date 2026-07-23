@@ -86,7 +86,10 @@ export function Sidebar({ currentView, onViewChange, isOpen = false, onClose }: 
       </nav>
 
       <div className="mt-auto px-4 pt-4 border-t border-white/10 space-y-1 shrink-0">
-        <button className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors">
+        <button 
+          onClick={() => onViewChange('settings')}
+          className="w-full flex items-center px-4 py-2.5 text-white/80 hover:text-white hover:bg-primary-container/20 rounded-lg transition-colors"
+        >
           <UserCircle className="w-5 h-5 mr-3 text-white/60" />
           <span className="text-sm">Admin Profile</span>
         </button>

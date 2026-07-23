@@ -7,3 +7,5 @@ coverage/
 *.log
 .env
 
+# Internal testing guide — do not commit
+test_guide.md

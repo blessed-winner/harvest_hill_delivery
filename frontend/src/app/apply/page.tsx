@@ -44,14 +44,44 @@ export default function ApplyPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // Simulate API request
-    setTimeout(() => {
-      setSubmitting(false);
+    setError('');
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/accounts/farmer-applications/apply/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+          email,
+          phone,
+          farm_name: farmName,
+          location,
+          crops: crops.join(', '),
+          certifications: certs.join(', '),
+          description
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        const msg = errData.detail || errData.error || Object.values(errData).flat().join(' ') || 'Failed to submit application.';
+        throw new Error(msg);
+      }
+
       setSubmitted(true);
-    }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'An error occurred during submission.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -69,8 +99,8 @@ export default function ApplyPage() {
         </nav>
         <div className="flex items-center gap-4">
           <Link href="/login" className="text-[#414942] hover:text-[#144227] text-sm font-bold transition-colors">Log In</Link>
-          <Link href="/farmer" className="bg-[#144227] text-white hover:bg-[#224f33] px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm">
-            Farmer Portal
+          <Link href="/" className="bg-[#144227] text-white hover:bg-[#224f33] px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm">
+            Home
           </Link>
         </div>
       </header>
@@ -127,6 +157,11 @@ export default function ApplyPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
+              {error && (
+                <div className="bg-[#ffdad6] text-[#93000a] text-xs font-bold p-4 rounded-xl border border-[#ba1a1a]/30">
+                  {error}
+                </div>
+              )}
               {/* Contact Information Section */}
               <div className="space-y-5">
                 <div className="flex items-center gap-2 border-b border-[#e5e2db] pb-3">
