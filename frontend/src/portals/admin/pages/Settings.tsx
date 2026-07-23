@@ -26,7 +26,6 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
   const [notifyNewOrders, setNotifyNewOrders] = useState(true);
   const [notifyApprovals, setNotifyApprovals] = useState(true);
   const [notifyFailedSyncs, setNotifyFailedSyncs] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Edit Mode state
   const [isEditing, setIsEditing] = useState(false);
@@ -83,8 +82,7 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
         const storedSyncs = localStorage.getItem('admin_notify_syncs');
         if (storedSyncs !== null) setNotifyFailedSyncs(storedSyncs === 'true');
 
-        const stored2fa = localStorage.getItem('admin_2fa_enabled');
-        if (stored2fa !== null) setTwoFactorEnabled(stored2fa === 'true');
+
 
       } catch (err) {
         console.error("Failed to load settings data:", err);
@@ -100,7 +98,6 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
     localStorage.setItem('admin_notify_orders', String(notifyNewOrders));
     localStorage.setItem('admin_notify_approvals', String(notifyApprovals));
     localStorage.setItem('admin_notify_syncs', String(notifyFailedSyncs));
-    localStorage.setItem('admin_2fa_enabled', String(twoFactorEnabled));
 
     toast("Settings saved successfully", "success");
     
@@ -335,7 +332,6 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
             <div className="bg-[#fcf9f2] border border-outline-variant rounded-xl p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold">Password</p>
-                <p className="text-[10px] text-on-surface-variant mt-0.5">Last updated 4 months ago</p>
               </div>
               <button
                 type="button"
@@ -439,25 +435,6 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
             <div className="flex items-center gap-2 border-b border-outline-variant pb-3">
               <Shield className="text-[#144227] w-5 h-5" />
               <h3 className="text-sm font-extrabold text-on-surface tracking-tight">System Security</h3>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold">Two-factor authentication</p>
-                <p className="text-[10px] text-on-surface-variant mt-0.5">
-                  {twoFactorEnabled ? 'Enabled' : 'Not enabled'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                className={`w-9 h-5 rounded-full transition-colors relative flex items-center shrink-0 ${
-                  twoFactorEnabled ? 'bg-[#144227]' : 'bg-[#e5e2db]'
-                }`}
-              >
-                <span className={`w-3.5 h-3.5 rounded-full bg-white shadow absolute transition-all ${
-                  twoFactorEnabled ? 'left-5' : 'left-0.5'
-                }`} />
-              </button>
             </div>
 
             <div className="border-t border-outline-variant/40 pt-4 flex items-center justify-between text-xs text-on-surface-variant font-semibold">
