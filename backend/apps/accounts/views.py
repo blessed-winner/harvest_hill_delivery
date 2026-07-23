@@ -681,8 +681,8 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         app = self.get_object()
-        if app.status != 'pending':
-            return Response({"detail": "Application is already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        if app.status == 'approved':
+            return Response({"detail": "Application is already approved."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Check if user with that email already exists
         if User.objects.filter(email=app.email).exists():
@@ -729,12 +729,24 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         app = self.get_object()
-        if app.status != 'pending':
-            return Response({"detail": "Application is already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        if app.status == 'rejected':
+            return Response({"detail": "Application is already rejected."}, status=status.HTTP_400_BAD_REQUEST)
         
         app.status = 'rejected'
         app.save()
 
         log_action(request, actor=request.user, action="farmer_application_rejected", target_model="FarmerApplication", target_id=app.id)
 
-        return Response({"detail": "Application has been rejected."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Application has been rejected. You can re-approve it later if needed."}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, pk=None):
+        """
+        Delete a farmer application.
+        """
+        app = self.get_object()
+        app_id = app.id
+        app.delete()
+        
+        log_action(request, actor=request.user, action="farmer_application_deleted", target_model="FarmerApplication", target_id=app_id)
+        
+        return Response({"detail": "Application deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
