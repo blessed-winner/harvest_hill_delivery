@@ -19,15 +19,24 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [sliderIndex, setSliderIndex] = useState(0);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
 
-  // Fetch products from catalog on mount
+  // Fetch products from catalog on mount safely checking for token
   useEffect(() => {
     async function fetchProducts() {
+      if (typeof window !== 'undefined') {
+        const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken');
+        if (!token) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+      }
       try {
         setLoading(true);
         const res = await clientApi.products.list();
         setProducts(res?.results || []);
       } catch (err) {
         console.error("Failed to fetch landing products:", err);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
@@ -123,7 +132,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         {/* Hero Right: Collage of rounded crop cards */}
         <div className="lg:col-span-6 relative h-[400px] flex items-center justify-center select-none">
           {/* Card 1: Left tall */}
-          <div className="absolute left-[5%] top-[10%] w-[160px] h-[220px] rounded-3xl overflow-hidden shadow-xl border border-white/50 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+          <div className="absolute left-[15%] top-[12%] w-[150px] h-[200px] rounded-3xl overflow-hidden shadow-xl border border-white/50 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
             <img 
               src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80" 
               alt="fresh produce" 
@@ -131,7 +140,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             />
           </div>
           {/* Card 2: Right large */}
-          <div className="absolute right-[5%] top-[5%] w-[200px] h-[280px] rounded-3xl overflow-hidden shadow-2xl border border-white/50 transform rotate-2 hover:rotate-0 transition-transform duration-500 z-10">
+          <div className="absolute right-[15%] top-[6%] w-[180px] h-[250px] rounded-3xl overflow-hidden shadow-2xl border border-white/50 transform rotate-3 hover:rotate-0 transition-transform duration-500 z-10">
             <img 
               src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=500&q=80" 
               alt="fresh vegetables" 
@@ -139,7 +148,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             />
           </div>
           {/* Card 3: Center bottom */}
-          <div className="absolute left-[20%] bottom-[5%] w-[170px] h-[170px] rounded-3xl overflow-hidden shadow-lg border border-white/50 transform -rotate-6 hover:rotate-0 transition-transform duration-500 z-20">
+          <div className="absolute left-[32%] bottom-[8%] w-[160px] h-[160px] rounded-3xl overflow-hidden shadow-lg border border-white/50 transform -rotate-2 hover:rotate-0 transition-transform duration-500 z-20">
             <img 
               src="https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&q=80" 
               alt="tomatoes" 
@@ -333,7 +342,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             className="lg:col-span-5 bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[280px]"
           >
             <img 
-              src="https://images.unsplash.com/photo-1610832958506-ee56336191a1?w=600&q=80" 
+              src="https://images.unsplash.com/photo-1519996521430-02b798c1d881?w=800&q=80" 
               alt="fruits" 
               className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
             />
@@ -351,7 +360,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
             >
               <img 
-                src="https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=400&q=80" 
+                src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80" 
                 alt="vegetables" 
                 className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
               />
@@ -367,7 +376,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
             >
               <img 
-                src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80" 
+                src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80" 
                 alt="dairy" 
                 className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
               />
@@ -383,7 +392,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
             >
               <img 
-                src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80" 
+                src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80" 
                 alt="grains and bakery" 
                 className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
               />
