@@ -71,6 +71,7 @@ class FarmerApplication(models.Model):
     crops = models.TextField(blank=True, default='')
     certifications = models.TextField(blank=True, default='')
     description = models.TextField()
+    password = models.CharField(max_length=255, blank=True, default='')  # Store password from application
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -430,12 +430,15 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
           selectedOrder && (
             <div className="space-y-3 w-full font-sans">
               <div className="grid grid-cols-2 gap-3">
+              {/* Generate Delivery Note — only when order is in processing */}
+              {selectedOrder.status === 'processing' && (
                 <button 
                   onClick={() => handleGenerateDeliveryNote(selectedOrder)}
-                  className="py-2.5 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors cursor-pointer text-xs"
+                  className="py-2.5 bg-surface-container-high text-on-surface font-bold rounded-lg hover:bg-surface-container-highest transition-colors cursor-pointer text-xs col-span-2"
                 >
                   Generate Delivery Note
                 </button>
+              )}
                 {selectedOrder.status === 'pending' && !selectedOrder.is_archived && (
                   <button 
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'processing')}

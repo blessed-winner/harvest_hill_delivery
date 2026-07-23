@@ -696,8 +696,8 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
             username = f"{base_username}_{counter}"
             counter += 1
 
-        # Create user account as farmer
-        password = User.objects.make_random_password()
+        # Use password from application form
+        password = app.password if app.password else 'defaultpassword123'
         user = User.objects.create_user(
             username=username,
             email=app.email,
