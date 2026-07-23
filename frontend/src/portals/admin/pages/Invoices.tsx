@@ -4,12 +4,14 @@ import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { SuccessModal } from '../../../components/SuccessModal';
+import { useAlert } from '../../../context/AlertContext';
 
 interface InvoicesProps {
   searchTerm?: string;
 }
 
 export function Invoices({ searchTerm = '' }: InvoicesProps) {
+  const { toast } = useAlert();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
@@ -69,14 +71,14 @@ export function Invoices({ searchTerm = '' }: InvoicesProps) {
         message: `Invoice #${invoiceId} status has been updated to Paid and synced with ledger.`
       });
     } catch (err: any) {
-      alert(err.message || "Failed to update invoice status.");
+      toast(err.message || "Failed to update invoice status.", "error");
     }
   };
 
   const handleGenerateInvoiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!partyName.trim() || !invoiceAmount || Number(invoiceAmount) <= 0) {
-      alert("Please fill in party name and valid amount.");
+      toast("Please fill in party name and valid amount.", "warning");
       return;
     }
 
@@ -113,7 +115,7 @@ export function Invoices({ searchTerm = '' }: InvoicesProps) {
         message: `Invoice ${generatedId} for ${partyName} ($${parseFloat(invoiceAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}) has been issued and synced with Bikanawe Ledger.`
       });
     } catch (err: any) {
-      alert("Failed to generate invoice.");
+      toast("Failed to generate invoice.", "error");
     } finally {
       setIsGenerating(false);
     }

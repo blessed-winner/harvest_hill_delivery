@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sprout, Eye, EyeOff, Tractor } from 'lucide-react';
+import { useAlert } from '../../context/AlertContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useAlert();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -94,7 +96,7 @@ export default function LoginPage() {
           {/* Social login */}
           <button 
             type="button"
-            onClick={() => alert("Google authentication is placeholder in this view.")}
+            onClick={() => toast("Google authentication is placeholder in this view.", "info")}
             className="w-full flex items-center justify-center gap-3 bg-white border border-[#c1c9c0] hover:bg-[#f6f3ec]/40 text-[#414942] px-4 py-3 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">

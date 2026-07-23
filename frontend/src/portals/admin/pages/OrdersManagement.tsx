@@ -8,12 +8,14 @@ import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { SuccessModal } from '../../../components/SuccessModal';
+import { useAlert } from '../../../context/AlertContext';
 
 interface OrdersManagementProps {
   searchTerm?: string;
 }
 
 export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
+  const { toast } = useAlert();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -80,7 +82,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
       setSelectedOrder(null);
       loadOrders();
     } catch (err: any) {
-      alert(err.message || "Failed to update order status.");
+      toast(err.message || "Failed to update order status.", "error");
     }
   };
 
@@ -90,7 +92,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
       setSelectedOrder(null);
       loadOrders();
     } catch (err: any) {
-      alert(err.message || "Failed to update archive status.");
+      toast(err.message || "Failed to update archive status.", "error");
     }
   };
 
@@ -105,7 +107,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
           setSelectedOrder(null);
           loadOrders();
         } catch (err: any) {
-          alert(err.message || "Failed to delete order.");
+          toast(err.message || "Failed to delete order.", "error");
         }
       }
     });
@@ -124,7 +126,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
           await Promise.all(selectedIds.map(id => api.orders.delete(id)));
           loadOrders();
         } catch (err: any) {
-          alert("Error performing bulk deletion.");
+          toast("Error performing bulk deletion.", "error");
         } finally {
           setIsProcessingBulk(false);
         }
@@ -139,7 +141,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
       await Promise.all(selectedIds.map(id => api.orders.update(id, { is_archived: archiveState })));
       loadOrders();
     } catch (err: any) {
-      alert("Error performing bulk archive.");
+      toast("Error performing bulk archive.", "error");
     } finally {
       setIsProcessingBulk(false);
     }
@@ -159,7 +161,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
         message: `Delivery note for Order #${order.id} has been generated successfully and synced with the logistics ledger.`
       });
     } catch (err: any) {
-      alert(err.message || "Failed to generate delivery note.");
+      toast(err.message || "Failed to generate delivery note.", "error");
     }
   };
 

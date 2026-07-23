@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Package, AlertCircle, Handshake, X, Check, FileText } from 'lucide-react';
 import { clientApi, apiRequest } from '../lib/api';
 import { SuccessModal } from '../../../components/SuccessModal';
+import { useAlert } from '../../../context/AlertContext';
 
 const getFullImageUrl = (url: string | null | undefined) => {
   if (!url) return '';
@@ -31,6 +32,7 @@ interface ProductDetailProps {
 }
 
 export default function ProductDetail({ onNavigate, addToCart, productId }: ProductDetailProps) {
+  const { toast, showConfirm } = useAlert();
   const [qty, setQty] = useState(1);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [product, setProduct] = useState<any>(null);
@@ -212,14 +214,18 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
   const handleDeleteNegotiation = async () => {
     if (!activeThread) return;
-    if (!confirm("Are you sure you want to delete this negotiation? This will reset all proposed terms.")) return;
+    const confirmed = await showConfirm(
+      "Delete Negotiation",
+      "Are you sure you want to delete this negotiation? This will reset all proposed terms."
+    );
+    if (!confirmed) return;
     try {
       await apiRequest(`/api/negotiations/threads/${activeThread.id}/`, {
         method: 'DELETE'
       });
       setActiveThread(null);
       setIsNegotiating(false);
-      alert("Negotiation deleted successfully.");
+      toast("Negotiation deleted successfully.", "success");
     } catch (err) {
       console.error("Failed to delete negotiation:", err);
     }
@@ -239,10 +245,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
       });
       setEditingOfferId(null);
       setActiveThread(res);
-      alert("Offer updated successfully!");
+      toast("Offer updated successfully!", "success");
     } catch (err) {
       console.error("Failed to update offer:", err);
-      alert("Failed to update offer.");
+      toast("Failed to update offer.", "error");
     }
   };
 
@@ -283,12 +289,12 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     const parsedPrice = parseFloat(proposedPrice);
     const parsedQty = parseFloat(negotiationQty);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      alert("Please enter a valid proposed price.");
+      toast("Please enter a valid proposed price.", "warning");
       setIsSubmittingProposal(false);
       return;
     }
     if (isNaN(parsedQty) || parsedQty <= 0) {
-      alert("Please enter a valid proposed quantity.");
+      toast("Please enter a valid proposed quantity.", "warning");
       setIsSubmittingProposal(false);
       return;
     }
@@ -305,7 +311,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
       setActiveThread(res);
     } catch (err) {
       console.error("Failed to send offer:", err);
-      alert("Failed to send counter proposal.");
+      toast("Failed to send counter proposal.", "error");
     } finally {
       setIsSubmittingProposal(false);
     }
@@ -318,7 +324,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         method: 'POST'
       });
       setActiveThread(res);
-      alert("Agreement finalized successfully!");
+      toast("Agreement finalized successfully!", "success");
     } catch (err) {
       console.error("Failed to accept offer:", err);
     }

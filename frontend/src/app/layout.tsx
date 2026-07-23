@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import '../styles/globals.css';
+import { AlertProvider } from '../context/AlertContext';
 
 export const metadata: Metadata = {
   title: 'Harvest Hill Delivery',
@@ -14,7 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AlertProvider>
+          {children}
+        </AlertProvider>
+      </body>
     </html>
   );
 }
+

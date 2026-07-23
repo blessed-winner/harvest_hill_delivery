@@ -7,12 +7,14 @@ import {
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
+import { useAlert } from '../../../context/AlertContext';
 
 interface DeliveryNoteProps {
   onNavigate: (screen: string) => void;
 }
 
 export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
+  const { toast } = useAlert();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<any[]>([]);
@@ -121,11 +123,11 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   // Submit Sign & Confirm Delivery Note
   const handleSubmitSignature = async () => {
     if (!receiverName.trim()) {
-      alert('Please enter recipient name');
+      toast('Please enter recipient name', 'warning');
       return;
     }
     if (!signaturePreview) {
-      alert('Please upload a digital signature image file');
+      toast('Please upload a digital signature image file', 'warning');
       return;
     }
 
@@ -152,7 +154,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       closeModal();
     } catch (err: any) {
       console.error('Failed to submit signature:', err);
-      alert(err.message || 'Failed to submit delivery note signature');
+      toast(err.message || 'Failed to submit delivery note signature', 'error');
       setSubmitting(false);
     }
   };
@@ -160,7 +162,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   // Submit Dispute for Delivery Note
   const handleSubmitDispute = async () => {
     if (!disputeReason.trim()) {
-      alert('Please enter a reason for the dispute');
+      toast('Please enter a reason for the dispute', 'warning');
       return;
     }
 
@@ -188,7 +190,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       closeModal();
     } catch (err: any) {
       console.error('Failed to submit dispute:', err);
-      alert(err.message || 'Failed to submit delivery note dispute');
+      toast(err.message || 'Failed to submit delivery note dispute', 'error');
       setSubmitting(false);
     }
   };
