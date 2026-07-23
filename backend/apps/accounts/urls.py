@@ -11,11 +11,14 @@ from .views import (
     AdminUserViewSet,
     AdminDashboardView,
     AdminReportsView,
-    ChangePasswordView
+    ChangePasswordView,
+    FarmerApplicationSubmitView,
+    AdminFarmerApplicationViewSet
 )
 
 router = DefaultRouter()
 router.register('admin/users', AdminUserViewSet, basename='admin-users')
+router.register('admin/farmer-applications', AdminFarmerApplicationViewSet, basename='admin-farmer-applications')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -23,6 +26,7 @@ urlpatterns = [
     path('admin/reports/', AdminReportsView.as_view(), name='admin-reports'),
     path('login/', LoginView.as_view(), name='login'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('farmer-applications/apply/', FarmerApplicationSubmitView.as_view(), name='farmer_application_apply'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('me/', UserProfileView.as_view(), name='user_profile'),

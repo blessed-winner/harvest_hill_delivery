@@ -16,6 +16,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from datetime import timedelta
 from django.db.models import Q
 from apps.common.permissions import IsAdmin
+from rest_framework.decorators import action
+from .models import FarmerProfile, FarmerApplication
 
 from .serializers import (
     UserSerializer,
@@ -24,7 +26,8 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     RegisterSerializer,
     CustomTokenRefreshSerializer,
-    AdminUserSerializer
+    AdminUserSerializer,
+    FarmerApplicationSerializer
 )
 from apps.common.utils import log_action
 
@@ -650,3 +653,88 @@ class AdminReportsView(APIView):
                 "active_clients_count": active_clients_count
             }
         })
+
+
+class FarmerApplicationSubmitView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = FarmerApplicationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
+    serializer_class = FarmerApplicationSerializer
+    queryset = FarmerApplication.objects.all().order_by('-created_at')
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status_param = self.request.query_params.get('status', None)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        app = self.get_object()
+        if app.status != 'pending':
+            return Response({"detail": "Application is already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user with that email already exists
+        if User.objects.filter(email=app.email).exists():
+            return Response({"detail": "A user with this email address already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate a slugified username from full name or email
+        username = app.email.split('@')[0]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{counter}"
+            counter += 1
+
+        # Create user account as farmer
+        password = User.objects.make_random_password()
+        user = User.objects.create_user(
+            username=username,
+            email=app.email,
+            password=password,
+            role='farmer',
+            first_name=app.full_name
+        )
+
+        # Create Farmer Profile
+        profile, _ = FarmerProfile.objects.get_or_create(user=user)
+        profile.farm_name = app.farm_name
+        profile.location = app.location
+        profile.phone = app.phone
+        profile.certifications = app.certifications
+        profile.organic_certified = 'organic' in (app.certifications or '').lower()
+        profile.save()
+
+        app.status = 'approved'
+        app.save()
+
+        log_action(request, actor=request.user, action="farmer_application_approved", target_model="FarmerApplication", target_id=app.id)
+
+        return Response({
+            "detail": "Application approved. Farmer user created successfully.",
+            "username": username,
+            "temporary_password": password
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        app = self.get_object()
+        if app.status != 'pending':
+            return Response({"detail": "Application is already processed."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        app.status = 'rejected'
+        app.save()
+
+        log_action(request, actor=request.user, action="farmer_application_rejected", target_model="FarmerApplication", target_id=app.id)
+
+        return Response({"detail": "Application has been rejected."}, status=status.HTTP_200_OK)

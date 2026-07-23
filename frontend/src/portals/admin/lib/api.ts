@@ -194,4 +194,14 @@ export const api = {
   reports: {
     get: () => apiRequest('/api/accounts/admin/reports/'),
   },
+
+  // Farmer Applications
+  farmerApplications: {
+    list: (params: Record<string, string> = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiRequest(`/api/accounts/admin/farmer-applications/${query ? '?' + query : ''}`);
+    },
+    approve: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/approve/`, { method: 'POST' }),
+    reject: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/reject/`, { method: 'POST' }),
+  },
 };

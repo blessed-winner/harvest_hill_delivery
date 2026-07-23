@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import FarmerProfile, ClientProfile, AdminProfile
+from .models import FarmerProfile, ClientProfile, AdminProfile, FarmerApplication
 
 User = get_user_model()
 
@@ -104,7 +104,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='client')
+    role = serializers.ChoiceField(choices=[('client', 'Client')], default='client')
     business_name = serializers.CharField(required=False, allow_blank=True)
     farm_name = serializers.CharField(required=False, allow_blank=True)
     delivery_address = serializers.CharField(required=False, allow_blank=True)
@@ -241,3 +241,10 @@ class AdminUserSerializer(serializers.ModelSerializer):
             profile.save()
 
         return instance
+
+
+class FarmerApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerApplication
+        fields = ['id', 'full_name', 'email', 'phone', 'farm_name', 'location', 'crops', 'certifications', 'description', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'created_at', 'updated_at']
