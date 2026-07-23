@@ -19,17 +19,9 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [sliderIndex, setSliderIndex] = useState(0);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
 
-  // Fetch products from catalog on mount safely checking for token
+  // Fetch products from catalog on mount safely
   useEffect(() => {
     async function fetchProducts() {
-      if (typeof window !== 'undefined') {
-        const token = window.localStorage.getItem('access_token') || window.localStorage.getItem('accessToken');
-        if (!token) {
-          setProducts([]);
-          setLoading(false);
-          return;
-        }
-      }
       try {
         setLoading(true);
         const res = await clientApi.products.list();
@@ -44,8 +36,11 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchProducts();
   }, []);
 
-  // Filter accepted products for the slider
-  const acceptedProducts = products.filter((p: any) => p.status === 'accepted').map((prod: any) => ({
+  // Filter accepted products for the slider (maximum 8 items)
+  const acceptedProducts = products
+    .filter((p: any) => p.status === 'accepted')
+    .slice(0, 8)
+    .map((prod: any) => ({
     id: prod.id,
     product_id: prod.product,
     name: prod.product_detail?.name || prod.name,
@@ -255,7 +250,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       )}
 
       {/* 4. HOW ORDER WORKS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-xl mx-auto mb-12">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1 rounded-full">
             EASY STEPS
@@ -329,7 +324,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       </section>
 
       {/* 6. SHOP BY CATEGORY GRID */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <section id="categories" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div>
           <h2 className="text-2xl font-extrabold text-[#1c1c18] tracking-tight">Shop by category</h2>
           <p className="text-xs text-[#717971] mt-1 font-semibold">Explore diverse fresh collections curated for culinary professionals.</p>
@@ -386,19 +381,19 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               </div>
             </div>
 
-            {/* Bakery */}
+            {/* Grains */}
             <div 
               onClick={() => onNavigate('catalog', 'Grains')}
               className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
             >
               <img 
-                src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80" 
-                alt="grains and bakery" 
+                src="https://images.unsplash.com/photo-1534111612486-125819e30d41?w=600&q=80" 
+                alt="grains" 
                 className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-5 text-white">
-                <h4 className="text-base font-bold">Bakery</h4>
-                <p className="text-[9px] text-white/80">Artisanal breads, grains, and wheat.</p>
+                <h4 className="text-base font-bold">Grains</h4>
+                <p className="text-[9px] text-white/80">Peanuts, oats, wheat, and bulk grains.</p>
               </div>
             </div>
           </div>
@@ -406,7 +401,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       </section>
 
       {/* 7. TESTIMONIALS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section id="testimonials" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-xl mx-auto">
           <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1.5 rounded-full">
             REVIEWS
@@ -538,7 +533,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       </section>
 
       {/* 9. FAQ ACCORDION */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center">
           <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1.5 rounded-full">
             QUESTIONS

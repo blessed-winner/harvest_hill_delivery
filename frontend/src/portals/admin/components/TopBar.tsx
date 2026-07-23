@@ -5,6 +5,8 @@ import { Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle } from 
 import { cn } from '../lib/utils';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
 
+import { ViewType } from '../../types';
+
 interface TopBarProps {
   notifications: any[];
   unreadCount: number;
@@ -13,6 +15,8 @@ interface TopBarProps {
   onDelete: (id: number) => void;
   onDeleteAll: () => void;
   adminName: string;
+  adminPhoto?: string | null;
+  onNavigate: (view: ViewType) => void;
   onMenuToggle: () => void;
 }
 
@@ -45,6 +49,8 @@ export function TopBar({
   onDelete,
   onDeleteAll,
   adminName,
+  adminPhoto,
+  onNavigate,
   onMenuToggle,
 }: TopBarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,7 +100,10 @@ export function TopBar({
           )}
         </button>
 
-        <button className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+        <button 
+          onClick={() => onNavigate('settings')}
+          className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all cursor-pointer"
+        >
           <Settings className="w-5 h-5" />
         </button>
         
@@ -255,14 +264,25 @@ export function TopBar({
 
         <div className="h-6 w-px bg-outline-variant mx-2" />
         
-        <div className="flex items-center gap-3 pl-2">
+        <div 
+          onClick={() => onNavigate('settings')}
+          className="flex items-center gap-3 pl-2 cursor-pointer hover:opacity-85 transition-opacity"
+        >
           <div className="text-right hidden sm:block">
             <p className="text-xs font-bold leading-none">{adminName || 'Admin'}</p>
             <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter mt-1">Supply Chain Admin</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-outline-variant flex items-center justify-center font-bold text-xs shadow-sm cursor-pointer hover:bg-primary/20 transition-all">
-            {(adminName || 'A').charAt(0).toUpperCase()}
-          </div>
+          {adminPhoto ? (
+            <img 
+              src={adminPhoto} 
+              alt="Admin Avatar" 
+              className="w-8 h-8 rounded-full object-cover border border-outline-variant shadow-sm"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-outline-variant flex items-center justify-center font-bold text-xs shadow-sm">
+              {(adminName || 'A').charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
       </div>
     </header>

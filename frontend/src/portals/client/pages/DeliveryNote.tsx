@@ -54,10 +54,15 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
       setDeliveryNotes(notesData || []);
       
       if (profileData) {
-        const ph = profileData.phone || profileData.phone_number || profileData.user?.phone_number || profileData.user?.phone || '';
+        const cp = profileData.profile || {};
+        const ph = cp.phone || cp.phone_number || '';
         setClientPhone(ph);
-        if (profileData.first_name || profileData.business_name) {
-          setReceiverName(profileData.first_name ? `${profileData.first_name} ${profileData.last_name || ''}`.trim() : profileData.business_name);
+        
+        const name = profileData.first_name || profileData.last_name
+          ? `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim()
+          : cp.business_name || profileData.username || '';
+        if (name) {
+          setReceiverName(name);
         }
       }
     } catch (err: any) {

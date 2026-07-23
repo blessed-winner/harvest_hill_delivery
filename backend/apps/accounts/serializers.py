@@ -40,7 +40,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = ['business_name', 'delivery_address', 'phone']
+        fields = ['business_name', 'delivery_address', 'phone', 'business_title']
 
     def validate_phone(self, value):
         user = None

@@ -11,32 +11,11 @@ import { DeliveryNotes } from './pages/DeliveryNotes';
 import { Invoices } from './pages/Invoices';
 import { Supplies } from './pages/Supplies';
 import { Reports } from './pages/Reports';
+import { SettingsPage } from './pages/Settings';
 import { ViewType } from '../types';
 import { api, apiRequest } from './lib/api';
 import { cn } from './lib/utils';
 import { CurrencyProvider } from '../../context/CurrencyContext';
-
-function renderView(view: ViewType) {
-  switch (view) {
-    case 'users':
-      return <UserManagement />;
-    case 'products':
-      return <ProductCatalog />;
-    case 'orders':
-      return <OrdersManagement />;
-    case 'deliveries':
-      return <DeliveryNotes />;
-    case 'invoices':
-      return <Invoices />;
-    case 'supplies':
-      return <Supplies />;
-    case 'reports':
-      return <Reports />;
-    case 'dashboard':
-    default:
-      return <Dashboard />;
-  }
-}
 
 export default function AdminLayout() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
@@ -44,19 +23,65 @@ export default function AdminLayout() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [adminName, setAdminName] = useState('Admin');
+  const [adminPhoto, setAdminPhoto] = useState<string | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+  // Render view locally inside AdminLayout to easily capture profile updates
+  const renderView = (view: ViewType) => {
+    switch (view) {
+      case 'users':
+        return <UserManagement />;
+      case 'products':
+        return <ProductCatalog />;
+      case 'orders':
+        return <OrdersManagement />;
+      case 'deliveries':
+        return <DeliveryNotes />;
+      case 'invoices':
+        return <Invoices />;
+      case 'supplies':
+        return <Supplies />;
+      case 'reports':
+        return <Reports />;
+      case 'settings':
+        return (
+          <SettingsPage 
+            onProfileUpdate={(name, photo) => {
+              setAdminName(name);
+              setAdminPhoto(photo);
+            }} 
+          />
+        );
+      case 'dashboard':
+      default:
+        return <Dashboard />;
+    }
+  };
 
-  // Fetch admin name
+  // Fetch admin name & photo
   useEffect(() => {
     let mounted = true;
     api.me()
       .then(res => {
         if (mounted && res) {
-          setAdminName(res.username || res.email || 'Admin');
+          const name = `${res.first_name || ''} ${res.last_name || ''}`.trim() || res.username || res.email || 'Admin';
+          setAdminName(name);
+          setAdminPhoto(res.photo || res.avatar || null);
         }
       })
       .catch(err => console.error("Failed to load admin profile:", err));
     return () => { mounted = false; };
+  }, []);
+
+  // Listen to admin settings changes (triggered by SettingsPage saving)
+  useEffect(() => {
+    const checkSettings = () => {
+      const enabled = localStorage.getItem('admin_notifications_enabled') !== 'false';
+      setNotificationsEnabled(enabled);
+    };
+    checkSettings();
+    window.addEventListener('admin_settings_changed', checkSettings);
+    return () => window.removeEventListener('admin_settings_changed', checkSettings);
   }, []);
 
   // Notifications logic
@@ -175,13 +200,15 @@ export default function AdminLayout() {
 
       <div className="flex-grow flex flex-col min-w-0 lg:pl-[260px] h-screen overflow-hidden">
         <TopBar 
-          notifications={notifications}
-          unreadCount={unreadCount}
+          notifications={notificationsEnabled ? notifications : []}
+          unreadCount={notificationsEnabled ? unreadCount : 0}
           onMarkAllRead={handleMarkAllRead}
           onMarkRead={handleMarkRead}
           onDelete={handleDelete}
           onDeleteAll={handleDeleteAll}
           adminName={adminName}
+          adminPhoto={adminPhoto}
+          onNavigate={(view) => setCurrentView(view)}
           onMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
         />
         <main className="flex-grow min-w-0 overflow-y-auto">

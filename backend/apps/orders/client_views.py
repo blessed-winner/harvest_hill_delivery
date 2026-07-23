@@ -9,7 +9,7 @@ from datetime import timedelta
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
@@ -350,7 +350,7 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     Browse and search available products from farmer supplies
     """
     serializer_class = SupplySerializer
-    permission_classes = [IsClient]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         # Show all supplies except rejected and draft ones

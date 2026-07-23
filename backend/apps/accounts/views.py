@@ -5,6 +5,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
@@ -52,6 +54,9 @@ class LoginView(APIView):
     throttle_scope = 'login'
 
     def post(self, request):
+        # Clean up scheduled deletions older than 10 days
+        User.objects.filter(scheduled_deletion_date__lte=timezone.now()).delete()
+
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -269,6 +274,38 @@ class UserProfileView(APIView):
         user.save()
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
+    def delete(self, request):
+        user = request.user
+        user.is_active = False
+        user.scheduled_deletion_date = timezone.now() + timedelta(days=10)
+        user.save()
+        log_action(request, actor=user, action="user_self_deletion_scheduled")
+        return Response({
+            "detail": "Account deletion scheduled successfully. Your account has been deactivated and will be permanently removed in 10 days."
+        }, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        
+        if not user.check_password(old_password):
+            return Response({"errors": {"old_password": ["Incorrect old password."]}}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            validate_password(new_password, user)
+        except ValidationError as e:
+            return Response({"errors": {"new_password": e.messages}}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user.set_password(new_password)
+        user.save()
+        log_action(request, actor=user, action="password_changed")
+        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+
 
 class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
@@ -312,12 +349,14 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
+        # Clean up scheduled deletions older than 10 days
+        User.objects.filter(scheduled_deletion_date__lte=timezone.now()).delete()
+
         from apps.orders.models import Order, OrderItem
         from apps.supplies.models import Supply
         from apps.invoices.models import Invoice
         from apps.delivery_notes.models import DeliveryNote
         from django.db.models import Sum, Count
-        from django.utils import timezone
         from datetime import timedelta
 
         timeframe = request.query_params.get('timeframe', '7days')
