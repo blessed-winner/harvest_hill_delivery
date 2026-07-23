@@ -165,7 +165,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     setConfirmDialog({
       isOpen: true,
       title: 'Reject Farmer Application',
-      message: `Reject ${app.full_name}'s application? This action cannot be undone.`,
+      message: `Reject ${app.full_name}'s application? This action can be reversed later.`,
       confirmText: 'Reject',
       confirmColor: 'bg-red-600',
       onConfirm: async () => {
@@ -174,6 +174,32 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
           loadApplications();
         } catch (err: any) {
           console.error('Reject failed:', err);
+        }
+      }
+    });
+  };
+
+  const handleDeleteApplication = (app: any) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Farmer Application',
+      message: `Permanently delete ${app.full_name}'s application? This action cannot be undone.`,
+      confirmText: 'Delete Permanently',
+      confirmColor: 'bg-red-600',
+      onConfirm: async () => {
+        try {
+          await api.farmerApplications.delete(app.id);
+          loadApplications();
+        } catch (err: any) {
+          console.error('Delete failed:', err);
+          setConfirmDialog({
+            isOpen: true,
+            title: 'Error',
+            message: err.message || 'Failed to delete application.',
+            confirmText: 'Close',
+            confirmColor: 'bg-red-600',
+            onConfirm: () => {}
+          });
         }
       }
     });
@@ -534,6 +560,22 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                                 </button>
                               </>
                             )}
+                            {app.status === 'rejected' && (
+                              <button
+                                onClick={() => handleApproveApplication(app)}
+                                title="Re-approve"
+                                className="p-1.5 hover:bg-emerald-50 rounded-lg transition-colors text-emerald-600 cursor-pointer"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteApplication(app)}
+                              title="Delete application"
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-600 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>

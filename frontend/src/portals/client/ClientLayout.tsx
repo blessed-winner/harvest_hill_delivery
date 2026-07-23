@@ -125,7 +125,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
 
       {/* Footer Navigation */}
       {activeScreen === 'landing' && (
-        <Footer activeScreen={activeScreen} onNavigate={onNavigate} />
+        <Footer activeScreen={activeScreen} onNavigate={onNavigate}/>
       )}
     </div>
   );

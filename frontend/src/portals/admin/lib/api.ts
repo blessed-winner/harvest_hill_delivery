@@ -203,5 +203,6 @@ export const api = {
     },
     approve: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/approve/`, { method: 'POST' }),
     reject: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/reject/`, { method: 'POST' }),
+    delete: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/`, { method: 'DELETE' }),
   },
 };
