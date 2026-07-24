@@ -1,630 +1,271 @@
 # Harvest Hill Delivery System
 
-A comprehensive farm-to-table supply chain management platform connecting farmers, clients, and administrators.
+> **A modern, end-to-end farm-to-table agricultural supply chain platform connecting regional producers, business buyers, and system administrators with real-time tracking, transparent currency conversions, and automated ledger management.**
+
+---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [System Architecture](#system-architecture)
+- [Key Platform Features](#key-platform-features)
+- [System Architecture & Tech Stack](#system-architecture--tech-stack)
+- [Project Directory Structure](#project-directory-structure)
 - [Installation & Setup](#installation--setup)
-- [User Roles & Workflows](#user-roles--workflows)
-- [API Documentation](#api-documentation)
-
-> 📋 **Testing:** See [`test_guide.md`](./test_guide.md) for the full test guide (excluded from version control).
+  - [Prerequisites](#prerequisites)
+  - [Backend Setup (Django REST Framework)](#backend-setup-django-rest-framework)
+  - [Frontend Setup (Next.js & React)](#frontend-setup-nextjs--react)
+- [Portal Workflows](#portal-workflows)
+  - [1. Client Portal](#1-client-portal)
+  - [2. Farmer Portal](#2-farmer-portal)
+  - [3. Admin Portal](#3-admin-portal)
+- [Environment Variables Reference](#environment-variables-reference)
+- [API Reference](#api-reference)
+- [Production Deployment Notes](#production-deployment-notes)
+- [License & Support](#license--support)
 
 ---
 
 ## Overview
 
-Harvest Hill Delivery is a three-portal system that manages agricultural supply chains:
+**Harvest Hill Delivery** bridges the gap between regional agricultural producers and commercial produce buyers (hotels, restaurants, institutions, and retailers). By removing opaque intermediaries, Harvest Hill provides direct supply visibility, fair harvest pricing, quality grading, and automated invoice tracking.
 
-- **Farmer Portal**: Farmers submit harvest supplies with quantities, prices, and photos
-- **Admin Portal**: Administrators review and approve farmer submissions, manage products, and oversee operations
-- **Client Portal**: Customers browse accepted supplies and place orders
-
-### Key Features
-
-- Real-time supply submission and approval workflow
-- Dynamic product catalog based on accepted farmer supplies
-- Order management with delivery scheduling
-- Notification system (WebSocket-based)
-- Multi-user role management (Admin, Farmer, Client)
+The application operates across three dedicated, responsive web portals:
+1. **Client Portal (`/client`)** — Browse fresh crops, track orders, manage default shipping addresses, select delivery windows, and generate PDF invoices.
+2. **Farmer Portal (`/farmer`)** — Submit harvest offers, manage crop photos, review negotiations, set preferred payment payout methods, and inspect yield analytics.
+3. **Admin Portal (`/admin`)** — Oversee catalog items, approve farmer applications and supply submissions, manage user roles, and inspect platform analytics.
 
 ---
 
-## System Architecture
+##  Key Platform Features
 
-### Tech Stack
+- 🇷🇼 **Rwanda-Based Certifications**: Full support for national and regional agricultural certifications (`Rwanda GAP`, `RSB Organic`, `Rwanda Organic`, `Fair Trade Rwanda`, `RAA Certified`) with custom certification fields.
+-  **Multi-Currency System (RWF / USD)**: Rwandan Francs (RWF) is set as the default primary currency across all orders, products, and invoices. Supports real-time price conversion toggles and live conversion widgets for farmers.
+-  **Distinct Cart Line Item Counting**: Intelligently counts unique line items in the navigation bar cart badge, preserving accurate unit volume calculations during checkout.
+-  **Automatic Supply Inventory Subtraction**: Validated orders automatically deduct fulfilled quantities from active supply inventory in real-time upon delivery confirmation.
+-  **Session Keeper & Seamless Auth**: Silent background token refresh guarantees uninterrupted user browsing sessions without abrupt logouts.
+-  **Real-Time WebSockets Notifications**: Live updates for new order placements, application approvals, supply submissions, and price negotiations via Django Channels.
+-  **Sub-Route Address Bar Synchronization**: Deep-linking query parameters (`/client?screen=catalog`, `/farmer?view=supplies`, `/admin?tab=products`) sync with browser history for clean navigation.
+-  **PDF Invoices & Delivery Notes**: Downloadable, professional printable invoices and delivery execution notes with digital signatures.
+-  **Google OAuth Integration**: Built-in support for Google One-Tap and OAuth single sign-on flows.
 
-**Backend:**
-- Django 5.0+ with Django REST Framework
-- PostgreSQL database
-- Cloudinary for image storage
-- Django Channels for WebSocket notifications
+---
 
-**Frontend:**
-- Next.js 14+ (React)
-- TypeScript
-- Tailwind CSS
-- Recharts for data visualization
+##  System Architecture & Tech Stack
 
-### Project Structure
-
+```mermaid
+graph TD
+    Client[Next.js Client Portal] -->|REST API & WebSockets| Backend[Django 5.0 REST Backend]
+    Farmer[Next.js Farmer Portal] -->|REST API & WebSockets| Backend
+    Admin[Next.js Admin Portal] -->|REST API & WebSockets| Backend
+    Backend --> DB[(PostgreSQL Database)]
+    Backend --> Cloudinary[Cloudinary Media Storage]
+    Backend --> Channels[Django Channels WebSockets]
 ```
+
+### Stack Breakdown
+
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons, Framer Motion.
+- **Backend**: Python 3.11+, Django 5.0+, Django REST Framework, SimpleJWT Authentication, Django Channels.
+- **Database**: PostgreSQL 14+.
+- **Media & Storage**: Cloudinary (Product & Crop Photos).
+- **Communication**: WebSockets (WS/WSS) & RESTful JSON APIs.
+
+---
+
+##  Project Directory Structure
+
+```text
 harvest-hill-delivery/
 ├── backend/
 │   ├── apps/
-│   │   ├── accounts/       # User management & authentication
-│   │   ├── products/       # Product catalog management
-│   │   ├── supplies/       # Farmer supply submissions
-│   │   ├── orders/         # Client order management
-│   │   ├── delivery_notes/ # Delivery tracking
-│   │   ├── invoices/       # Invoice generation
-│   │   ├── negotiations/   # Price negotiation system
-│   │   ├── notifications/  # Real-time notifications
-│   │   └── common/         # Shared utilities
-│   └── config/            # Django settings
-└── frontend/
-    └── src/
-        ├── app/           # Next.js app router
-        └── portals/       # Portal-specific components
-            ├── admin/     # Admin portal
-            ├── farmer/    # Farmer portal
-            └── client/    # Client portal
+│   │   ├── accounts/       # User profiles, auth, farmer applications & admin views
+│   │   ├── products/       # Master product templates & categories
+│   │   ├── supplies/       # Farmer supply submissions & inventory
+│   │   ├── orders/         # Client order processing & inventory deduction
+│   │   ├── delivery_notes/ # Delivery tracking & confirmation notes
+│   │   ├── invoices/       # Automatic invoicing & billing
+│   │   ├── negotiations/   # Price counter-proposals & agreement threads
+│   │   ├── notifications/  # Real-time WebSocket notifications
+│   │   └── common/         # Shared utilities, audit logging & permissions
+│   ├── config/             # Django settings, WSGI, ASGI & URL routing
+│   └── manage.py
+├── frontend/
+│   ├── src/
+│   │   ├── app/            # Next.js App routes (/client, /farmer, /admin, /apply)
+│   │   ├── components/     # Shared UI components (Landing, CurrencyToggle)
+│   │   ├── context/        # React Context providers (AlertContext, CurrencyContext)
+│   │   └── portals/        # Modular portal components
+│   │       ├── admin/      # Admin dashboard, user management, reports
+│   │       ├── farmer/     # Farmer harvest submission, supplies, settings
+│   │       └── client/     # Client catalog, cart, checkout, order history
+├── docker-compose.yml
+├── README.md
+└── package.json
 ```
 
 ---
 
-## Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 14+
-- Cloudinary account (for image uploads)
+- **Python 3.11+** installed
+- **Node.js 18+** & **npm** installed
+- **PostgreSQL 14+** running locally or remotely
 
-### Backend Setup
+---
 
-1. **Navigate to backend directory:**
+### Backend Setup (Django REST Framework)
+
+1. **Navigate to the backend folder:**
    ```bash
    cd backend
    ```
 
-2. **Create virtual environment:**
+2. **Create and activate a virtual environment:**
    ```bash
+   # Windows (PowerShell)
    python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # macOS/Linux
+   .\venv\Scripts\Activate.ps1
+
+   # Linux / macOS
+   python3 -m venv venv
    source venv/bin/activate
    ```
 
-3. **Install dependencies:**
+3. **Install Python dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure environment variables:**
-   Create `.env` file in `backend/` directory:
-   ```env
-   SECRET_KEY=your-secret-key
-   DEBUG=True
-   DATABASE_URL=postgresql://user:password@localhost:5432/harvest_hill_db
-   
-   CLOUDINARY_CLOUD_NAME=your-cloud-name
-   CLOUDINARY_API_KEY=your-api-key
-   CLOUDINARY_API_SECRET=your-api-secret
+4. **Set up Environment Variables:**
+   Copy `.env.example` to `.env` and fill in configuration details:
+   ```bash
+   cp .env.example .env
    ```
 
-5. **Run migrations:**
+5. **Apply Database Migrations:**
    ```bash
    python manage.py migrate
    ```
 
-6. **Seed database (optional):**
+6. **Seed Initial Database Content (Optional):**
    ```bash
    python manage.py seed_data
    ```
 
-7. **Start development server:**
+7. **Start Django Development Server:**
    ```bash
    python manage.py runserver
    ```
+   The backend REST API will run at `http://localhost:8000`.
 
-   Backend will be available at: `http://localhost:8000`
+---
 
-### Frontend Setup
+### Frontend Setup (Next.js & React)
 
-1. **Navigate to frontend directory:**
+1. **Navigate to the frontend folder:**
    ```bash
    cd frontend
    ```
 
-2. **Install dependencies:**
+2. **Install Node modules:**
    ```bash
    npm install
    ```
 
-3. **Configure environment variables:**
-   Create `.env.local` file in `frontend/` directory:
+3. **Set up Environment Variables:**
+   Create `.env.local` in `frontend/`:
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:8000
    NEXT_PUBLIC_WS_URL=ws://localhost:8000
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
    ```
 
-4. **Start development server:**
+4. **Run Development Server:**
    ```bash
    npm run dev
    ```
-
-   Frontend will be available at: `http://localhost:3000`
-
----
-
-## User Roles & Workflows
-
-### 1. Admin Workflow
-
-**Purpose:** Manage the platform, review farmer submissions, and oversee operations.
-
-#### Access
-- **URL:** `http://localhost:3000/admin`
-- **Login:** Use admin credentials or create via Django admin
-
-#### Key Responsibilities
-
-1. **User Management**
-   - Create/edit/delete users (farmers, clients)
-   - Assign roles and permissions
-   - View user activity
-
-2. **Product Catalog Management**
-   - Create product templates (categories, base prices, units)
-   - Set urgency levels (low, medium, high)
-   - Upload default product images
-
-3. **Supply Review & Approval**
-   - Review farmer harvest submissions
-   - Accept/reject supply proposals
-   - **Note:** Accepting a supply automatically makes it visible in the client catalog
-   - Archive or delete supplies
-   - Bulk operations supported
-
-4. **Order Management**
-   - View all client orders
-   - Update order statuses
-   - Track deliveries
-
-5. **Dashboard Analytics**
-   - View order volume trends
-   - Monitor top products by volume
-   - Track revenue and deliveries
-   - Recent activity feed (excludes login/logout events)
-   - Supplier rankings based on performance metrics
+   The application will be accessible at `http://localhost:3000`.
 
 ---
 
-### 2. Farmer Workflow
+## 👥 Portal Workflows
 
-**Purpose:** Submit harvest supplies for admin review and track submissions.
+### 1. Client Portal
+- **Path**: `/client`
+- **Features**:
+  - **Marketplace Catalog**: Browse verified farmer crops with live pricing, quality grades, and stock levels.
+  - **Cart & Checkout**: Interactive item quantities with prefilled default shipping address settings.
+  - **Order History & Statuses**: Track orders across `Pending`, `Processing`, `Shipped`, `Delivered`, or `Cancelled` states.
+  - **Invoices**: View billing details and print/export PDF invoices.
 
-#### Access
-- **URL:** `http://localhost:3000/farmer`
-- **Signup:** `http://localhost:3000/apply` (requires admin approval)
+### 2. Farmer Portal
+- **Path**: `/farmer` (Application required at `/apply`)
+- **Features**:
+  - **Submit Harvest**: Offer fresh produce batches with target pricing, harvest ready date, grade selection, and crop photos. Live price converter div helps convert values between RWF and USD instantly.
+  - **My Supplies Log**: Filter supply logs by status including `Accepted`, `Pending`, `Negotiating`, and `Draft`.
+  - **Profile Settings**: Configure farm details, Rwanda certifications, custom certifications, profile photo, and preferred payout methods (MTN MoMo, Airtel Money, Bank Transfer).
 
-#### Complete Farmer Flow
-
-#### Step 1: Apply as Farmer
-
-1. Navigate to `http://localhost:3000/apply`
-2. Fill out application form:
-   - Email address
-   - Username
-   - Password
-   - Farm name
-   - Location
-   - Certifications (optional)
-   - Coordinates (latitude/longitude)
-3. Submit application
-4. **Wait for admin approval** (admin creates account via User Management)
-
-#### Step 2: Login
-
-1. Navigate to `http://localhost:3000/login`
-2. Enter credentials (username/email + password)
-3. System redirects to Farmer Dashboard
-
-#### Step 3: View Dashboard
-
-**Dashboard displays:**
-- **Supplies this month:** Count of submissions
-- **Pending negotiations:** Active price discussions
-- **Acceptance rate:** Percentage of accepted supplies
-- **Total earnings:** Revenue from paid invoices this month
-- **Supply Volume Chart:** Last 6-12 months
-- **Earnings by Category:** Pie chart breakdown
-
-#### Step 4: Submit Harvest Supply
-
-1. Click **"Submit Supply"** or navigate to **Supplies** section
-2. Fill out supply form:
-   - **Product:** Select from dropdown (products created by admin)
-   - **Quantity:** Minimum 50 kg required
-   - **Price:** Your proposed price per unit
-   - **Available Date:** When product is ready
-   - **Quality Grade:** Premium/Standard/Economy
-   - **Photo:** Upload harvest photo (shows actual product condition)
-   - **Notes:** Additional information
-3. Click **"Submit"**
-4. Supply status: **"Pending"** (awaiting admin review)
-
-#### Step 5: Track Supply Status
-
-**Supply Statuses:**
-- **Draft:** Saved but not submitted
-- **Pending:** Submitted, awaiting admin review
-- **Accepted:** Admin approved ✅
-  - **Product becomes visible in client catalog**
-  - **Your photo and price are displayed to customers**
-- **Rejected:** Admin declined ❌
-- **Delivered:** Product delivered to system
-- **Invoiced:** Invoice generated
-
-**View Supply:**
-- Navigate to **Supplies** section
-- Filter by status
-- Click supply to view details
-- Edit draft supplies
-- Cannot edit after submission
-
-#### Step 6: Negotiation (if applicable)
-
-1. Admin may counter-offer on price
-2. Navigate to **Negotiations** section
-3. View thread, accept/reject counter-offer
-4. Final agreement moves supply to "Accepted"
-
-#### Step 7: Monitor Earnings
-
-1. Navigate to **Dashboard**
-2. View earnings breakdown by category
-3. Check payment status in **Invoices** section
+### 3. Admin Portal
+- **Path**: `/admin`
+- **Features**:
+  - **User & Application Management**: Approve or reject farmer applications and manage user accounts.
+  - **Master Catalog**: Define base crops, standard measurement units (`kg`, `litre`, `crate`, `bundle`), and currency defaults.
+  - **Supply Approvals**: Inspect incoming farmer batches and counter-propose prices.
+  - **Analytics & Reports**: Visual charts depicting order volume trends, status distributions, category sales, and top-performing suppliers.
 
 ---
 
-### 3. Client Workflow
+##  Environment Variables Reference
 
-**Purpose:** Browse available products, place orders, and track deliveries.
+### Backend (`backend/.env`)
 
-#### Access
-- **URL:** `http://localhost:3000/client`
-- **Signup:** `http://localhost:3000/signup`
+| Variable | Description | Example Value |
+|---|---|---|
+| `SECRET_KEY` | Django Secret Key | `django-insecure-...` |
+| `DEBUG` | Debug mode toggle | `True` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5432/harvest_hill` |
+| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins | `http://localhost:3000` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary account name | `harvest_cloud` |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google Client ID | `xxx.apps.googleusercontent.com` |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Google Client Secret | `GOCSPX-...` |
 
-#### Complete Client Flow
+### Frontend (`frontend/.env.local`)
 
-#### Step 1: Signup
-
-1. Navigate to `http://localhost:3000/signup`
-2. Fill out registration form:
-   - Email address
-   - Username
-   - Password
-   - Business name
-   - Business title
-   - Phone number
-3. Account created automatically (no approval needed)
-4. Redirected to login
-
-#### Step 2: Login
-
-1. Navigate to `http://localhost:3000/login`
-2. Enter credentials
-3. System redirects to Client Dashboard
-
-#### Step 3: View Dashboard
-
-**Dashboard displays:**
-- **Monthly spend:** Current month expenditure
-- **Total deliveries:** Orders delivered
-- **Savings:** Cost savings vs. market prices
-- **Recent orders:** Last 5 orders with status
-- **Volume by category:** Pie chart of purchases
-
-#### Step 4: Browse Product Catalog
-
-1. Navigate to **Catalog** section
-2. **Important:** Only **accepted farmer supplies** are displayed
-   - You see actual farmer harvest photos
-   - Farmer's proposed prices (not base prices)
-   - Available quantities from farmers
-
-**Filtering Options:**
-- **Category:** Fruits, Vegetables, Dairy, Grains
-- **In Season:** High urgency products (urgency='high')
-- **Bulk Available:** Products with quantity >= 100kg
-- **Search:** Product name search
-
-**Farmer of the Month Banner:**
-- Appears in sidebar from 20th of each month onwards
-- Shows top-ranked farmer from supplier performance rankings
-- Click "Browse Collection" to filter catalog by that farmer's products
-- Dynamic data from actual supplier rankings (no mock data)
-
-**Product Card Shows:**
-- Product name and category
-- Farmer's photo of actual harvest
-- Price per unit (farmer's price)
-- Available quantity
-- Seasonal/Limited badges
-- Stock level indicator (green/orange/red based on quantity)
-
-#### Step 5: View Product Details
-
-1. Click any product in catalog
-2. **Product Detail Page displays:**
-   - Large product photo (farmer's submission)
-   - Product name and category
-   - Price per unit
-   - Available quantity from farmer
-   - Quality guarantee information
-   - Farmer name (source)
-
-#### Step 6: Add to Cart
-
-**From Catalog:**
-1. Click **"Add"** button on product card
-2. Product added to cart (quantity: 1)
-
-**From Product Detail:**
-1. Use +/- buttons to select quantity
-2. Click **"Add to Cart"**
-3. System redirects to cart
-
-#### Step 7: Manage Cart
-
-1. Navigate to **Cart** section
-2. **Cart displays:**
-   - Product image (farmer's photo)
-   - Product name and category
-   - Price per unit
-   - Quantity selector (+/-)
-   - Subtotal per item
-   - Remove button
-
-3. **Update quantities:**
-   - Use +/- buttons
-   - Updates automatically
-
-4. **View totals:**
-   - Subtotal: Sum of all items
-   - Delivery fee: $12.00
-   - Taxes: 8% of subtotal
-   - **Grand Total**
-
-5. **Select delivery date:**
-   - Choose from available dates
-   - Delivery window preferences
-
-#### Step 8: Checkout
-
-1. Click **"Proceed to Checkout"** from cart
-2. **Checkout page displays:**
-   - Order summary (all items)
-   - Total amount
-   - Delivery address form
-   - Delivery day selection
-   - Time slot (Morning/Afternoon)
-
-3. Fill out delivery details:
-   - Street address
-   - City
-   - State
-   - ZIP code
-
-4. Select delivery schedule:
-   - Choose day from calendar
-   - Select time slot:
-     - Morning: 8:00 AM - 12:00 PM
-     - Afternoon: 1:00 PM - 5:00 PM
-
-5. Click **"Place Order"**
-
-**Order Creation:**
-- Order sent to backend
-- Status: **"Pending"**
-- Cart cleared
-- Success confirmation displayed
-
-#### Step 9: Track Orders
-
-**Order History:**
-1. Navigate to **History** section
-2. View all orders with:
-   - Order number
-   - Date placed
-   - Total amount
-   - Current status
-   - Items list
-
-**Order Statuses:**
-- **Pending:** Order received
-- **Processing:** Being prepared
-- **Shipped:** Out for delivery
-- **Delivered:** Successfully delivered ✅
-- **Cancelled:** Order cancelled ❌
-
-**Filter orders:**
-- All orders
-- Pending
-- Processing
-- Shipped
-- Delivered
-- Cancelled
-
-#### Step 10: View Delivery Notes
-
-1. Navigate to **Delivery Note** section
-2. View delivered orders
-3. Pagination: 8 items per page (dynamic page creation)
-4. Details shown:
-   - Delivery date
-   - Items delivered
-   - Delivery confirmation
-
-#### Step 11: View Invoices
-
-1. Navigate to **Invoices** section
-2. View all invoices with:
-   - Invoice number
-   - Date
-   - Total amount
-   - Status (Paid/Pending/Cancelled)
-   - Items breakdown
-
-3. **Preview invoice:**
-   - Click invoice to expand
-   - View detailed breakdown
-
-4. **Export PDF:**
-   - Click **"PDF"** button
-   - Opens print dialog
-   - Professional invoice format
-   - Save or print
+| Variable | Description | Default Value |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | HTTP base URL for REST backend | `http://localhost:8000` |
+| `NEXT_PUBLIC_WS_URL` | WebSocket base URL for real-time alerts | `ws://localhost:8000` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Public Google OAuth Client ID | `xxx.apps.googleusercontent.com` |
 
 ---
 
-## API Documentation
+##  Key API Reference
 
-### Base URL
-- Development: `http://localhost:8000/api`
-
-### Authentication
-All authenticated endpoints require JWT token in header:
-```
-Authorization: Bearer <access_token>
-```
-
-### Key Endpoints
-
-#### Authentication
-```
-POST   /accounts/login/          # Login user
-POST   /accounts/register/       # Register client
-POST   /accounts/token/refresh/  # Refresh access token
-```
-
-#### Admin
-```
-GET    /accounts/admin/users/                                  # List users
-POST   /accounts/admin/users/create/                           # Create user
-PATCH  /accounts/admin/users/{id}/update/                      # Update user
-DELETE /accounts/admin/users/{id}/delete/                      # Delete user
-GET    /accounts/admin/dashboard/                              # Dashboard stats
-GET    /accounts/admin/farmer-applications/                    # List farmer applications
-POST   /accounts/admin/farmer-applications/{id}/approve/       # Approve application
-POST   /accounts/admin/farmer-applications/{id}/reject/        # Reject application
-```
-
-#### Farmer Application (Public)
-```
-POST   /accounts/farmer-applications/apply/   # Submit farmer application
-```
-
-#### Farmer
-```
-GET    /supplies/                  # List farmer's supplies
-POST   /supplies/                  # Create supply
-PATCH  /supplies/{id}/             # Update supply
-DELETE /supplies/{id}/             # Delete supply
-GET    /farmer/dashboard/summary/  # Farmer dashboard
-```
-
-#### Client
-```
-GET    /client/products/           # List available products (accepted supplies)
-GET    /client/products/{id}/      # Get product detail
-POST   /client/orders/             # Create order
-GET    /client/orders/             # List client orders
-GET    /client/orders/{id}/        # Get order detail
-GET    /client/dashboard/summary/  # Client dashboard
-```
-
-#### Products (Admin)
-```
-GET    /products/       # List all products
-POST   /products/       # Create product
-PATCH  /products/{id}/  # Update product
-DELETE /products/{id}/  # Delete product
-```
-
-### Swagger Documentation
-Access interactive API docs: `http://localhost:8000/api/schema/swagger-ui/`
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| `POST` | `/api/accounts/login/` | User authentication token generation | Public |
+| `POST` | `/api/accounts/google-login/` | Google OAuth token authentication | Public |
+| `POST` | `/api/accounts/farmer-applications/apply/` | Submit new farmer application | Public |
+| `GET` | `/api/client/products/` | List accepted marketplace items | Authenticated (Client) |
+| `POST` | `/api/orders/` | Place client order | Authenticated (Client) |
+| `GET` | `/api/supplies/` | List farmer supply submissions | Authenticated (Farmer) |
+| `POST` | `/api/supplies/` | Submit new harvest batch | Authenticated (Farmer) |
+| `GET` | `/api/accounts/admin/dashboard/` | Retrieve platform KPI analytics & charts | Admin |
+| `POST` | `/api/accounts/admin/farmer-applications/{id}/approve/` | Approve farmer application | Admin |
 
 ---
 
-## Common Issues & Troubleshooting
+##  Production Deployment Notes
 
-### Issue: Products not showing in client catalog
-
-**Cause:** No accepted supplies
-**Solution:**
-1. Admin must first create product templates
-2. Farmer submits supply referencing that product
-3. Admin accepts the supply
-4. Product becomes visible in client catalog
-
-### Issue: Cart prices showing as NaN
-
-**Cause:** Price stored as string in localStorage
-**Solution:** Clear browser localStorage and re-add items
-
-### Issue: Order creation fails with "product does not exist"
-
-**Cause:** Trying to order using supply ID instead of product ID
-**Solution:** Ensure cart stores `product_id` field correctly (the actual Product model ID, not Supply ID)
-
-### Issue: Images not uploading
-
-**Cause:** Cloudinary not configured
-**Solution:** Verify Cloudinary credentials in backend `.env` file
+1. **Security**: Ensure `DEBUG=False` in production `backend/.env` and update `SECRET_KEY` and `ALLOWED_HOSTS`.
+2. **Database**: Use a managed PostgreSQL database (e.g. AWS RDS or Supabase) with SSL enabled.
+3. **WebSockets**: Deploy ASGI server using Daphne or Uvicorn backed by Redis for channel layer management.
+4. **Static & Media**: Static files should be served via Nginx/Cloudflare and user uploads via Cloudinary.
 
 ---
 
-## Production Deployment
+##  License & Contact
 
-### Backend (Django)
-
-1. Set `DEBUG=False` in production settings
-2. Configure allowed hosts
-3. Set up PostgreSQL production database
-4. Configure static files serving
-5. Use Gunicorn/uWSGI for WSGI server
-6. Set up Nginx as reverse proxy
-7. Configure SSL certificates
-8. Set up Django Channels with Redis for WebSockets
-
-### Frontend (Next.js)
-
-1. Build production bundle: `npm run build`
-2. Set production environment variables
-3. Deploy to Vercel/Netlify or self-host
-4. Configure API URL to production backend
-5. Set up CDN for static assets
-
----
-
-## License
-
-[Your License Here]
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Repository URL]
-- Email: support@harvesthill.com
-
----
-
-**Last Updated:** January 2025
-**Version:** 1.0.0
+Copyright © 2026 Harvest Hill Supply Chain Platform. All rights reserved.
