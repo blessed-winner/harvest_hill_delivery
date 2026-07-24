@@ -27,7 +27,9 @@ from .serializers import (
     RegisterSerializer,
     CustomTokenRefreshSerializer,
     AdminUserSerializer,
-    FarmerApplicationSerializer
+    FarmerApplicationSerializer,
+    FarmerProfileSerializer,
+    ClientProfileSerializer
 )
 from apps.common.utils import log_action
 

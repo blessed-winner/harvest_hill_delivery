@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { 
@@ -67,9 +67,10 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         const ph = cp.phone || cp.phone_number || '';
         setClientPhone(ph);
         
-        const name = profileData.first_name || profileData.last_name
-          ? `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim()
-          : cp.business_name || profileData.username || '';
+        const name = [profileData.first_name, profileData.last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || profileData.username || '';
         if (name) {
           setReceiverName(name);
         }
@@ -333,16 +334,17 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
 
       {!error && filteredItems.length > 0 && (
         <>
-        {/* Info banner: show when any notes are in locked/preparation state */}
-        {combinedItems.some(({ order, note }) => note && order?.status !== 'delivered') && (
+        {/* Info banner: show when any notes are locked (order still in processing, not yet shipped/delivered) */}
+        {combinedItems.some(({ order, note }) => note && order?.status !== 'delivered' && order?.status !== 'shipped') && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
             <Clock size={16} className="mt-0.5 shrink-0 text-amber-600" />
             <div>
               <p className="font-bold">Delivery notes in preparation</p>
-              <p className="mt-0.5 text-amber-700">Some notes are visible below but locked for signing. You'll be able to sign them once your order is marked as delivered.</p>
+              <p className="mt-0.5 text-amber-700">Some notes are being prepared. You'll be able to sign them once your order is out for delivery or marked as delivered.</p>
             </div>
           </div>
         )}
+
         <div className="bg-white border border-[#e5e2db] rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -388,7 +390,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                             <AlertTriangle size={12} /> Disputed
                           </span>
                         )}
-                        {!isConfirmed && !isDisputed && order?.status !== 'delivered' && (
+                        {!isConfirmed && !isDisputed && order?.status !== 'delivered' && order?.status !== 'shipped' && (
                           <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
                             <Clock size={12} /> In Preparation
                           </span>
@@ -407,7 +409,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           {/* LOCKED: note exists but order not yet delivered */}
-                          {order?.status !== 'delivered' && note ? (
+                          {order?.status !== 'delivered' && order?.status !== 'shipped' && note ? (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 font-bold rounded-lg text-xs">
                               <Lock size={13} />
                               Available on delivery
@@ -479,6 +481,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* â”€â”€ MODAL: SIGN DELIVERY NOTE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}

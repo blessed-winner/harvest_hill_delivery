@@ -74,7 +74,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       }
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
+      window.localStorage.removeItem('user_role');
+      window.location.href = '/';
       throw new Error("Session expired. Please log in again.");
     }
 

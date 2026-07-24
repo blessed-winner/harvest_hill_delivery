@@ -281,7 +281,6 @@ export default function MySupplies() {
             <option>accepted</option>
             <option>pending</option>
             <option>negotiating</option>
-            <option>delivered</option>
             <option>draft</option>
           </select>
 
@@ -356,7 +355,7 @@ export default function MySupplies() {
                     <span className={cn(
                       "px-3 py-1 rounded-full font-mono text-[9px] uppercase font-extrabold tracking-widest border",
                       Number(supply.quantity) === 0 ? "bg-red-100 text-red-800 border-red-200" :
-                      supply.status === 'accepted' || supply.status === 'delivered' ? "bg-secondary-container text-on-secondary-container border-secondary" :
+                      supply.status === 'accepted' ? "bg-secondary-container text-on-secondary-container border-secondary" :
                       supply.status === 'pending' || supply.status === 'negotiating' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-container" :
                       "bg-surface-container-highest text-on-surface border-outline"
                     )}>

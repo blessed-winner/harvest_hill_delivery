@@ -30,7 +30,7 @@ export default function ClientPage() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_role');
-        router.push('/login');
+        router.push('/');
       } else {
         setAuthorized(true);
         const storedScreen = localStorage.getItem('client_active_screen');

@@ -9,7 +9,6 @@ class Supply(models.Model):
         ('negotiating', 'Negotiating'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
-        ('delivered', 'Delivered'),
         ('invoiced', 'Invoiced')
     ]
     QUALITY_CHOICES = [
