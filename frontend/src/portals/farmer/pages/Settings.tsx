@@ -322,12 +322,12 @@ export default function Settings() {
                     type="text" 
                     value={profile.certificationsText} 
                     onChange={(event) => setProfile((current) => ({ ...current, certificationsText: event.target.value }))}
-                    placeholder="Rwanda GAP, RSB Organic, USDA Organic, Fair Trade"
+                    placeholder="GAP Certified, RSB Organic, USDA Organic, Fair Trade"
                   />
                   
-                  {/* Rwanda-specific Certification Selection Pills */}
+                  {/* Select your certifications */}
                   <div className="flex flex-wrap gap-2 text-xs">
-                    {['Rwanda GAP', 'RSB Organic', 'Rwanda Organic', 'Fair Trade Rwanda', 'RAA Certified'].map((certOption) => {
+                    {['GAP Certified', 'RSB Organic', 'Organic Certified', 'Fair Trade', 'RAA Certified'].map((certOption) => {
                       const currentCerts = profile.certificationsText.split(',').map(c => c.trim().toLowerCase());
                       const isSelected = currentCerts.includes(certOption.toLowerCase());
                       return (

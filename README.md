@@ -38,7 +38,7 @@ The application operates across three dedicated, responsive web portals:
 
 ##  Key Platform Features
 
-- 🇷🇼 **Rwanda-Based Certifications**: Full support for national and regional agricultural certifications (`Rwanda GAP`, `RSB Organic`, `Rwanda Organic`, `Fair Trade Rwanda`, `RAA Certified`) with custom certification fields.
+- 📜 **Agricultural Certifications**: Full support for national and regional agricultural certifications (`GAP Certified`, `RSB Organic`, `Organic Certified`, `Fair Trade`, `RAA Certified`) with custom certification fields.
 -  **Multi-Currency System (RWF / USD)**: Rwandan Francs (RWF) is set as the default primary currency across all orders, products, and invoices. Supports real-time price conversion toggles and live conversion widgets for farmers.
 -  **Distinct Cart Line Item Counting**: Intelligently counts unique line items in the navigation bar cart badge, preserving accurate unit volume calculations during checkout.
 -  **Automatic Supply Inventory Subtraction**: Validated orders automatically deduct fulfilled quantities from active supply inventory in real-time upon delivery confirmation.
@@ -205,7 +205,7 @@ harvest-hill-delivery/
 - **Features**:
   - **Submit Harvest**: Offer fresh produce batches with target pricing, harvest ready date, grade selection, and crop photos. Live price converter div helps convert values between RWF and USD instantly.
   - **My Supplies Log**: Filter supply logs by status including `Accepted`, `Pending`, `Negotiating`, and `Draft`.
-  - **Profile Settings**: Configure farm details, Rwanda certifications, custom certifications, profile photo, and preferred payout methods (MTN MoMo, Airtel Money, Bank Transfer).
+  - **Profile Settings**: Configure farm details, agricultural certifications, custom certifications, profile photo, and preferred payout methods (MTN MoMo, Airtel Money, Bank Transfer).
 
 ### 3. Admin Portal
 - **Path**: `/admin`

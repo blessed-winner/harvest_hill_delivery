@@ -24,7 +24,7 @@ export default function ApplyPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const cropOptions = ['Vegetables', 'Fruits', 'Animal-Based', 'Grains', 'Herbs'];
-  const certOptions = ['Rwanda GAP', 'RSB Organic', 'Rwanda Organic', 'Fair Trade Rwanda', 'RAA Certified', 'None'];
+  const certOptions = ['GAP Certified', 'RSB Organic', 'Organic Certified', 'Fair Trade', 'RAA Certified', 'None'];
 
   const toggleCrop = (crop: string) => {
     if (crops.includes(crop)) {
@@ -292,9 +292,9 @@ export default function ApplyPage() {
                   </div>
                 </div>
 
-                {/* Rwanda Certifications */}
+                {/* Select your certifications */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Rwanda Agricultural Certifications</label>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Select your certifications</label>
                   <div className="flex flex-wrap gap-1.5">
                     {certOptions.map((cert) => {
                       const isSelected = certs.includes(cert);
