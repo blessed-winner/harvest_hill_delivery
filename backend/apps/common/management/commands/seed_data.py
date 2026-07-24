@@ -111,9 +111,7 @@ class Command(BaseCommand):
             ('Red Winter Wheat Bulk', 'Grains', True, 'medium'),
             ('Organic Rolled Oats', 'Grains', False, 'low'),
             ('Rustic Sourdough Loaves', 'Grains', False, 'low'),
-            # Herbs
-            ('Fresh Sweet Basil', 'Herbs', True, 'high'),
-            ('Organic Rosemary Sprigs', 'Herbs', False, 'low'),
+
         ]
         products = []
         for name, cat, needed, urg in products_data:

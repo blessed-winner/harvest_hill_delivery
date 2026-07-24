@@ -331,8 +331,8 @@ AUTHENTICATION & SESSIONS
 [ ] Session expiry redirects user gracefully to /
 [ ] Google OAuth login endpoint (/api/accounts/google-login/) operational
 
-RWANDA CERTIFICATIONS & FARMER APPLICATION
-[ ] Application form (/apply) includes Rwanda certs & optional custom cert field
+AGRICULTURAL CERTIFICATIONS & FARMER APPLICATION
+[ ] Application form (/apply) includes certifications & optional custom cert field
 [ ] Simplified application header (Home & Sign In only)
 [ ] Admin application approval generates user account & temporary credentials
 
