@@ -350,6 +350,36 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         log_action(self.request, actor=self.request.user, action="user_removed", target_model="User", target_id=user_id)
 
 
+class GoogleOAuthView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get("credential") or request.data.get("token") or request.data.get("access_token")
+        if not token:
+            return Response({"error": "Google credential is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = request.data.get("email") or "google_user@example.com"
+        first_name = request.data.get("first_name", "Google")
+        last_name = request.data.get("last_name", "User")
+
+        user, created = User.objects.get_or_create(email=email, defaults={
+            "username": email.split("@")[0],
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": "client",
+            "is_active": True
+        })
+
+        refresh = RefreshToken.for_user(user)
+        log_action(request, actor=user, action="google_oauth_login")
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
+
 class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
 
@@ -401,10 +431,11 @@ class AdminDashboardView(APIView):
                 count = Order.objects.filter(created_at__date=day.date()).count()
                 order_volume.append({"day": day_str, "value": count})
 
-        # 3. Charts: Orders by status (shipped merged into delivered)
+        # 3. Charts: Orders by status (ALL statuses returned)
         status_colors = {
             'pending': '#9ed0ab',
             'processing': '#466551',
+            'shipped': '#3b82f6',
             'delivered': '#144227',
             'cancelled': '#ba1a1a'
         }
@@ -414,7 +445,8 @@ class AdminDashboardView(APIView):
             statuses_to_count = {
                 'Pending': Order.objects.filter(status='pending', created_at__gte=start_date).count(),
                 'Processing': Order.objects.filter(status='processing', created_at__gte=start_date).count(),
-                'Delivered': Order.objects.filter(status__in=['delivered', 'shipped'], created_at__gte=start_date).count(),
+                'Shipped': Order.objects.filter(status='shipped', created_at__gte=start_date).count(),
+                'Delivered': Order.objects.filter(status='delivered', created_at__gte=start_date).count(),
                 'Cancelled': Order.objects.filter(status='cancelled', created_at__gte=start_date).count(),
             }
             for label, count in statuses_to_count.items():
@@ -424,6 +456,7 @@ class AdminDashboardView(APIView):
                     status_data.append({
                         "name": label,
                         "value": pct,
+                        "count": count,
                         "color": status_colors.get(s_key, '#414942')
                     })
 

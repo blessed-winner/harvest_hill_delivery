@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientLayout from '../../portals/client/ClientLayout';
-import Landing from '../../portals/client/pages/Landing';
+import Landing from '../../components/Landing';
 import Dashboard from '../../portals/client/pages/Dashboard';
 import Catalog from '../../portals/client/pages/Catalog';
 import ProductDetail from '../../portals/client/pages/ProductDetail';
@@ -33,17 +33,18 @@ export default function ClientPage() {
         router.push('/');
       } else {
         setAuthorized(true);
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlScreen = urlParams.get('screen');
         const storedScreen = localStorage.getItem('client_active_screen');
-        if (storedScreen) {
-          setActiveScreen(storedScreen);
-        }
+        const initialScreen = urlScreen || storedScreen || 'landing';
+        setActiveScreen(initialScreen);
+
         // Load cart count from localStorage
         try {
           const savedCart = localStorage.getItem('cart_items');
           if (savedCart) {
             const items = JSON.parse(savedCart);
-            const totalQty = items.reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
-            setCartCount(totalQty);
+            setCartCount(items.length);
           }
         } catch {}
       }
@@ -60,6 +61,10 @@ export default function ClientPage() {
 
   const handleNavigate = (screen: string, category?: string, productId?: number) => {
     setActiveScreen(screen);
+    localStorage.setItem('client_active_screen', screen);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `/client?screen=${screen}`);
+    }
     if (category) {
       setSelectedCategory(category);
     }
@@ -99,9 +104,8 @@ export default function ClientPage() {
         
         localStorage.setItem('cart_items', JSON.stringify(cartItems));
         
-        // Update cart count
-        const totalQty = cartItems.reduce((sum: number, item: any) => sum + item.qty, 0);
-        setCartCount(totalQty);
+        // Update cart count with distinct line items count
+        setCartCount(cartItems.length);
       } catch (err) {
         console.error('Failed to add to cart:', err);
       }

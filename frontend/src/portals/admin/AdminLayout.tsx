@@ -26,6 +26,25 @@ export default function AdminLayout() {
   const [adminPhoto, setAdminPhoto] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+  // Initialize view from URL query param
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTab = urlParams.get('tab') as ViewType;
+      if (urlTab) {
+        setCurrentView(urlTab);
+      }
+    }
+  }, []);
+
+  const handleViewChange = (view: ViewType) => {
+    setCurrentView(view);
+    setIsMobileMenuOpen(false);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `/admin?tab=${view}`);
+    }
+  };
+
   // Render view locally inside AdminLayout to easily capture profile updates
   const renderView = (view: ViewType) => {
     switch (view) {
@@ -190,10 +209,7 @@ export default function AdminLayout() {
 
       <Sidebar 
         currentView={currentView} 
-        onViewChange={(view) => {
-          setCurrentView(view);
-          setIsMobileMenuOpen(false);
-        }}
+        onViewChange={handleViewChange}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
@@ -208,7 +224,7 @@ export default function AdminLayout() {
           onDeleteAll={handleDeleteAll}
           adminName={adminName}
           adminPhoto={adminPhoto}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={handleViewChange}
           onMenuToggle={() => setIsMobileMenuOpen(prev => !prev)}
         />
         <main className="flex-grow min-w-0 overflow-y-auto">

@@ -49,8 +49,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
             qty: typeof item.qty === 'string' ? parseInt(item.qty, 10) : (item.qty || 1)
           }));
           setItems(validatedItems);
-          const totalQty = validatedItems.reduce((sum: number, item: CartItem) => sum + item.qty, 0);
-          setCartCount(totalQty);
+          setCartCount(validatedItems.length);
         }
         
         // Set default delivery date to tomorrow
@@ -85,8 +84,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
         return item;
       });
       
-      const totalQty = updated.reduce((sum, item) => sum + item.qty, 0);
-      setCartCount(totalQty);
+      setCartCount(updated.length);
       return updated;
     });
   };
@@ -95,9 +93,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   const removeItem = (id: string) => {
     const updated = items.filter(item => item.id !== id);
     setItems(updated);
-    
-    const totalQty = updated.reduce((sum, item) => sum + item.qty, 0);
-    setCartCount(totalQty);
+    setCartCount(updated.length);
   };
 
   // Clear entire cart

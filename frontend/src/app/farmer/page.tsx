@@ -27,6 +27,11 @@ export default function FarmerPage() {
         router.push('/');
       } else {
         setAuthorized(true);
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlView = urlParams.get('view') as View;
+        if (urlView) {
+          setActiveView(urlView);
+        }
       }
     }
   }, [router]);
@@ -38,6 +43,13 @@ export default function FarmerPage() {
       </div>
     );
   }
+
+  const handleViewChange = (view: View) => {
+    setActiveView(view);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `/farmer?view=${view}`);
+    }
+  };
 
   const renderView = () => {
     switch (activeView) {
@@ -53,12 +65,12 @@ export default function FarmerPage() {
         return <Settings />;
       case 'dashboard':
       default:
-        return <Dashboard onViewChange={setActiveView} />;
+        return <Dashboard onViewChange={handleViewChange} />;
     }
   };
 
   return (
-    <FarmerLayout activeView={activeView} onViewChange={setActiveView}>
+    <FarmerLayout activeView={activeView} onViewChange={handleViewChange}>
       {renderView()}
     </FarmerLayout>
   );

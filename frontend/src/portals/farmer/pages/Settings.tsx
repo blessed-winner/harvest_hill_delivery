@@ -38,6 +38,8 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
 
@@ -222,6 +224,50 @@ export default function Settings() {
                 <h3 className="font-sans text-lg font-bold text-on-surface">Farm Profile</h3>
               </div>
 
+              {/* Profile Picture Upload & Remove Card */}
+              <div className="flex flex-col sm:flex-row items-center gap-5 p-4 bg-surface-container-low rounded-2xl border border-outline-variant">
+                <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary shrink-0 group">
+                  <img
+                    src={avatarPreview || 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9re6yJPQ5TYt9TGg1Mt0-bI4EtsJFQjADaJ-AwucfipGIVS_n3JHlVfqhYm5ByV0h5A3ex6xXqVx_l3oBhemoxWVhA0IPAGluGjQO4OPoJ9gQdqnssN5XJBPp5OFVC7xQElJLs4enHGBVPXJAWBIS1VNjcQowBBzGU4M_b4cPWpbY3sw7Bu_wCsn5_rNTUAiuiqPMd8LwtDezfTQ-Zehk2fUY53IVBnoVJaGfWMQAjI0XQr03PQqA9Q'}
+                    alt="Farmer Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 items-center sm:items-start text-center sm:text-left">
+                  <span className="font-sans text-xs font-bold text-on-surface">Farmer Profile Picture</span>
+                  <p className="font-sans text-[11px] text-on-surface-variant">JPG, PNG or GIF up to 5MB.</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <label className="px-3 py-1.5 bg-primary text-white rounded-lg font-sans text-xs font-bold hover:bg-primary/90 transition-all cursor-pointer">
+                      Upload Picture
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setAvatarFile(file);
+                            setAvatarPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarFile(null);
+                          setAvatarPreview(null);
+                        }}
+                        className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-sans text-xs font-bold hover:bg-red-200 transition-all cursor-pointer"
+                      >
+                        Remove Picture
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Farm Legal Name</label>
@@ -281,7 +327,7 @@ export default function Settings() {
                   
                   {/* Rwanda-specific Certification Selection Pills */}
                   <div className="flex flex-wrap gap-2 text-xs">
-                    {['Rwanda GAP', 'RSB Organic', 'Fair Trade', 'USDA Organic'].map((certOption) => {
+                    {['Rwanda GAP', 'RSB Organic', 'Rwanda Organic', 'Fair Trade Rwanda', 'RAA Certified'].map((certOption) => {
                       const currentCerts = profile.certificationsText.split(',').map(c => c.trim().toLowerCase());
                       const isSelected = currentCerts.includes(certOption.toLowerCase());
                       return (
@@ -332,19 +378,44 @@ export default function Settings() {
                   <h3 className="font-sans text-lg font-bold text-on-surface">Payment & Invoicing</h3>
                 </div>
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Default Payout Method</label>
-                    <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant hover:border-primary transition-all cursor-pointer">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-8 bg-white border border-outline-variant rounded flex items-center justify-center p-1">
-                          <Banknote size={24} className="text-primary" />
+                  <div className="space-y-4">
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Default Payout Method for Invoices</label>
+                    <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[9px] uppercase font-bold tracking-wider text-on-surface-variant mb-1">Payment Provider / Method</label>
+                          <select
+                            value={profile.payment_method}
+                            onChange={(e) => setProfile(current => ({ ...current, payment_method: e.target.value }))}
+                            className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-sans text-sm focus:border-primary outline-none"
+                          >
+                            <option value="MTN Mobile Money">MTN Mobile Money (MoMo)</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="Bank Transfer (Bank of Kigali)">Bank Transfer (Bank of Kigali)</option>
+                            <option value="Bank Transfer (Equity Bank)">Bank Transfer (Equity Bank)</option>
+                            <option value="Cash on Delivery">Cash on Delivery</option>
+                          </select>
                         </div>
                         <div>
-                          <p className="font-sans text-sm font-extrabold text-on-surface">{profile.payment_method}</p>
-                          <p className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase">{profile.payment_account_number}</p>
+                          <label className="block text-[9px] uppercase font-bold tracking-wider text-on-surface-variant mb-1">Account Number / Phone</label>
+                          <input
+                            type="text"
+                            value={profile.payment_account_number}
+                            onChange={(e) => setProfile(current => ({ ...current, payment_account_number: e.target.value }))}
+                            placeholder="E.g. +250 788 123 456 or BK Account #..."
+                            className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-sans text-sm focus:border-primary outline-none"
+                          />
                         </div>
                       </div>
-                      <button className="text-primary font-mono text-[10px] uppercase font-bold hover:underline">Change</button>
+                      <div className="flex items-center gap-3 pt-2 border-t border-outline-variant/40">
+                        <div className="w-10 h-7 bg-white border border-outline-variant rounded flex items-center justify-center p-1 shrink-0">
+                          <Banknote size={20} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-sans text-xs font-bold text-on-surface">Active Method: {profile.payment_method || 'MTN Mobile Money'}</p>
+                          <p className="font-mono text-[10px] text-on-surface-variant">{profile.payment_account_number || 'No account number set'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="p-5 rounded-xl bg-tertiary-container/10 border border-tertiary-container/20 flex items-start gap-3">

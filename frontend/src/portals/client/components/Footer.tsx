@@ -73,7 +73,7 @@ export default function Footer({ activeScreen, onNavigate }: FooterProps) {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcdad3] mt-10 pt-6 text-center text-xs">
-          © 2024 Harvest Hill Supply Chain. All rights reserved.
+          © 2026 Harvest Hill Supply Chain. All rights reserved.
         </div>
       </footer>
     );
@@ -140,7 +140,7 @@ export default function Footer({ activeScreen, onNavigate }: FooterProps) {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcdad3] mt-10 pt-6 flex flex-col md:flex-row justify-between items-center text-xs gap-4">
-          <div>© 2024 Harvest Hill Supply Chain. All rights reserved.</div>
+          <div>© 2026 Harvest Hill Supply Chain. All rights reserved.</div>
           <div className="flex gap-4 text-[#414942]/80">
             <span>Secure Payments via FarmPay</span>
             <span>|</span>
@@ -203,7 +203,7 @@ export default function Footer({ activeScreen, onNavigate }: FooterProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcdad3] mt-10 pt-6 text-center text-xs">
-        © 2024 Harvest Hill Supply Chain. All rights reserved.
+        © 2026 Harvest Hill Supply Chain. All rights reserved.
       </div>
     </footer>
   );

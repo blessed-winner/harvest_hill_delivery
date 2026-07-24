@@ -259,6 +259,24 @@ export default function MySupplies() {
         <h1 className="font-sans text-xl sm:text-2xl font-extrabold text-primary">My Supplies</h1>
       </div>
 
+      {/* Status Quick Filter Pills */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {['All Statuses', 'accepted', 'pending', 'negotiating', 'draft'].map((st) => (
+          <button
+            key={st}
+            onClick={() => setStatusFilter(st)}
+            className={cn(
+              "px-3.5 py-1.5 rounded-full font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer border",
+              statusFilter.toLowerCase() === st.toLowerCase()
+                ? "bg-primary text-white border-primary shadow-sm"
+                : "bg-white text-on-surface-variant border-outline-variant hover:bg-surface-container-low"
+            )}
+          >
+            {st}
+          </button>
+        ))}
+      </div>
+
       {/* Filter Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-6 bg-surface-container-lowest p-3 rounded-xl border border-outline-variant custom-shadow items-stretch sm:items-center">
         <div className="flex-1 min-w-[200px] relative">

@@ -6,7 +6,7 @@ import {
   Plus, ShoppingCart, Percent, AlertCircle, Play, Star, MapPin, CheckCircle, 
   HelpCircle, ChevronDown, ChevronUp, Clock, Award
 } from 'lucide-react';
-import { clientApi } from '../lib/api';
+import { clientApi } from '../portals/client/lib/api';
 
 interface LandingProps {
   onNavigate: (screen: string, category?: string, productId?: number) => void;

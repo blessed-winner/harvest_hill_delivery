@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientLayout from '../portals/client/ClientLayout';
-import Landing from '../portals/client/pages/Landing';
+import Landing from '../components/Landing';
 import { CurrencyProvider } from '../context/CurrencyContext';
 
 export default function HomePage() {

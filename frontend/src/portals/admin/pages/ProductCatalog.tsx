@@ -514,7 +514,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="kg">kg</option>
-                <option value="litres">litres</option>
+                <option value="litre">litre</option>
                 <option value="crate">crate</option>
                 <option value="jar">jar</option>
                 <option value="bundle">bundle</option>

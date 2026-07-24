@@ -555,42 +555,75 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
             {activeTab === 'addresses' && (
               <>
                 <h3 className="text-base font-bold text-[#1c1c18] pb-3 border-b border-[#f0eee7]">Shipping Addresses</h3>
-                <p className="text-xs text-[#717971] mt-2">Manage your default delivery address. This address will be automatically prefilled during checkout.</p>
+                <p className="text-xs text-[#717971] mt-2">Manage your default delivery address. This address is automatically prefilled during checkout.</p>
                 
                 <form onSubmit={handleSaveAddress} className="mt-6 space-y-6">
-                  <div>
-                    <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Street / Warehouse Address <span className="text-red-600">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      value={streetAddress}
-                      onChange={(e) => setStreetAddress(e.target.value)}
-                      placeholder="E.g. 100 Harvest Avenue, Block 4 B, Kigali"
-                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                    />
+                  {/* Street / Warehouse Address */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Street / Warehouse Address</label>
+                    {editName ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={streetAddress}
+                          onChange={(e) => setStreetAddress(e.target.value)}
+                          placeholder="E.g. 100 Harvest Avenue, Block 4 B, Kigali"
+                          className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                        />
+                        <button type="button" onClick={() => setEditName(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                        <span className="text-xs font-bold text-[#1c1c18]">{streetAddress || "No street address set"}</span>
+                        <button type="button" onClick={() => setEditName(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">City / District</label>
-                      <input
-                        type="text"
-                        value={cityDistrict}
-                        onChange={(e) => setCityDistrict(e.target.value)}
-                        placeholder="E.g. Gasabo, Kigali"
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* City / District */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">City / District</label>
+                      {editTitle ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={cityDistrict}
+                            onChange={(e) => setCityDistrict(e.target.value)}
+                            placeholder="E.g. Gasabo, Kigali"
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditTitle(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{cityDistrict || "Not set"}</span>
+                          <button type="button" onClick={() => setEditTitle(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971] mb-1">Delivery Contact Phone</label>
-                      <input
-                        type="text"
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                        placeholder="E.g. +250 788 123 456"
-                        className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#144227] focus:bg-white transition-all text-[#1c1c18]"
-                      />
+                    {/* Delivery Contact Phone */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Delivery Contact Phone</label>
+                      {editPhone ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={contactPhone}
+                            onChange={(e) => setContactPhone(e.target.value)}
+                            placeholder="E.g. +250 788 123 456"
+                            className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
+                          />
+                          <button type="button" onClick={() => setEditPhone(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
+                          <span className="text-xs font-bold text-[#1c1c18]">{contactPhone || "Not set"}</span>
+                          <button type="button" onClick={() => setEditPhone(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -712,6 +712,16 @@ export default function SubmitHarvest() {
                       {validationErrors.askingPrice}
                     </p>
                   )}
+                  {/* Real-Time Currency Converter Widget */}
+                  <div className="bg-white border border-outline-variant p-3.5 rounded-xl flex items-center justify-between text-xs shadow-sm">
+                    <span className="text-on-surface-variant font-bold">Live Currency Conversion:</span>
+                    <span className="font-mono font-extrabold text-primary text-sm">
+                      {isSelectedProductRwf 
+                        ? `$${(Number(form.askingPrice || 0) / 1300).toFixed(2)} USD`
+                        : `RWF ${(Number(form.askingPrice || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                      }
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 text-secondary font-bold">
                     <TrendingUp size={18} />
                     <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
