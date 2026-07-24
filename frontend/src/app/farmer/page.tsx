@@ -24,7 +24,7 @@ export default function FarmerPage() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_role');
-        router.push('/login');
+        router.push('/');
       } else {
         setAuthorized(true);
       }

@@ -82,7 +82,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
       window.localStorage.removeItem('user_role');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
     try {

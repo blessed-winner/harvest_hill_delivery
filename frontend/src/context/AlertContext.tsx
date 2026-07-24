@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -40,6 +40,64 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [alertConfig, setAlertConfig] = useState<AlertModalOptions | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<ConfirmModalOptions | null>(null);
+
+  // Session Keeper Logic
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+    const performTokenRefresh = async () => {
+      const refreshToken = window.localStorage.getItem('refresh_token');
+      if (!refreshToken) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/accounts/token/refresh/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: refreshToken }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          window.localStorage.setItem('access_token', data.access);
+          if (data.refresh) {
+            window.localStorage.setItem('refresh_token', data.refresh);
+          }
+          console.log("[SessionKeeper] Token refreshed successfully.");
+        } else {
+          // Token is invalid/expired
+          console.warn("[SessionKeeper] Refresh token invalid or expired.");
+          window.localStorage.removeItem('access_token');
+          window.localStorage.removeItem('refresh_token');
+          window.localStorage.removeItem('user_role');
+          if (window.location.pathname !== '/') {
+            window.location.href = '/';
+          }
+        }
+      } catch (err) {
+        console.error("[SessionKeeper] Background token refresh failed:", err);
+      }
+    };
+
+    // 1. Proactive refresh on app mount if logged in
+    const accessToken = window.localStorage.getItem('access_token');
+    const refreshToken = window.localStorage.getItem('refresh_token');
+    if (accessToken && refreshToken) {
+      performTokenRefresh();
+    }
+
+    // 2. Set up interval to refresh token every 10 minutes (600000ms)
+    const intervalId = setInterval(() => {
+      const token = window.localStorage.getItem('access_token');
+      const refresh = window.localStorage.getItem('refresh_token');
+      if (token && refresh) {
+        performTokenRefresh();
+      }
+    }, 600000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Trigger a Toast
   const toast = useCallback((message: string, type: ToastType = 'info') => {

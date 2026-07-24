@@ -337,7 +337,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             className="lg:col-span-5 bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[280px]"
           >
             <img 
-              src="https://images.unsplash.com/photo-1519996521430-02b798c1d881?w=800&q=80" 
+              src="/fruits.jpg" 
               alt="fruits" 
               className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
             />
@@ -387,7 +387,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
             >
               <img 
-                src="https://images.unsplash.com/photo-1534111612486-125819e30d41?w=600&q=80" 
+                src="/peanuts(1).jpg" 
                 alt="grains" 
                 className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
               />

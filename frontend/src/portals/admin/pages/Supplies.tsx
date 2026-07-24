@@ -43,7 +43,6 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     'Pending Review': 'pending',
     'Accepted': 'accepted',
     'Rejected': 'rejected',
-    'Delivered': 'delivered',
   };
 
   const loadSupplies = () => {
@@ -159,7 +158,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
         </div>
         <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-          {['All', 'Pending Review', 'Accepted', 'Rejected', 'Delivered', 'Archived'].map((t) => (
+          {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
             <button 
               key={t} 
               onClick={() => setActiveStatusTab(t)}
@@ -295,7 +294,6 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         s.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-200" :
                         s.status === 'accepted' ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
                         s.status === 'rejected' ? "bg-red-100 text-red-800 border-red-200" :
-                        s.status === 'delivered' ? "bg-blue-100 text-blue-800 border-blue-200" :
                         "bg-surface-container-highest text-on-surface-variant"
                       )}>
                         {s.is_archived ? 'Archived' : (Number(s.quantity) === 0 ? 'Out of Stock' : s.status)}
@@ -361,14 +359,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   </button>
                 </div>
               )}
-              {selectedSupply.status === 'accepted' && !selectedSupply.is_archived && (
-                <button 
-                  onClick={() => handleUpdateStatus(selectedSupply.id, 'delivered')}
-                  className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Archive className="w-5 h-5" /> Mark as Received
-                </button>
-              )}
+
               {!selectedSupply.is_archived && (
                 <div className="grid grid-cols-2 gap-3">
                   <button 
