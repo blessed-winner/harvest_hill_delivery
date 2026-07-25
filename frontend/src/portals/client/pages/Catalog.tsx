@@ -101,6 +101,25 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         if (bulkAvailable) {
           fetchedProducts = fetchedProducts.filter((p: any) => parseFloat(p.quantity || 0) >= 100);
         }
+
+        // Apply client-side sorting
+        fetchedProducts.sort((a: any, b: any) => {
+          const nameA = (a.product_detail?.name || a.name || '').toLowerCase();
+          const nameB = (b.product_detail?.name || b.name || '').toLowerCase();
+          const priceA = parseFloat(a.price || 0);
+          const priceB = parseFloat(b.price || 0);
+
+          if (sortBy === 'name') {
+            return nameA.localeCompare(nameB);
+          } else if (sortBy === '-name') {
+            return nameB.localeCompare(nameA);
+          } else if (sortBy === 'price') {
+            return priceA - priceB;
+          } else if (sortBy === '-price') {
+            return priceB - priceA;
+          }
+          return 0;
+        });
         
         setProducts(fetchedProducts);
         setTotalCount(fetchedProducts.length);
