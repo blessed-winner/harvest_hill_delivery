@@ -3,6 +3,7 @@ import { User, History, Bell, ShoppingCart, Menu, X, Clock, Handshake, Package, 
 import Link from 'next/link';
 import { clientApi } from '../lib/api';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
+import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
 
 interface TopBarProps {
   activeScreen: string;
@@ -34,6 +35,7 @@ function formatRelativeTime(dateStr: string) {
 
 export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClick }: TopBarProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -123,31 +125,29 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
   const readNotifs = notifications.filter(n => n.is_read);
 
   return (
-    <header className="bg-white border-b border-[#e5e2db] py-4 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <header className="bg-white border-b border-[#e5e2db] py-3.5 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
         {/* Brand Logo & Menu Toggle */}
-        <div className="flex items-center gap-2 justify-between w-full md:w-auto">
-          <div className="flex items-center gap-2">
-            {onMenuClick && (
-              <button
-                onClick={onMenuClick}
-                className="lg:hidden p-2 hover:bg-[#f0eee7] rounded-lg transition-colors cursor-pointer"
-                title="Toggle Menu"
-              >
-                <Menu className="h-5 w-5 text-[#414942]" />
-              </button>
-            )}
+        <div className="flex items-center gap-2 shrink-0">
+          {onMenuClick && (
             <button
-              onClick={() => onNavigate('landing')}
-              className="text-2xl font-bold text-[#144227] tracking-tight font-sans hover:opacity-85 transition-opacity cursor-pointer"
+              onClick={onMenuClick}
+              className="lg:hidden p-1.5 hover:bg-[#f0eee7] rounded-lg transition-colors cursor-pointer"
+              title="Toggle Menu"
             >
-              Harvest Hill
+              <Menu className="h-5 w-5 text-[#414942]" />
             </button>
-          </div>
+          )}
+          <button
+            onClick={() => onNavigate('landing')}
+            className="text-xl sm:text-2xl font-bold text-[#144227] tracking-tight font-sans hover:opacity-85 transition-opacity cursor-pointer"
+          >
+            Harvest Hill
+          </button>
         </div>
 
         {/* Category Nav Links */}
-        <nav className="flex items-center gap-6 overflow-x-auto py-1 scrollbar-hide">
+        <nav className="hidden md:flex items-center gap-6 overflow-x-auto py-1 scrollbar-hide">
           <button
             onClick={() => onNavigate('landing')}
             className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
@@ -195,18 +195,22 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
         </nav>
 
         {/* Right Action Bar */}
-        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+        <div className="flex items-center justify-end gap-2.5 sm:gap-4 shrink-0">
           {/* Action Icons / Login options */}
-          <div className="flex items-center gap-3 sm:gap-4 text-[#414942]">
+          <div className="flex items-center gap-2.5 sm:gap-4 text-[#414942]">
             {isLoggedIn ? (
               <>
                 {/* Profile */}
                 <button
                   onClick={() => onNavigate('dashboard')}
-                  className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors cursor-pointer"
+                  className="p-1 hover:bg-[#f0eee7] rounded-full transition-colors cursor-pointer flex items-center justify-center"
                   title="Profile Settings"
                 >
-                  <User className="h-5 w-5" />
+                  {profilePhoto ? (
+                    <img src={profilePhoto} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-[#c1c9c0]" />
+                  ) : (
+                    <DefaultProfileAvatar className="w-8 h-8 hover:scale-105 transition-transform" />
+                  )}
                 </button>
 
                 {/* Notifications Engine Dropdown */}

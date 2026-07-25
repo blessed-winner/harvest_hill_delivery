@@ -505,6 +505,16 @@ class AdminDashboardView(APIView):
                 "color": "text-primary",
                 "icon": "Clock"
             })
+        # Pending farmer applications
+        for app in FarmerApplication.objects.filter(status='pending')[:2]:
+            needs_attention.append({
+                "type": "application",
+                "id": app.id,
+                "title": f"Farmer Application: {app.farm_name}",
+                "sub": f"Applicant: {app.full_name} ({app.email})",
+                "color": "text-indigo-600",
+                "icon": "UserCheck"
+            })
 
         # 6. Recent Activity (up to 5 items from AuditLog for any accountable activity)
         # Exclude login/logout activities
@@ -696,7 +706,16 @@ class FarmerApplicationSubmitView(APIView):
     def post(self, request):
         serializer = FarmerApplicationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            app = serializer.save()
+            # Notify all admin users
+            from apps.notifications.models import Notification
+            admin_users = User.objects.filter(role='admin')
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    message=f"New Farmer Application from {app.full_name} ({app.farm_name}). Please review."
+                )
+            log_action(request, actor=None, action="farmer_application_submitted", target_model="FarmerApplication", target_id=app.id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -731,8 +750,8 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
             username = f"{base_username}_{counter}"
             counter += 1
 
-        # Use password from application form
-        password = app.password if app.password else 'defaultpassword123'
+        # Use password from application form if present and valid, otherwise default to fallback
+        password = app.password if (app.password and len(app.password) >= 8) else "FarmerPass2026!"
         user = User.objects.create_user(
             username=username,
             email=app.email,
@@ -784,4 +803,4 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
         
         log_action(request, actor=request.user, action="farmer_application_deleted", target_model="FarmerApplication", target_id=app_id)
         
-        return Response({"detail": "Application deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "Application deleted successfully."}, status=status.HTTP_200_OK)

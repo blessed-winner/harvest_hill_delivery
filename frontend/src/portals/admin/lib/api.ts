@@ -207,3 +207,13 @@ export const api = {
     delete: (id: string | number) => apiRequest(`/api/accounts/admin/farmer-applications/${id}/`, { method: 'DELETE' }),
   },
 };
+
+export function formatCurrency(value: unknown, fallback = 'RWF 0'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  let num = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''));
+  if (!Number.isFinite(num)) return fallback;
+  if (num > 0 && num < 100) {
+    num = Math.round(num * 1473.97);
+  }
+  return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}

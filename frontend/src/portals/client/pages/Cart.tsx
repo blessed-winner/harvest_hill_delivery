@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trash2, ChevronRight, Calendar, ArrowRight, ShieldCheck, HeartHandshake, Headphones, Loader2, Package } from 'lucide-react';
-import { clientApi } from '../lib/api';
+import { clientApi, getCartStorageKey } from '../lib/api';
 
 interface CartProps {
   onNavigate: (screen: string) => void;
@@ -22,12 +22,14 @@ interface CartItem {
 }
 
 const parsePrice = (price: any): number => {
-  if (typeof price === 'number') return isNaN(price) ? 0 : price;
-  if (typeof price === 'string') {
-    const parsed = parseFloat(price);
-    return isNaN(parsed) ? 0 : parsed;
+  let val = 0;
+  if (typeof price === 'number') val = isNaN(price) ? 0 : price;
+  else if (typeof price === 'string') {
+    const parsed = parseFloat(price.replace(/[^0-9.]/g, ''));
+    val = isNaN(parsed) ? 0 : parsed;
   }
-  return 0;
+  if (val > 0 && val < 100) return Math.round(val * 1473.97);
+  return val;
 };
 
 export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps) {
@@ -35,11 +37,12 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   const [deliveryDate, setDeliveryDate] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Load cart from localStorage on mount
+  // Load cart from user-scoped localStorage on mount
   useEffect(() => {
     const loadCart = () => {
       try {
-        const savedCart = localStorage.getItem('cart_items');
+        const cartKey = getCartStorageKey();
+        const savedCart = localStorage.getItem(cartKey);
         if (savedCart) {
           const parsedItems = JSON.parse(savedCart);
           // Ensure all prices are numbers
@@ -66,10 +69,10 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
     loadCart();
   }, [setCartCount]);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to user-scoped localStorage whenever it changes
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('cart_items', JSON.stringify(items));
+      localStorage.setItem(getCartStorageKey(), JSON.stringify(items));
     }
   }, [items, loading]);
 
@@ -100,13 +103,13 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   const clearCart = () => {
     setItems([]);
     setCartCount(0);
-    localStorage.removeItem('cart_items');
+    localStorage.removeItem(getCartStorageKey());
   };
 
-  // Calculate totals
+  // Calculate totals in RWF
   const subtotal = items.reduce((sum, item) => sum + (parsePrice(item.price) * item.qty), 0);
-  const deliveryFee = items.length > 0 ? 12.00 : 0.00;
-  const taxes = subtotal * 0.08; // 8% tax
+  const deliveryFee = items.length > 0 ? 2500 : 0;
+  const taxes = Math.round(subtotal * 0.05); // 5% tax
   const grandTotal = subtotal + deliveryFee + taxes;
 
   if (loading) {
@@ -206,7 +209,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-[#1c1c18]">
-                        ${(parsePrice(item.price) * item.qty).toFixed(2)}
+                        RWF {(parsePrice(item.price) * item.qty).toLocaleString()}
                       </span>
                       <button
                         onClick={() => removeItem(item.id)}
@@ -235,23 +238,23 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
               <div className="space-y-2.5 text-xs text-[#414942]">
                 <div className="flex justify-between">
                   <span>Subtotal ({cartCount} items)</span>
-                  <span className="font-bold text-[#1c1c18]">${subtotal.toFixed(2)}</span>
+                  <span className="font-bold text-[#1c1c18]">RWF {subtotal.toLocaleString()}</span>
                 </div>
 
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span className="font-bold text-[#1c1c18]">${deliveryFee.toFixed(2)}</span>
+                  <span className="font-bold text-[#1c1c18]">RWF {deliveryFee.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Est. Taxes (8%)</span>
-                  <span className="font-bold text-[#1c1c18]">${taxes.toFixed(2)}</span>
+                  <span>Est. Taxes (5%)</span>
+                  <span className="font-bold text-[#1c1c18]">RWF {taxes.toLocaleString()}</span>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="border-t border-[#f0eee7] pt-4 flex justify-between items-baseline text-sm font-extrabold text-[#1c1c18]">
                 <span>Total Amount</span>
-                <span className="text-[#144227] text-2xl font-black">${grandTotal.toFixed(2)}</span>
+                <span className="text-[#144227] text-2xl font-black">RWF {grandTotal.toLocaleString()}</span>
               </div>
 
               {/* Delivery Date Picker */}

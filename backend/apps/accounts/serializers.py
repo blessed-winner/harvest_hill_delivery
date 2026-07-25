@@ -27,7 +27,7 @@ def check_phone_unique(phone, exclude_user=None):
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProfile
-        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received']
+        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received']
 
     def validate_phone(self, value):
         user = None
@@ -244,7 +244,12 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 
 class FarmerApplicationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True, default='')
+    crops = serializers.CharField(required=False, allow_blank=True, default='')
+    certifications = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = FarmerApplication
-        fields = ['id', 'full_name', 'email', 'phone', 'farm_name', 'location', 'crops', 'certifications', 'description', 'status', 'created_at', 'updated_at']
+        fields = ['id', 'full_name', 'email', 'phone', 'farm_name', 'location', 'crops', 'certifications', 'description', 'password', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'created_at', 'updated_at']

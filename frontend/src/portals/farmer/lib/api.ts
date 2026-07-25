@@ -1,15 +1,11 @@
-export function formatCurrency(value: unknown, fallback = '$0.00') {
+export function formatCurrency(value: unknown, fallback = 'RWF 0') {
   if (value === null || value === undefined || value === '') return fallback;
-  if (typeof value === 'string') {
-    if (value.startsWith('$')) return value;
-    const parsed = Number(value);
-    return Number.isFinite(parsed)
-      ? `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : value;
+  let num = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''));
+  if (!Number.isFinite(num)) return fallback;
+  if (num > 0 && num < 100) {
+    num = Math.round(num * 1473.97);
   }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -197,8 +193,8 @@ export const api = {
       certificationsText: certArray.join(', '),
       latitude: p.latitude !== null ? Number(p.latitude) : null,
       longitude: p.longitude !== null ? Number(p.longitude) : null,
-      payment_method: p.payment_method || 'AgriBank Savings',
-      payment_account_number: p.payment_account_number || '—',
+      payment_method: p.payment_method || 'MTN Mobile Money (MoMo)',
+      payment_account_number: p.payment_account_number || '',
       notify_new_demand: Boolean(p.notify_new_demand),
       notify_negotiation_update: Boolean(p.notify_negotiation_update),
       notify_payment_received: Boolean(p.notify_payment_received),
@@ -223,6 +219,8 @@ export const api = {
         certifications: certificationsStr,
         latitude: payload.latitude,
         longitude: payload.longitude,
+        payment_method: payload.payment_method,
+        payment_account_number: payload.payment_account_number,
         notify_new_demand: payload.notify_new_demand,
         notify_negotiation_update: payload.notify_negotiation_update,
         notify_payment_received: payload.notify_payment_received,

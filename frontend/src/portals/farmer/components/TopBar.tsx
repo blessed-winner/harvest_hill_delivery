@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Bell, Menu, Clock, AlertCircle, Handshake, Package, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
 
 interface TopBarProps {
   activeView?: string;
@@ -49,11 +50,9 @@ export default function TopBar({
 }: TopBarProps) {
   const [farmName, setFarmName] = useState('');
   const [roleLabel, setRoleLabel] = useState('');
+  const [farmerPhoto, setFarmerPhoto] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const profileImage =
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuC9re6yJPQ5TYt9TGg1Mt0-bI4EtsJFQjADaJ-AwucfipGIVS_n3JHlVfqhYm5ByV0h5A3ex6xXqVx_l3oBhemoxWVhA0IPAGluGjQO4OPoJ9gQdqnssN5XJBPp5OFVC7xQElJLs4enHGBVPXJAWBIS1VNjcQowBBzGU4M_b4cPWpbY3sw7Bu_wCsn5_rNTUAiuiqPMd8LwtDezfTQ-Zehk2fUY53IVBnoVJaGfWMQAjI0XQr03PQqA9Q';
 
   const viewTitles: Record<string, string> = {
     dashboard: 'Dashboard Overview',
@@ -74,6 +73,7 @@ export default function TopBar({
         if (!mounted) return;
         setFarmName(profile.farm_name || profile.user?.username || '');
         setRoleLabel(profile.user?.role ? `${String(profile.user.role).toUpperCase()} Supplier` : '');
+        setFarmerPhoto((profile as any)?.avatar || (profile as any)?.photo || (profile as any)?.image || null);
       } catch {}
     }
     loadProfile();
@@ -288,11 +288,15 @@ export default function TopBar({
             <p className="font-mono text-xs font-bold text-on-surface">{farmName}</p>
             <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">{roleLabel}</p>
           </div>
-          <img
-            src={profileImage}
-            alt="Farm profile"
-            className="w-9 h-9 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          {farmerPhoto ? (
+            <img
+              src={farmerPhoto}
+              alt="Farm profile"
+              className="w-9 h-9 rounded-full border-2 border-primary object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <DefaultProfileAvatar className="w-9 h-9 border-2 border-primary group-hover:scale-105 transition-transform duration-300" />
+          )}
         </div>
       </div>
     </header>

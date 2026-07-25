@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { User, Sprout, MapPin, Send, Eye, Truck, Check, Award } from 'lucide-react';
+import CountryPhoneInput from '../../components/CountryPhoneInput';
 
 export default function ApplyPage() {
   // Form states
@@ -60,8 +61,8 @@ export default function ApplyPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       setSubmitting(false);
       return;
     }
@@ -93,7 +94,19 @@ export default function ApplyPage() {
 
       if (!response.ok) {
         const errData = await response.json();
-        const msg = errData.detail || errData.error || Object.values(errData).flat().join(' ') || 'Failed to submit application.';
+        let msg = 'Failed to submit application.';
+        if (typeof errData === 'object' && errData !== null) {
+          if (errData.detail) {
+            msg = errData.detail;
+          } else {
+            const fieldMsgs = Object.entries(errData).map(([key, val]) => {
+              const strVal = Array.isArray(val) ? val.join(', ') : String(val);
+              const fieldName = key.replace('_', ' ');
+              return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: ${strVal}`;
+            });
+            msg = fieldMsgs.join(' | ');
+          }
+        }
         throw new Error(msg);
       }
 
@@ -191,15 +204,11 @@ export default function ApplyPage() {
                       className="w-full bg-[#f6f3ec]/50 border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none transition-all"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Rwandan Phone (+250)</label>
-                    <input
-                      type="tel"
-                      required
+                  <div>
+                    <CountryPhoneInput
+                      label="Contact Phone"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+250 788 000 000"
-                      className="w-full bg-[#f6f3ec]/50 border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none transition-all"
+                      onChange={(val) => setPhone(val)}
                     />
                   </div>
                 </div>
@@ -212,8 +221,8 @@ export default function ApplyPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min 6 characters"
-                      minLength={6}
+                      placeholder="Min 8 characters"
+                      minLength={8}
                       className="w-full bg-[#f6f3ec]/50 border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none transition-all"
                     />
                   </div>
@@ -225,7 +234,7 @@ export default function ApplyPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter password"
-                      minLength={6}
+                      minLength={8}
                       className="w-full bg-[#f6f3ec]/50 border border-[#c1c9c0] focus:border-[#144227] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none transition-all"
                     />
                   </div>

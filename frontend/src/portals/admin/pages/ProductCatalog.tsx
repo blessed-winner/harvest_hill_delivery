@@ -23,7 +23,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formCategory, setFormCategory] = useState("Vegetables");
   const [formUnit, setFormUnit] = useState("kg");
   const [formPrice, setFormPrice] = useState(""); // Holds entered price
-  const [formCurrencyCode, setFormCurrencyCode] = useState<'USD' | 'RWF'>('USD'); // Custom toggle state
+  const [formCurrencyCode, setFormCurrencyCode] = useState<'USD' | 'RWF'>('RWF'); // Custom toggle state
   const [formIsCurrentlyNeeded, setFormIsCurrentlyNeeded] = useState(false);
   const [formUrgency, setFormUrgency] = useState("medium");
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
@@ -97,7 +97,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory("Vegetables");
     setFormUnit("kg");
     setFormPrice("");
-    setFormCurrencyCode("USD");
+    setFormCurrencyCode("RWF");
     setFormIsCurrentlyNeeded(false);
     setFormUrgency("medium");
     setFormQuantityNeeded("");
@@ -128,19 +128,38 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
-    const priceVal = parseFloat(formPrice);
+    const priceRwf = parseFloat(formPrice);
     const qtyVal = parseFloat(formQuantityNeeded);
 
-    // Convert price to USD if it was typed in RWF and round to 2 decimal places to prevent digit length errors
-    const priceInUSD = Math.round((formCurrencyCode === 'RWF' ? priceVal / 1300 : priceVal) * 100) / 100;
-
     // Validate bounds on the client side
-    if (priceInUSD <= 0) {
+    if (priceRwf <= 0) {
       setErrorMessage("Base price must be greater than zero.");
       return;
     }
-    if (qtyVal < 50) {
-      setErrorMessage("Quantity needed must be at least 50 kg.");
+
+    let minQtyNeeded = 1;
+    let minQtyMsg = "Quantity needed must be greater than zero.";
+    const lowerUnit = formUnit.toLowerCase();
+
+    if (lowerUnit.includes('kg')) {
+      minQtyNeeded = 20;
+      minQtyMsg = "Quantity needed must be at least 20 kg.";
+    } else if (lowerUnit.includes('litre') || lowerUnit.includes('liter') || lowerUnit === 'l') {
+      minQtyNeeded = 15;
+      minQtyMsg = "Quantity needed must be at least 15 litres.";
+    } else if (lowerUnit.includes('crate')) {
+      minQtyNeeded = 10;
+      minQtyMsg = "Quantity needed must be at least 10 crates.";
+    } else if (lowerUnit.includes('jar')) {
+      minQtyNeeded = 10;
+      minQtyMsg = "Quantity needed must be at least 10 jars.";
+    } else if (lowerUnit.includes('bundle')) {
+      minQtyNeeded = 10;
+      minQtyMsg = "Quantity needed must be at least 10 bundles.";
+    }
+
+    if (qtyVal < minQtyNeeded) {
+      setErrorMessage(minQtyMsg);
       return;
     }
 
@@ -161,7 +180,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formData.append('name', formName);
     formData.append('category', formCategory);
     formData.append('unit', formUnit);
-    formData.append('base_price', String(priceInUSD));
+    formData.append('base_price', String(priceRwf));
     formData.append('is_currently_needed', String(formIsCurrentlyNeeded));
     formData.append('urgency', formUrgency);
     formData.append('quantity_needed', String(qtyVal));
@@ -524,35 +543,17 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-                  Base Price ({formCurrencyCode})
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setFormCurrencyCode(prev => prev === 'USD' ? 'RWF' : 'USD')}
-                  className="font-sans text-[10px] text-primary font-bold hover:underline"
-                >
-                  Toggle Currency
-                </button>
-              </div>
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                Base Price (RWF)
+              </label>
               <div className="relative">
                 <input 
                   type="number" 
-                  placeholder="0.00" 
-                  step="0.01"
+                  placeholder="e.g. 1500" 
                   value={formPrice}
                   onChange={(e) => setFormPrice(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
                 />
-                {formPrice && (
-                  <p className="mt-1 text-[10px] text-on-surface-variant font-bold">
-                    {formCurrencyCode === 'USD' 
-                      ? `≈ RWF ${(parseFloat(formPrice) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      : `≈ USD ${(parseFloat(formPrice) / 1300).toFixed(2)}`
-                    }
-                  </p>
-                )}
               </div>
             </div>
             <div className="space-y-2">

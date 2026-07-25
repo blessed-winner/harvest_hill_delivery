@@ -310,22 +310,22 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
               <div className="border-t border-[#f0eee7] pt-4 space-y-2 text-xs">
                 <div className="flex justify-between text-[#414942]">
                   <span>Subtotal</span>
-                  <span className="font-bold text-[#1c1c18]">${checkoutData?.subtotal?.toFixed(2) || '0.00'}</span>
+                  <span className="font-bold text-[#1c1c18]">{formatCurrency(checkoutData?.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-[#414942]">
                   <span>Delivery Fee</span>
-                  <span className="font-bold text-[#376847]">${checkoutData?.deliveryFee?.toFixed(2) || '0.00'}</span>
+                  <span className="font-bold text-[#376847]">{formatCurrency(checkoutData?.deliveryFee || 2500)}</span>
                 </div>
                 <div className="flex justify-between text-[#414942]">
                   <span>Estimated Tax</span>
-                  <span className="font-bold text-[#1c1c18]">${checkoutData?.taxes?.toFixed(2) || '0.00'}</span>
+                  <span className="font-bold text-[#1c1c18]">{formatCurrency(checkoutData?.taxes)}</span>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="border-t border-[#f0eee7] pt-4 flex justify-between text-sm font-extrabold text-[#1c1c18]">
                 <span>Total</span>
-                <span className="text-[#144227] text-lg">${checkoutData?.grandTotal?.toFixed(2) || '0.00'}</span>
+                <span className="text-[#144227] text-lg font-black">{formatCurrency(checkoutData?.grandTotal)}</span>
               </div>
 
               {/* Error Message */}

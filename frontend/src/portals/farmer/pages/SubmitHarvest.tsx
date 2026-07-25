@@ -189,10 +189,11 @@ export default function SubmitHarvest() {
 
   const openProduct = (product: DemandProduct) => {
     setSelectedProduct(product);
-    const isRwf = convertedProducts[product.id] || false;
-    const initialAskingPrice = isRwf 
-      ? String(Math.round(Number(product.base_price || 0) * 1300))
-      : product.base_price ? String(product.base_price) : '';
+    let baseVal = Number(product.base_price || 0);
+    if (baseVal > 0 && baseVal < 100) {
+      baseVal = Math.round(baseVal * 1473.97);
+    }
+    const initialAskingPrice = baseVal ? String(baseVal) : '';
 
     setForm({
       quantity: product.quantity_needed ? String(product.quantity_needed).split(' ')[0] : '',
@@ -211,28 +212,39 @@ export default function SubmitHarvest() {
 
     // Validate fields and set inline errors
     const qty = Number(form.quantity);
-    const isRwf = convertedProducts[selectedProduct.id] || false;
-    const askingPriceUSD = isRwf ? Number(form.askingPrice) / 1300 : Number(form.askingPrice);
+    const askingPriceRWF = Number(form.askingPrice);
 
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
-    // Check unit - only enforce 20kg minimum for kg units
+    // Check unit thresholds (20kg, 15 litres, 10 crates, 10 jars, 10 bundles)
     const unit = selectedProduct.unit?.toLowerCase() || 'kg';
-    if (unit === 'kg') {
-      if (isNaN(qty) || qty < 20) {
-        errors.quantity = "Quantity must be at least 20 kg.";
-        hasErrors = true;
-      }
-    } else {
-      // For non-kg units, just ensure positive
-      if (isNaN(qty) || qty <= 0) {
-        errors.quantity = "Quantity must be greater than zero.";
-        hasErrors = true;
-      }
+    let minQty = 1;
+    let minMsg = "Quantity must be greater than zero.";
+
+    if (unit.includes('kg')) {
+      minQty = 20;
+      minMsg = "Quantity must be at least 20 kg.";
+    } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
+      minQty = 15;
+      minMsg = "Quantity must be at least 15 litres.";
+    } else if (unit.includes('crate')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 crates.";
+    } else if (unit.includes('jar')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 jars.";
+    } else if (unit.includes('bundle')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 bundles.";
     }
 
-    if (isNaN(askingPriceUSD) || askingPriceUSD <= 0) {
+    if (isNaN(qty) || qty < minQty) {
+      errors.quantity = minMsg;
+      hasErrors = true;
+    }
+
+    if (isNaN(askingPriceRWF) || askingPriceRWF <= 0) {
       errors.askingPrice = "Asking price must be greater than zero.";
       hasErrors = true;
     }
@@ -249,7 +261,7 @@ export default function SubmitHarvest() {
         product: selectedProduct.id,
         quantity: qty,
         unit: selectedProduct.unit,
-        price: askingPriceUSD,
+        price: askingPriceRWF,
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
         notes: form.notes,
@@ -437,10 +449,11 @@ export default function SubmitHarvest() {
             </p>
           </div>
         ) : currentDemands.map((product) => {
-          const isRwf = convertedProducts[product.id] || false;
-          const formattedPrice = isRwf
-            ? `RWF ${(Number(product.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-            : `$${Number(product.base_price || 0).toFixed(2)}`;
+          let baseVal = Number(product.base_price || 0);
+          if (baseVal > 0 && baseVal < 100) {
+            baseVal = Math.round(baseVal * 1473.97);
+          }
+          const formattedPrice = `RWF ${baseVal.toLocaleString('en-US')}`;
 
           return (
             <motion.div
@@ -498,7 +511,7 @@ export default function SubmitHarvest() {
                 </div>
               </div>
 
-              {/* Localized Card Base Price & Conversion Toggle */}
+              {/* RWF Base Price */}
               <div className="mt-3 pt-3 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
                 <div>
                   <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block">Base Price</span>
@@ -506,26 +519,6 @@ export default function SubmitHarvest() {
                     {formattedPrice} / {product.unit}
                   </span>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConvertedProducts(prev => {
-                      const nextState = { ...prev, [product.id]: !prev[product.id] };
-                      // If drawer is currently open for this product, sync drawer input values
-                      if (selectedProduct?.id === product.id) {
-                        const newIsRwf = nextState[product.id];
-                        const convertedAskingVal = newIsRwf
-                          ? String(Math.round(Number(form.askingPrice || 0) * 1300))
-                          : String(Number(form.askingPrice || 0) / 1300);
-                        setForm(current => ({ ...current, askingPrice: convertedAskingVal }));
-                      }
-                      return nextState;
-                    });
-                  }}
-                  className="font-mono text-[9px] uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-1 rounded-full hover:bg-primary/20 transition-all font-bold cursor-pointer"
-                >
-                  Convert ({isRwf ? 'USD' : 'RWF'})
-                </button>
               </div>
             </motion.div>
           );
@@ -613,19 +606,21 @@ export default function SubmitHarvest() {
                           const qtyNum = Number(val);
                           const unit = selectedProduct.unit?.toLowerCase() || 'kg';
                           if (val) {
-                            if (unit === 'kg') {
-                              if (isNaN(qtyNum) || qtyNum < 20) {
-                                setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 20 kg." }));
-                              } else {
-                                setValidationErrors(prev => ({ ...prev, quantity: undefined }));
-                              }
+                            let err: string | undefined = undefined;
+                            if (unit.includes('kg')) {
+                              if (isNaN(qtyNum) || qtyNum < 20) err = "Quantity must be at least 20 kg.";
+                            } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
+                              if (isNaN(qtyNum) || qtyNum < 15) err = "Quantity must be at least 15 litres.";
+                            } else if (unit.includes('crate')) {
+                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 crates.";
+                            } else if (unit.includes('jar')) {
+                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 jars.";
+                            } else if (unit.includes('bundle')) {
+                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 bundles.";
                             } else {
-                              if (isNaN(qtyNum) || qtyNum <= 0) {
-                                setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be greater than zero." }));
-                              } else {
-                                setValidationErrors(prev => ({ ...prev, quantity: undefined }));
-                              }
+                              if (isNaN(qtyNum) || qtyNum <= 0) err = "Quantity must be greater than zero.";
                             }
+                            setValidationErrors(prev => ({ ...prev, quantity: err }));
                           } else {
                             setValidationErrors(prev => ({ ...prev, quantity: undefined }));
                           }
@@ -679,15 +674,15 @@ export default function SubmitHarvest() {
                 </div>
 
                 <div className="space-y-4 sm:space-y-6 bg-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Asking Price per kg</label>
+                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Asking Price per {selectedProduct.unit} (RWF)</label>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                     <div className="relative w-full">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">
-                        {isSelectedProductRwf ? 'RWF' : '$'}
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary text-xs">
+                        RWF
                       </span>
                       <input
                         className={cn(
-                          "w-full pl-12 pr-4 py-3 rounded-xl border bg-white font-sans text-2xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary",
+                          "w-full pl-14 pr-4 py-3 rounded-xl border bg-white font-sans text-xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary",
                           validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant"
                         )}
                         type="text"
@@ -696,9 +691,7 @@ export default function SubmitHarvest() {
                           const val = event.target.value;
                           setForm((current) => ({ ...current, askingPrice: val }));
                           const priceNum = Number(val);
-                          const isRwf = convertedProducts[selectedProduct.id] || false;
-                          const usdPrice = isRwf ? priceNum / 1300 : priceNum;
-                          if (val && (isNaN(priceNum) || usdPrice <= 0)) {
+                          if (val && (isNaN(priceNum) || priceNum <= 0)) {
                             setValidationErrors(prev => ({ ...prev, askingPrice: "Price must be greater than zero." }));
                           } else {
                             setValidationErrors(prev => ({ ...prev, askingPrice: undefined }));
@@ -712,20 +705,10 @@ export default function SubmitHarvest() {
                       {validationErrors.askingPrice}
                     </p>
                   )}
-                  {/* Real-Time Currency Converter Widget */}
-                  <div className="bg-white border border-outline-variant p-3.5 rounded-xl flex items-center justify-between text-xs shadow-sm">
-                    <span className="text-on-surface-variant font-bold">Live Currency Conversion:</span>
-                    <span className="font-mono font-extrabold text-primary text-sm">
-                      {isSelectedProductRwf 
-                        ? `$${(Number(form.askingPrice || 0) / 1300).toFixed(2)} USD`
-                        : `RWF ${(Number(form.askingPrice || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                      }
-                    </span>
-                  </div>
                   <div className="flex items-center gap-2 text-secondary font-bold">
                     <TrendingUp size={18} />
                     <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
-                      Recommended price is based on market value.
+                      Recommended price is based on market value in RWF.
                     </span>
                   </div>
                 </div>

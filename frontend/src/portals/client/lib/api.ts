@@ -186,16 +186,19 @@ export const clientApi = {
 };
 
 // Utility functions
-export function formatCurrency(value: unknown, fallback = '$0.00'): string {
+export function formatCurrency(value: unknown, fallback = 'RWF 0'): string {
   if (value === null || value === undefined || value === '') return fallback;
-  if (typeof value === 'string') {
-    if (value.startsWith('$')) return value;
-    const parsed = Number(value);
-    return Number.isFinite(parsed)
-      ? `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : value;
+  let num = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.]/g, ''));
+  if (!Number.isFinite(num)) return fallback;
+  if (num > 0 && num < 100) {
+    num = Math.round(num * 1473.97);
   }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return `$${parsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
+export function getCartStorageKey(): string {
+  if (typeof window === 'undefined') return 'cart_items_guest';
+  const role = localStorage.getItem('user_role') || 'client';
+  const email = localStorage.getItem('user_email') || localStorage.getItem('user_username') || 'client';
+  return `cart_items_${role}_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
 }

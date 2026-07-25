@@ -28,6 +28,8 @@ class FarmerProfile(models.Model):
     certification_number = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=50, blank=True, default='')
     certifications = models.TextField(blank=True, default='')
+    payment_method = models.CharField(max_length=100, blank=True, default='MTN Mobile Money (MoMo)')
+    payment_account_number = models.CharField(max_length=100, blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     notify_new_demand = models.BooleanField(default=True)

@@ -65,6 +65,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
 
   // Active Settings Tab State
   const [activeTab, setActiveTab] = useState('profile');
+  const [kpiCurrency, setKpiCurrency] = useState<'RWF' | 'USD'>('RWF');
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -261,7 +262,13 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
             </div>
           </div>
           <div>
-            <span className="text-3xl font-black text-[#1c1c18]">${parseFloat(dashboardData?.total_spent || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="text-2xl sm:text-3xl font-black text-[#1c1c18]">
+              {(() => {
+                const val = parseFloat(dashboardData?.total_spent || 0);
+                const rwfVal = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
+                return `RWF ${rwfVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+              })()}
+            </span>
             <span className="text-[10px] text-[#717971] block mt-0.5 font-bold">Total procurement volume</span>
           </div>
         </div>

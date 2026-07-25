@@ -5,6 +5,8 @@ import { motion } from 'motion/react';
 import { Sprout, CreditCard, BellRing, Info, Save, Banknote, CheckCircle2, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { api, apiRequest } from '../lib/api';
 import { cn } from '../lib/utils';
+import CountryPhoneInput from '../../../components/CountryPhoneInput';
+import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
 
 type ProfileForm = {
   farm_name: string;
@@ -23,12 +25,12 @@ type ProfileForm = {
 const initialProfile: ProfileForm = {
   farm_name: 'Green Valley Organic Farms Ltd.',
   location: 'Kigali, Rwanda',
-  phone: '+250 781 234 567',
-  certificationsText: 'USDA Organic, Fair Trade',
+  phone: '+250 788 123 456',
+  certificationsText: 'GAP Certified, Fair Trade',
   latitude: -1.9441,
   longitude: 30.0619,
-  payment_method: 'AgriBank Savings',
-  payment_account_number: '**** **** 8829',
+  payment_method: 'MTN Mobile Money (MoMo)',
+  payment_account_number: '+250 788 123 456',
   notify_new_demand: true,
   notify_negotiation_update: false,
   notify_payment_received: false,
@@ -149,10 +151,8 @@ export default function Settings() {
     setIsSaving(true);
     setStatusMessage(null);
 
-    const phoneClean = profile.phone.replace(/\s+/g, '');
-    const phoneRegex = /^\+2507[2389]\d{7}$/;
-    if (!phoneRegex.test(phoneClean)) {
-      setStatusMessage('Invalid Phone Number. Please use Rwandan format: +250 7XX XXX XXX');
+    if (!profile.phone.trim()) {
+      setStatusMessage('Please enter a valid contact phone number.');
       setIsSaving(false);
       return;
     }
@@ -226,12 +226,16 @@ export default function Settings() {
 
               {/* Profile Picture Upload & Remove Card */}
               <div className="flex flex-col sm:flex-row items-center gap-5 p-4 bg-surface-container-low rounded-2xl border border-outline-variant">
-                <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary shrink-0 group">
-                  <img
-                    src={avatarPreview || 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9re6yJPQ5TYt9TGg1Mt0-bI4EtsJFQjADaJ-AwucfipGIVS_n3JHlVfqhYm5ByV0h5A3ex6xXqVx_l3oBhemoxWVhA0IPAGluGjQO4OPoJ9gQdqnssN5XJBPp5OFVC7xQElJLs4enHGBVPXJAWBIS1VNjcQowBBzGU4M_b4cPWpbY3sw7Bu_wCsn5_rNTUAiuiqPMd8LwtDezfTQ-Zehk2fUY53IVBnoVJaGfWMQAjI0XQr03PQqA9Q'}
-                    alt="Farmer Avatar"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative w-20 h-20 rounded-full overflow-hidden shrink-0 group">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Farmer Avatar"
+                      className="w-full h-full object-cover border-2 border-primary rounded-full"
+                    />
+                  ) : (
+                    <DefaultProfileAvatar className="w-20 h-20 border-2 border-primary" iconClassName="w-12 h-12" />
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 items-center sm:items-start text-center sm:text-left">
                   <span className="font-sans text-xs font-bold text-on-surface">Farmer Profile Picture</span>
@@ -279,14 +283,11 @@ export default function Settings() {
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Contact Phone (Rwandan)</label>
-                    <input 
-                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all" 
-                      type="tel" 
-                      value={profile.phone} 
-                      onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
-                      placeholder="+250 7XX XXX XXX"
+                  <div>
+                    <CountryPhoneInput
+                      label="Contact Phone"
+                      value={profile.phone}
+                      onChange={(val) => setProfile((current) => ({ ...current, phone: val }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -389,11 +390,11 @@ export default function Settings() {
                             onChange={(e) => setProfile(current => ({ ...current, payment_method: e.target.value }))}
                             className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-sans text-sm focus:border-primary outline-none"
                           >
-                            <option value="MTN Mobile Money">MTN Mobile Money (MoMo)</option>
+                            <option value="MTN Mobile Money (MoMo)">MTN Mobile Money (MoMo)</option>
                             <option value="Airtel Money">Airtel Money</option>
                             <option value="Bank Transfer (Bank of Kigali)">Bank Transfer (Bank of Kigali)</option>
+                            <option value="Bank Transfer (I&M Bank)">Bank Transfer (I&M Bank)</option>
                             <option value="Bank Transfer (Equity Bank)">Bank Transfer (Equity Bank)</option>
-                            <option value="Cash on Delivery">Cash on Delivery</option>
                           </select>
                         </div>
                         <div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Settings, Menu, X, Clock, Handshake, Package, AlertCircle, User } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
+import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
 
 import { ViewType } from '../../types';
 
@@ -279,9 +280,7 @@ export function TopBar({
               className="w-8 h-8 rounded-full object-cover border border-outline-variant shadow-sm"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-outline-variant flex items-center justify-center shadow-sm">
-              <User className="w-4 h-4 text-primary" />
-            </div>
+            <DefaultProfileAvatar className="w-8 h-8 shadow-sm hover:scale-105 transition-transform" />
           )}
         </div>
       </div>

@@ -13,6 +13,7 @@ import DeliveryNote from '../../portals/client/pages/DeliveryNote';
 import OrderHistory from '../../portals/client/pages/OrderHistory';
 import Invoices from '../../portals/client/pages/Invoices';
 import { CurrencyProvider } from '../../context/CurrencyContext';
+import { getCartStorageKey } from '../../portals/client/lib/api';
 
 export default function ClientPage() {
   const router = useRouter();
@@ -39,9 +40,10 @@ export default function ClientPage() {
         const initialScreen = urlScreen || storedScreen || 'landing';
         setActiveScreen(initialScreen);
 
-        // Load cart count from localStorage
+        // Load cart count from user-scoped localStorage
         try {
-          const savedCart = localStorage.getItem('cart_items');
+          const cartKey = getCartStorageKey();
+          const savedCart = localStorage.getItem(cartKey);
           if (savedCart) {
             const items = JSON.parse(savedCart);
             setCartCount(items.length);
@@ -77,9 +79,10 @@ export default function ClientPage() {
 
   const handleAddToCart = (product?: any) => {
     if (product) {
-      // Add product to localStorage cart
+      // Add product to user-scoped localStorage cart
       try {
-        const savedCart = localStorage.getItem('cart_items');
+        const cartKey = getCartStorageKey();
+        const savedCart = localStorage.getItem(cartKey);
         const cartItems = savedCart ? JSON.parse(savedCart) : [];
         
         // Check if product already exists in cart (use supply ID for uniqueness)
@@ -102,7 +105,7 @@ export default function ClientPage() {
           });
         }
         
-        localStorage.setItem('cart_items', JSON.stringify(cartItems));
+        localStorage.setItem(cartKey, JSON.stringify(cartItems));
         
         // Update cart count with distinct line items count
         setCartCount(cartItems.length);

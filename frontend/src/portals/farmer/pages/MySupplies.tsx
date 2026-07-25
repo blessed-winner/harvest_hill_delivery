@@ -169,8 +169,29 @@ export default function MySupplies() {
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
-    if (isNaN(qty) || qty < 20) {
-      errors.quantity = "Quantity must be at least 20 kg.";
+    const unit = (editSupply.product_detail?.unit || editSupply.unit || 'kg').toLowerCase();
+    let minQty = 1;
+    let minMsg = "Quantity must be greater than zero.";
+
+    if (unit.includes('kg')) {
+      minQty = 20;
+      minMsg = "Quantity must be at least 20 kg.";
+    } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
+      minQty = 15;
+      minMsg = "Quantity must be at least 15 litres.";
+    } else if (unit.includes('crate')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 crates.";
+    } else if (unit.includes('jar')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 jars.";
+    } else if (unit.includes('bundle')) {
+      minQty = 10;
+      minMsg = "Quantity must be at least 10 bundles.";
+    }
+
+    if (isNaN(qty) || qty < minQty) {
+      errors.quantity = minMsg;
       hasErrors = true;
     }
 
@@ -382,7 +403,13 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-mono text-sm font-bold text-on-surface">${supply.proposed_price || supply.price}</span>
+                      <span className="font-mono text-sm font-bold text-on-surface">
+                        {(() => {
+                          const val = Number(supply.proposed_price || supply.price || 0);
+                          const rwf = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
+                          return `RWF ${rwf.toLocaleString()}`;
+                        })()}
+                      </span>
                       {supply.status === 'accepted' && (
                         <span className="text-[9px] text-tertiary font-bold uppercase tracking-tighter">Negotiated</span>
                       )}
@@ -566,8 +593,23 @@ export default function MySupplies() {
                         const val = e.target.value;
                         setEditQuantity(val);
                         const qNum = Number(val);
-                        if (val && (isNaN(qNum) || qNum < 20)) {
-                          setValidationErrors(prev => ({ ...prev, quantity: "Quantity must be at least 20 kg." }));
+                        const unit = (editSupply.unit || 'kg').toLowerCase();
+                        if (val) {
+                          let err: string | undefined = undefined;
+                          if (unit.includes('kg')) {
+                            if (isNaN(qNum) || qNum < 20) err = "Quantity must be at least 20 kg.";
+                          } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
+                            if (isNaN(qNum) || qNum < 15) err = "Quantity must be at least 15 litres.";
+                          } else if (unit.includes('crate')) {
+                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 crates.";
+                          } else if (unit.includes('jar')) {
+                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 jars.";
+                          } else if (unit.includes('bundle')) {
+                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 bundles.";
+                          } else {
+                            if (isNaN(qNum) || qNum <= 0) err = "Quantity must be greater than zero.";
+                          }
+                          setValidationErrors(prev => ({ ...prev, quantity: err }));
                         } else {
                           setValidationErrors(prev => ({ ...prev, quantity: undefined }));
                         }
@@ -585,7 +627,7 @@ export default function MySupplies() {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-primary font-sans">Asking Price ($ per unit)</label>
+                    <label className="block text-xs font-bold text-primary font-sans">Asking Price (RWF per unit)</label>
                     <input 
                       type="number"
                       step="0.01"

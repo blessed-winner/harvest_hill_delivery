@@ -39,10 +39,12 @@ export default function LoginPage() {
         throw new Error(errorMsg);
       }
 
-      // Save tokens
+      // Save tokens & user metadata
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('refresh_token', data.refresh);
       localStorage.setItem('user_role', data.user.role);
+      localStorage.setItem('user_email', data.user.email || '');
+      localStorage.setItem('user_username', data.user.username || '');
 
       // Redirect depending on user role
       if (data.user.role === 'admin') {

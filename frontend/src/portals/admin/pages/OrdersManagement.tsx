@@ -291,7 +291,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap",
+                  "px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap",
                   activeTab === tab ? "bg-white shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
                 )}
               >
@@ -353,7 +353,13 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                         <td className="py-3 px-6 font-mono text-[13px] font-bold">#ORD-{order.id}</td>
                         <td className="py-3 px-6 text-sm">{order.client_detail?.business_name || order.client_detail?.user?.email || 'Client'}</td>
                         <td className="py-3 px-6 text-sm text-on-surface-variant">{(order.items || []).length} items</td>
-                        <td className="py-3 px-6 font-mono text-sm font-bold">${getOrderTotal(order).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td className="py-3 px-6 font-mono text-sm font-bold">
+                          {(() => {
+                            const val = getOrderTotal(order);
+                            const rwfVal = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
+                            return `RWF ${rwfVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                          })()}
+                        </td>
                         <td className="py-3 px-6">
                           <span className={cn(
                             "text-[10px] font-bold px-2 py-0.5 rounded-full border",
@@ -522,18 +528,29 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
             <section className="space-y-4">
               <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Order Summary</h4>
               <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 divide-y divide-outline-variant/20">
-                {(selectedOrder.items || []).map((item: any, idx: number) => (
-                  <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 text-xs">
-                    <div>
-                      <p className="font-bold">{item.product_detail?.name || item.product_name || `Product #${item.product}`}</p>
-                      <p className="text-on-surface-variant/80 mt-0.5">{item.quantity} units • ${parseFloat(item.price).toFixed(2)}/unit</p>
+                {(selectedOrder.items || []).map((item: any, idx: number) => {
+                  const pNum = parseFloat(item.price || 0);
+                  const pRwf = pNum > 0 && pNum < 100 ? Math.round(pNum * 1473.97) : pNum;
+                  const itemTotal = pRwf * parseFloat(item.quantity || 1);
+                  return (
+                    <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 text-xs">
+                      <div>
+                        <p className="font-bold">{item.product_detail?.name || item.product_name || `Product #${item.product}`}</p>
+                        <p className="text-on-surface-variant/80 mt-0.5">{item.quantity} units • RWF {pRwf.toLocaleString()}/unit</p>
+                      </div>
+                      <span className="font-mono font-bold">RWF {itemTotal.toLocaleString()}</span>
                     </div>
-                    <span className="font-mono font-bold">${(parseFloat(item.price) * parseFloat(item.quantity)).toFixed(2)}</span>
-                  </div>
-                ))}
+                  );
+                })}
                 <div className="flex justify-between pt-3 text-sm font-bold text-primary">
                   <span>Grand Total</span>
-                  <span className="font-mono">${getOrderTotal(selectedOrder).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">
+                    {(() => {
+                      const val = getOrderTotal(selectedOrder);
+                      const rwfVal = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
+                      return `RWF ${rwfVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                    })()}
+                  </span>
                 </div>
               </div>
             </section>

@@ -110,8 +110,8 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, activeTab, searchTerm]);
 
-  const loadApplications = () => {
-    setAppsLoading(true);
+  const loadApplications = (showLoading = true) => {
+    if (showLoading) setAppsLoading(true);
     api.farmerApplications.list()
       .then(res => setApplications(res?.results || res || []))
       .catch(err => console.error('Failed to load farmer applications:', err))
@@ -119,8 +119,12 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
   };
 
   useEffect(() => {
+    loadApplications();
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'Applications') {
-      loadApplications();
+      loadApplications(false);
     }
   }, [activeTab]);
 
@@ -134,7 +138,8 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       onConfirm: async () => {
         try {
           const result = await api.farmerApplications.approve(app.id);
-          loadApplications();
+          loadApplications(false);
+          loadUsers();
           if (result?.temporary_password) {
             setConfirmDialog({
               isOpen: true,
@@ -171,7 +176,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       onConfirm: async () => {
         try {
           await api.farmerApplications.reject(app.id);
-          loadApplications();
+          loadApplications(false);
         } catch (err: any) {
           console.error('Reject failed:', err);
         }
@@ -187,11 +192,17 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
       confirmText: 'Delete Permanently',
       confirmColor: 'bg-red-600',
       onConfirm: async () => {
+        // Optimistic UI deletion: remove row instantly (0ms delay)
+        setApplications(prev => prev.filter(a => a.id !== app.id));
+        if (selectedApp?.id === app.id) {
+          setSelectedApp(null);
+        }
         try {
           await api.farmerApplications.delete(app.id);
-          loadApplications();
+          loadApplications(false); // Silent background sync without triggering table loading skeleton
         } catch (err: any) {
           console.error('Delete failed:', err);
+          loadApplications(false); // Re-sync if server delete failed
           setConfirmDialog({
             isOpen: true,
             title: 'Error',
@@ -433,7 +444,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-6 py-3 text-sm font-bold transition-all border-b-2 cursor-pointer",
+                "px-5 py-2.5 text-xs font-extrabold tracking-wide transition-all border-b-2 cursor-pointer",
                 activeTab === tab ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:bg-surface-container-low"
               )}
             >
