@@ -53,6 +53,20 @@ export default function ClientPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlScreen = urlParams.get('screen') || event.state?.screen || 'landing';
+      setActiveScreen(urlScreen);
+      localStorage.setItem('client_active_screen', urlScreen);
+      if (event.state?.category) setSelectedCategory(event.state.category);
+      if (event.state?.productId) setSelectedProductId(event.state.productId);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcf9f2]">
@@ -65,7 +79,7 @@ export default function ClientPage() {
     setActiveScreen(screen);
     localStorage.setItem('client_active_screen', screen);
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `/client?screen=${screen}`);
+      window.history.pushState({ screen, category, productId }, '', `/client?screen=${screen}`);
     }
     if (category) {
       setSelectedCategory(category);

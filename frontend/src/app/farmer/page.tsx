@@ -36,6 +36,17 @@ export default function FarmerPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlView = (urlParams.get('view') || event.state?.view || 'dashboard') as View;
+      setActiveView(urlView);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcf9f2]">
@@ -47,7 +58,7 @@ export default function FarmerPage() {
   const handleViewChange = (view: View) => {
     setActiveView(view);
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `/farmer?view=${view}`);
+      window.history.pushState({ view }, '', `/farmer?view=${view}`);
     }
   };
 

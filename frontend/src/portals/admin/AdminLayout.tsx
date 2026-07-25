@@ -37,11 +37,22 @@ export default function AdminLayout() {
     }
   }, []);
 
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTab = (urlParams.get('tab') || event.state?.view || 'dashboard') as ViewType;
+      setCurrentView(urlTab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleViewChange = (view: ViewType) => {
     setCurrentView(view);
     setIsMobileMenuOpen(false);
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `/admin?tab=${view}`);
+      window.history.pushState({ view }, '', `/admin?tab=${view}`);
     }
   };
 
