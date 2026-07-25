@@ -34,6 +34,8 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   // Signature image file state
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [savedProfileSig, setSavedProfileSig] = useState<string | null>(null);
 
   // Form inputs
   const [receiverName, setReceiverName] = useState('');
@@ -66,6 +68,12 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         const cp = profileData.profile || {};
         const ph = cp.phone || cp.phone_number || '';
         setClientPhone(ph);
+        const email = profileData.email || '';
+        setClientEmail(email);
+
+        const userSigKey = email ? `saved_signature_client_${email}` : null;
+        const sig = cp.signature_data || (userSigKey ? localStorage.getItem(userSigKey) : null);
+        setSavedProfileSig(sig);
         
         const name = [profileData.first_name, profileData.last_name]
           .filter(Boolean)
@@ -95,7 +103,10 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   const handleOpenSignModal = (item: { order: any; note?: any }) => {
     setSelectedItem(item);
     setModalMode('sign');
-    const savedSig = localStorage.getItem('saved_signature');
+    // Clean up stale un-scoped key
+    localStorage.removeItem('saved_signature');
+    const userSigKey = clientEmail ? `saved_signature_client_${clientEmail}` : null;
+    const savedSig = savedProfileSig || (userSigKey ? localStorage.getItem(userSigKey) : null);
     setSignaturePreview(savedSig || null);
     setComments('');
   };
@@ -163,6 +174,13 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
         await clientApi.deliveryNotes.update(existingNote.id, payload);
       } else {
         await clientApi.deliveryNotes.create(payload);
+      }
+
+      // Persist signature to client profile & user-scoped storage
+      if (clientEmail) {
+        localStorage.setItem(`saved_signature_client_${clientEmail}`, signaturePreview);
+        localStorage.removeItem('saved_signature');
+        clientApi.profile.update({ signature_data: signaturePreview }).catch(() => {});
       }
 
       await fetchData();

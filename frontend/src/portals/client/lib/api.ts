@@ -164,6 +164,7 @@ export const clientApi = {
         if (payload.business_title) formData.append('business_title', payload.business_title);
         if (payload.delivery_address) formData.append('delivery_address', payload.delivery_address);
         if (payload.phone) formData.append('phone', payload.phone);
+        if (payload.signature_data !== undefined) formData.append('signature_data', payload.signature_data || '');
 
         if (payload.avatarFile instanceof File) {
           formData.append('avatar', payload.avatarFile);

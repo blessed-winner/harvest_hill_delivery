@@ -20,7 +20,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             except AttributeError:
                 queryset = queryset.none()
         elif self.request.user.role == 'client':
-            queryset = queryset.filter(deleted_by_client=False)
+            queryset = queryset.filter(buyer=self.request.user, deleted_by_client=False)
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -28,7 +28,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         if not supply_id:
             return Response({"error": "Supply ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        thread, created = NegotiationThread.objects.get_or_create(supply_id=supply_id)
+        # Get or create thread specifically for THIS buyer user and THIS supply
+        thread, created = NegotiationThread.objects.get_or_create(
+            supply_id=supply_id,
+            buyer=request.user
+        )
         if not created:
             if thread.deleted_by_client or thread.deleted_by_farmer:
                 thread.deleted_by_client = False
@@ -39,7 +43,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             send_live_notification(
                 user=thread.supply.farmer.user,
                 title="New Negotiation Started",
-                message=f"A buyer has initiated a price negotiation for your supply: {thread.supply.product.name}."
+                message=f"A buyer ({request.user.email}) has initiated a price negotiation for your supply: {thread.supply.product.name}."
             )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
@@ -66,7 +70,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def offer(self, request, pk=None):
         thread = self.get_object()
-        if thread.supply.status in ['accepted', 'delivered', 'invoiced']:
+        if thread.status == 'accepted':
             return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
         
         price = request.data.get('price')
@@ -89,20 +93,19 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             quantity=quantity,
             message=message
         )
-        
-        # Update supply status to negotiating, but leave price and quantity as original
-        thread.supply.status = 'negotiating'
-        thread.supply.save()
 
-        # Send live notification
+        # Send live notification to counter-party
         from apps.notifications.utils import send_live_notification
-        send_live_notification(
-            user=request.user,
-            title="Negotiation Update",
-            message=f"New message/offer sent for {thread.supply.product.name}."
-        )
+        recipient = thread.supply.farmer.user if request.user == thread.buyer else thread.buyer
+        if recipient:
+            send_live_notification(
+                user=recipient,
+                title="Negotiation Update",
+                message=f"New message/offer sent for {thread.supply.product.name}."
+            )
 
         return Response(NegotiationThreadSerializer(thread).data)
+
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         thread = self.get_object()
@@ -116,7 +119,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.status = 'accepted'
         thread.save()
 
-        # Automatically generate a pending invoice upon acceptance
+        # Automatically generate a pending invoice upon acceptance for this buyer
         from apps.invoices.models import Invoice
         Invoice.objects.get_or_create(
             supply=thread.supply,
@@ -132,10 +135,10 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         send_live_notification(
             user=thread.supply.farmer.user,
             title="Agreement Reached",
-            message=f"Negotiation finalized for supply #{thread.supply.id} ({thread.supply.product.name})."
+            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply #{thread.supply.id} ({thread.supply.product.name})."
         )
 
-        # Send live notification to all admins (admin role in approving bypassed, they are just notified)
+        # Send live notification to all admins
         from django.contrib.auth import get_user_model
         User = get_user_model()
         admins = User.objects.filter(role='admin')
@@ -143,7 +146,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             send_live_notification(
                 user=admin,
                 title="Negotiation Finalized",
-                message=f"Negotiation for supply #{thread.supply.id} ({thread.supply.product.name}) has been finalized at ${thread.supply.price}/kg for {thread.supply.quantity} kg."
+                message=f"Negotiation for supply #{thread.supply.id} ({thread.supply.product.name}) has been finalized."
             )
 
         # Log action to AuditLog
@@ -172,12 +175,5 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         if message is not None:
             offer.message = message
         offer.save()
-        
-        # Update supply if this is the last offer in the thread
-        last_offer = thread.offers.all().order_by('timestamp').last()
-        if last_offer and last_offer.id == offer.id:
-            thread.supply.price = offer.price
-            thread.supply.quantity = offer.quantity
-            thread.supply.save()
             
         return Response(NegotiationThreadSerializer(thread).data)

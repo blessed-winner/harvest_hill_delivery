@@ -8,21 +8,24 @@ from .models import FarmerProfile, ClientProfile, AdminProfile, FarmerApplicatio
 User = get_user_model()
 
 def check_phone_unique(phone, exclude_user=None):
-    if not phone:
+    if not phone or not str(phone).strip():
         return
+    clean_phone = str(phone).strip().replace(" ", "").replace("-", "")
+    exclude_id = exclude_user.id if (exclude_user and hasattr(exclude_user, 'id')) else None
+
     # Check FarmerProfile
-    qs_farmer = FarmerProfile.objects.filter(phone=phone)
-    if exclude_user:
-        qs_farmer = qs_farmer.exclude(user=exclude_user)
-    if qs_farmer.exists():
-        raise serializers.ValidationError("This phone number is already in use by another user.")
+    for fp in FarmerProfile.objects.all():
+        if exclude_id and fp.user_id == exclude_id:
+            continue
+        if fp.phone and str(fp.phone).strip().replace(" ", "").replace("-", "") == clean_phone:
+            raise serializers.ValidationError("This phone number is already in use by another user.")
     
     # Check ClientProfile
-    qs_client = ClientProfile.objects.filter(phone=phone)
-    if exclude_user:
-        qs_client = qs_client.exclude(user=exclude_user)
-    if qs_client.exists():
-        raise serializers.ValidationError("This phone number is already in use by another user.")
+    for cp in ClientProfile.objects.all():
+        if exclude_id and cp.user_id == exclude_id:
+            continue
+        if cp.phone and str(cp.phone).strip().replace(" ", "").replace("-", "") == clean_phone:
+            raise serializers.ValidationError("This phone number is already in use by another user.")
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,24 +33,42 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
         fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received', 'avatar']
 
     def validate_phone(self, value):
+        if not value:
+            return ''
+        clean_value = str(value).strip()
         user = None
-        if self.instance and self.instance.user:
-            user = self.instance.user
-        check_phone_unique(value, exclude_user=user)
-        return value
+        if self.instance:
+            if hasattr(self.instance, 'user') and self.instance.user:
+                user = self.instance.user
+            current_phone = str(self.instance.phone or '').strip().replace(" ", "").replace("-", "")
+            incoming_phone = clean_value.replace(" ", "").replace("-", "")
+            if current_phone and current_phone == incoming_phone:
+                return clean_value
+
+        check_phone_unique(clean_value, exclude_user=user)
+        return clean_value
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = ['business_name', 'delivery_address', 'phone', 'business_title', 'avatar']
+        fields = ['business_name', 'delivery_address', 'phone', 'business_title', 'avatar', 'signature_data']
 
     def validate_phone(self, value):
+        if not value:
+            return ''
+        clean_value = str(value).strip()
         user = None
-        if self.instance and self.instance.user:
-            user = self.instance.user
-        check_phone_unique(value, exclude_user=user)
-        return value
+        if self.instance:
+            if hasattr(self.instance, 'user') and self.instance.user:
+                user = self.instance.user
+            current_phone = str(self.instance.phone or '').strip().replace(" ", "").replace("-", "")
+            incoming_phone = clean_value.replace(" ", "").replace("-", "")
+            if current_phone and current_phone == incoming_phone:
+                return clean_value
+
+        check_phone_unique(clean_value, exclude_user=user)
+        return clean_value
 
 
 class AdminProfileSerializer(serializers.ModelSerializer):

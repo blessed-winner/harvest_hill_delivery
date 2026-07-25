@@ -48,6 +48,7 @@ class ClientProfile(models.Model):
     delivery_address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    signature_data = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.business_name or self.user.email}"

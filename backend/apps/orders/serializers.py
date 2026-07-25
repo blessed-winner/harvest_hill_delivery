@@ -11,72 +11,89 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'product', 'product_detail', 'quantity', 'price']
 
 
+def deduct_inventory_for_order(order):
+    if order.is_quantity_deducted:
+        return
+    from apps.supplies.models import Supply
+    from apps.notifications.models import Notification
+    from apps.accounts.models import User
+
+    for item in order.items.all():
+        product = item.product
+        purchased_qty = float(item.quantity or 0)
+        if not product or purchased_qty <= 0:
+            continue
+
+        # Look up matching active farmer supplies for this product
+        supplies = Supply.objects.filter(
+            product=product,
+            is_archived=False,
+            quantity__gt=0
+        ).order_by('created_at')
+
+        if not supplies.exists():
+            supplies = Supply.objects.filter(
+                product=product,
+                is_archived=False
+            ).order_by('created_at')
+
+        remaining_to_deduct = purchased_qty
+        for supply in supplies:
+            if remaining_to_deduct <= 0:
+                break
+            
+            current_qty = float(supply.quantity)
+            if current_qty >= remaining_to_deduct:
+                supply.quantity = current_qty - remaining_to_deduct
+                remaining_to_deduct = 0
+            else:
+                remaining_to_deduct -= current_qty
+                supply.quantity = 0
+
+            supply.save()
+
+            if float(supply.quantity) <= 10:
+                admin_users = User.objects.filter(role='admin')
+                for admin in admin_users:
+                    Notification.objects.create(
+                        user=admin,
+                        title="Inventory Threshold Reached",
+                        message=f"Product '{product.name}' (Supply #{supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
+                    )
+
+    order.is_quantity_deducted = True
+    order.save(update_fields=['is_quantity_deducted'])
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
     client_detail = ClientProfileSerializer(source='client', read_only=True)
-    total_price = serializers.SerializerMethodField()
+    items = OrderItemSerializer(many=True, required=False)
     total_amount = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'client', 'client_detail', 'status', 'delivery_address', 
-            'items', 'total_price', 'total_amount', 'is_archived', 'is_deleted_by_client', 'created_at'
+            'items', 'total_amount', 'subtotal', 'is_archived', 'is_deleted_by_client', 'is_quantity_deducted', 'created_at'
         ]
-        read_only_fields = ['client']
-
-    def get_total_price(self, obj):
-        return sum(float(item.price * item.quantity) for item in obj.items.all())
+        read_only_fields = ['created_at', 'client']
 
     def get_total_amount(self, obj):
         return sum(float(item.price * item.quantity) for item in obj.items.all())
 
+    def get_subtotal(self, obj):
+        return sum(float(item.price * item.quantity) for item in obj.items.all())
+
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
+        items_data = validated_data.pop('items', [])
         order = Order.objects.create(**validated_data)
-        
-        from apps.supplies.models import Supply
-        from apps.notifications.models import Notification
-        from apps.accounts.models import User
 
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
-            product = item_data.get('product')
-            purchased_qty = float(item_data.get('quantity', 0))
-
-            if product and purchased_qty > 0:
-                # Deduct quantity from matching active farmer supplies
-                supplies = Supply.objects.filter(
-                    product=product,
-                    status='accepted',
-                    is_archived=False,
-                    quantity__gt=0
-                ).order_by('created_at')
-
-                remaining_to_deduct = purchased_qty
-                for supply in supplies:
-                    if remaining_to_deduct <= 0:
-                        break
-                    
-                    current_qty = float(supply.quantity)
-                    if current_qty >= remaining_to_deduct:
-                        supply.quantity = current_qty - remaining_to_deduct
-                        remaining_to_deduct = 0
-                    else:
-                        remaining_to_deduct -= current_qty
-                        supply.quantity = 0
-
-                    supply.save()
-
-                    # Trigger admin notification if supply reaches 10kg threshold or lower
-                    if float(supply.quantity) <= 10:
-                        admin_users = User.objects.filter(role='admin')
-                        for admin in admin_users:
-                            Notification.objects.create(
-                                user=admin,
-                                title="Inventory Threshold Reached",
-                                message=f"Product '{product.name}' (Supply #{supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
-                            )
+        
+        # Deduct inventory immediately for the created order
+        deduct_inventory_for_order(order)
         return order
 
     def update(self, instance, validated_data):
@@ -90,15 +107,18 @@ class OrderSerializer(serializers.ModelSerializer):
         instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
         instance.save()
 
-        # Restore supply quantities when an order is cancelled/rejected
-        if new_status == 'cancelled' and old_status != 'cancelled':
+        # Deduct inventory if status becomes delivered / confirmed / processing / shipped
+        if new_status in ['delivered', 'confirmed', 'processing', 'shipped']:
+            deduct_inventory_for_order(instance)
+
+        # Restore supply quantities when an order is cancelled
+        if new_status == 'cancelled' and old_status != 'cancelled' and instance.is_quantity_deducted:
             from apps.supplies.models import Supply
 
             for item in instance.items.all():
                 product = item.product
                 restore_qty = float(item.quantity)
 
-                # Find the matching active supply and add back the quantity
                 supply = Supply.objects.filter(
                     product=product,
                     is_archived=False,
@@ -107,6 +127,9 @@ class OrderSerializer(serializers.ModelSerializer):
                 if supply:
                     supply.quantity = float(supply.quantity) + restore_qty
                     supply.save()
+
+            instance.is_quantity_deducted = False
+            instance.save(update_fields=['is_quantity_deducted'])
 
         if items_data is not None:
             instance.items.all().delete()

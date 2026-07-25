@@ -105,8 +105,13 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
           setEarlyAccess(parsed.earlyAccess ?? true);
         }
 
-        // Load saved profile signature
-        const existingSig = localStorage.getItem('saved_signature');
+        // Clean up legacy un-scoped key
+        localStorage.removeItem('saved_signature');
+
+        // Load saved profile signature (scoped per user)
+        const userEmail = profile.email || 'client';
+        const userSigKey = `saved_signature_client_${userEmail}`;
+        const existingSig = cp.signature_data || localStorage.getItem(userSigKey);
         if (existingSig) {
           setSavedSignature(existingSig);
         }
@@ -463,10 +468,17 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0]) {
                                 const reader = new FileReader();
-                                reader.onload = (ev) => {
+                                reader.onload = async (ev) => {
                                   const dataUrl = ev.target?.result as string;
                                   setSavedSignature(dataUrl);
-                                  localStorage.setItem('saved_signature', dataUrl);
+                                  const userEmail = email || 'client';
+                                  localStorage.setItem(`saved_signature_client_${userEmail}`, dataUrl);
+                                  localStorage.removeItem('saved_signature');
+                                  try {
+                                    await clientApi.profile.update({ signature_data: dataUrl });
+                                  } catch (err) {
+                                    console.error("Failed to save signature to profile:", err);
+                                  }
                                 };
                                 reader.readAsDataURL(e.target.files[0]);
                               }

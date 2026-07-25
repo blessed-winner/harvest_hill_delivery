@@ -92,6 +92,22 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
     });
   };
 
+  // Direct manual quantity input handler
+  const handleManualQtyChange = (id: string, rawVal: string) => {
+    const parsed = parseInt(rawVal, 10);
+    const validQty = isNaN(parsed) ? 1 : Math.max(1, parsed);
+    setItems(prev => {
+      const updated = prev.map(item => {
+        if (item.id === id) {
+          return { ...item, qty: validQty };
+        }
+        return item;
+      });
+      setCartCount(updated.length);
+      return updated;
+    });
+  };
+
   // Remove item
   const removeItem = (id: string) => {
     const updated = items.filter(item => item.id !== id);
@@ -179,7 +195,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                     {/* Price on right */}
                     <div className="text-right">
                       <span className="block text-sm font-black text-[#1c1c18]">
-                        ${parsePrice(item.price).toFixed(2)}
+                        RWF {parsePrice(item.price).toLocaleString()}
                       </span>
                       <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">
                         per {item.unit || 'unit'}
@@ -189,19 +205,33 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                   {/* Bottom part: Qty selectors & Actions */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#f0eee7]">
-                    <div className="flex items-center border border-[#c1c9c0] bg-white rounded-lg overflow-hidden scale-90 origin-left">
+                    <div className="flex items-center border border-[#c1c9c0] bg-white rounded-xl overflow-hidden shadow-sm hover:border-[#144227] transition-all">
                       <button
+                        type="button"
                         onClick={() => updateQty(item.id, -1)}
-                        className="px-2 py-1 text-[#414942] hover:bg-[#fcf9f2] cursor-pointer"
+                        className="px-2.5 py-1 text-[#414942] hover:bg-[#f6f3ec] transition-colors cursor-pointer font-bold text-sm select-none"
+                        title="Decrease quantity"
                       >
                         -
                       </button>
-                      <span className="px-3 font-extrabold text-xs text-[#1c1c18] min-w-[24px] text-center">
-                        {item.qty}
-                      </span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.qty}
+                        onChange={(e) => handleManualQtyChange(item.id, e.target.value)}
+                        onBlur={(e) => {
+                          if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                            handleManualQtyChange(item.id, '1');
+                          }
+                        }}
+                        className="w-14 py-1 font-extrabold text-xs text-[#1c1c18] text-center bg-transparent border-x border-[#e5e2db] focus:outline-none focus:bg-[#f6f3ec]/40 font-mono"
+                        title="Enter quantity manually"
+                      />
                       <button
+                        type="button"
                         onClick={() => updateQty(item.id, 1)}
-                        className="px-2 py-1 text-[#414942] hover:bg-[#fcf9f2] cursor-pointer"
+                        className="px-2.5 py-1 text-[#414942] hover:bg-[#f6f3ec] transition-colors cursor-pointer font-bold text-sm select-none"
+                        title="Increase quantity"
                       >
                         +
                       </button>

@@ -70,13 +70,27 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           
           const imagesList: string[] = [];
           const seenPaths = new Set<string>();
+          const seenBases = new Set<string>();
+
+          const getBaseName = (url: string) => {
+            if (!url) return '';
+            const path = normalizeUrlPath(url);
+            const rawFilename = path.split('/').pop() || '';
+            const filename = rawFilename.split('?')[0];
+            // Remove Cloudinary random upload hash suffix e.g. milk1_yaec0u -> milk1
+            return filename.split('.')[0].replace(/_[a-zA-Z0-9]+$/, '');
+          };
 
           const addImage = (url: string | null | undefined) => {
             if (!url) return;
-            const normalized = normalizeUrlPath(url);
-            if (!seenPaths.has(normalized)) {
+            const fullUrl = getFullImageUrl(url);
+            const normalized = normalizeUrlPath(fullUrl);
+            const base = getBaseName(fullUrl);
+
+            if (!seenPaths.has(normalized) && (!base || !seenBases.has(base))) {
               seenPaths.add(normalized);
-              imagesList.push(getFullImageUrl(url));
+              if (base) seenBases.add(base);
+              imagesList.push(fullUrl);
             }
           };
 
@@ -84,7 +98,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             addImage(fetchedSupply.photo);
           }
           
-          if (Array.isArray(fetchedSupply.images)) {
+          if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
               const url = imgObj.image_url || imgObj.image;
               if (url) addImage(url);
@@ -125,13 +139,26 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             
             const imagesList: string[] = [];
             const seenPaths = new Set<string>();
+            const seenBases = new Set<string>();
+
+            const getBaseName = (url: string) => {
+              if (!url) return '';
+              const path = normalizeUrlPath(url);
+              const rawFilename = path.split('/').pop() || '';
+              const filename = rawFilename.split('?')[0];
+              return filename.split('.')[0].replace(/_[a-zA-Z0-9]+$/, '');
+            };
 
             const addImage = (url: string | null | undefined) => {
               if (!url) return;
-              const normalized = normalizeUrlPath(url);
-              if (!seenPaths.has(normalized)) {
+              const fullUrl = getFullImageUrl(url);
+              const normalized = normalizeUrlPath(fullUrl);
+              const base = getBaseName(fullUrl);
+
+              if (!seenPaths.has(normalized) && (!base || !seenBases.has(base))) {
                 seenPaths.add(normalized);
-                imagesList.push(getFullImageUrl(url));
+                if (base) seenBases.add(base);
+                imagesList.push(fullUrl);
               }
             };
 
@@ -139,7 +166,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               addImage(fetchedSupply.photo);
             }
             
-            if (Array.isArray(fetchedSupply.images)) {
+            if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
               fetchedSupply.images.forEach((imgObj: any) => {
                 const url = imgObj.image_url || imgObj.image;
                 if (url) addImage(url);
@@ -393,21 +420,19 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           </div>
 
           {/* Thumbnails row */}
-          {images.length > 1 && (
-            <div className="grid grid-cols-5 gap-2.5">
-              {images.map((img: string, index: number) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveImgIndex(index)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 bg-[#f6f3ec] transition-all cursor-pointer ${
-                    activeImgIndex === index ? 'border-[#144227] scale-102 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img} alt="thumb" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-5 gap-2.5">
+            {images.map((img: string, index: number) => (
+              <button
+                key={index}
+                onClick={() => setActiveImgIndex(index)}
+                className={`aspect-square rounded-lg overflow-hidden border-2 bg-[#f6f3ec] transition-all cursor-pointer ${
+                  activeImgIndex === index ? 'border-[#144227] scale-102 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'
+                }`}
+              >
+                <img src={img} alt="thumb" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Right Column: Info & Actions */}
@@ -461,19 +486,36 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           {/* Action Row: Qty Selector, Add to Cart & Negotiate Price */}
           <div className="space-y-3 pt-3 border-t border-[#f0eee7]">
             <div className="flex items-center gap-3">
-              <div className="flex items-center border border-[#c1c9c0] bg-white rounded-xl overflow-hidden shadow-sm">
+              <div className="flex items-center border border-[#c1c9c0] bg-white rounded-xl overflow-hidden shadow-sm hover:border-[#144227] transition-all">
                 <button
+                  type="button"
                   onClick={() => setQty(Math.max(1, qty - 1))}
-                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
+                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer select-none"
+                  title="Decrease quantity"
                 >
                   <Minus size={14} />
                 </button>
-                <span className="px-4 py-2 font-extrabold text-sm text-[#1c1c18] min-w-[40px] text-center">
-                  {qty}
-                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={qty}
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    setQty(isNaN(parsed) ? 1 : Math.max(1, parsed));
+                  }}
+                  onBlur={(e) => {
+                    if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                      setQty(1);
+                    }
+                  }}
+                  className="w-16 py-2 font-extrabold text-sm text-[#1c1c18] text-center bg-transparent border-x border-[#e5e2db] focus:outline-none focus:bg-[#fcf9f2] font-mono"
+                  title="Enter quantity manually"
+                />
                 <button
+                  type="button"
                   onClick={() => setQty(qty + 1)}
-                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer"
+                  className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer select-none"
+                  title="Increase quantity"
                 >
                   <Plus size={14} />
                 </button>
@@ -492,15 +534,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               </button>
             </div>
 
-            {/* Price Negotiation Trigger Button - Only show for pending/negotiating supplies */}
-            {product.status !== 'accepted' && (
-              <button
-                onClick={() => setIsNegotiating(true)}
-                className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-              >
-                <Handshake size={16} /> Propose Price Negotiation / Bulk Deal
-              </button>
-            )}
+            {/* Price Negotiation Trigger Button - Always Present */}
+            <button
+              onClick={() => setIsNegotiating(true)}
+              className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <Handshake size={16} /> 
+              {activeThread?.status === 'accepted' ? 'View Finalized Price Negotiation' : 'Propose Price Negotiation / Bulk Deal'}
+            </button>
           </div>
 
           {/* Product Info Guarantee Note */}

@@ -15,6 +15,7 @@ class Order(models.Model):
     delivery_address = models.TextField()
     is_archived = models.BooleanField(default=False)
     is_deleted_by_client = models.BooleanField(default=False)
+    is_quantity_deducted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

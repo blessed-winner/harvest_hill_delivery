@@ -17,7 +17,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 6;
   
   // Filters
   const [organicOnly, setOrganicOnly] = useState(false);
@@ -428,7 +428,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                       }`}>
                         <div>
                           <span className="block text-xs font-bold text-[#144227]">
-                            ${parseFloat(product.price || 0).toFixed(2)}
+                            RWF {parseFloat(product.price || 0).toLocaleString()}
                           </span>
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">
                             per {product.unit || 'unit'}

@@ -262,7 +262,7 @@ class UserProfileView(APIView):
                     profile.avatar.delete(save=False)
                 profile.avatar = None
 
-            serializer = FarmerProfileSerializer(profile, data=request.data, partial=True)
+            serializer = FarmerProfileSerializer(profile, data=request.data, partial=True, context={'request': request, 'user': user})
             if serializer.is_valid():
                 serializer.save()
                 user.save()  # Save user basic fields
@@ -287,7 +287,7 @@ class UserProfileView(APIView):
             if 'business_title' in request.data:
                 profile.business_title = request.data['business_title']
                 
-            serializer = ClientProfileSerializer(profile, data=request.data, partial=True)
+            serializer = ClientProfileSerializer(profile, data=request.data, partial=True, context={'request': request, 'user': user})
             if serializer.is_valid():
                 serializer.save()
                 user.save()  # Save user basic fields

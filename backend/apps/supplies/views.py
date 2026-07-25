@@ -78,9 +78,11 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         instance = serializer.save(farmer=self.request.user.farmer_profile, photo=photo_file)
         
-        # Create related SupplyImage instances
-        for img in images:
-            SupplyImage.objects.create(supply=instance, image=img)
+        # Create related SupplyImage instances only for extra gallery images
+        # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
+        if len(images) > 1:
+            for img in images[1:]:
+                SupplyImage.objects.create(supply=instance, image=img)
 
         # Log supply submission in AuditLog
         from apps.common.utils import log_action
@@ -106,9 +108,10 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         else:
             instance = serializer.save()
 
-        # Create additional SupplyImage objects if any are uploaded in the bulk field
-        for img in images:
-            SupplyImage.objects.create(supply=instance, image=img)
+        # Create additional SupplyImage objects if multiple images are uploaded
+        if len(images) > 1:
+            for img in images[1:]:
+                SupplyImage.objects.create(supply=instance, image=img)
 
         new_status = instance.status
         
