@@ -27,7 +27,7 @@ def check_phone_unique(phone, exclude_user=None):
 class FarmerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProfile
-        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received']
+        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received', 'avatar']
 
     def validate_phone(self, value):
         user = None
@@ -40,7 +40,7 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = ['business_name', 'delivery_address', 'phone', 'business_title']
+        fields = ['business_name', 'delivery_address', 'phone', 'business_title', 'avatar']
 
     def validate_phone(self, value):
         user = None
@@ -53,30 +53,50 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 class AdminProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdminProfile
-        fields = ['department']
+        fields = ['department', 'avatar']
 
 
 class UserSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'first_name', 'last_name', 'date_joined', 'is_active', 'profile']
+        fields = ['id', 'username', 'email', 'role', 'first_name', 'last_name', 'date_joined', 'is_active', 'profile', 'avatar']
+
+    def get_avatar(self, obj):
+        try:
+            profile = None
+            if obj.role == 'farmer' and hasattr(obj, 'farmer_profile'):
+                profile = obj.farmer_profile
+            elif obj.role == 'client' and hasattr(obj, 'client_profile'):
+                profile = obj.client_profile
+            elif obj.role == 'admin' and hasattr(obj, 'admin_profile'):
+                profile = obj.admin_profile
+            
+            if profile and profile.avatar:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(profile.avatar.url)
+                return profile.avatar.url
+        except Exception:
+            pass
+        return None
 
     def get_profile(self, obj):
         if obj.role == 'farmer':
             try:
-                return FarmerProfileSerializer(obj.farmer_profile).data
+                return FarmerProfileSerializer(obj.farmer_profile, context=self.context).data
             except Exception:
                 return None
         elif obj.role == 'client':
             try:
-                return ClientProfileSerializer(obj.client_profile).data
+                return ClientProfileSerializer(obj.client_profile, context=self.context).data
             except Exception:
                 return None
         elif obj.role == 'admin':
             try:
-                return AdminProfileSerializer(obj.admin_profile).data
+                return AdminProfileSerializer(obj.admin_profile, context=self.context).data
             except Exception:
                 return None
         return None

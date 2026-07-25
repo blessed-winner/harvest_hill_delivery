@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Shield, Key, Bell, ShieldAlert, Upload, User, Check, Eye, EyeOff } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
 
 interface SettingsProps {
@@ -125,6 +125,10 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
         }));
         setIsEditing(false);
         toast("Profile updated successfully", "success");
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('profile-updated'));
+          window.dispatchEvent(new Event('admin_settings_changed'));
+        }
         if (onProfileUpdate) {
           onProfileUpdate(`${res.first_name} ${res.last_name}`.trim() || res.username, profile.photo);
         }
@@ -139,27 +143,29 @@ export function SettingsPage({ onProfileUpdate }: SettingsProps) {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        try {
-          setLoading(true);
-          const res = await api.updateMe({ photo: base64 });
-          if (res) {
-            setProfile(prev => ({ ...prev, photo: base64 }));
-            toast("Profile picture updated", "success");
-            if (onProfileUpdate) {
-              const name = `${profile.first_name} ${profile.last_name}`.trim() || profile.username;
-              onProfileUpdate(name, base64);
-            }
+      const formData = new FormData();
+      formData.append('avatar', file);
+      try {
+        setLoading(true);
+        const res = await apiRequest('/api/accounts/me/', { method: 'PUT', body: formData });
+        if (res) {
+          const avatarUrl = res.avatar || res.profile?.avatar || null;
+          setProfile(prev => ({ ...prev, photo: avatarUrl }));
+          toast("Profile picture updated", "success");
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('profile-updated'));
+            window.dispatchEvent(new Event('admin_settings_changed'));
           }
-        } catch (err: any) {
-          toast("Failed to upload image", "error");
-        } finally {
-          setLoading(false);
+          if (onProfileUpdate) {
+            const name = `${profile.first_name} ${profile.last_name}`.trim() || profile.username;
+            onProfileUpdate(name, avatarUrl);
+          }
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err: any) {
+        toast("Failed to upload image", "error");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

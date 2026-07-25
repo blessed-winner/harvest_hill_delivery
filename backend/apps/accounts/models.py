@@ -35,6 +35,7 @@ class FarmerProfile(models.Model):
     notify_new_demand = models.BooleanField(default=True)
     notify_negotiation_update = models.BooleanField(default=True)
     notify_payment_received = models.BooleanField(default=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.farm_name or self.user.email}"
@@ -46,6 +47,7 @@ class ClientProfile(models.Model):
     business_title = models.CharField(max_length=255, blank=True)  # Job title/position
     delivery_address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.business_name or self.user.email}"
@@ -54,6 +56,7 @@ class ClientProfile(models.Model):
 class AdminProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_profile")
     department = models.CharField(max_length=100, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     def __str__(self):
         return f"Admin Profile: {self.user.email}"

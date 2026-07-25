@@ -80,16 +80,30 @@ export default function AdminLayout() {
   // Fetch admin name & photo
   useEffect(() => {
     let mounted = true;
-    api.me()
-      .then(res => {
-        if (mounted && res) {
-          const name = `${res.first_name || ''} ${res.last_name || ''}`.trim() || res.username || res.email || 'Admin';
-          setAdminName(name);
-          setAdminPhoto(res.photo || res.avatar || null);
-        }
-      })
-      .catch(err => console.error("Failed to load admin profile:", err));
-    return () => { mounted = false; };
+    const fetchAdminProfile = () => {
+      api.me()
+        .then(res => {
+          if (mounted && res) {
+            const name = `${res.first_name || ''} ${res.last_name || ''}`.trim() || res.username || res.email || 'Admin';
+            setAdminName(name);
+            setAdminPhoto(res.avatar || res.photo || (res.profile && res.profile.avatar) || null);
+          }
+        })
+        .catch(err => console.error("Failed to load admin profile:", err));
+    };
+
+    fetchAdminProfile();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('profile-updated', fetchAdminProfile);
+    }
+
+    return () => {
+      mounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('profile-updated', fetchAdminProfile);
+      }
+    };
   }, []);
 
   // Listen to admin settings changes (triggered by SettingsPage saving)

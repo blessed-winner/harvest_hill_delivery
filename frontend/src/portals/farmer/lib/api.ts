@@ -191,13 +191,14 @@ export const api = {
       phone: p.phone || '',
       certifications: certArray,
       certificationsText: certArray.join(', '),
-      latitude: p.latitude !== null ? Number(p.latitude) : null,
-      longitude: p.longitude !== null ? Number(p.longitude) : null,
+      latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : null,
+      longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : null,
       payment_method: p.payment_method || 'MTN Mobile Money (MoMo)',
       payment_account_number: p.payment_account_number || '',
       notify_new_demand: Boolean(p.notify_new_demand),
       notify_negotiation_update: Boolean(p.notify_negotiation_update),
       notify_payment_received: Boolean(p.notify_payment_received),
+      avatar: data.avatar || p.avatar || null,
       user: {
         username: data.username || data.email?.split('@')[0] || '',
         role: data.role,
@@ -209,6 +210,32 @@ export const api = {
     const certificationsStr = Array.isArray(payload.certifications)
       ? payload.certifications.join(', ')
       : payload.certifications || '';
+
+    if (payload.avatarFile instanceof File || payload.avatarFile === 'remove') {
+      const formData = new FormData();
+      formData.append('farm_name', payload.farm_name || '');
+      formData.append('location', payload.location || '');
+      formData.append('phone', payload.phone || '');
+      formData.append('certifications', certificationsStr);
+      if (payload.latitude !== null && payload.latitude !== undefined) formData.append('latitude', String(payload.latitude));
+      if (payload.longitude !== null && payload.longitude !== undefined) formData.append('longitude', String(payload.longitude));
+      formData.append('payment_method', payload.payment_method || '');
+      formData.append('payment_account_number', payload.payment_account_number || '');
+      formData.append('notify_new_demand', String(Boolean(payload.notify_new_demand)));
+      formData.append('notify_negotiation_update', String(Boolean(payload.notify_negotiation_update)));
+      formData.append('notify_payment_received', String(Boolean(payload.notify_payment_received)));
+
+      if (payload.avatarFile instanceof File) {
+        formData.append('avatar', payload.avatarFile);
+      } else if (payload.avatarFile === 'remove') {
+        formData.append('avatar', 'remove');
+      }
+
+      return apiRequest('/api/accounts/me/', {
+        method: 'PUT',
+        body: formData,
+      });
+    }
 
     return apiRequest('/api/accounts/me/', {
       method: 'PUT',

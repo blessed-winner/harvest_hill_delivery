@@ -157,11 +157,31 @@ export const clientApi = {
   // ── Profile ────────────────────────────────────────────────────────────────
   profile: {
     get: () => apiRequest('/api/accounts/me/'),
-    update: (payload: any) =>
-      apiRequest('/api/accounts/me/', {
+    update: (payload: any) => {
+      if (payload.avatarFile instanceof File || payload.avatarFile === 'remove') {
+        const formData = new FormData();
+        if (payload.business_name) formData.append('business_name', payload.business_name);
+        if (payload.business_title) formData.append('business_title', payload.business_title);
+        if (payload.delivery_address) formData.append('delivery_address', payload.delivery_address);
+        if (payload.phone) formData.append('phone', payload.phone);
+
+        if (payload.avatarFile instanceof File) {
+          formData.append('avatar', payload.avatarFile);
+        } else if (payload.avatarFile === 'remove') {
+          formData.append('avatar', 'remove');
+        }
+
+        return apiRequest('/api/accounts/me/', {
+          method: 'PUT',
+          body: formData,
+        });
+      }
+
+      return apiRequest('/api/accounts/me/', {
         method: 'PUT',
         body: JSON.stringify(payload),
-      }),
+      });
+    },
     delete: () =>
       apiRequest('/api/accounts/me/', {
         method: 'DELETE',

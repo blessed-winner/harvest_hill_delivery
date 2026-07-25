@@ -3,6 +3,24 @@ import { Search, Plus, MoreVertical, ShieldCheck, User as UserIcon, AlertCircle,
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
+import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
+
+function getUserAvatar(user: any): string | null {
+  if (!user) return null;
+  return (
+    user.avatar ||
+    user.photo ||
+    user.image ||
+    user.profile_picture ||
+    user.farmer_profile?.avatar ||
+    user.farmer_profile?.photo ||
+    user.farmer_profile?.image ||
+    user.client_profile?.avatar ||
+    user.client_profile?.photo ||
+    user.client_profile?.image ||
+    null
+  );
+}
 
 interface UserManagementProps {
   searchTerm?: string;
@@ -520,9 +538,15 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
-                              {app.full_name?.substring(0, 2).toUpperCase()}
-                            </div>
+                            {getUserAvatar(app) ? (
+                              <img
+                                src={getUserAvatar(app)!}
+                                alt={app.full_name}
+                                className="w-9 h-9 rounded-full object-cover border border-outline-variant shadow-sm shrink-0"
+                              />
+                            ) : (
+                              <DefaultProfileAvatar className="w-9 h-9 shadow-sm shrink-0" />
+                            )}
                             <div>
                               <p className="text-sm font-bold text-on-surface">{app.full_name}</p>
                               <p className="text-xs text-on-surface-variant">{app.email}</p>
@@ -624,9 +648,15 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface-variant">
-                            {user.email.substring(0, 2).toUpperCase()}
-                          </div>
+                          {getUserAvatar(user) ? (
+                            <img
+                              src={getUserAvatar(user)!}
+                              alt={user.username || user.email}
+                              className="w-9 h-9 rounded-full object-cover border border-outline-variant shadow-sm shrink-0"
+                            />
+                          ) : (
+                            <DefaultProfileAvatar className="w-9 h-9 shadow-sm shrink-0" />
+                          )}
                           <div>
                             <p className="text-sm font-bold text-on-surface">{user.username || user.email}</p>
                             <p className="text-xs text-on-surface-variant">{user.email}</p>
@@ -879,6 +909,25 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
           </div>
         ) : selectedUser ? (
           <div className="space-y-6">
+            {/* User Profile Header Avatar Card */}
+            <div className="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl border border-outline-variant">
+              {getUserAvatar(selectedUser) ? (
+                <img
+                  src={getUserAvatar(selectedUser)!}
+                  alt={selectedUser.username || selectedUser.email}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-primary shadow"
+                />
+              ) : (
+                <DefaultProfileAvatar className="w-14 h-14 border-2 border-primary shadow" iconClassName="w-8 h-8" />
+              )}
+              <div>
+                <h3 className="font-bold text-base text-on-surface">{selectedUser.username || selectedUser.email}</h3>
+                <p className="text-xs text-on-surface-variant font-mono">{selectedUser.email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase">
+                  {selectedUser.role}
+                </span>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
                 <p className="text-[10px] text-on-surface-variant uppercase font-bold">Status</p>
@@ -991,9 +1040,20 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSelectedApp(null)}>
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-outline-variant/50 overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-outline-variant flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-extrabold text-primary">Farmer Application</h3>
-                <p className="text-xs text-on-surface-variant mt-0.5">Review applicant details before approval</p>
+              <div className="flex items-center gap-3">
+                {getUserAvatar(selectedApp) ? (
+                  <img
+                    src={getUserAvatar(selectedApp)!}
+                    alt={selectedApp.full_name}
+                    className="w-11 h-11 rounded-full object-cover border-2 border-primary shadow-sm"
+                  />
+                ) : (
+                  <DefaultProfileAvatar className="w-11 h-11 border-2 border-primary shadow-sm" iconClassName="w-6 h-6" />
+                )}
+                <div>
+                  <h3 className="text-lg font-extrabold text-primary">{selectedApp.full_name}</h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">{selectedApp.email}</p>
+                </div>
               </div>
               <span className={cn(
                 "px-3 py-1 text-xs font-bold rounded-full border",

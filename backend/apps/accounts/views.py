@@ -229,11 +229,14 @@ class PasswordResetConfirmView(APIView):
         return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
 
 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
@@ -249,21 +252,37 @@ class UserProfileView(APIView):
             try:
                 profile = user.farmer_profile
             except AttributeError:
-                return Response({"detail": "Farmer profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+                profile = FarmerProfile.objects.create(user=user)
             
+            # Avatar upload or removal
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
+            elif 'avatar' in request.data and (request.data['avatar'] == '' or request.data['avatar'] == 'null' or request.data['avatar'] == 'remove'):
+                if profile.avatar:
+                    profile.avatar.delete(save=False)
+                profile.avatar = None
+
             serializer = FarmerProfileSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 user.save()  # Save user basic fields
-                return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+                return Response(UserSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         elif user.role == 'client':
             try:
                 profile = user.client_profile
             except AttributeError:
-                return Response({"detail": "Client profile does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+                profile = ClientProfile.objects.create(user=user)
             
+            # Avatar upload or removal
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
+            elif 'avatar' in request.data and (request.data['avatar'] == '' or request.data['avatar'] == 'null' or request.data['avatar'] == 'remove'):
+                if profile.avatar:
+                    profile.avatar.delete(save=False)
+                profile.avatar = None
+
             # Handle business_title specially
             if 'business_title' in request.data:
                 profile.business_title = request.data['business_title']
@@ -272,12 +291,26 @@ class UserProfileView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 user.save()  # Save user basic fields
-                return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+                return Response(UserSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+        elif user.role == 'admin':
+            try:
+                profile = user.admin_profile
+            except AttributeError:
+                profile = AdminProfile.objects.create(user=user)
+
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
+            elif 'avatar' in request.data and (request.data['avatar'] == '' or request.data['avatar'] == 'null' or request.data['avatar'] == 'remove'):
+                if profile.avatar:
+                    profile.avatar.delete(save=False)
+                profile.avatar = None
+            profile.save()
+
         # For admin or other roles, just update user fields
         user.save()
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(UserSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
 
     def delete(self, request):
         user = request.user

@@ -62,14 +62,31 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
     }
   };
 
+  const loadProfilePhoto = async () => {
+    try {
+      const data = await clientApi.profile.get();
+      setProfilePhoto(data.avatar || data.profile?.avatar || null);
+    } catch {}
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token');
       setIsLoggedIn(!!token);
       if (token) {
+        loadProfilePhoto();
         loadNotifications();
         const interval = setInterval(loadNotifications, 30000);
-        return () => clearInterval(interval);
+
+        const handleProfileUpdated = () => {
+          loadProfilePhoto();
+        };
+        window.addEventListener('profile-updated', handleProfileUpdated);
+
+        return () => {
+          clearInterval(interval);
+          window.removeEventListener('profile-updated', handleProfileUpdated);
+        };
       }
     }
   }, []);

@@ -42,6 +42,7 @@ export default function Settings() {
   const [profile, setProfile] = useState<ProfileForm>(initialProfile);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
 
@@ -72,6 +73,10 @@ export default function Settings() {
           notify_negotiation_update: Boolean(data.notify_negotiation_update),
           notify_payment_received: Boolean(data.notify_payment_received),
         });
+
+        if (data.avatar) {
+          setAvatarPreview(data.avatar);
+        }
       } catch (error) {
         console.error('Failed to load farm profile:', error);
       }
@@ -95,57 +100,53 @@ export default function Settings() {
 
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
     script.onload = () => {
       const L = (window as any).L;
-      if (!L || !document.getElementById('farm-map')) return;
+      if (!L) return;
 
-      const currentLat = profile.latitude || -1.9441;
-      const currentLng = profile.longitude || 30.0619;
+      const container = document.getElementById('map-picker');
+      if (!container) return;
 
-      if (mapRef.current) {
-        mapRef.current.setView([currentLat, currentLng], 13);
-        if (markerRef.current) {
-          markerRef.current.setLatLng([currentLat, currentLng]);
-        }
-        return;
-      }
+      const defaultLat = profile.latitude ?? -1.9441;
+      const defaultLng = profile.longitude ?? 30.0619;
 
-      const map = L.map('farm-map').setView([currentLat, currentLng], 13);
+      const map = L.map('map-picker').setView([defaultLat, defaultLng], 12);
       mapRef.current = map;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      const marker = L.marker([currentLat, currentLng], { draggable: true }).addTo(map);
+      const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
       markerRef.current = marker;
 
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
-        setProfile(current => ({
-          ...current,
-          latitude: Number(pos.lat.toFixed(6)),
-          longitude: Number(pos.lng.toFixed(6))
+        setProfile(prev => ({
+          ...prev,
+          latitude: parseFloat(pos.lat.toFixed(6)),
+          longitude: parseFloat(pos.lng.toFixed(6)),
         }));
       });
 
       map.on('click', (e: any) => {
-        marker.setLatLng(e.latlng);
-        setProfile(current => ({
-          ...current,
-          latitude: Number(e.latlng.lat.toFixed(6)),
-          longitude: Number(e.latlng.lng.toFixed(6))
+        const { lat, lng } = e.latlng;
+        marker.setLatLng([lat, lng]);
+        setProfile(prev => ({
+          ...prev,
+          latitude: parseFloat(lat.toFixed(6)),
+          longitude: parseFloat(lng.toFixed(6)),
         }));
       });
     };
-
     document.body.appendChild(script);
 
     return () => {
       link.remove();
       script.remove();
     };
-  }, [profile.latitude, profile.longitude]);
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -158,7 +159,7 @@ export default function Settings() {
     }
 
     try {
-      await api.updateFarmerProfile({
+      const res = await api.updateFarmerProfile({
         farm_name: profile.farm_name,
         location: profile.location,
         phone: profile.phone,
@@ -170,7 +171,20 @@ export default function Settings() {
         notify_new_demand: profile.notify_new_demand,
         notify_negotiation_update: profile.notify_negotiation_update,
         notify_payment_received: profile.notify_payment_received,
+        avatarFile: avatarFile ? avatarFile : (avatarRemoved ? 'remove' : null),
       });
+
+      if (res?.avatar) {
+        setAvatarPreview(res.avatar);
+      } else if (avatarRemoved) {
+        setAvatarPreview(null);
+      }
+      setAvatarFile(null);
+      setAvatarRemoved(false);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('profile-updated'));
+      }
 
       setStatusMessage('Profile successfully saved.');
     } catch (error) {
@@ -252,6 +266,7 @@ export default function Settings() {
                           if (file) {
                             setAvatarFile(file);
                             setAvatarPreview(URL.createObjectURL(file));
+                            setAvatarRemoved(false);
                           }
                         }}
                       />
@@ -262,6 +277,7 @@ export default function Settings() {
                         onClick={() => {
                           setAvatarFile(null);
                           setAvatarPreview(null);
+                          setAvatarRemoved(true);
                         }}
                         className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-sans text-xs font-bold hover:bg-red-200 transition-all cursor-pointer"
                       >

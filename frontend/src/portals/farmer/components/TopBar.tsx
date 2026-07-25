@@ -77,7 +77,20 @@ export default function TopBar({
       } catch {}
     }
     loadProfile();
-    return () => { mounted = false; };
+
+    function handleProfileUpdated() {
+      loadProfile();
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('profile-updated', handleProfileUpdated);
+    }
+
+    return () => { 
+      mounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('profile-updated', handleProfileUpdated);
+      }
+    };
   }, []);
 
   useEffect(() => {
