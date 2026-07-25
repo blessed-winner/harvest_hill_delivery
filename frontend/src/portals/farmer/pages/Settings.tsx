@@ -43,8 +43,6 @@ export default function Settings() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarRemoved, setAvatarRemoved] = useState(false);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
 
   // Deletion States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -86,65 +84,6 @@ export default function Settings() {
 
     return () => {
       mounted = false;
-    };
-  }, []);
-
-  // Initialize Leaflet Map
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.async = true;
-    script.onload = () => {
-      const L = (window as any).L;
-      if (!L) return;
-
-      const container = document.getElementById('map-picker');
-      if (!container) return;
-
-      const defaultLat = profile.latitude ?? -1.9441;
-      const defaultLng = profile.longitude ?? 30.0619;
-
-      const map = L.map('map-picker').setView([defaultLat, defaultLng], 12);
-      mapRef.current = map;
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-
-      const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
-      markerRef.current = marker;
-
-      marker.on('dragend', () => {
-        const pos = marker.getLatLng();
-        setProfile(prev => ({
-          ...prev,
-          latitude: parseFloat(pos.lat.toFixed(6)),
-          longitude: parseFloat(pos.lng.toFixed(6)),
-        }));
-      });
-
-      map.on('click', (e: any) => {
-        const { lat, lng } = e.latlng;
-        marker.setLatLng([lat, lng]);
-        setProfile(prev => ({
-          ...prev,
-          latitude: parseFloat(lat.toFixed(6)),
-          longitude: parseFloat(lng.toFixed(6)),
-        }));
-      });
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      link.remove();
-      script.remove();
     };
   }, []);
 
@@ -319,17 +258,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold flex items-center justify-between">
-                  <span>Interactive Location Map</span>
-                  {profile.latitude && profile.longitude && (
-                    <span className="text-[9px] text-[#414942]">GPS: {profile.latitude}, {profile.longitude}</span>
-                  )}
-                </label>
-                <div className="relative rounded-2xl overflow-hidden border border-outline-variant h-56 bg-surface-container-high z-10">
-                  <div id="farm-map" className="w-full h-full" />
-                </div>
-              </div>
+
 
               <div className="space-y-4">
                 <label className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Active Certifications</label>
