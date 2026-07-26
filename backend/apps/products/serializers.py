@@ -28,9 +28,29 @@ class ProductSerializer(serializers.ModelSerializer):
         if float(base_price) <= 0:
             raise serializers.ValidationError({"base_price": "Base price must be greater than zero."})
 
-        # 2. Quantity check (>= 50 kg)
-        if float(quantity_needed) < 50:
-            raise serializers.ValidationError({"quantity_needed": "Quantity needed must be at least 50 kg."})
+        # 2. Dynamic unit-based quantity check
+        unit = attrs.get('unit', instance.unit if instance else 'kg').lower()
+        min_qty = 1
+        min_msg = "Quantity needed must be greater than zero."
+        
+        if 'kg' in unit:
+            min_qty = 20
+            min_msg = "Quantity needed must be at least 20 kg."
+        elif 'litre' in unit or 'liter' in unit or unit == 'l':
+            min_qty = 15
+            min_msg = "Quantity needed must be at least 15 litres."
+        elif 'crate' in unit:
+            min_qty = 10
+            min_msg = "Quantity needed must be at least 10 crates."
+        elif 'jar' in unit:
+            min_qty = 10
+            min_msg = "Quantity needed must be at least 10 jars."
+        elif 'bundle' in unit:
+            min_qty = 10
+            min_msg = "Quantity needed must be at least 10 bundles."
+
+        if float(quantity_needed) < min_qty:
+            raise serializers.ValidationError({"quantity_needed": min_msg})
 
         # 3. Duplicate product name check (case-insensitive)
         name_duplicates = Product.objects.filter(name__iexact=name)

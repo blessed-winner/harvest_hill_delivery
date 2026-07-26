@@ -560,7 +560,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
               <input 
                 type="number" 
-                placeholder="Min 50 kg"
+                placeholder={(() => {
+                  const u = (formUnit || 'kg').toLowerCase();
+                  if (u.includes('kg')) return 'Min 20 kg';
+                  if (u.includes('litre') || u.includes('liter') || u === 'l') return 'Min 15 litres';
+                  if (u.includes('crate')) return 'Min 10 crates';
+                  if (u.includes('jar')) return 'Min 10 jars';
+                  if (u.includes('bundle')) return 'Min 10 bundles';
+                  return 'Min 1 unit';
+                })()}
                 value={formQuantityNeeded}
                 onChange={(e) => setFormQuantityNeeded(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"

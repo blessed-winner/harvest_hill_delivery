@@ -549,23 +549,36 @@ class AdminDashboardView(APIView):
                 "icon": "UserCheck"
             })
 
-        # 6. Recent Activity (up to 5 items from AuditLog for any accountable activity)
-        # Exclude login/logout activities
+        # 6. Recent Activity (up to 5 substantive system activities)
         recent_activity = []
         from apps.common.models import AuditLog
         
-        excluded_actions = ['login_success', 'logout_success']
-        db_activities = AuditLog.objects.exclude(action__in=excluded_actions).order_by('-timestamp')[:5]
+        # Strictly exclude routine authentication, failed logins, lockouts & password noise
+        db_activities = AuditLog.objects.exclude(
+            Q(action__icontains='login') | 
+            Q(action__icontains='logout') | 
+            Q(action__icontains='password') | 
+            Q(action__icontains='failed') |
+            Q(action__icontains='lockout')
+        ).order_by('-timestamp')[:5]
+
         action_map = {
+            "farmer_application_submitted": "New farmer application submitted",
+            "farmer_application_approved": "Farmer application approved",
+            "farmer_application_rejected": "Farmer application rejected",
+            "farmer_application_deleted": "Farmer application record deleted",
             "user_registration": "New user registered",
-            "user_created": "New user added by admin",
-            "user_removed": "User removed from system",
+            "user_created": "New user created by admin",
+            "user_removed": "User account removed",
+            "user_updated": "User account updated",
             "product_added": "New product added to catalog",
             "product_removed": "Product removed from catalog",
-            "password_reset_requested": "Password reset requested",
-            "password_reset_confirmed": "Password reset confirmed",
-            "supply_submitted": "New supply submitted",
-            "negotiation_finalized": "Negotiation finalized",
+            "supply_submitted": "New supply offer submitted",
+            "supply_draft_saved": "Supply draft saved",
+            "negotiation_finalized": "Price negotiation finalized",
+            "order_placed": "New customer order placed",
+            "order_delivered": "Order delivered to client",
+            "invoice_paid": "Invoice payment settled",
         }
         for log in db_activities:
             title = action_map.get(log.action, log.action.replace('_', ' ').capitalize())
@@ -573,9 +586,9 @@ class AdminDashboardView(APIView):
                 title += f" ({log.target_model} #{log.target_id})"
                 
             color = "bg-primary"
-            if "remove" in log.action or "delete" in log.action:
+            if "remove" in log.action or "delete" in log.action or "reject" in log.action:
                 color = "bg-red-500"
-            elif "success" in log.action or "register" in log.action or "create" in log.action or "add" in log.action:
+            elif "success" in log.action or "register" in log.action or "create" in log.action or "add" in log.action or "approve" in log.action:
                 color = "bg-emerald-600"
             elif "negotiation" in log.action:
                 color = "bg-indigo-600"
