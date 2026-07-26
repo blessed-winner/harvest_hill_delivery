@@ -463,70 +463,70 @@ export default function SubmitHarvest() {
           return (
             <motion.div
               key={product.id}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ y: -2 }}
               onClick={() => openProduct(product)}
               className={cn(
-                'bg-surface-container-lowest rounded-xl border p-2 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
-                selectedProduct?.id === product.id || product.name.toLowerCase().includes('roma')
-                  ? 'border-primary'
-                  : 'border-outline-variant'
+                'bg-surface-container-lowest rounded-xl border p-2.5 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
+                selectedProduct?.id === product.id
+                  ? 'border-primary ring-1 ring-primary/30'
+                  : 'border-outline-variant hover:border-outline'
               )}
             >
               <div>
-                <div className="relative rounded-lg overflow-hidden h-40 mb-3">
+                <div className="relative rounded-lg overflow-hidden h-32 sm:h-36 mb-2.5">
                   <img 
                     src={product.image || getReferenceImage(product.name) || ''} 
                     alt={product.name} 
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                   />
                   {getBadgeMeta(product.name, product.urgency) && (
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-2.5 right-2.5">
                       <span className={cn(
-                        "px-3 py-1 rounded-full font-mono text-[10px] flex items-center gap-1 shadow-md uppercase tracking-wider",
+                        "px-2.5 py-0.5 rounded-full font-mono text-[9px] flex items-center gap-1 shadow-sm uppercase tracking-wider font-bold",
                         getBadgeMeta(product.name, product.urgency)?.className
                       )}>
                         {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
-                          <Bolt size={12} fill="currentColor" />
+                          <Bolt size={10} fill="currentColor" />
                         )}
                         {getBadgeMeta(product.name, product.urgency)?.label}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="px-2 pb-2">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-sans text-base font-bold text-primary">{product.name}</h3>
-                    <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[10px] uppercase tracking-wider">
+                <div className="px-1 pb-1">
+                  <div className="flex justify-between items-start mb-1.5 gap-1">
+                    <h3 className="font-sans text-sm font-bold text-primary truncate">{product.name}</h3>
+                    <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider shrink-0 font-bold">
                       {product.category}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center justify-between mt-3">
                     <div className="flex flex-col">
-                      <span className="text-on-surface-variant font-mono text-[10px] uppercase tracking-wider">Quantity Needed</span>
-                      <span className="font-sans text-lg font-extrabold text-primary">
+                      <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider font-bold">Quantity Needed</span>
+                      <span className="font-sans text-base font-bold text-primary">
                         {String(product.quantity_needed ?? '0').split(' ')[0]}
                         <span className="text-xs font-normal ml-1">{product.unit}</span>
                       </span>
                     </div>
                     <div
                       className={cn(
-                        'p-2 rounded-lg transition-colors group-hover:translate-x-1 duration-300',
+                        'p-1.5 rounded-lg transition-colors group-hover:translate-x-0.5 duration-300',
                         selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
                       )}
                     >
-                      <ArrowRight size={18} />
+                      <ArrowRight size={15} />
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* RWF Base Price */}
-              <div className="mt-3 pt-3 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
+              <div className="mt-2.5 pt-2.5 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
                 <div>
-                  <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block">Base Price</span>
-                  <span className="font-sans font-bold text-primary">
+                  <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block font-bold">Base Price</span>
+                  <span className="font-sans text-xs font-bold text-primary">
                     {formattedPrice} / {product.unit}
                   </span>
                 </div>
@@ -575,20 +575,20 @@ export default function SubmitHarvest() {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[85vw] md:w-[500px] bg-white z-[70] shadow-2xl overflow-y-auto flex flex-col custom-scrollbar"
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed top-0 right-0 h-full w-full sm:w-[440px] md:w-[460px] bg-white z-[70] shadow-2xl overflow-y-auto flex flex-col custom-scrollbar"
             >
-              <div className="p-4 sm:p-6 border-b border-outline-variant flex items-center justify-between sticky top-0 bg-white z-10">
-                <div className="flex items-center gap-4">
+              <div className="p-4 border-b border-outline-variant flex items-center justify-between sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => setSelectedProduct(null)}
-                    className="p-2 hover:bg-surface-container-low rounded-full transition-colors"
+                    className="p-1.5 hover:bg-surface-container-low rounded-full transition-colors cursor-pointer text-on-surface"
                   >
-                    <X size={20} className="text-on-surface" />
+                    <X size={18} />
                   </button>
                   <div>
-                    <h3 className="font-sans text-lg sm:text-xl font-extrabold text-primary">Submit: {selectedProduct.name}</h3>
-                    <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
+                    <h3 className="font-sans text-base font-bold text-primary">Submit Harvest: {selectedProduct.name}</h3>
+                    <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest font-bold">
                       Demand Base Price: {isSelectedProductRwf 
                         ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                         : `$${Number(selectedProduct.base_price || 0).toFixed(2)}`
@@ -598,14 +598,14 @@ export default function SubmitHarvest() {
                 </div>
               </div>
 
-              <div className="flex-1 p-5 sm:p-8 space-y-8 sm:space-y-10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Quantity Available</label>
+              <div className="flex-1 p-4 sm:p-5 space-y-5 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Quantity Available</label>
                     <div className="relative">
                       <input
                         className={cn(
-                          "w-full px-4 py-3 rounded-xl border bg-surface-container-lowest font-sans text-xl font-extrabold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all",
+                          "w-full px-3 py-2 rounded-lg border bg-surface-container-lowest font-sans text-sm font-bold focus:border-primary outline-none transition-all",
                           validationErrors.quantity ? "border-error focus:ring-error" : "border-outline-variant"
                         )}
                         placeholder="0.00"
@@ -637,20 +637,20 @@ export default function SubmitHarvest() {
                           }
                         }}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-xs text-on-surface-variant">{selectedProduct.unit}</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-on-surface-variant font-bold">{selectedProduct.unit}</span>
                     </div>
                     {validationErrors.quantity && (
-                      <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                      <p className="text-error font-mono text-[9px] uppercase font-bold mt-0.5 pl-0.5">
                         {validationErrors.quantity}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Ready Date</label>
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Ready Date</label>
                     <div className="relative">
-                      <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
+                      <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" size={15} />
                       <input
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest font-sans text-sm focus:border-primary outline-none"
+                        className="w-full pl-9 pr-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest font-sans text-xs focus:border-primary outline-none"
                         type="date"
                         value={form.availableDate}
                         onChange={(event) => setForm((current) => ({ ...current, availableDate: event.target.value }))}
@@ -659,8 +659,8 @@ export default function SubmitHarvest() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Quality Grade Selection</label>
+                <div className="space-y-2">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Quality Grade Selection</label>
                   <div className="flex gap-2">
                     {[
                       { id: 'premium', label: 'Premium', icon: Verified },
@@ -669,63 +669,62 @@ export default function SubmitHarvest() {
                     ].map((grade) => (
                       <button
                         key={grade.id}
+                        type="button"
                         onClick={() => setForm((current) => ({ ...current, qualityGrade: grade.id as HarvestFormState['qualityGrade'] }))}
                         className={cn(
-                          'flex-1 py-4 rounded-xl border-2 flex flex-col items-center gap-1 transition-all',
+                          'flex-1 py-2 px-2 rounded-lg border flex items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer',
                           form.qualityGrade === grade.id
-                            ? 'border-primary bg-primary-container text-on-primary-container shadow-md scale-105'
-                            : 'border-outline-variant hover:border-primary hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                            : 'border-outline-variant hover:border-outline bg-white text-on-surface-variant'
                         )}
                       >
-                        <grade.icon size={20} fill={form.qualityGrade === grade.id ? 'currentColor' : 'none'} />
+                        <grade.icon size={14} fill={form.qualityGrade === grade.id ? 'currentColor' : 'none'} />
                         <span className="font-mono text-[10px] uppercase font-bold">{grade.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-4 sm:space-y-6 bg-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Asking Price per {selectedProduct.unit} (RWF)</label>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                    <div className="relative w-full">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary text-xs">
-                        RWF
-                      </span>
-                      <input
-                        className={cn(
-                          "w-full pl-14 pr-4 py-3 rounded-xl border bg-white font-sans text-xl font-extrabold text-primary outline-none focus:ring-1 focus:ring-primary",
-                          validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant"
-                        )}
-                        type="text"
-                        value={form.askingPrice}
-                        onChange={(event) => {
-                          const val = event.target.value;
-                          setForm((current) => ({ ...current, askingPrice: val }));
-                          const priceNum = Number(val);
-                          if (val && (isNaN(priceNum) || priceNum <= 0)) {
-                            setValidationErrors(prev => ({ ...prev, askingPrice: "Price must be greater than zero." }));
-                          } else {
-                            setValidationErrors(prev => ({ ...prev, askingPrice: undefined }));
-                          }
-                        }}
-                      />
-                    </div>
+                <div className="space-y-2 bg-surface-container-low/40 p-3.5 rounded-xl border border-outline-variant/60">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold block">Asking Price per {selectedProduct.unit} (RWF)</label>
+                  <div className="relative w-full">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-primary text-xs">
+                      RWF
+                    </span>
+                    <input
+                      className={cn(
+                        "w-full pl-12 pr-3 py-2 rounded-lg border bg-white font-sans text-sm font-bold text-primary outline-none focus:border-primary",
+                        validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant/60"
+                      )}
+                      type="text"
+                      value={form.askingPrice}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        setForm((current) => ({ ...current, askingPrice: val }));
+                        const priceNum = Number(val);
+                        if (val && (isNaN(priceNum) || priceNum <= 0)) {
+                          setValidationErrors(prev => ({ ...prev, askingPrice: "Price must be greater than zero." }));
+                        } else {
+                          setValidationErrors(prev => ({ ...prev, askingPrice: undefined }));
+                        }
+                      }}
+                    />
                   </div>
                   {validationErrors.askingPrice && (
-                    <p className="text-error font-mono text-[10px] uppercase font-bold mt-1 pl-1">
+                    <p className="text-error font-mono text-[9px] uppercase font-bold mt-0.5 pl-0.5">
                       {validationErrors.askingPrice}
                     </p>
                   )}
-                  <div className="flex items-center gap-2 text-secondary font-bold">
-                    <TrendingUp size={18} />
-                    <span className="font-mono text-[10px] uppercase tracking-tighter leading-none">
-                      Recommended price is based on market value in RWF.
+                  <div className="flex items-center gap-1.5 text-secondary font-bold pt-1">
+                    <TrendingUp size={14} />
+                    <span className="font-mono text-[9px] uppercase tracking-wider">
+                      Recommended price based on market value in RWF.
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Current Crop Photos</label>
+                <div className="space-y-2">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Current Crop Photos</label>
                   <input
                     type="file"
                     id="photo-upload"
@@ -735,10 +734,10 @@ export default function SubmitHarvest() {
                     onChange={handleFileChange}
                   />
                   {photoPreviews.length > 0 ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
                         {photoPreviews.map((preview, idx) => (
-                          <div key={idx} className="relative border border-outline-variant rounded-xl overflow-hidden aspect-video bg-surface-container-lowest group">
+                          <div key={idx} className="relative border border-outline-variant rounded-lg overflow-hidden aspect-video bg-surface-container-lowest group">
                             <img src={preview} alt="Crop preview" className="w-full h-full object-cover" />
                             <button
                               type="button"
@@ -749,73 +748,74 @@ export default function SubmitHarvest() {
                                   setForm(current => ({ ...current, photo: photos[1] || null }));
                                 }
                               }}
-                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow flex items-center justify-center cursor-pointer"
+                              className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow flex items-center justify-center cursor-pointer"
                             >
-                              <X size={14} />
+                              <X size={12} />
                             </button>
                           </div>
                         ))}
                       </div>
                       {photoPreviews.length < 5 && (
-                        <div className="flex justify-start">
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('photo-upload')?.click()}
-                            className="flex items-center gap-2 px-4 py-2 border border-dashed border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
-                          >
-                            <Plus size={16} />
-                            <span>Add Another Image</span>
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('photo-upload')?.click()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-primary text-primary rounded-lg font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
+                        >
+                          <Plus size={14} />
+                          <span>Add Image ({photoPreviews.length}/5)</span>
+                        </button>
                       )}
                     </div>
                   ) : (
                     <div
                       onClick={() => document.getElementById('photo-upload')?.click()}
-                      className="border-2 border-dashed border-outline-variant rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary transition-all cursor-pointer group"
+                      className="border border-dashed border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary transition-all cursor-pointer group"
                     >
-                      <div className="w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <CloudUpload size={24} className="text-primary" />
+                      <div className="w-9 h-9 bg-primary-container/10 rounded-full flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                        <CloudUpload size={18} className="text-primary" />
                       </div>
-                      <p className="font-sans font-extrabold text-primary">Drop images or click to upload</p>
-                      <p className="font-mono text-[10px] text-on-surface-variant mt-1 uppercase">Supports JPG, PNG up to 10MB</p>
+                      <p className="font-sans text-xs font-bold text-primary">Click to upload crop photos</p>
+                      <p className="font-mono text-[9px] text-on-surface-variant mt-0.5 uppercase font-medium">Supports JPG, PNG up to 5 images</p>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2 pb-10">
-                  <label className="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Additional Notes</label>
+                <div className="space-y-1.5 pb-4">
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Additional Notes</label>
                   <textarea
-                    className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest font-sans text-sm focus:border-primary outline-none min-h-[100px] resize-none"
-                    placeholder="Describe specific details about ripeness, storage conditions, or logistics preference..."
+                    className="w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest font-sans text-xs focus:border-primary outline-none min-h-[70px] resize-none"
+                    placeholder="Ripeness, storage conditions, or logistics preferences..."
                     value={form.notes}
                     onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className="p-4 sm:p-6 bg-surface-container-low border-t border-outline-variant flex flex-col gap-3 sm:gap-4 sticky bottom-0 z-20">
-                <div className="flex gap-3">
+              <div className="p-4 bg-white border-t border-outline-variant flex flex-col gap-2 sticky bottom-0 z-20">
+                <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => handleSubmit(true)}
                     disabled={isSubmitting || !form.quantity || !form.askingPrice || !!validationErrors.quantity || !!validationErrors.askingPrice}
-                    className="flex-1 py-3 border-2 border-primary text-primary rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-center"
+                    className="flex-1 py-2 px-3 border border-primary text-primary rounded-lg font-bold font-sans text-xs hover:bg-surface-container-low transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                   >
                     Save as Draft
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleSubmit(false)}
                     disabled={isSubmitting || !form.quantity || !form.askingPrice || !!validationErrors.quantity || !!validationErrors.askingPrice}
-                    className="flex-1 py-3 bg-primary text-white rounded-2xl font-bold font-sans text-base hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-primary text-white rounded-lg font-bold font-sans text-xs hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <span>{isSubmitting ? 'Submitting...' : 'Submit Review'}</span>
-                    <Send size={16} />
+                    <Send size={14} />
                   </button>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedProduct(null)}
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-white border border-outline-variant text-on-surface-variant rounded-2xl font-bold font-sans text-base hover:bg-surface-container-low transition-colors active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                  className="w-full py-1.5 text-xs text-on-surface-variant hover:text-on-surface transition-colors font-semibold cursor-pointer text-center"
                 >
                   Cancel
                 </button>

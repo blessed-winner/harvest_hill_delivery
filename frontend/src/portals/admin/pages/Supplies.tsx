@@ -39,6 +39,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     return isNaN(parsed) ? 0 : parsed;
   };
 
+  const formatCurrency = (val: any) => {
+    if (val === null || val === undefined || val === '') return 'RWF 0';
+    let num = safeParseFloat(val);
+    if (num > 0 && num < 100) {
+      num = Math.round(num * 1473.97);
+    }
+    return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  };
+
   const statusMap: Record<string, string> = {
     'Pending Review': 'pending',
     'Accepted': 'accepted',
@@ -283,8 +292,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-primary">${safeParseFloat(s.price || s.proposed_price).toFixed(2)}</span>
-                        <span className="text-[10px] text-on-surface-variant font-bold">vs ${safeParseFloat(s.base_price || s.product_detail?.base_price).toFixed(2)}</span>
+                        <span className="font-mono text-sm font-bold text-primary">{formatCurrency(s.price || s.proposed_price)}</span>
+                        <span className="text-[10px] text-on-surface-variant font-bold">vs {formatCurrency(s.base_price || s.product_detail?.base_price)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -417,16 +426,16 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Proposed Price</span>
-                <span className="text-sm font-extrabold text-primary">${safeParseFloat(selectedSupply.price || selectedSupply.proposed_price).toFixed(2)} / {selectedSupply.unit}</span>
+                <span className="text-sm font-extrabold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Market Base Price</span>
-                <span className="text-sm font-extrabold text-outline">${safeParseFloat(selectedSupply.base_price || selectedSupply.product_detail?.base_price).toFixed(2)} / {selectedSupply.unit}</span>
+                <span className="text-sm font-extrabold text-outline">{formatCurrency(selectedSupply.base_price || selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Total Valued Price</span>
                 <span className="text-sm font-extrabold text-secondary">
-                  ${(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
                 </span>
               </div>
             </div>
