@@ -29,7 +29,7 @@ class FarmerDashboardSummaryView(APIView):
         # 2. Pending negotiations
         pending_negs = NegotiationThread.objects.filter(
             supply__farmer=profile,
-            supply__status='negotiating'
+            status='open'
         ).count()
 
         # 3. Acceptance rate calculation

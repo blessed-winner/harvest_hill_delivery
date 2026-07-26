@@ -282,7 +282,7 @@ export default function MySupplies() {
 
       {/* Status Quick Filter Pills */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {['All Statuses', 'accepted', 'pending', 'negotiating', 'draft'].map((st) => (
+        {['All Statuses', 'accepted', 'pending', 'draft'].map((st) => (
           <button
             key={st}
             onClick={() => setStatusFilter(st)}
@@ -311,18 +311,6 @@ export default function MySupplies() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-white border border-outline-variant rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-surface-container-low transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option>All Statuses</option>
-            <option>accepted</option>
-            <option>pending</option>
-            <option>negotiating</option>
-            <option>draft</option>
-          </select>
-
           <select 
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -395,7 +383,7 @@ export default function MySupplies() {
                       "px-3 py-1 rounded-full font-mono text-[9px] uppercase font-extrabold tracking-widest border",
                       Number(supply.quantity) === 0 ? "bg-red-100 text-red-800 border-red-200" :
                       supply.status === 'accepted' ? "bg-secondary-container text-on-secondary-container border-secondary" :
-                      supply.status === 'pending' || supply.status === 'negotiating' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-container" :
+                      supply.status === 'pending' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-container" :
                       "bg-surface-container-highest text-on-surface border-outline"
                     )}>
                       {Number(supply.quantity) === 0 ? 'Out of Stock' : supply.status}

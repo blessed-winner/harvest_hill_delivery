@@ -29,7 +29,7 @@ class RoleScopedQuerysetMixin:
             if hasattr(model, 'user'):
                 return queryset.filter(user=user)
             if model.__name__ == 'Supply':
-                return queryset.filter(status__in=['accepted', 'negotiating'], is_archived=False)
+                return queryset.filter(status='accepted', is_archived=False)
             if model.__name__ == 'Product':
                 return queryset
                 

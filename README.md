@@ -204,7 +204,7 @@ harvest-hill-delivery/
 - **Path**: `/farmer` (Application required at `/apply`)
 - **Features**:
   - **Submit Harvest**: Offer fresh produce batches with target pricing, harvest ready date, grade selection, and crop photos. Live price converter div helps convert values between RWF and USD instantly.
-  - **My Supplies Log**: Filter supply logs by status including `Accepted`, `Pending`, `Negotiating`, and `Draft`.
+  - **My Supplies Log**: Filter supply logs by status including `Accepted`, `Pending`, and `Draft`.
   - **Profile Settings**: Configure farm details, agricultural certifications, custom certifications, profile photo, and preferred payout methods (MTN MoMo, Airtel Money, Bank Transfer).
 
 ### 3. Admin Portal

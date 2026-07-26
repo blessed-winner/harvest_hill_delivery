@@ -122,8 +122,8 @@ class Command(BaseCommand):
             products.append(prod)
 
         # 5. Supplies (~15)
-        # We need a supply in each status: draft, pending, negotiating, accepted, rejected, delivered, invoiced
-        statuses = ['draft', 'pending', 'negotiating', 'accepted', 'rejected', 'delivered', 'invoiced']
+        # We need a supply in each status: draft, pending, accepted, rejected, delivered, invoiced
+        statuses = ['draft', 'pending', 'accepted', 'rejected', 'delivered', 'invoiced']
         supplies = []
         
         # Ensure we have at least one supply per status
@@ -158,8 +158,8 @@ class Command(BaseCommand):
             supplies.append(supply)
 
         # 6. Negotiation Threads & Offers
-        # Filter accepted/negotiating supplies
-        negotiating_supplies = [s for s in supplies if s.status in ['negotiating', 'accepted']]
+        # Filter pending/accepted supplies
+        negotiating_supplies = [s for s in supplies if s.status in ['pending', 'accepted']]
         for s in negotiating_supplies:
             thread, t_created = NegotiationThread.objects.get_or_create(supply=s)
             

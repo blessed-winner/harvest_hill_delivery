@@ -6,7 +6,6 @@ class Supply(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('pending', 'Pending'),
-        ('negotiating', 'Negotiating'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
         ('invoiced', 'Invoiced')

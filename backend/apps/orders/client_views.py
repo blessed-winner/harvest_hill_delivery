@@ -355,7 +355,7 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         # Show all supplies except rejected and draft ones
         # Accepted supplies can be added to cart
-        # Pending/negotiating supplies can be negotiated
+        # Pending supplies can be negotiated
         qs = Supply.objects.filter(
             is_archived=False,
             quantity__gt=0
