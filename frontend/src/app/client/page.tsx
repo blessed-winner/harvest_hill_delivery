@@ -83,6 +83,8 @@ export default function ClientPage() {
     }
     if (category) {
       setSelectedCategory(category);
+    } else if (screen === 'catalog') {
+      setSelectedCategory('all');
     }
     if (productId !== undefined) {
       setSelectedProductId(productId);

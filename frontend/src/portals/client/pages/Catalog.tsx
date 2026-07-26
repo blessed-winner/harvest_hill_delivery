@@ -57,9 +57,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
 
   // Update category when initialCategory prop changes
   useEffect(() => {
-    if (initialCategory) {
-      setSelectedCategory(initialCategory);
-    }
+    setSelectedCategory(initialCategory || 'all');
   }, [initialCategory]);
 
   // Fetch all products once to get categories
@@ -153,7 +151,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
         <ChevronRight size={12} />
         <button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer">Catalog</button>
         <ChevronRight size={12} />
-        <span className="text-[#1c1c18] font-bold">Fruits & Orchards</span>
+        <span className="text-[#1c1c18] font-bold">{selectedCategory === 'all' ? 'All Products' : selectedCategory}</span>
       </div>
 
       {/* Page Header */}
