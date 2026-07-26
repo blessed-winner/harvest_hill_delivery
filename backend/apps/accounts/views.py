@@ -80,7 +80,7 @@ class LoginView(APIView):
             User().set_password(password)
             log_action(request, actor=None, action="failed_login_nonexistent_user")
             return Response(
-                {"errors": {"non_field_errors": ["No account found with that email or username."]}},
+                {"errors": {"non_field_errors": ["Invalid username or password."]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -128,7 +128,7 @@ class LoginView(APIView):
             user.save()
 
             return Response(
-                {"errors": {"non_field_errors": ["Invalid credentials."]}},
+                {"errors": {"non_field_errors": ["Invalid username or password."]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

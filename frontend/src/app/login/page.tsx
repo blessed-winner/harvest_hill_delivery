@@ -35,7 +35,7 @@ export default function LoginPage() {
         const errorMsg = data.errors?.non_field_errors?.[0] ||
                          data.errors?.username_or_email?.[0] ||
                          data.errors?.email?.[0] ||
-                         'Invalid credentials.';
+                         'Invalid username or password.';
         throw new Error(errorMsg);
       }
 
