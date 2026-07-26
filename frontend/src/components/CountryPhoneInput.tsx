@@ -27,6 +27,8 @@ interface CountryPhoneInputProps {
   onChange: (fullPhoneNumber: string) => void;
   className?: string;
   label?: string;
+  labelClassName?: string;
+  inputClassName?: string;
   disabled?: boolean;
 }
 
@@ -35,6 +37,8 @@ export default function CountryPhoneInput({
   onChange,
   className = "",
   label,
+  labelClassName,
+  inputClassName,
   disabled = false
 }: CountryPhoneInputProps) {
   // Parse incoming value to find country dial code match
@@ -82,26 +86,26 @@ export default function CountryPhoneInput({
   };
 
   return (
-    <div className={`space-y-1.5 ${className}`}>
+    <div className={`space-y-0.5 ${className}`}>
       {label && (
-        <label className="block text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">
+        <label className={`block text-[10px] font-bold text-[#1c1c18] ${labelClassName || ''}`}>
           {label}
         </label>
       )}
-      <div className="flex rounded-xl border border-[#c1c9c0] bg-white overflow-hidden focus-within:border-[#144227] transition-all shadow-sm">
+      <div className="flex rounded-lg border border-[#c1c9c0] bg-white overflow-hidden focus-within:border-[#144227] transition-all shadow-sm">
         {/* Country Selector Dropdown */}
-        <div className="relative border-r border-[#e5e2db] bg-[#fcf9f2] flex items-center px-2.5 shrink-0 cursor-pointer">
-          <span className="text-base mr-1.5">{selectedCountry.flag}</span>
-          <span className="text-xs font-bold text-[#1c1c18] font-mono mr-1">{selectedCountry.dialCode}</span>
-          <ChevronDown size={12} className="text-[#717971]" />
+        <div className="relative border-r border-[#e5e2db] bg-[#fcf9f2] flex items-center px-2 shrink-0 cursor-pointer hover:bg-[#f3efd8] transition-colors">
+          <span className="text-sm mr-1">{selectedCountry.flag}</span>
+          <span className="text-[11px] font-bold text-[#1c1c18] font-mono mr-1">{selectedCountry.dialCode}</span>
+          <ChevronDown size={10} className="text-[#717971]" />
           <select
             value={selectedCountry.code}
             onChange={handleCountryChange}
             disabled={disabled}
-            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-xs"
           >
             {COUNTRIES.map(c => (
-              <option key={c.code} value={c.code}>
+              <option key={c.code} value={c.code} className="text-xs py-1">
                 {c.flag} {c.name} ({c.dialCode})
               </option>
             ))}
@@ -115,7 +119,7 @@ export default function CountryPhoneInput({
           value={localNumber}
           onChange={handleNumberChange}
           placeholder={selectedCountry.placeholder}
-          className="w-full px-3 py-2.5 text-xs sm:text-sm font-semibold text-[#1c1c18] bg-transparent outline-none placeholder-[#a0a5a0]"
+          className={`w-full px-2.5 py-1.5 text-xs font-medium text-[#1c1c18] bg-transparent outline-none placeholder-[#717971] ${inputClassName || ''}`}
         />
       </div>
     </div>

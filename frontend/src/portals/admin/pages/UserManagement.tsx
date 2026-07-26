@@ -4,6 +4,7 @@ import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
+import CountryPhoneInput from '../../../components/CountryPhoneInput';
 
 function getUserAvatar(user: any): string | null {
   if (!user) return null;
@@ -875,16 +876,10 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Phone</label>
-                  <input 
-                    type="text" 
+                  <CountryPhoneInput
+                    label="Phone"
                     value={formProfilePhone}
-                    onChange={(e) => setFormProfilePhone(e.target.value)}
-                    placeholder="e.g. +250 788 123 456"
-                    className={cn(
-                      "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
-                      (validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) ? "border-red-500" : "border-outline-variant"
-                    )}
+                    onChange={(val) => setFormProfilePhone(val)}
                   />
                   {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
                     <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
@@ -979,16 +974,10 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Phone Number</label>
-                      <input 
-                        type="text" 
+                      <CountryPhoneInput
+                        label="Phone Number"
                         value={formProfilePhone}
-                        onChange={(e) => setFormProfilePhone(e.target.value)}
-                        placeholder="e.g. +250 788 123 456"
-                        className={cn(
-                          "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
-                          (validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) ? "border-red-500" : "border-outline-variant"
-                        )}
+                        onChange={(val) => setFormProfilePhone(val)}
                       />
                       {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
                         <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
