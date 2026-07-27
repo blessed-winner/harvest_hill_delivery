@@ -44,27 +44,41 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
 
   const days = getNextDays();
 
-  // Load checkout data from localStorage
+  // Load checkout data and user-scoped shipping address
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('checkout_data');
-      if (saved) {
-        const data = JSON.parse(saved);
-        setCheckoutData(data);
-        setDeliveryDate(data.deliveryDate || '');
-      } else {
-        setError('No items in checkout');
-      }
+    const loadCheckoutInfo = async () => {
+      try {
+        const saved = localStorage.getItem('checkout_data');
+        if (saved) {
+          const data = JSON.parse(saved);
+          setCheckoutData(data);
+          setDeliveryDate(data.deliveryDate || '');
+        } else {
+          setError('No items in checkout');
+        }
 
-      const defaultAddress = localStorage.getItem('default_shipping_address');
-      if (defaultAddress) {
-        setDeliveryAddress(defaultAddress);
+        // Clean legacy un-scoped key
+        localStorage.removeItem('default_shipping_address');
+
+        // Fetch user profile for user-scoped shipping address
+        try {
+          const profile = await clientApi.profile.get();
+          const userEmail = profile?.email || profile?.username || 'client';
+          const userAddressKey = `default_shipping_address_${userEmail}`;
+          const cp = profile?.profile || {};
+          const addr = cp.delivery_address || localStorage.getItem(userAddressKey);
+          if (addr) {
+            setDeliveryAddress(addr);
+          }
+        } catch {}
+      } catch (err) {
+        setError('Failed to load checkout data');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError('Failed to load checkout data');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    loadCheckoutInfo();
   }, []);
 
   const handlePlaceOrder = async () => {
@@ -298,7 +312,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                       </div>
                       <div>
                         <span className="block text-xs font-bold text-[#1c1c18]">{item.name}</span>
-                        <span className="block text-[10px] text-[#717971] mt-0.5">Qty: {item.qty} {item.unit || ''}</span>
+                        <span className="block text-[10px] text-[#717971] mt-0.5">Qty: {item.qty} {item.unit || 'kg'}</span>
                       </div>
                     </div>
                     <span className="text-xs font-bold text-[#1c1c18]">{formatCurrency(item.price * item.qty)}</span>

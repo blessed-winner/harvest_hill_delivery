@@ -532,11 +532,12 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                   const pNum = parseFloat(item.price || 0);
                   const pRwf = pNum > 0 && pNum < 100 ? Math.round(pNum * 1473.97) : pNum;
                   const itemTotal = pRwf * parseFloat(item.quantity || 1);
+                  const unit = item.product_detail?.unit || item.unit || 'kg';
                   return (
                     <div key={idx} className="flex justify-between py-2.5 first:pt-0 last:pb-0 text-xs">
                       <div>
                         <p className="font-bold">{item.product_detail?.name || item.product_name || `Product #${item.product}`}</p>
-                        <p className="text-on-surface-variant/80 mt-0.5">{item.quantity} units • RWF {pRwf.toLocaleString()}/unit</p>
+                        <p className="text-on-surface-variant/80 mt-0.5">{item.quantity} {unit} • RWF {pRwf.toLocaleString()}/{unit}</p>
                       </div>
                       <span className="font-mono font-bold">RWF {itemTotal.toLocaleString()}</span>
                     </div>

@@ -448,7 +448,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
                             RWF {parseFloat(product.price || 0).toLocaleString()}
                           </span>
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">
-                            per {product.unit || 'unit'}
+                            per {product.unit || 'kg'}
                           </span>
                         </div>
 

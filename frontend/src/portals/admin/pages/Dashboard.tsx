@@ -208,7 +208,7 @@ export function Dashboard() {
                 <div key={p.name} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold">{p.name}</span>
-                    <span className="font-mono text-on-surface-variant font-bold">{p.volume.toLocaleString()} units</span>
+                    <span className="font-mono text-on-surface-variant font-bold">{p.volume.toLocaleString()} {p.unit || 'kg'}</span>
                   </div>
                   <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
                     <motion.div 

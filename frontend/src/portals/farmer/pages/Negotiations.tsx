@@ -14,9 +14,19 @@ export default function Negotiations() {
   const [activeNegId, setActiveNegId] = useState<string | null>(null);
   const [showListMobile, setShowListMobile] = useState(false);
   const [counterMessage, setCounterMessage] = useState("");
-  const [counterPrice, setCounterPrice] = useState("8.40");
-  const [counterQty, setCounterQty] = useState("500");
+  const [counterPrice, setCounterPrice] = useState("");
+  const [counterQty, setCounterQty] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const formatRwf = (val: any) => {
+    if (val === null || val === undefined || val === '') return 'RWF 0';
+    let num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return 'RWF 0';
+    if (num > 0 && num < 100) {
+      num = Math.round(num * 1473.97);
+    }
+    return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  };
 
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState('');
@@ -81,6 +91,17 @@ export default function Negotiations() {
   }, []);
 
   const activeThread = threads.find(t => t.id.toString() === activeNegId) || threads[0];
+
+  useEffect(() => {
+    if (activeThread?.supply_detail) {
+      let origPrice = Number(activeThread.supply_detail.proposed_price || activeThread.supply_detail.price || 0);
+      if (origPrice > 0 && origPrice < 100) {
+        origPrice = Math.round(origPrice * 1473.97);
+      }
+      setCounterPrice(origPrice ? String(origPrice) : '');
+      setCounterQty(activeThread.supply_detail.quantity ? String(activeThread.supply_detail.quantity) : '');
+    }
+  }, [activeNegId, threads]);
   const getThreadPrice = (thread: any) => {
     const lastOffer = thread?.offers?.[thread.offers.length - 1];
     return lastOffer?.price ?? thread?.supply_detail?.proposed_price ?? 0;
@@ -132,9 +153,9 @@ export default function Negotiations() {
     sender: offer.sender === 'farmer' ? 'SELLER' : 'BUYER',
     initials: offer.sender === 'farmer' ? 'HH' : 'WF',
     text: offer.message || (offer.sender === 'farmer' 
-      ? `Farmer counter-offered price: $${offer.price}/kg for ${offer.quantity} kg.`
-      : `Industry proposed price: $${offer.price}/kg for ${offer.quantity} kg.`),
-    price: `$${offer.price}/kg`,
+      ? `Farmer counter-offered price: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`
+      : `Industry proposed price: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`),
+    price: `${formatRwf(offer.price)} / ${activeThread?.supply_detail?.unit || 'kg'}`,
     raw_price: offer.price,
     quantity: offer.quantity,
     message: offer.message,
@@ -241,7 +262,7 @@ export default function Negotiations() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-primary">${getThreadPrice(neg)}/kg</span>
+                  <span className="font-mono text-xs font-bold text-primary">{formatRwf(getThreadPrice(neg))}/{neg.supply_detail?.unit || 'kg'}</span>
                   <span className={cn(
                     "px-2 py-1 rounded-full font-mono text-[8px] uppercase font-bold tracking-wider",
                     neg.status === 'open' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant" : "bg-surface-container-highest text-on-surface-variant"
@@ -265,7 +286,7 @@ export default function Negotiations() {
             </h4>
             <div className="flex items-center gap-3">
               <span className="font-sans text-xl font-extrabold text-primary">
-                {activeThread?.supply_detail?.base_price ? `$${activeThread.supply_detail.base_price}` : '—'}
+                {activeThread?.supply_detail?.base_price ? formatRwf(activeThread.supply_detail.base_price) : '—'}
               </span>
               {activeThread?.supply_detail?.base_price ? (
                 <span className="flex items-center text-secondary font-bold font-mono text-[10px] uppercase">
@@ -439,20 +460,20 @@ export default function Negotiations() {
               <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
                 <div className="flex-1 space-y-1.5">
                   <label className="font-sans text-xs tracking-wide text-primary font-bold block">
-                    Propose New Terms <span className="text-[10px] text-on-surface-variant font-medium">(Original Price: ${activeThread?.supply_detail?.proposed_price || activeThread?.supply_detail?.price || 0}/{activeThread?.supply_detail?.unit || 'kg'})</span>
+                    Propose New Terms <span className="text-[10px] text-on-surface-variant font-medium">(Original Price: {formatRwf(activeThread?.supply_detail?.proposed_price || activeThread?.supply_detail?.price || 0)} / {activeThread?.supply_detail?.unit || 'kg'})</span>
                   </label>
                   <div className="flex gap-2 sm:gap-4">
                     <div className="flex-1">
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold text-xs">RWF</span>
                         <input 
-                          className="w-full pl-8 pr-2 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
+                          className="w-full pl-12 pr-2 py-1.5 sm:py-2.5 bg-surface-container-low border border-outline-variant rounded-lg sm:rounded-xl focus:ring-1 focus:ring-primary outline-none font-sans font-bold text-xs sm:text-sm" 
                           type="number" 
                           value={counterPrice}
                           onChange={(e) => setCounterPrice(e.target.value)}
                         />
                       </div>
-                      <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Price / {activeThread?.supply_detail?.unit || 'kg'}</p>
+                      <p className="mt-0.5 font-mono text-[8px] sm:text-[9px] text-on-surface-variant uppercase">Price (RWF) / {activeThread?.supply_detail?.unit || 'kg'}</p>
                     </div>
                     <div className="flex-1">
                       <input 

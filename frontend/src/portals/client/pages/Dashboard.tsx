@@ -53,6 +53,11 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   const [editTitle, setEditTitle] = useState(false);
   const [editPhone, setEditPhone] = useState(false);
 
+  // Inline edit states for shipping address fields
+  const [editStreet, setEditStreet] = useState(false);
+  const [editCity, setEditCity] = useState(false);
+  const [editContactPhone, setEditContactPhone] = useState(false);
+
   // Account deletion states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -105,22 +110,47 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
           setEarlyAccess(parsed.earlyAccess ?? true);
         }
 
-        // Clean up legacy un-scoped key
+        // Clean up legacy un-scoped address keys to prevent cross-account bleed
+        localStorage.removeItem('default_shipping_address');
+        localStorage.removeItem('client_shipping_street');
+        localStorage.removeItem('client_shipping_city');
         localStorage.removeItem('saved_signature');
 
-        // Load saved profile signature (scoped per user)
-        const userEmail = profile.email || 'client';
+        // Load saved profile signature & shipping address (scoped per user)
+        const userEmail = profile.email || profile.username || 'client';
         const userSigKey = `saved_signature_client_${userEmail}`;
+        const userStreetKey = `client_shipping_street_${userEmail}`;
+        const userCityKey = `client_shipping_city_${userEmail}`;
+        const userAddressKey = `default_shipping_address_${userEmail}`;
+
         const existingSig = cp.signature_data || localStorage.getItem(userSigKey);
         if (existingSig) {
           setSavedSignature(existingSig);
         }
 
-        // Load saved shipping address
-        const savedAddress = localStorage.getItem('default_shipping_address');
-        if (savedAddress) {
-          setStreetAddress(savedAddress);
+        // Load user-scoped shipping address
+        const savedStreet = localStorage.getItem(userStreetKey);
+        const savedCity = localStorage.getItem(userCityKey);
+        const savedAddress = cp.delivery_address || localStorage.getItem(userAddressKey);
+        
+        if (savedStreet !== null) {
+          setStreetAddress(savedStreet);
+        } else if (cp.delivery_address) {
+          const parts = cp.delivery_address.split(',');
+          setStreetAddress(parts[0].trim());
+        } else {
+          setStreetAddress('');
         }
+        
+        if (savedCity !== null) {
+          setCityDistrict(savedCity);
+        } else if (cp.delivery_address && cp.delivery_address.includes(',')) {
+          const parts = cp.delivery_address.split(',');
+          setCityDistrict(parts.slice(1).join(',').trim());
+        } else {
+          setCityDistrict('');
+        }
+        
         setContactPhone(phoneVal);
         
       } catch (err: any) {
@@ -194,15 +224,43 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
     }
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fullAddr = `${streetAddress}${cityDistrict ? `, ${cityDistrict}` : ''}`;
-    localStorage.setItem('default_shipping_address', fullAddr);
-    if (contactPhone) {
-      setPhone(contactPhone);
+    const trimmedStreet = streetAddress.trim();
+    const trimmedCity = cityDistrict.trim();
+
+    let displayStreet = trimmedStreet;
+    if (trimmedStreet && trimmedCity && !trimmedStreet.toLowerCase().includes(trimmedCity.toLowerCase())) {
+      displayStreet = `${trimmedStreet}, ${trimmedCity}`;
     }
-    setAddressSavedSuccess(true);
-    setTimeout(() => setAddressSavedSuccess(false), 3000);
+
+    const fullAddr = displayStreet || trimmedCity;
+    const userEmail = email || profileData?.email || profileData?.username || 'client';
+    const userStreetKey = `client_shipping_street_${userEmail}`;
+    const userCityKey = `client_shipping_city_${userEmail}`;
+    const userAddressKey = `default_shipping_address_${userEmail}`;
+
+    localStorage.setItem(userStreetKey, trimmedStreet);
+    localStorage.setItem(userCityKey, trimmedCity);
+    localStorage.setItem(userAddressKey, fullAddr);
+    
+    try {
+      await clientApi.profile.update({
+        delivery_address: fullAddr,
+        phone: contactPhone || phone,
+        phone_number: contactPhone || phone
+      });
+      if (contactPhone) {
+        setPhone(contactPhone);
+      }
+      setEditStreet(false);
+      setEditCity(false);
+      setEditContactPhone(false);
+      setAddressSavedSuccess(true);
+      setTimeout(() => setAddressSavedSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to save address to profile:', err);
+    }
   };
 
   if (loading) {
@@ -580,22 +638,34 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                   {/* Street / Warehouse Address */}
                   <div className="space-y-1">
                     <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Street / Warehouse Address</label>
-                    {editName ? (
+                    {editStreet ? (
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          required
                           value={streetAddress}
                           onChange={(e) => setStreetAddress(e.target.value)}
-                          placeholder="E.g. 100 Harvest Avenue, Block 4 B, Kigali"
+                          placeholder="E.g. 100 Harvest Avenue, Block 4 B"
                           className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
                         />
-                        <button type="button" onClick={() => setEditName(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                        <button type="button" onClick={() => setEditStreet(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
-                        <span className="text-xs font-bold text-[#1c1c18]">{streetAddress || "No street address set"}</span>
-                        <button type="button" onClick={() => setEditName(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                        <span className="text-xs font-bold text-[#1c1c18]">
+                          {(() => {
+                            const trimmedS = streetAddress.trim();
+                            const trimmedC = cityDistrict.trim();
+                            if (!trimmedS && !trimmedC) return "Not set";
+                            if (trimmedS && trimmedC) {
+                              if (trimmedS.toLowerCase().includes(trimmedC.toLowerCase())) {
+                                return trimmedS;
+                              }
+                              return `${trimmedS}, ${trimmedC}`;
+                            }
+                            return trimmedS || trimmedC || "Not set";
+                          })()}
+                        </span>
+                        <button type="button" onClick={() => setEditStreet(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
                       </div>
                     )}
                   </div>
@@ -604,7 +674,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                     {/* City / District */}
                     <div className="space-y-1">
                       <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">City / District</label>
-                      {editTitle ? (
+                      {editCity ? (
                         <div className="flex gap-2">
                           <input
                             type="text"
@@ -613,12 +683,12 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                             placeholder="E.g. Gasabo, Kigali"
                             className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
                           />
-                          <button type="button" onClick={() => setEditTitle(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                          <button type="button" onClick={() => setEditCity(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
                           <span className="text-xs font-bold text-[#1c1c18]">{cityDistrict || "Not set"}</span>
-                          <button type="button" onClick={() => setEditTitle(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                          <button type="button" onClick={() => setEditCity(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
                         </div>
                       )}
                     </div>
@@ -626,7 +696,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                     {/* Delivery Contact Phone */}
                     <div className="space-y-1">
                       <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Delivery Contact Phone</label>
-                      {editPhone ? (
+                      {editContactPhone ? (
                         <div className="flex gap-2">
                           <input
                             type="text"
@@ -635,12 +705,12 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                             placeholder="E.g. +250 788 123 456"
                             className="flex-1 bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#144227]"
                           />
-                          <button type="button" onClick={() => setEditPhone(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
+                          <button type="button" onClick={() => setEditContactPhone(false)} className="px-2.5 py-1.5 bg-[#144227] text-white rounded-lg text-[10px] font-bold">Done</button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between bg-[#fcf9f2]/40 px-3 py-2.5 rounded-xl border border-[#e5e2db]">
                           <span className="text-xs font-bold text-[#1c1c18]">{contactPhone || "Not set"}</span>
-                          <button type="button" onClick={() => setEditPhone(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
+                          <button type="button" onClick={() => setEditContactPhone(true)} className="text-[#717971] hover:text-[#144227] p-1"><Edit2 size={13} /></button>
                         </div>
                       )}
                     </div>

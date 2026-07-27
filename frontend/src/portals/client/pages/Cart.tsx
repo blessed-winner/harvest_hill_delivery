@@ -189,7 +189,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                         {item.category || 'Product'}
                       </span>
                       <h4 className="text-xs font-extrabold text-[#1c1c18] mt-0.5">{item.name}</h4>
-                      <span className="text-[9px] text-[#717971] mt-1 block">{item.unit || 'per unit'}</span>
+                      <span className="text-[9px] text-[#717971] mt-1 block">{item.unit ? `per ${item.unit}` : 'per kg'}</span>
                     </div>
 
                     {/* Price on right */}
@@ -198,7 +198,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                         RWF {parsePrice(item.price).toLocaleString()}
                       </span>
                       <span className="block text-[9px] text-[#717971] uppercase mt-0.5 font-bold">
-                        per {item.unit || 'unit'}
+                        per {item.unit || 'kg'}
                       </span>
                     </div>
                   </div>

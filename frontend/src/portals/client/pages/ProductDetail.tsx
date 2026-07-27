@@ -469,7 +469,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 ) : (
                   <span>${parseFloat(product.price || 0).toFixed(2)}</span>
                 )}
-                <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'unit'}</span>
+                <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'kg'}</span>
               </div>
               {product.quantity && product.quantity > 0 ? (
                 <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
@@ -682,7 +682,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
-                          Your Proposed Price ($ per {product.unit || 'unit'})
+                          Your Proposed Price (RWF per {product.unit || 'kg'})
                         </label>
                         <input
                           type="number"
@@ -695,7 +695,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                       </div>
                       <div>
                         <label className="block text-[9px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
-                          Proposed Volume ({product.unit || 'units'})
+                          Proposed Volume ({product.unit || 'kg'})
                         </label>
                         <input
                           type="number"

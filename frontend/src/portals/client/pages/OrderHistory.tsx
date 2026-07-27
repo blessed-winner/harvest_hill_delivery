@@ -216,7 +216,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                             <span className="font-bold text-[#1c1c18]">{item.product_detail?.name || item.product_name || `Product #${item.product}`}</span>
                           </div>
                           <div className="flex gap-10">
-                            <span className="text-[#717971] font-semibold">Qty: {item.quantity}</span>
+                            <span className="text-[#717971] font-semibold">Qty: {item.quantity} {item.product_detail?.unit || item.unit || 'kg'}</span>
                             <span className="font-bold text-[#1c1c18]">
                               {formatPrice(itemTotal)}
                             </span>
