@@ -6,6 +6,24 @@ import django.utils.timezone
 from django.db import migrations, models
 
 
+def populate_null_usernames(apps, schema_editor):
+    User = apps.get_model('accounts', 'User')
+    for user in User.objects.filter(username__isnull=True):
+        if user.email:
+            base_username = user.email.split('@')[0]
+        else:
+            base_username = f"user_{user.id}"
+        
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exclude(id=user.id).exists():
+            username = f"{base_username}_{counter}"
+            counter += 1
+            
+        user.username = username
+        user.save(update_fields=['username'])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -13,6 +31,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(populate_null_usernames, reverse_code=migrations.RunPython.noop),
         migrations.AlterModelOptions(
             name='user',
             options={'verbose_name': 'user', 'verbose_name_plural': 'users'},
