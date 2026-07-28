@@ -440,7 +440,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
         }
       >
-        <div className="space-y-4 text-xs">
+        <div className="flex-1 flex flex-col justify-between space-y-4 text-xs">
           {/* File Upload Preview Panel */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Product Photo</label>

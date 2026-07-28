@@ -789,7 +789,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         }
       >
         {selectedUser === 'new' ? (
-          <div className="space-y-3 text-xs">
+          <div className="flex-1 flex flex-col justify-between space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Email Address *</label>
