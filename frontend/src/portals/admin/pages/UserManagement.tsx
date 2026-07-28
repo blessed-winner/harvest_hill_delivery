@@ -789,92 +789,82 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         }
       >
         {selectedUser === 'new' ? (
-          <div className="space-y-3 text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Email Address *</label>
-                <input 
-                  type="email" 
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className={cn(
-                    "w-full px-3 py-1.5 bg-white border rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all",
-                    validationErrors.email ? "border-red-500 bg-red-50/20" : "border-outline-variant"
-                  )}
-                />
-                {validationErrors.email && (
-                  <p className="mt-1 text-[11px] text-red-600 font-semibold">{validationErrors.email[0]}</p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Email Address</label>
+              <input 
+                type="email" 
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                placeholder="name@company.com"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.email ? "border-red-500" : "border-outline-variant"
                 )}
-              </div>
-
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Username</label>
-                <input 
-                  type="text" 
-                  value={formUsername}
-                  onChange={(e) => setFormUsername(e.target.value)}
-                  placeholder="username"
-                  className={cn(
-                    "w-full px-3 py-1.5 bg-white border rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all",
-                    validationErrors.username ? "border-red-500 bg-red-50/20" : "border-outline-variant"
-                  )}
-                />
-                {validationErrors.username && (
-                  <p className="mt-1 text-[11px] text-red-600 font-semibold">{validationErrors.username[0]}</p>
-                )}
-              </div>
+              />
+              {validationErrors.email && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.email[0]}</p>
+              )}
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Password *</label>
-                <input 
-                  type="password" 
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  placeholder="min 8 chars"
-                  className={cn(
-                    "w-full px-3 py-1.5 bg-white border rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all",
-                    validationErrors.password ? "border-red-500 bg-red-50/20" : "border-outline-variant"
-                  )}
-                />
-                {validationErrors.password && (
-                  <p className="mt-1 text-[11px] text-red-600 font-semibold">{validationErrors.password[0]}</p>
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Username</label>
+              <input 
+                type="text" 
+                value={formUsername}
+                onChange={(e) => setFormUsername(e.target.value)}
+                placeholder="username"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.username ? "border-red-500" : "border-outline-variant"
                 )}
-              </div>
-
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Role</label>
-                <select 
-                  value={formRole} 
-                  onChange={(e) => setFormRole(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
-                >
-                  <option value="client">Client</option>
-                  <option value="farmer">Farmer</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+              />
+              {validationErrors.username && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.username[0]}</p>
+              )}
             </div>
-
-            <div className="flex items-center gap-2 py-1">
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Password</label>
+              <input 
+                type="password" 
+                value={formPassword}
+                onChange={(e) => setFormPassword(e.target.value)}
+                placeholder="password (min 8 chars)"
+                className={cn(
+                  "w-full px-3 py-2 bg-white border rounded-lg text-sm outline-none",
+                  validationErrors.password ? "border-red-500" : "border-outline-variant"
+                )}
+              />
+              {validationErrors.password && (
+                <p className="mt-1 text-xs text-red-600 font-semibold">{validationErrors.password[0]}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">Role</label>
+              <select 
+                value={formRole} 
+                onChange={(e) => setFormRole(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+              >
+                <option value="client">Client</option>
+                <option value="farmer">Farmer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2 py-2">
               <input 
                 type="checkbox" 
-                id="formIsActive"
                 checked={formIsActive}
                 onChange={(e) => setFormIsActive(e.target.checked)}
-                className="rounded border-outline-variant text-primary focus:ring-primary h-3.5 w-3.5"
+                className="rounded border-outline-variant text-primary focus:ring-primary"
               />
-              <label htmlFor="formIsActive" className="text-xs font-semibold text-on-surface cursor-pointer select-none">Active Account</label>
+              <span className="text-sm font-semibold">Active Account</span>
             </div>
 
             {(formRole === 'farmer' || formRole === 'client') && (
-              <div className="pt-3 border-t border-outline-variant/60 space-y-3">
-                <h4 className="font-bold text-xs text-primary uppercase tracking-wide">Profile Details (Rwanda Localized)</h4>
-                
+              <div className="pt-4 border-t border-outline-variant space-y-4">
+                <h4 className="font-bold text-sm text-primary">Profile Information (Rwanda Localized)</h4>
                 <div>
-                  <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
                     {formRole === 'farmer' ? 'Farm Name' : 'Business Name'}
                   </label>
                   <input 
@@ -882,10 +872,9 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     value={formProfileName}
                     onChange={(e) => setFormProfileName(e.target.value)}
                     placeholder="e.g. Kigali Farms Ltd / Nyagatare Milk Coop"
-                    className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
-
                 <div>
                   <CountryPhoneInput
                     label="Phone"
@@ -893,14 +882,13 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     onChange={(val) => setFormProfilePhone(val)}
                   />
                   {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
-                    <p className="mt-1 text-[11px] text-red-600 font-semibold">
+                    <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
                       {validationErrors.phone?.[0] || validationErrors.farmer_profile?.phone?.[0] || validationErrors.client_profile?.phone?.[0]}
                     </p>
                   )}
                 </div>
-
                 <div>
-                  <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
                     {formRole === 'farmer' ? 'Location' : 'Delivery Address'}
                   </label>
                   <input 
@@ -908,75 +896,73 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                     value={formProfileAddress}
                     onChange={(e) => setFormProfileAddress(e.target.value)}
                     placeholder="e.g. Gasabo, Kigali, Rwanda / Musanze, Northern Province"
-                    className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                   />
                 </div>
               </div>
             )}
           </div>
         ) : selectedUser ? (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-6">
             {/* User Profile Header Avatar Card */}
-            <div className="flex items-center gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant">
+            <div className="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl border border-outline-variant">
               {getUserAvatar(selectedUser) ? (
                 <img
                   src={getUserAvatar(selectedUser)!}
                   alt={selectedUser.username || selectedUser.email}
-                  className="w-10 h-10 rounded-full object-cover border border-primary shadow-sm shrink-0"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-primary shadow"
                 />
               ) : (
-                <DefaultProfileAvatar className="w-10 h-10 border border-primary shadow-sm shrink-0" iconClassName="w-5 h-5" />
+                <DefaultProfileAvatar className="w-14 h-14 border-2 border-primary shadow" iconClassName="w-8 h-8" />
               )}
-              <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-xs text-on-surface truncate">{selectedUser.username || selectedUser.email}</h3>
-                <p className="text-[11px] text-on-surface-variant font-mono truncate">{selectedUser.email}</p>
-                <span className="inline-block mt-0.5 px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded-full uppercase">
+              <div>
+                <h3 className="font-bold text-base text-on-surface">{selectedUser.username || selectedUser.email}</h3>
+                <p className="text-xs text-on-surface-variant font-mono">{selectedUser.email}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase">
                   {selectedUser.role}
                 </span>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-2.5 bg-surface-container rounded-lg border border-outline-variant/30">
-                <p className="text-[9px] text-on-surface-variant uppercase font-bold">Status</p>
-                <div className="flex items-center gap-2 mt-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
+                <p className="text-[10px] text-on-surface-variant uppercase font-bold">Status</p>
+                <div className="flex items-center gap-2 mt-2">
                   <input 
                     type="checkbox" 
-                    id="selectedUserActive"
                     checked={selectedUser.is_active} 
                     onChange={(e) => setSelectedUser({ ...selectedUser, is_active: e.target.checked })} 
-                    className="rounded border-outline-variant text-primary focus:ring-primary h-3.5 w-3.5"
+                    className="rounded border-outline-variant text-primary focus:ring-primary"
                   />
-                  <label htmlFor="selectedUserActive" className="text-xs font-semibold select-none cursor-pointer">{selectedUser.is_active ? 'Active' : 'Suspended'}</label>
+                  <span className="text-sm font-semibold">{selectedUser.is_active ? 'Active' : 'Suspended'}</span>
                 </div>
               </div>
-              <div className="p-2.5 bg-surface-container rounded-lg border border-outline-variant/30">
-                <p className="text-[9px] text-on-surface-variant uppercase font-bold">Registered</p>
-                <p className="text-xs font-bold text-primary mt-1 font-mono">
+              <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30">
+                <p className="text-[10px] text-on-surface-variant uppercase font-bold">Registered</p>
+                <p className="text-md font-bold text-primary mt-1">
                   {new Date(selectedUser.date_joined).toLocaleDateString()}
                 </p>
               </div>
             </div>
 
-            <section className="pt-1">
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <UserIcon className="w-4 h-4 text-primary" />
-                <h4 className="font-bold text-xs text-on-surface">User & Profile Information</h4>
+            <section className="pt-2">
+              <div className="flex items-center gap-2 mb-4">
+                <UserIcon className="w-5 h-5 text-primary" />
+                <h4 className="font-bold">User & Profile Information (Rwanda Localized)</h4>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase font-mono tracking-wider">Username</label>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase font-mono">Username</label>
                   <input 
                     type="text" 
                     value={selectedUser.username || ''}
                     disabled
-                    className="w-full px-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none text-on-surface-variant opacity-60 font-mono"
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none text-on-surface-variant opacity-60"
                   />
                 </div>
                 {(selectedUser.role === 'farmer' || selectedUser.role === 'client') && (
                   <>
                     <div>
-                      <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
                         {selectedUser.role === 'farmer' ? 'Farm Name' : 'Business Name'}
                       </label>
                       <input 
@@ -984,7 +970,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         value={formProfileName}
                         onChange={(e) => setFormProfileName(e.target.value)}
                         placeholder="Not Set"
-                        className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                       />
                     </div>
                     <div>
@@ -994,13 +980,13 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         onChange={(val) => setFormProfilePhone(val)}
                       />
                       {(validationErrors.phone || validationErrors.farmer_profile?.phone || validationErrors.client_profile?.phone) && (
-                        <p className="mt-1 text-[11px] text-red-600 font-semibold">
+                        <p className="mt-1 text-xs text-red-600 font-semibold font-sans">
                           {validationErrors.phone?.[0] || validationErrors.farmer_profile?.phone?.[0] || validationErrors.client_profile?.phone?.[0]}
                         </p>
                       )}
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">
                         {selectedUser.role === 'farmer' ? 'Location' : 'Delivery Address'}
                       </label>
                       <input 
@@ -1008,7 +994,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                         value={formProfileAddress}
                         onChange={(e) => setFormProfileAddress(e.target.value)}
                         placeholder="e.g. Gasabo, Kigali, Rwanda"
-                        className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
                       />
                     </div>
                   </>
@@ -1016,20 +1002,22 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
               </div>
             </section>
 
-            <section className="pt-3 border-t border-outline-variant/30">
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <ShieldCheck className="w-4 h-4 text-primary" />
-                <h4 className="font-bold text-xs text-on-surface">Security (Reset Password)</h4>
+            <section className="pt-6 border-t border-outline-variant/30">
+              <div className="flex items-center gap-2 mb-4">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <h4 className="font-bold">Security (Force Update Password)</h4>
               </div>
-              <div>
-                <label className="block text-[11px] font-bold text-on-surface-variant mb-1 uppercase tracking-wider">New Password</label>
-                <input 
-                  type="password" 
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  placeholder="Enter new password to reset"
-                  className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1 uppercase">New Password</label>
+                  <input 
+                    type="password" 
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    placeholder="Enter new password to reset"
+                    className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm outline-none"
+                  />
+                </div>
               </div>
             </section>
           </div>

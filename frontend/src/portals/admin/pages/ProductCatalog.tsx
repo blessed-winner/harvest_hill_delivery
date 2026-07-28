@@ -440,15 +440,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
         }
       >
-        <div className="space-y-4 text-xs">
+        <div className="space-y-6">
           {/* File Upload Preview Panel */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Product Photo</label>
-            <div className="mt-1 flex justify-center px-4 py-3 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[130px] max-h-[160px] items-center">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Photo</label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[180px] items-center">
               {imagePreviewUrl ? (
-                <div className="w-full h-full relative flex items-center justify-center">
-                  <img src={imagePreviewUrl} className="max-h-[140px] w-full object-cover rounded-lg" alt="Preview" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 z-10">
+                <div className="w-full h-full relative">
+                  <img src={imagePreviewUrl} className="w-full h-full object-cover rounded-lg" alt="Preview" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
                     <p className="text-white text-xs font-bold">Click to change image</p>
                     <button
                       type="button"
@@ -457,7 +457,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                         setImageFile(null);
                         setImagePreviewUrl("");
                       }}
-                      className="px-2.5 py-1 bg-red-600 text-white rounded-md text-[11px] font-bold hover:bg-red-700 transition-colors"
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
                     >
                       Remove Image
                     </button>
@@ -476,14 +476,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   />
                 </div>
               ) : (
-                <div className="space-y-1 text-center w-full py-2">
-                  <ImageIcon className="mx-auto h-8 w-8 text-outline-variant" />
-                  <div className="flex text-xs text-on-surface-variant justify-center">
+                <div className="space-y-1 text-center w-full">
+                  <ImageIcon className="mx-auto h-12 w-12 text-outline-variant" />
+                  <div className="flex text-sm text-on-surface-variant justify-center mt-2">
                     <label className="relative cursor-pointer bg-transparent rounded-md font-semibold text-primary hover:text-primary-container focus-within:outline-none">
-                      <span>Upload photo</span>
+                      <span>Upload an image file</span>
                     </label>
                   </div>
-                  <p className="text-[10px] text-on-surface-variant/70">PNG, JPG, WEBP up to 5MB</p>
+                  <p className="text-xs text-on-surface-variant/70">PNG, JPG, GIF up to 5MB</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -501,23 +501,23 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Product Name *</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Name</label>
               <input 
                 type="text" 
                 placeholder="e.g. Roma Tomatoes"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Category</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Category</label>
               <select 
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none bg-white focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="Vegetables">Vegetables</option>
                 <option value="Fruits">Fruits</option>
@@ -525,12 +525,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <option value="Grains">Grains</option>
               </select>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Unit</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit</label>
               <select 
                 value={formUnit}
                 onChange={(e) => setFormUnit(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none bg-white focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="kg">kg</option>
                 <option value="litre">litre</option>
@@ -541,10 +541,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                Base Price (RWF) *
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                Base Price (RWF)
               </label>
               <div className="relative">
                 <input 
@@ -552,12 +552,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   placeholder="e.g. 1500" 
                   value={formPrice}
                   onChange={(e) => setFormPrice(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
                 />
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Quantity Needed *</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
               <input 
                 type="number" 
                 placeholder={(() => {
@@ -571,37 +571,37 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 })()}
                 value={formQuantityNeeded}
                 onChange={(e) => setFormQuantityNeeded(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
               />
             </div>
           </div>
 
-          <div className="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/30">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-on-surface">Currently Needed</span>
-              <AlertCircle className="w-3.5 h-3.5 text-on-surface-variant/50" />
+          <div className="p-4 bg-surface-container-low rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold">Currently Needed</span>
+              <AlertCircle className="w-4 h-4 text-on-surface-variant/40" />
             </div>
             <div 
               onClick={() => setFormIsCurrentlyNeeded(!formIsCurrentlyNeeded)}
               className={cn(
-                "w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center",
+                "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
                 formIsCurrentlyNeeded ? "bg-primary" : "bg-outline-variant"
               )}
             >
               <div className={cn(
-                "w-4 h-4 bg-white rounded-full transition-all shadow-sm",
-                formIsCurrentlyNeeded ? "translate-x-4" : "translate-x-0"
+                "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
+                formIsCurrentlyNeeded ? "translate-x-5" : "translate-x-0"
               )} />
             </div>
           </div>
 
           {formIsCurrentlyNeeded && (
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Urgency Level</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Urgency Level</label>
               <select 
                 value={formUrgency}
                 onChange={(e) => setFormUrgency(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-outline-variant text-xs outline-none bg-white focus:ring-1 focus:ring-primary transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
