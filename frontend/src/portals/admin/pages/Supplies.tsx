@@ -216,7 +216,11 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       <div className="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
         <div className="overflow-x-auto custom-scrollbar">
           {isLoading ? (
-            <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading supplies...</div>
+            <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+              <RefreshCw className="w-8 h-8 text-primary animate-spin mb-3 opacity-80" />
+              <p className="text-sm font-bold text-primary">Loading supplies...</p>
+              <p className="text-xs text-on-surface-variant/70 mt-0.5">Fetching latest stock proposals</p>
+            </div>
           ) : filteredSupplies.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
               <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
