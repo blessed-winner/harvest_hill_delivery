@@ -354,23 +354,16 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         # Show all supplies except rejected and draft ones
-        # Accepted supplies can be added to cart
-        # Pending supplies can be negotiated
         qs = Supply.objects.filter(
-            is_archived=False,
-            quantity__gt=0
+            is_archived=False
         ).exclude(
             status__in=['rejected', 'draft']
         ).select_related('product', 'farmer')
         
-        # Fallback: if no supplies with quantity, show all non-rejected/non-draft supplies even with 0 quantity
+        # Fallback: if no supplies exist at all, return all supplies regardless of status
         if not qs.exists():
-            qs = Supply.objects.filter(
-                is_archived=False
-            ).exclude(
-                status__in=['rejected', 'draft']
-            ).select_related('product', 'farmer')
-        
+            qs = Supply.objects.filter(is_archived=False).select_related('product', 'farmer')
+            
         return qs.order_by('-created_at')
 
     @extend_schema(

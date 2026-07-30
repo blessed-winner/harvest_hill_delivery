@@ -41,13 +41,13 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
   // Circular Category Icons
   const categoryBubbles = [
-    { name: "Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80" },
-    { name: "Greens", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&q=80" },
-    { name: "Dairy", category: "Animal-Based", image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=200&q=80" },
-    { name: "Bakery", category: "Grains", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&q=80" },
-    { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&q=80" },
-    { name: "Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1598170845058-12ef4a457939?w=200&q=80" },
-    { name: "Animal", category: "Animal-Based", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&q=80" }
+    { name: "Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&auto=format&fit=crop&q=80" },
+    { name: "Greens", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80" },
+    { name: "Dairy", category: "Animal-Based", image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&auto=format&fit=crop&q=80" },
+    { name: "Bakery", category: "Grains", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80" },
+    { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&auto=format&fit=crop&q=80" },
+    { name: "Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1597362925123-77861d3fbac7?w=400&auto=format&fit=crop&q=80" },
+    { name: "Animal", category: "Animal-Based", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&auto=format&fit=crop&q=80" }
   ];
 
   if (loading) {
