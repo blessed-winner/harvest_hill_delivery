@@ -38,6 +38,8 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userRating, setUserRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
 
   // Price Negotiation Modal State
   const [isNegotiating, setIsNegotiating] = useState(false);
@@ -412,35 +414,50 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
             </p>
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-3 pt-1">
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await apiRequest(`/api/supplies/${product.id}/rate/`, {
-                          method: 'POST',
-                          body: JSON.stringify({ rating: star })
-                        });
-                        setProduct((prev: any) => ({ ...prev, rating: res.rating, rating_count: res.rating_count }));
-                        toast(`Thank you for rating ${star} stars!`, "success");
-                      } catch (err) {
-                        toast("Failed to submit rating.", "error");
-                      }
-                    }}
-                    className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
-                  >
-                    <Star 
-                      size={18} 
-                      className={star <= Math.round(Number(product.rating || 5)) ? "text-amber-500 fill-amber-500" : "text-gray-300"} 
-                    />
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = star <= (hoverRating || userRating || 0);
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={async () => {
+                        setUserRating(star);
+                        try {
+                          const res = await apiRequest(`/api/supplies/${product.id}/rate/`, {
+                            method: 'POST',
+                            body: JSON.stringify({ rating: star })
+                          });
+                          setProduct((prev: any) => ({
+                            ...prev,
+                            rating: res.rating,
+                            rating_count: res.rating_count
+                          }));
+                          toast(`Thank you for giving ${star} star${star > 1 ? 's' : ''}!`, "success");
+                        } catch (err) {
+                          toast("Failed to submit rating.", "error");
+                        }
+                      }}
+                      className="p-1 hover:scale-125 transition-transform cursor-pointer focus:outline-none"
+                      title={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                    >
+                      <Star 
+                        size={20} 
+                        className={`transition-colors duration-150 ${
+                          isFilled 
+                            ? "text-amber-500 fill-amber-500 shadow-sm" 
+                            : "text-[#c1c9c0] fill-transparent hover:text-amber-400"
+                        }`} 
+                      />
+                    </button>
+                  );
+                })}
               </div>
-              <span className="text-xs font-bold text-amber-600 font-mono">
-                {Number(product.rating || 5).toFixed(1)} ({product.rating_count || 1} {product.rating_count === 1 ? 'rating' : 'ratings'})
+              <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80 font-mono">
+                {product.rating ? Number(product.rating).toFixed(1) : '5.0'} ({product.rating_count || 1} {product.rating_count === 1 ? 'rating' : 'ratings'})
               </span>
             </div>
 
