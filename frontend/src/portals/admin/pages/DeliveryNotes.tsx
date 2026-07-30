@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, MoreVertical, AlertTriangle, MapPin, Truck, FileText, 
-  CheckCircle2, Check, ChevronRight, Trash2, Archive, CheckSquare, Square 
+  CheckCircle2, Check, ChevronRight, Trash2, Archive, CheckSquare, Square, Printer 
 } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { useAlert } from '../../../context/AlertContext';
+import { DeliveryNotePDF } from '../../../components/DeliveryNotePDF';
 
 interface DeliveryNotesProps {
   searchTerm?: string;
@@ -19,6 +19,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('All');
+  const [pdfModalNote, setPdfModalNote] = useState<any | null>(null);
   
   // Selection state for bulk operations
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
@@ -313,6 +314,16 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                       <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfModalNote(note);
+                            }}
+                            title="Export PDF / Print"
+                            className="p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded"
+                          >
+                            <Printer size={16} />
+                          </button>
+                          <button
                             onClick={() => handleArchiveNote(note.id, !note.is_archived)}
                             title={note.is_archived ? "Unarchive" : "Archive"}
                             className="p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer rounded"
@@ -420,6 +431,31 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
               </p>
             </div>
 
+            {/* Goods Items Breakdown */}
+            <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-2">
+              <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-widest block">
+                Ordered Produce Items ({selectedNote.order_detail?.items?.length || 1})
+              </span>
+              <div className="divide-y divide-outline-variant/30">
+                {(selectedNote.order_detail?.items || []).map((item: any, idx: number) => (
+                  <div key={idx} className="py-2 flex justify-between text-xs">
+                    <span className="font-bold text-on-surface">{item.product_detail?.name || item.name || `Item #${idx+1}`}</span>
+                    <span className="font-semibold text-primary">{item.quantity} {item.product_detail?.unit || item.unit || 'pcs'}</span>
+                  </div>
+                ))}
+                {!selectedNote.order_detail?.items?.length && (
+                  <div className="py-2 text-xs font-semibold text-on-surface-variant">Fresh Produce Batch</div>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setPdfModalNote(selectedNote)}
+              className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer text-xs"
+            >
+              <Printer size={16} /> Export Delivery Note to PDF
+            </button>
+
             {selectedNote.dispute_reason && (
               <div className="bg-red-50 p-4 rounded-xl border border-red-200">
                 <span className="text-[10px] font-bold uppercase text-red-700 tracking-widest block mb-1">Dispute Details</span>
@@ -474,6 +510,14 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         message={confirmState.message}
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* PDF Printable Modal */}
+      <DeliveryNotePDF
+        isOpen={!!pdfModalNote}
+        onClose={() => setPdfModalNote(null)}
+        note={pdfModalNote}
+        order={pdfModalNote?.order_detail}
       />
     </div>
   );

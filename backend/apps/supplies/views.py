@@ -76,7 +76,17 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if not photo_file and images:
             photo_file = images[0]
 
-        instance = serializer.save(farmer=self.request.user.farmer_profile, photo=photo_file)
+        # If user is admin or farmer, ensure farmer_profile exists
+        farmer_profile = getattr(self.request.user, 'farmer_profile', None)
+        if not farmer_profile:
+            from apps.accounts.models import FarmerProfile
+            farm_title = f"{self.request.user.first_name or 'Admin'} Farm"
+            farmer_profile, _ = FarmerProfile.objects.get_or_create(
+                user=self.request.user,
+                defaults={'farm_name': farm_title, 'location': 'Kigali, Rwanda'}
+            )
+
+        instance = serializer.save(farmer=farmer_profile, photo=photo_file)
         
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage

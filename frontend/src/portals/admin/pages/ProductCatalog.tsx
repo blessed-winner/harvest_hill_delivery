@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -41,6 +41,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Admin Harvest Modal state
+  const [harvestProduct, setHarvestProduct] = useState<any | null>(null);
+  const [harvestQty, setHarvestQty] = useState('');
+  const [harvestPrice, setHarvestPrice] = useState('');
+  const [harvestDate, setHarvestDate] = useState(new Date().toISOString().slice(0, 10));
+  const [harvestGrade, setHarvestGrade] = useState('premium');
+  const [harvestNotes, setHarvestNotes] = useState('');
+  const [isSubmittingHarvest, setIsSubmittingHarvest] = useState(false);
 
   // Custom Dialog Modal State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -120,6 +129,43 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setImageFile(null);
     setImagePreviewUrl(product.image_url || "");
     setErrorMessage("");
+  };
+
+  const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHarvestProduct(product);
+    setHarvestQty(product.quantity_needed ? String(product.quantity_needed) : '');
+    setHarvestPrice(product.base_price ? String(product.base_price) : '');
+    setHarvestDate(new Date().toISOString().slice(0, 10));
+    setHarvestGrade('premium');
+    setHarvestNotes('Admin Farm Produce Submission');
+  };
+
+  const handleAdminSubmitHarvest = async () => {
+    if (!harvestProduct || !harvestQty || !harvestPrice) {
+      toast("Please enter quantity and asking price", "warning");
+      return;
+    }
+    try {
+      setIsSubmittingHarvest(true);
+      await api.supplies.create({
+        product: harvestProduct.id,
+        quantity: parseFloat(harvestQty),
+        price: parseFloat(harvestPrice),
+        available_date: harvestDate,
+        quality_grade: harvestGrade,
+        notes: harvestNotes,
+        status: 'accepted' // Auto-accept admin farm harvest
+      });
+      toast(`Harvest submission for ${harvestProduct.name} recorded successfully!`, "success");
+      setHarvestProduct(null);
+      loadProducts();
+    } catch (err: any) {
+      console.error("Failed to submit admin harvest:", err);
+      toast(err.message || "Failed to submit harvest", "error");
+    } finally {
+      setIsSubmittingHarvest(false);
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -358,20 +404,29 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-outline-variant/30 flex justify-between items-center text-xs">
-                      <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
-                      <div 
-                        onClick={(e) => handleToggleNeeded(product, e)}
-                        className={cn(
-                          "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
-                          product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                          product.is_currently_needed ? "translate-x-5" : "translate-x-0"
-                        )} />
+                    <div className="mt-4 pt-3 border-t border-outline-variant/30 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
+                        <div 
+                          onClick={(e) => handleToggleNeeded(product, e)}
+                          className={cn(
+                            "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
+                            product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
+                            product.is_currently_needed ? "translate-x-5" : "translate-x-0"
+                          )} />
+                        </div>
                       </div>
+
+                      <button
+                        onClick={(e) => handleOpenHarvestModal(product, e)}
+                        className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Sprout size={14} /> Submit Harvest
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -637,6 +692,106 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 )}
               >
                 {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Harvest Submission Window Modal */}
+      {harvestProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/50 space-y-5">
+            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
+              <div className="flex items-center gap-2 text-primary font-bold">
+                <Sprout size={20} />
+                <h3 className="text-base text-on-surface">Submit Harvest: {harvestProduct.name}</h3>
+              </div>
+              <button onClick={() => setHarvestProduct(null)} className="text-on-surface-variant hover:text-on-surface cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-on-surface-variant">
+                Submit fresh farm produce as an admin supplier directly into the supply chain inventory.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity ({harvestProduct.unit})</label>
+                  <input
+                    type="number"
+                    value={harvestQty}
+                    onChange={(e) => setHarvestQty(e.target.value)}
+                    placeholder="e.g. 50"
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Asking Price (RWF)</label>
+                  <input
+                    type="number"
+                    value={harvestPrice}
+                    onChange={(e) => setHarvestPrice(e.target.value)}
+                    placeholder="e.g. 1500"
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Available Date</label>
+                  <input
+                    type="date"
+                    value={harvestDate}
+                    onChange={(e) => setHarvestDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quality Grade</label>
+                  <select
+                    value={harvestGrade}
+                    onChange={(e) => setHarvestGrade(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
+                  >
+                    <option value="premium">Premium</option>
+                    <option value="standard">Standard</option>
+                    <option value="economy">Economy</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Notes / Farm Batch Info</label>
+                <textarea
+                  rows={2}
+                  value={harvestNotes}
+                  onChange={(e) => setHarvestNotes(e.target.value)}
+                  placeholder="Storage or farm harvest details..."
+                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setHarvestProduct(null)}
+                className="w-1/2 py-3 border border-outline-variant text-on-surface-variant rounded-xl text-xs font-bold hover:bg-surface-container-high transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingHarvest}
+                onClick={handleAdminSubmitHarvest}
+                className="w-1/2 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {isSubmittingHarvest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sprout size={16} />}
+                Confirm Harvest
               </button>
             </div>
           </div>

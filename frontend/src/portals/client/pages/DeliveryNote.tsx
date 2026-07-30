@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   ChevronRight, Calendar, AlertCircle, Loader2, Package, 
-  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload, Clock, Lock 
+  PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload, Clock, Lock, Printer 
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { useAlert } from '../../../context/AlertContext';
+import { DeliveryNotePDF } from '../../../components/DeliveryNotePDF';
 
 interface DeliveryNoteProps {
   onNavigate: (screen: string) => void;
@@ -27,6 +28,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
   const [selectedItem, setSelectedItem] = useState<{ order?: any; note?: any } | null>(null);
   const [modalMode, setModalMode] = useState<'sign' | 'dispute' | 'view' | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pdfModalItem, setPdfModalItem] = useState<{ note?: any; order?: any } | null>(null);
 
   // Deletion Modal State
   const [deleteTarget, setDeleteTarget] = useState<{ noteId?: string | number; orderId?: string | number } | null>(null);
@@ -455,13 +457,20 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                               </button>
                             </>
                           )}
-                          <button
-                            onClick={() => setDeleteTarget({ noteId: note?.id, orderId: order?.id })}
-                            className="p-1.5 text-[#717971] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-lg transition-colors cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                              <button
+                                onClick={() => setPdfModalItem({ order, note })}
+                                className="p-1.5 text-[#144227] hover:bg-[#144227]/10 rounded-lg transition-colors cursor-pointer"
+                                title="Export to PDF / Print"
+                              >
+                                <Printer size={16} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget({ noteId: note?.id, orderId: order?.id })}
+                                className="p-1.5 text-[#717971] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-lg transition-colors cursor-pointer"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                         </div>
                       </td>
                     </tr>
@@ -700,6 +709,24 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                 </div>
               </div>
 
+              {/* Goods Breakdown Table */}
+              <div className="bg-[#f6f3ec]/60 p-4 rounded-xl space-y-2 border border-[#e5e2db]">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971] block mb-1">
+                  Ordered Goods ({selectedItem.order?.items?.length || selectedItem.note?.order_detail?.items?.length || 1})
+                </span>
+                <div className="divide-y divide-[#e5e2db]">
+                  {(selectedItem.order?.items || selectedItem.note?.order_detail?.items || []).map((it: any, i: number) => (
+                    <div key={i} className="py-2 flex justify-between text-xs">
+                      <span className="font-bold text-[#1c1c18]">{it.product_detail?.name || it.product_name || `Item #${i+1}`}</span>
+                      <span className="font-semibold text-[#144227]">{it.quantity} {it.product_detail?.unit || it.unit || 'pcs'}</span>
+                    </div>
+                  ))}
+                  {!(selectedItem.order?.items?.length || selectedItem.note?.order_detail?.items?.length) && (
+                    <div className="py-2 text-xs font-semibold text-[#414942]">Fresh Produce Package</div>
+                  )}
+                </div>
+              </div>
+
               {selectedItem.note?.signed_by && (
                 <div className="bg-[#f6f3ec]/60 p-4 rounded-xl space-y-3 border border-[#e5e2db]">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971] block">Signature & Recipient</span>
@@ -720,11 +747,20 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
               )}
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setPdfModalItem({ order: selectedItem.order, note: selectedItem.note });
+                }}
+                className="w-1/2 py-3 bg-[#144227] text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Printer size={15} /> Export PDF
+              </button>
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-full py-3 bg-[#144227] text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-colors cursor-pointer"
+                className="w-1/2 py-3 border border-[#c1c9c0] text-[#1c1c18] rounded-xl text-xs font-bold hover:bg-[#f6f3ec] transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -732,6 +768,14 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
           </div>
         </div>
       )}
+
+      {/* PDF Printable Modal */}
+      <DeliveryNotePDF
+        isOpen={!!pdfModalItem}
+        onClose={() => setPdfModalItem(null)}
+        note={pdfModalItem?.note}
+        order={pdfModalItem?.order}
+      />
 
       {/* Custom UI Delete Confirmation Dialog */}
       <ConfirmModal
