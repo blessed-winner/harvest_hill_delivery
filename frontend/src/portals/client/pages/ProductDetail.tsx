@@ -64,10 +64,25 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         setLoading(true);
         setError(null);
         
+        let fetchedSupply: any = null;
+
         if (productId) {
-          // Fetch specific supply (acting as product)
-          const fetchedSupply = await clientApi.products.get(productId);
-          
+          try {
+            fetchedSupply = await clientApi.products.get(productId);
+          } catch (err) {
+            console.warn(`Supply ID ${productId} not found directly, trying fallback search...`);
+          }
+        }
+
+        if (!fetchedSupply) {
+          const productsRes = await clientApi.products.list({ limit: '10' });
+          const itemsList = productsRes?.results || productsRes || [];
+          if (itemsList.length > 0) {
+            fetchedSupply = itemsList.find((p: any) => p.id === Number(productId) || p.product === Number(productId)) || itemsList[0];
+          }
+        }
+
+        if (fetchedSupply) {
           const imagesList: string[] = [];
           const seenPaths = new Set<string>();
           const seenBases = new Set<string>();
@@ -77,7 +92,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             const path = normalizeUrlPath(url);
             const rawFilename = path.split('/').pop() || '';
             const filename = rawFilename.split('?')[0];
-            // Remove Cloudinary random upload hash suffix e.g. milk1_yaec0u -> milk1
             return filename.split('.')[0].replace(/_[a-zA-Z0-9]+$/, '');
           };
 
@@ -108,16 +122,16 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           if (imagesList.length === 0 && fetchedSupply.product_detail?.image_url) {
             addImage(fetchedSupply.product_detail.image_url);
           }
-          
+
           const mappedProduct = {
             id: fetchedSupply.id,
-            product_id: fetchedSupply.product, // Store the actual product ID for orders
+            product_id: fetchedSupply.product || fetchedSupply.id,
             name: fetchedSupply.product_detail?.name || fetchedSupply.name,
             category: fetchedSupply.product_detail?.category || fetchedSupply.category,
             urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
             unit: fetchedSupply.unit,
             price: fetchedSupply.price,
-            status: fetchedSupply.status, // Include supply status
+            status: fetchedSupply.status,
             image_url: fetchedSupply.photo 
               ? getFullImageUrl(fetchedSupply.photo) 
               : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
@@ -127,77 +141,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             quantity: fetchedSupply.quantity,
             quality_grade: fetchedSupply.quality_grade,
             notes: fetchedSupply.notes,
-            available_date: fetchedSupply.available_date
+            available_date: fetchedSupply.available_date,
+            rating: fetchedSupply.rating,
+            rating_count: fetchedSupply.rating_count
           };
           setProduct(mappedProduct);
           setProposedPrice(fetchedSupply.price ? String(fetchedSupply.price) : '');
         } else {
-          // Fallback: fetch first product as demo
-          const products = await clientApi.products.list({ limit: '1' });
-          if (products?.results && products.results.length > 0) {
-            const fetchedSupply = products.results[0];
-            
-            const imagesList: string[] = [];
-            const seenPaths = new Set<string>();
-            const seenBases = new Set<string>();
-
-            const getBaseName = (url: string) => {
-              if (!url) return '';
-              const path = normalizeUrlPath(url);
-              const rawFilename = path.split('/').pop() || '';
-              const filename = rawFilename.split('?')[0];
-              return filename.split('.')[0].replace(/_[a-zA-Z0-9]+$/, '');
-            };
-
-            const addImage = (url: string | null | undefined) => {
-              if (!url) return;
-              const fullUrl = getFullImageUrl(url);
-              const normalized = normalizeUrlPath(fullUrl);
-              const base = getBaseName(fullUrl);
-
-              if (!seenPaths.has(normalized) && (!base || !seenBases.has(base))) {
-                seenPaths.add(normalized);
-                if (base) seenBases.add(base);
-                imagesList.push(fullUrl);
-              }
-            };
-
-            if (fetchedSupply.photo) {
-              addImage(fetchedSupply.photo);
-            }
-            
-            if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
-              fetchedSupply.images.forEach((imgObj: any) => {
-                const url = imgObj.image_url || imgObj.image;
-                if (url) addImage(url);
-              });
-            }
-            
-            if (imagesList.length === 0 && fetchedSupply.product_detail?.image_url) {
-              addImage(fetchedSupply.product_detail.image_url);
-            }
-
-            const mappedProduct = {
-              id: fetchedSupply.id,
-              product_id: fetchedSupply.product,
-              name: fetchedSupply.product_detail?.name || fetchedSupply.name,
-              category: fetchedSupply.product_detail?.category || fetchedSupply.category,
-              urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
-              unit: fetchedSupply.unit,
-              price: fetchedSupply.price,
-              status: fetchedSupply.status, // Include supply status
-              image_url: fetchedSupply.photo 
-                ? getFullImageUrl(fetchedSupply.photo) 
-                : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
-              images: imagesList.length > 0 ? imagesList : undefined,
-              farmer_name: fetchedSupply.farmer_name,
-              quantity: fetchedSupply.quantity
-            };
-            setProduct(mappedProduct);
-            setProposedPrice(fetchedSupply.price ? String(fetchedSupply.price) : '');
-          } else {
-            setError('Product not found');
-          }
+          setError('Product details currently unavailable.');
         }
       } catch (err: any) {
         console.error('Failed to fetch product:', err);
