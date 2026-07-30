@@ -134,9 +134,14 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
             const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
             const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
             return (
-              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div 
+                key={item.id} 
+                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+              >
                 <div>
                   <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
                     <img 
@@ -157,7 +162,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                     <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
                   </span>
                   <button 
-                    onClick={() => addToCart(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(item);
+                    }}
                     className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                   >
                     <Plus size={14} />
@@ -229,9 +237,14 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
             const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
             const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
             return (
-              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div 
+                key={item.id} 
+                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+              >
                 <div>
                   <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
                     <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
@@ -247,7 +260,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-extrabold text-[#1c1c18]">RWF {priceVal.toLocaleString()}</span>
                   <button 
-                    onClick={() => addToCart(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(item);
+                    }}
                     className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                   >
                     <Plus size={14} />
@@ -309,9 +325,14 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
             const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
             const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
             return (
-              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div 
+                key={item.id} 
+                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+              >
                 <div>
                   <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
                     <img 
@@ -329,7 +350,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                     <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
                   </span>
                   <button 
-                    onClick={() => addToCart(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(item);
+                    }}
                     className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                   >
                     <Plus size={14} />
