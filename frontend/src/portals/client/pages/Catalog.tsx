@@ -66,18 +66,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     }
   }, [initialCategory, initialSearch]);
 
-  // Fetch all products once to get categories
-  useEffect(() => {
-    const fetchAllProducts = async () => {
-      try {
-        const response = await clientApi.products.list({});
-        setAllProducts(response?.results || []);
-      } catch (err) {
-        console.error('Failed to fetch all products:', err);
-      }
-    };
-    fetchAllProducts();
-  }, []);
+
 
   // Fetch products
   useEffect(() => {
@@ -126,6 +115,9 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         });
         
         setProducts(fetchedProducts);
+        if (allProducts.length === 0) {
+          setAllProducts(fetchedProducts);
+        }
         setTotalCount(fetchedProducts.length);
         setCurrentPage(1); // Reset to first page on filter change
       } catch (err: any) {
