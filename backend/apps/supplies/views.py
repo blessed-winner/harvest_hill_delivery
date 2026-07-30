@@ -205,6 +205,9 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 supply.photo = next_img.image if next_img else None
                 supply.save()
             return Response({"status": "success"})
+        except SupplyImage.DoesNotExist:
+            return Response({"error": "Image not found"}, status=404)
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny], url_path='rate')
     def rate(self, request, pk=None):
         supply = self.get_object()
