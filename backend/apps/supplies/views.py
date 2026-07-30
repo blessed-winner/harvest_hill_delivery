@@ -65,7 +65,7 @@ class SupplySerializer(serializers.ModelSerializer):
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Supply.objects.all()
     serializer_class = SupplySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
         # Extract files from request

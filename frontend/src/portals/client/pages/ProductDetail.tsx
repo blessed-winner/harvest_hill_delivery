@@ -223,17 +223,19 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     const checkNegotiatedPrice = async () => {
       if (!productId) return;
       try {
-        const threads = await apiRequest('/api/negotiations/threads/');
-        const thread = threads.find((t: any) => t.supply_detail?.id === Number(productId));
-        if (thread && thread.status === 'accepted') {
-          const lastOffer = thread.offers?.[thread.offers.length - 1];
-          const price = lastOffer ? lastOffer.price : thread.supply_detail?.proposed_price;
-          setNegotiatedPrice(Number(price));
-        } else {
-          setNegotiatedPrice(null);
+        const threads = await apiRequest('/api/negotiations/threads/').catch(() => null);
+        if (Array.isArray(threads)) {
+          const thread = threads.find((t: any) => t.supply_detail?.id === Number(productId));
+          if (thread && thread.status === 'accepted') {
+            const lastOffer = thread.offers?.[thread.offers.length - 1];
+            const price = lastOffer ? lastOffer.price : thread.supply_detail?.proposed_price;
+            setNegotiatedPrice(Number(price));
+          } else {
+            setNegotiatedPrice(null);
+          }
         }
       } catch (err) {
-        console.error("Error checking negotiated price:", err);
+        // Silence unauthenticated 401 error for guest detail views
       }
     };
     checkNegotiatedPrice();

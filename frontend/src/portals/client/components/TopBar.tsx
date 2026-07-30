@@ -365,22 +365,32 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
                   )}
                 </div>
 
-                {/* Shopping Cart - Only visible when logged in as a client */}
-                {isLoggedIn && userRole === 'client' && (
-                  <button
-                    onClick={() => onNavigate('cart')}
-                    className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors relative cursor-pointer"
-                    title="Harvest Cart"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 bg-[#144227] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {cartCount}
-                    </span>
-                  </button>
-                )}
+                {/* Shopping Cart - Always visible for guests and clients */}
+                <button
+                  onClick={() => onNavigate('cart')}
+                  className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors relative cursor-pointer"
+                  title="Harvest Cart"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-[#144227] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {cartCount}
+                  </span>
+                </button>
               </>
             ) : (
               <div className="flex items-center gap-3">
+                {/* Shopping Cart for Guest Users */}
+                <button
+                  onClick={() => onNavigate('cart')}
+                  className="p-2 hover:bg-[#f0eee7] rounded-full transition-colors relative cursor-pointer"
+                  title="Harvest Cart"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 bg-[#144227] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {cartCount}
+                  </span>
+                </button>
+
                 <Link
                   href="/login"
                   className="text-[#144227] font-semibold text-xs hover:underline cursor-pointer"

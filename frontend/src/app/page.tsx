@@ -7,6 +7,7 @@ import Landing from '../components/Landing';
 import Catalog from '../portals/client/pages/Catalog';
 import ProductDetail from '../portals/client/pages/ProductDetail';
 import FAQ from '../components/FAQ';
+import Cart from '../portals/client/pages/Cart';
 import { CurrencyProvider } from '../context/CurrencyContext';
 
 export default function HomePage() {
@@ -105,6 +106,8 @@ export default function HomePage() {
 
   const renderActiveScreen = () => {
     switch (activeScreen) {
+      case 'cart':
+        return <Cart onNavigate={handleNavigate} cartCount={cartCount} setCartCount={setCartCount} />;
       case 'catalog':
         return <Catalog onNavigate={handleNavigate} addToCart={handleAddToCart} initialCategory={selectedCategory} initialSearch={searchQuery} />;
       case 'product-detail':
