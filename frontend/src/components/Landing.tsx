@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, ChevronLeft, ChevronRight, Plus, ShoppingBag, 
-  MapPin, ShieldCheck, Truck, Clock, Leaf, Search, Star
+  MapPin, ShieldCheck, Truck, Clock, Leaf, Search
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
 
@@ -152,9 +152,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                   </div>
                   <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
                   <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
-                  <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold mt-1">
-                    <Star size={10} fill="currentColor" /> 4.9 (Fresh)
-                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-sm font-extrabold text-[#1c1c18]">
