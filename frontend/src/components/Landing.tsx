@@ -347,10 +347,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { name: "Fresh Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&q=80" },
-            { name: "Organic Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&q=80" },
-            { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=500&q=80" },
-            { name: "Butcher Shop", category: "Animal-Based", image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=500&q=80" }
+            { name: "Fresh Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&auto=format&fit=crop&q=80" },
+            { name: "Organic Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80" },
+            { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&auto=format&fit=crop&q=80" },
+            { name: "Butcher Shop", category: "Animal-Based", image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&auto=format&fit=crop&q=80" }
           ].map((dept, idx) => (
             <div 
               key={idx}
