@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowRight, ChevronLeft, ChevronRight, Sprout, ShieldCheck, Truck, 
-  Plus, ShoppingCart, Percent, AlertCircle, Play, Star, MapPin, CheckCircle, 
-  HelpCircle, ChevronDown, ChevronUp, Clock, Award
+  ArrowRight, ChevronLeft, ChevronRight, Plus, ShoppingBag, 
+  MapPin, ShieldCheck, Truck, Clock, Leaf, Search, Star
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
 
@@ -16,16 +15,13 @@ interface LandingProps {
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sliderIndex, setSliderIndex] = useState(0);
-  const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
 
-  // Fetch products from catalog on mount safely
   useEffect(() => {
     async function fetchProducts() {
       try {
         setLoading(true);
         const res = await clientApi.products.list();
-        setProducts(res?.results || []);
+        setProducts(res?.results || res || []);
       } catch (err) {
         console.error("Failed to fetch landing products:", err);
         setProducts([]);
@@ -36,558 +32,466 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchProducts();
   }, []);
 
-  // Filter accepted products for the slider (maximum 8 items)
-  const acceptedProducts = products
-    .filter((p: any) => p.status === 'accepted')
-    .slice(0, 8)
-    .map((prod: any) => ({
-    id: prod.id,
-    product_id: prod.product,
-    name: prod.product_detail?.name || prod.name,
-    category: prod.product_detail?.category || prod.category,
-    unit: prod.unit || 'kg',
-    price: prod.price || 0,
-    image_url: prod.photo || prod.product_detail?.image_url || 'https://images.unsplash.com/photo-1610348725531-843dff14722a?w=400&q=80',
-    quantity: prod.quantity || 0,
-    farmer_name: prod.farmer_name || 'Verified Farmer'
-  }));
-
-  const handleNextSlide = () => {
-    if (acceptedProducts.length > 4) {
-      setSliderIndex((prev) => (prev + 1) % (acceptedProducts.length - 3));
-    }
-  };
-
-  const handlePrevSlide = () => {
-    if (acceptedProducts.length > 4) {
-      setSliderIndex((prev) => (prev - 1 + (acceptedProducts.length - 3)) % (acceptedProducts.length - 3));
-    }
-  };
-
-  const toggleFaq = (index: number) => {
-    setFaqOpenIndex(faqOpenIndex === index ? null : index);
-  };
-
-  const faqs = [
+  // Popular this week items
+  const popularItems = [
     {
-      q: "How does negotiation work?",
-      a: "Once a supply is listed, client buyers can make counter proposals. If the farmer accepts, the price is finalized. Both sides can revise terms until an agreement is reached."
+      id: 1,
+      farm: "Ocean Valley Farm",
+      name: "Organic Fuji Apples",
+      rating: "4.8 (126)",
+      price: "$4.99",
+      unit: "lb",
+      image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80"
     },
     {
-      q: "What are the quality grades?",
-      a: "We categorize produce into Premium (top-tier size, look, and freshness), Standard (choice wholesale grade), and Economy (utility grade for processing/sauces)."
+      id: 2,
+      farm: "Sunny Brook Dairy",
+      name: "Fresh Strawberries",
+      rating: "4.9 (380)",
+      price: "$6.50",
+      unit: "pkg",
+      image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80"
     },
     {
-      q: "Who pays for delivery?",
-      a: "Delivery logistics are managed automatically through the Harvest Hill logistics network. Shipping costs are calculated dynamically based on distance and order volume."
+      id: 3,
+      farm: "Happy Hen Farms",
+      name: "Large Brown Eggs (12pk)",
+      rating: "4.7 (240)",
+      price: "$5.25",
+      unit: "dozen",
+      image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80"
     },
     {
-      q: "How long does verification take?",
-      a: "Supplier identity and crop batches are typically verified within 24 hours of submission to maintain fresh delivery standards."
+      id: 4,
+      farm: "Earthwise Gardens",
+      name: "Heirloom Carrots",
+      rating: "4.8 (110)",
+      price: "$3.99",
+      unit: "bunch",
+      image: "https://images.unsplash.com/photo-1598170845058-12ef4a457939?w=400&q=80"
     },
     {
-      q: "Is my payment secure?",
-      a: "Yes. Payment is escrowed securely and only released to the farmer after the digital delivery log is signed by the client recipient without dispute."
+      id: 5,
+      farm: "River Valley Dairy",
+      name: "A2 Organic Whole Milk",
+      rating: "4.9 (184)",
+      price: "$7.20",
+      unit: "gal",
+      image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&q=80"
     }
   ];
 
+  // Flash Deals
+  const flashDeals = [
+    {
+      id: 101,
+      name: "Avocados (3pk)",
+      discount: "-15%",
+      price: "$3.25",
+      oldPrice: "$3.90",
+      image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400&q=80"
+    },
+    {
+      id: 102,
+      name: "Clover Honey 12oz",
+      discount: "-20%",
+      price: "$8.80",
+      oldPrice: "$11.00",
+      image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=400&q=80"
+    },
+    {
+      id: 103,
+      name: "Savoy Cabbage",
+      discount: "-10%",
+      price: "$1.50",
+      oldPrice: "$1.70",
+      image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&q=80"
+    },
+    {
+      id: 104,
+      name: "Aged Cheddar 8oz",
+      discount: "-15%",
+      price: "$5.95",
+      oldPrice: "$7.00",
+      image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&q=80"
+    },
+    {
+      id: 105,
+      name: "Asparagus Bunch",
+      discount: "-15%",
+      price: "$2.40",
+      oldPrice: "$2.85",
+      image: "https://images.unsplash.com/photo-1515471209610-e3b35f68a69d?w=400&q=80"
+    },
+    {
+      id: 106,
+      name: "Wild Mushrooms Mix",
+      discount: "-10%",
+      price: "$6.75",
+      oldPrice: "$7.50",
+      image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80"
+    }
+  ];
+
+  // New From Local Farms
+  const newArrivals = [
+    {
+      id: 201,
+      farm: "Black Soil Estate",
+      name: "Spring Radishes",
+      price: "$2.50",
+      image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&q=80"
+    },
+    {
+      id: 202,
+      farm: "Hillside Foragers",
+      name: "Wild Ramps",
+      price: "$4.00",
+      image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&q=80"
+    },
+    {
+      id: 203,
+      farm: "Oak Grove Creamery",
+      name: "Herbed Goat Cheese",
+      price: "$9.50",
+      image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=400&q=80"
+    },
+    {
+      id: 204,
+      farm: "Old Town Bakery",
+      name: "Walnut Sourdough",
+      price: "$6.75",
+      image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80"
+    },
+    {
+      id: 205,
+      farm: "Cider Hill Orchards",
+      name: "Unfiltered Apple Cider",
+      price: "$8.00",
+      image: "https://images.unsplash.com/photo-1576675784201-0e1697726a07?w=400&q=80"
+    }
+  ];
+
+  // Recommended For You
+  const recommendedItems = [
+    {
+      id: 301,
+      farm: "Clean Greens Farms",
+      name: "Organic Broccoli",
+      price: "$3.50",
+      unit: "lb",
+      image: "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=400&q=80"
+    },
+    {
+      id: 302,
+      farm: "Fair Trade Farms",
+      name: "Organic Bananas",
+      price: "$0.89",
+      unit: "lb",
+      image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80"
+    },
+    {
+      id: 303,
+      farm: "Valley Nut Co.",
+      name: "Raw Whole Almonds",
+      price: "$12.50",
+      image: "https://images.unsplash.com/photo-1508061252227-814144342217?w=400&q=80"
+    },
+    {
+      id: 304,
+      farm: "Green Leafy Gardens",
+      name: "Curly Kale Bunch",
+      price: "$2.99",
+      image: "https://images.unsplash.com/photo-1524179091875-bf0a08c5745f?w=400&q=80"
+    },
+    {
+      id: 305,
+      farm: "The Cheese Monger",
+      name: "Artisan Cheese Board",
+      price: "$24.00",
+      image: "https://images.unsplash.com/photo-1631379578550-7038263db699?w=400&q=80"
+    }
+  ];
+
+  // Circular Category Icons
+  const categoryBubbles = [
+    { name: "Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=200&q=80" },
+    { name: "Greens", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&q=80" },
+    { name: "Dairy", category: "Animal-Based", image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=200&q=80" },
+    { name: "Bakery", category: "Grains", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&q=80" },
+    { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&q=80" },
+    { name: "Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1598170845058-12ef4a457939?w=200&q=80" },
+    { name: "Eggs", category: "Animal-Based", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&q=80" },
+    { name: "Herbs", category: "Vegetables", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=200&q=80" }
+  ];
+
   return (
-    <div className="space-y-16 pb-16 font-sans bg-[#fcf9f2] text-[#1c1c18] selection:bg-[#9ed0ab] selection:text-[#144227]">
+    <div className="bg-[#f5f4ef] text-[#1c1c18] font-sans space-y-10 pb-16">
       
-      {/* 1. HERO SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        {/* Hero Left */}
-        <div className="lg:col-span-6 space-y-6">
-          <span className="inline-block text-[10px] uppercase font-extrabold tracking-widest text-[#144227] bg-[#144227]/10 px-3.5 py-1.5 rounded-full">
-            FARM DIRECT DELIVERY
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#144227] leading-[1.1] font-sans">
-            Fresh produce, sourced directly, delivered reliably.
-          </h1>
-          <p className="text-sm sm:text-base text-[#414942] font-semibold leading-relaxed max-w-xl">
-            Harvest Hill bridges the gap between regional agricultural fields and business kitchens with direct negotiations and real-time ledger tracking.
-          </p>
-          <div className="flex items-center gap-4 pt-2">
-            <button
-              onClick={() => onNavigate('catalog')}
-              className="bg-[#144227] text-white hover:bg-[#2d5a3d] px-8 py-3.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
-            >
-              <span>Find harvest</span>
-              <ArrowRight size={14} />
-            </button>
-            <button
-              onClick={() => onNavigate('catalog')}
-              className="bg-white border border-[#c1c9c0] text-[#1c1c18] hover:bg-[#f6f3ec] px-8 py-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              Share a harvest
-            </button>
-          </div>
-        </div>
-
-        {/* Hero Right: Collage of rounded crop cards */}
-        <div className="lg:col-span-6 relative h-[400px] flex items-center justify-center select-none">
-          {/* Card 1: Left tall */}
-          <div className="absolute left-[15%] top-[12%] w-[150px] h-[200px] rounded-3xl overflow-hidden shadow-xl border border-white/50 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-            <img 
-              src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80" 
-              alt="fresh produce" 
-              className="w-full h-full object-cover" 
-            />
-          </div>
-          {/* Card 2: Right large */}
-          <div className="absolute right-[15%] top-[6%] w-[180px] h-[250px] rounded-3xl overflow-hidden shadow-2xl border border-white/50 transform rotate-3 hover:rotate-0 transition-transform duration-500 z-10">
-            <img 
-              src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=500&q=80" 
-              alt="fresh vegetables" 
-              className="w-full h-full object-cover" 
-            />
-          </div>
-          {/* Card 3: Center bottom */}
-          <div className="absolute left-[32%] bottom-[8%] w-[160px] h-[160px] rounded-3xl overflow-hidden shadow-lg border border-white/50 transform -rotate-2 hover:rotate-0 transition-transform duration-500 z-20">
-            <img 
-              src="https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&q=80" 
-              alt="tomatoes" 
-              className="w-full h-full object-cover" 
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 2. PARTNERS / STATS BAR */}
-      <section className="bg-[#eef7f0] border-y border-[#c1c9c0]/30 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div className="space-y-1">
-            <p className="text-3xl font-extrabold text-[#144227]">50+</p>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-[#717971]">Verified Producers</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-3xl font-extrabold text-[#144227]">12k+</p>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-[#717971]">Products Delivered</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-3xl font-extrabold text-[#144227]">12 min</p>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-[#717971]">Avg Response</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-3xl font-extrabold text-[#144227]">15+</p>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-[#717971]">Crop Categories</p>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. DYNAMIC PRODUCT CAROUSEL / SLIDER */}
-      {acceptedProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-extrabold text-[#1c1c18] tracking-tight">What's popular this week</h2>
-                <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Percent size={10} /> 12% Off this week
-                </span>
-              </div>
-              <p className="text-xs text-[#717971] mt-1 font-semibold">High-quality wholesale catalog items with finalized pricing.</p>
-            </div>
-            
-            {acceptedProducts.length > 4 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={handlePrevSlide}
-                  className="p-2 border border-[#c1c9c0] rounded-full hover:bg-white text-[#414942] transition-colors cursor-pointer"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  onClick={handleNextSlide}
-                  className="p-2 border border-[#c1c9c0] rounded-full hover:bg-white text-[#414942] transition-colors cursor-pointer"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="relative overflow-hidden w-full">
-            <div 
-              className="flex gap-6 transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(-${sliderIndex * (100 / 4)}%)` }}
-            >
-              {acceptedProducts.map((prod) => (
-                <div
-                  key={prod.id}
-                  onClick={() => onNavigate('product-detail', undefined, prod.id)}
-                  className="bg-white border border-[#e5e2db] rounded-2xl p-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group min-w-[260px] w-[calc(25%-18px)]"
-                >
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[#f6f3ec]">
-                    <img 
-                      src={prod.image_url} 
-                      alt={prod.name} 
-                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" 
-                    />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div>
-                      <span className="block text-[8px] font-bold text-[#717971] uppercase tracking-wider">{prod.farmer_name}</span>
-                      <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{prod.name}</h4>
-                      <span className="block text-xs font-extrabold text-[#144227] mt-0.5">${parseFloat(prod.price).toFixed(2)} / {prod.unit}</span>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(prod);
-                      }}
-                      className="w-7 h-7 bg-[#f6f3ec] text-[#144227] hover:bg-[#144227] hover:text-white rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-90"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 4. HOW ORDER WORKS SECTION */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-12">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1 rounded-full">
-            EASY STEPS
-          </span>
-          <h2 className="text-2xl font-extrabold text-[#144227] tracking-tight mt-3">How order works</h2>
-          <p className="text-xs text-[#717971] mt-1 font-semibold">Simplify wholesale crop procurement in three digital steps.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-6 text-center space-y-4 shadow-sm hover:-translate-y-1 transition-all duration-300">
-            <div className="w-12 h-12 rounded-full bg-[#144227]/10 text-[#144227] flex items-center justify-center mx-auto text-lg font-bold">1</div>
-            <h3 className="text-sm font-bold text-[#1c1c18]">Browse harvests</h3>
-            <p className="text-xs text-[#717971] leading-relaxed">
-              Select fresh produce from our interactive map and wholesale supplier list.
-            </p>
-          </div>
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-6 text-center space-y-4 shadow-sm hover:-translate-y-1 transition-all duration-300">
-            <div className="w-12 h-12 rounded-full bg-[#144227]/10 text-[#144227] flex items-center justify-center mx-auto text-lg font-bold">2</div>
-            <h3 className="text-sm font-bold text-[#1c1c18]">Place your order</h3>
-            <p className="text-xs text-[#717971] leading-relaxed">
-              Submit custom counter proposals or lock standard pricing deals directly.
-            </p>
-          </div>
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-6 text-center space-y-4 shadow-sm hover:-translate-y-1 transition-all duration-300">
-            <div className="w-12 h-12 rounded-full bg-[#144227]/10 text-[#144227] flex items-center justify-center mx-auto text-lg font-bold">3</div>
-            <h3 className="text-sm font-bold text-[#1c1c18]">Track route</h3>
-            <p className="text-xs text-[#717971] leading-relaxed">
-              Real-time route logging updates as your harvest moves to destination.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. GROW WITH HARVEST HILL ( split card banner ) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#144227] rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 items-center shadow-xl">
-          {/* Grow Left */}
-          <div className="p-8 md:p-12 space-y-6 text-white">
-            <span className="text-[9px] uppercase tracking-widest bg-white/10 text-[#bceec8] px-3.5 py-1.5 rounded-full font-bold">
-              GROWER COLLABORATIVE
-            </span>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Grow with Harvest Hill</h2>
-            <ul className="space-y-3.5 text-xs text-white/80">
-              <li className="flex items-center gap-2.5 font-medium">
-                <CheckCircle size={16} className="text-[#9ed0ab]" /> Access directly to local farmer products
-              </li>
-              <li className="flex items-center gap-2.5 font-medium">
-                <CheckCircle size={16} className="text-[#9ed0ab]" /> Clear quality grades and specifications
-              </li>
-              <li className="flex items-center gap-2.5 font-medium">
-                <CheckCircle size={16} className="text-[#9ed0ab]" /> Secure payments and digital delivery log
-              </li>
-            </ul>
-            <button
-              onClick={() => onNavigate('catalog')}
-              className="bg-white text-[#144227] hover:bg-[#f6f3ec] px-6 py-2.5 rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
-            >
-              Learn more
-            </button>
-          </div>
-
-          {/* Grow Right */}
-          <div className="h-[300px] lg:h-full relative overflow-hidden bg-surface-container-low min-h-[300px]">
-            <img 
-              src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80" 
-              alt="farmer in wheat field" 
-              className="w-full h-full object-cover absolute inset-0"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* 6. SHOP BY CATEGORY GRID */}
-      <section id="categories" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div>
-          <h2 className="text-2xl font-extrabold text-[#1c1c18] tracking-tight">Shop by category</h2>
-          <p className="text-xs text-[#717971] mt-1 font-semibold">Explore diverse fresh collections curated for culinary professionals.</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[480px]">
-          {/* Large Left: Fruits */}
-          <div 
-            onClick={() => onNavigate('catalog', 'Fruits')}
-            className="lg:col-span-5 bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[280px]"
-          >
-            <img 
-              src="/fruits.jpg" 
-              alt="fruits" 
-              className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6 text-white space-y-1">
-              <h3 className="text-lg font-bold">Fruits</h3>
-              <p className="text-[10px] text-white/80">Fresh apples, berries, and regional citrus yields.</p>
-            </div>
-          </div>
-
-          {/* Right Cards list */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-6 h-full">
-            {/* Vegetables */}
-            <div 
-              onClick={() => onNavigate('catalog', 'Vegetables')}
-              className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80" 
-                alt="vegetables" 
-                className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-5 text-white">
-                <h4 className="text-base font-bold">Vegetables</h4>
-                <p className="text-[9px] text-white/80">Dark greens and root vegetables.</p>
-              </div>
-            </div>
-
-            {/* Dairy */}
-            <div 
-              onClick={() => onNavigate('catalog', 'Animal-Based')}
-              className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
-            >
-              <img 
-                src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80" 
-                alt="dairy" 
-                className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-5 text-white">
-                <h4 className="text-base font-bold">Dairy</h4>
-                <p className="text-[9px] text-white/80">Butter, local cheese, and organic milk.</p>
-              </div>
-            </div>
-
-            {/* Grains */}
-            <div 
-              onClick={() => onNavigate('catalog', 'Grains')}
-              className="bg-white border border-[#e5e2db] rounded-3xl overflow-hidden shadow-sm relative group cursor-pointer min-h-[220px]"
-            >
-              <img 
-                src="/peanuts(1).jpg" 
-                alt="grains" 
-                className="w-full h-full object-cover absolute inset-0 group-hover:scale-103 transition-transform duration-500" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex flex-col justify-end p-5 text-white">
-                <h4 className="text-base font-bold">Grains</h4>
-                <p className="text-[9px] text-white/80">Peanuts, oats, wheat, and bulk grains.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. TESTIMONIALS */}
-      <section id="testimonials" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="text-center max-w-xl mx-auto">
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1.5 rounded-full">
-            REVIEWS
-          </span>
-          <h2 className="text-2xl font-extrabold text-[#144227] tracking-tight mt-3">Trusted on both sides of the harvest</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4 text-xs font-semibold leading-relaxed">
-            <div className="flex gap-0.5 text-amber-500"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
-            <p className="text-[#414942]">
-              "The contract options made it easy for us to negotiate bulk rates for our kitchens. Everything was transparently handled."
-            </p>
-            <div className="pt-2 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" className="w-full h-full object-cover" /></div>
-              <div>
-                <p className="font-extrabold text-[#1c1c18]">Sarah Jenkins</p>
-                <p className="text-[10px] text-[#717971]">Procurement Lead, Bite Corp</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Green Featured Card */}
-          <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-md space-y-4 text-xs font-semibold leading-relaxed">
-            <div className="flex gap-0.5 text-[#9ed0ab]"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
-            <p className="text-white/90">
-              "Direct buyer bidding helps us secure crop margins before harvest is fully completed. Highly recommended collaborative."
-            </p>
-            <div className="pt-2 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" className="w-full h-full object-cover" /></div>
-              <div>
-                <p className="font-extrabold text-white">David Kamanzi</p>
-                <p className="text-[10px] text-[#bceec8]/80">Wheat Grower, Green Hills Coop</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4 text-xs font-semibold leading-relaxed">
-            <div className="flex gap-0.5 text-amber-500"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
-            <p className="text-[#414942]">
-              "Delivery logs are synchronized automatically. Having signature tracking has resolved all of our prior disputes."
-            </p>
-            <div className="pt-2 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80" className="w-full h-full object-cover" /></div>
-              <div>
-                <p className="font-extrabold text-[#1c1c18]">Elena Rostova</p>
-                <p className="text-[10px] text-[#717971]">Logistics Manager, Fresh Foods</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8. QUALITY SHOWCASE WITH LIVE MOCK DASHBOARD */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        {/* Left Column: UI Mockup Dashboard */}
-        <div className="lg:col-span-6 bg-white border border-[#e5e2db] rounded-3xl p-6 shadow-xl space-y-4 relative overflow-hidden group">
-          <div className="flex items-center justify-between border-b border-[#f0eee7] pb-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-[#144227]/20 flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-[#144227]"/></span>
-              <span className="font-extrabold text-[#1c1c18]">Supply Chain Log</span>
-            </div>
-            <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded font-bold uppercase">Synced</span>
-          </div>
-
-          <div className="space-y-3 font-mono text-[10px] text-[#414942]">
-            <div className="flex justify-between border-b border-[#f0eee7]/60 pb-2">
-              <span>ORDER REFERENCE:</span>
-              <span className="font-bold text-[#1c1c18]">#ORD-184920</span>
-            </div>
-            <div className="flex justify-between border-b border-[#f0eee7]/60 pb-2">
-              <span>SHIPMENT STATUS:</span>
-              <span className="font-bold text-[#144227]">IN TRANSIT (VERIFIED)</span>
-            </div>
-            <div className="flex justify-between border-b border-[#f0eee7]/60 pb-2">
-              <span>LEDGER DEPOSIT:</span>
-              <span className="font-bold text-[#1c1c18]">$4,850.00</span>
-            </div>
-          </div>
-
-          {/* Styled Mock Map / Chart block */}
-          <div className="bg-[#fcf9f2] rounded-2xl p-4 border border-[#e5e2db] relative min-h-[140px] flex items-center justify-center overflow-hidden">
-            {/* Mock Map Background Grid */}
-            <div className="absolute inset-0 opacity-10 flex flex-wrap gap-2 p-1">
-              {Array.from({ length: 48 }).map((_, i) => (
-                <div key={i} className="w-8 h-8 border border-[#144227] rounded-sm" />
-              ))}
-            </div>
-            {/* Route path */}
-            <div className="relative w-full h-1 bg-[#144227]/20 rounded-full flex justify-between items-center px-8 z-10">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#144227] border-4 border-white flex items-center justify-center shadow-md"><MapPin size={6} className="text-white"/></div>
-              <div className="w-3.5 h-3.5 rounded-full bg-[#9ed0ab] border-4 border-white flex items-center justify-center shadow-md animate-pulse"><Clock size={6} className="text-[#144227]"/></div>
-              <div className="w-3.5 h-3.5 rounded-full bg-slate-300 border-4 border-white flex items-center justify-center shadow-md"><Award size={6} className="text-white"/></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Copywriting */}
-        <div className="lg:col-span-6 space-y-6">
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1.5 rounded-full">
-            QUALITY SYSTEM
-          </span>
-          <h2 className="text-3xl font-extrabold text-[#144227] leading-tight tracking-tight">
-            How quality of our products works
-          </h2>
-          <p className="text-sm text-[#414942] font-semibold leading-relaxed">
-            Every shipment goes through strict inspection processes. We maintain a high-trust verification chain so buyers receive exact specifications.
-          </p>
-
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="p-3 bg-[#eef7f0] text-[#144227] rounded-xl shrink-0 h-fit"><ShieldCheck size={20}/></div>
-              <div>
-                <h4 className="text-sm font-bold text-[#1c1c18]">Vetted local farms</h4>
-                <p className="text-xs text-[#717971] leading-relaxed mt-0.5">We check supplier licenses and verify soil/growth practices in regional locations.</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="p-3 bg-[#eef7f0] text-[#144227] rounded-xl shrink-0 h-fit"><Truck size={20}/></div>
-              <div>
-                <h4 className="text-sm font-bold text-[#1c1c18]">Certified logistics</h4>
-                <p className="text-xs text-[#717971] leading-relaxed mt-0.5">Inbound transports keep exact temperature controls logged on-chain.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 9. FAQ ACCORDION */}
-      <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="text-center">
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#144227] bg-[#eef7f0] px-3.5 py-1.5 rounded-full">
-            QUESTIONS
-          </span>
-          <h2 className="text-2xl font-extrabold text-[#144227] tracking-tight mt-3">Frequently asked questions</h2>
-        </div>
-
-        <div className="space-y-3.5">
-          {faqs.map((faq, idx) => {
-            const isOpen = faqOpenIndex === idx;
-            return (
-              <div 
-                key={idx} 
-                className="bg-white border border-[#e5e2db] rounded-2xl overflow-hidden transition-all shadow-sm"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleFaq(idx)}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left font-bold text-xs sm:text-sm text-[#1c1c18] hover:bg-[#f6f3ec]/40 transition-colors outline-none cursor-pointer"
-                >
-                  <span className="font-sans font-bold pr-4">{faq.q}</span>
-                  {isOpen ? <ChevronUp size={16} className="text-[#144227] shrink-0" /> : <ChevronDown size={16} className="text-[#717971] shrink-0" />}
-                </button>
-                {isOpen && (
-                  <div className="px-6 pb-4 pt-1 text-xs text-[#717971] leading-relaxed border-t border-[#f0eee7] bg-[#fcf9f2]/40 font-medium">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 10. CALL TO ACTION BANNER */}
+      {/* 1. HERO BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="bg-[#144227] text-white rounded-[32px] p-8 md:p-14 text-center space-y-6 shadow-xl relative overflow-hidden flex flex-col items-center">
-          {/* Subtle backgrounds */}
-          <div className="absolute -left-10 -bottom-10 w-48 h-48 rounded-full bg-[#376847]/40 blur-2xl pointer-events-none" />
-          <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-[#376847]/40 blur-2xl pointer-events-none" />
+        <div className="relative rounded-3xl overflow-hidden min-h-[360px] sm:min-h-[420px] flex items-center shadow-md">
+          <img 
+            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&q=80" 
+            alt="Farm Hero" 
+            className="w-full h-full object-cover absolute inset-0"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+          
+          <div className="relative z-10 p-8 sm:p-14 max-w-xl text-white space-y-4">
+            <span className="inline-block bg-[#ffc72c] text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-md">
+              SEASONAL SPECIAL
+            </span>
+            <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight">
+              Fresh Organic Harvests Delivered Daily.
+            </h1>
+            <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
+              Support 200+ local family farms. Zero middleman, maximum freshness, delivered straight to your doorstep.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => onNavigate('catalog')}
+                className="bg-[#9ed0ab] text-[#144227] hover:bg-[#8cc49a] font-extrabold text-xs px-6 py-3 rounded-full transition-all cursor-pointer shadow-md"
+              >
+                Shop Spring Picks
+              </button>
+            </div>
+          </div>
 
-          <h2 className="text-2xl md:text-4xl font-extrabold max-w-xl leading-tight font-sans">
-            Ready to taste the difference?
-          </h2>
-          <p className="text-xs md:text-sm text-[#9ed0ab] font-bold max-w-md">
-            Get fresh crop directly from local farm now. Lock negotiated rates.
-          </p>
-          <div className="pt-2">
-            <button
-              onClick={() => onNavigate('catalog')}
-              className="bg-white text-[#144227] hover:bg-[#f6f3ec] px-8 py-3.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+          {/* Dots */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+            <div className="w-2 h-2 rounded-full bg-white" />
+            <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
+            <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
+          </div>
+        </div>
+      </section>
+
+      {/* 2. CATEGORY BUBBLES */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4 overflow-x-auto py-2 scrollbar-hide">
+          {categoryBubbles.map((cat, idx) => (
+            <div 
+              key={idx}
+              onClick={() => onNavigate('catalog', cat.category)}
+              className="flex flex-col items-center gap-2 cursor-pointer group shrink-0"
             >
-              Shop all
-            </button>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white shadow-sm group-hover:scale-105 transition-transform bg-white">
+                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+              </div>
+              <span className="text-xs font-bold text-[#414942] group-hover:text-[#144227]">{cat.name}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. POPULAR THIS WEEK */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-[#1c1c18]">Popular This Week</h2>
+          <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">View All</button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {popularItems.map((item) => (
+            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div>
+                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                </div>
+                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
+                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
+                <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold mt-1">
+                  <Star size={10} fill="currentColor" /> {item.rating}
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}<span className="text-[10px] text-[#717971] font-normal">/{item.unit || 'lb'}</span></span>
+                <button 
+                  onClick={() => addToCart(item)}
+                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. FLASH DEALS BANNER & CARDS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="bg-[#ba1a1a] text-white text-[10px] font-extrabold px-2.5 py-1 rounded uppercase tracking-wider">FLASH DEALS</span>
+          <span className="text-xs font-bold text-[#1c1c18]">Ends in <span className="font-mono text-sm font-extrabold text-[#ba1a1a]">04:22:15</span></span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {flashDeals.map((item) => (
+            <div key={item.id} className="bg-white rounded-2xl p-2.5 border border-[#e5e2db] shadow-sm relative">
+              <span className="absolute top-4 left-4 bg-[#ba1a1a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                {item.discount}
+              </span>
+              <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-2">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+              </div>
+              <h4 className="text-xs font-bold text-[#1c1c18] truncate">{item.name}</h4>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-xs font-extrabold text-[#ba1a1a]">{item.price}</span>
+                <span className="text-[10px] text-[#717971] line-through">{item.oldPrice}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. NEW FROM LOCAL FARMS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#1c1c18]">New From Local Farms</h2>
+            <p className="text-xs text-[#717971]">Recently harvested within 50 miles of you.</p>
+          </div>
+          <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">See New Arrivals</button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {newArrivals.map((item) => (
+            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div>
+                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
+                  <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                </div>
+                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
+                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}</span>
+                <button 
+                  onClick={() => addToCart(item)}
+                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. PROMO CARDS (BECOME A SUPPLIER / BULK PRICING) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card 1 */}
+        <div className="relative rounded-3xl overflow-hidden min-h-[220px] p-8 flex flex-col justify-end text-white shadow-md">
+          <img 
+            src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80" 
+            alt="Farmer" 
+            className="w-full h-full object-cover absolute inset-0"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="relative z-10 space-y-2">
+            <h3 className="text-2xl font-extrabold">Become a Supplier</h3>
+            <p className="text-xs text-white/80 max-w-sm">Join our network of 200+ local family farms and reach thousands of customers.</p>
+            <button onClick={() => onNavigate('catalog')} className="bg-white text-[#144227] font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#f0eee7]">Apply Now</button>
+          </div>
+        </div>
+
+        {/* Card 2 */}
+        <div className="relative rounded-3xl overflow-hidden min-h-[220px] p-8 flex flex-col justify-end text-white shadow-md">
+          <img 
+            src="https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80" 
+            alt="Bulk Pricing" 
+            className="w-full h-full object-cover absolute inset-0"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="relative z-10 space-y-2">
+            <h3 className="text-2xl font-extrabold">Bulk Pricing</h3>
+            <p className="text-xs text-white/80 max-w-sm">Stock up and save up to 25% on wholesale-size produce crates for families and events.</p>
+            <button onClick={() => onNavigate('catalog')} className="bg-[#ff9800] text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#e68900]">Shop Bulk</button>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. RECOMMENDED FOR YOU */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#1c1c18]">Recommended For You</h2>
+            <p className="text-xs text-[#717971]">Based on your history</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {recommendedItems.map((item) => (
+            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+              <div>
+                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                </div>
+                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
+                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}{item.unit && <span className="text-[10px] text-[#717971] font-normal">/{item.unit}</span>}</span>
+                <button 
+                  onClick={() => addToCart(item)}
+                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 8. BROWSE ALL DEPARTMENTS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-[#1c1c18]">Browse All Departments</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { name: "Fresh Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&q=80" },
+            { name: "Organic Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&q=80" },
+            { name: "Pantry Essentials", category: "Grains", image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=500&q=80" },
+            { name: "Butcher Shop", category: "Animal-Based", image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=500&q=80" }
+          ].map((dept, idx) => (
+            <div 
+              key={idx}
+              onClick={() => onNavigate('catalog', dept.category)}
+              className="bg-white rounded-2xl overflow-hidden border border-[#e5e2db] shadow-sm cursor-pointer group"
+            >
+              <div className="h-32 overflow-hidden bg-[#f6f3ec]">
+                <img src={dept.image} alt={dept.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              </div>
+              <div className="p-3.5 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#1c1c18]">{dept.name}</span>
+                <ArrowRight size={14} className="text-[#717971] group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 9. TRUST BADGES FOOTER */}
+      <section className="bg-white border-t border-[#e5e2db] py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="flex flex-col items-center gap-1.5">
+            <ShieldCheck size={20} className="text-[#144227]" />
+            <span className="text-xs font-bold text-[#1c1c18]">Verified Local Farms</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Truck size={20} className="text-[#144227]" />
+            <span className="text-xs font-bold text-[#1c1c18]">Same Day Delivery</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Leaf size={20} className="text-[#144227]" />
+            <span className="text-xs font-bold text-[#1c1c18]">Eco-Friendly Packaging</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Clock size={20} className="text-[#144227]" />
+            <span className="text-xs font-bold text-[#1c1c18]">Safe, Contactless Drop</span>
           </div>
         </div>
       </section>

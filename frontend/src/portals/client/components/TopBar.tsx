@@ -222,7 +222,16 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
               <>
                 {/* Profile */}
                 <button
-                  onClick={() => onNavigate('dashboard')}
+                  onClick={() => {
+                    const role = typeof window !== 'undefined' ? localStorage.getItem('user_role') : null;
+                    if (role === 'farmer') {
+                      window.location.href = '/farmer?view=settings';
+                    } else if (role === 'admin') {
+                      window.location.href = '/admin?tab=settings';
+                    } else {
+                      onNavigate('dashboard');
+                    }
+                  }}
                   className="p-1 hover:bg-[#f0eee7] rounded-full transition-colors cursor-pointer flex items-center justify-center"
                   title="Profile Settings"
                 >

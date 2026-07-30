@@ -80,11 +80,14 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         farmer_profile = getattr(self.request.user, 'farmer_profile', None)
         if not farmer_profile:
             from apps.accounts.models import FarmerProfile
-            farm_title = f"{self.request.user.first_name or 'Admin'} Farm"
+            farm_title = "Harvest Hill"
             farmer_profile, _ = FarmerProfile.objects.get_or_create(
                 user=self.request.user,
                 defaults={'farm_name': farm_title, 'location': 'Kigali, Rwanda'}
             )
+        elif self.request.user.role == 'admin':
+            farmer_profile.farm_name = "Harvest Hill"
+            farmer_profile.save(update_fields=['farm_name'])
 
         instance = serializer.save(farmer=farmer_profile, photo=photo_file)
         
