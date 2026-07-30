@@ -242,6 +242,9 @@ export default function SubmitHarvest() {
     } else if (unit.includes('bundle')) {
       minQty = 10;
       minMsg = "Quantity must be at least 10 bundles.";
+    } else if (unit.includes('dozen')) {
+      minQty = 5;
+      minMsg = "Quantity must be at least 5 dozen.";
     }
 
     if (isNaN(qty) || qty < minQty) {

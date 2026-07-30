@@ -15,203 +15,29 @@ interface LandingProps {
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [supplies, setSupplies] = useState<any[]>([]);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchData() {
       try {
         setLoading(true);
-        const res = await clientApi.products.list();
-        setProducts(res?.results || res || []);
+        const [prodRes, suppRes] = await Promise.all([
+          clientApi.products.list().catch(() => []),
+          clientApi.supplies.list().catch(() => [])
+        ]);
+        setProducts(prodRes?.results || prodRes || []);
+        setSupplies(suppRes?.results || suppRes || []);
       } catch (err) {
-        console.error("Failed to fetch landing products:", err);
-        setProducts([]);
+        console.error("Failed to fetch landing data:", err);
       } finally {
         setLoading(false);
       }
     }
-    fetchProducts();
+    fetchData();
   }, []);
 
-  // Popular this week items
-  const popularItems = [
-    {
-      id: 1,
-      farm: "Ocean Valley Farm",
-      name: "Organic Fuji Apples",
-      rating: "4.8 (126)",
-      price: "$4.99",
-      unit: "lb",
-      image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80"
-    },
-    {
-      id: 2,
-      farm: "Sunny Brook Dairy",
-      name: "Fresh Strawberries",
-      rating: "4.9 (380)",
-      price: "$6.50",
-      unit: "pkg",
-      image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80"
-    },
-    {
-      id: 3,
-      farm: "Happy Hen Farms",
-      name: "Large Brown Eggs (12pk)",
-      rating: "4.7 (240)",
-      price: "$5.25",
-      unit: "dozen",
-      image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80"
-    },
-    {
-      id: 4,
-      farm: "Earthwise Gardens",
-      name: "Heirloom Carrots",
-      rating: "4.8 (110)",
-      price: "$3.99",
-      unit: "bunch",
-      image: "https://images.unsplash.com/photo-1598170845058-12ef4a457939?w=400&q=80"
-    },
-    {
-      id: 5,
-      farm: "River Valley Dairy",
-      name: "A2 Organic Whole Milk",
-      rating: "4.9 (184)",
-      price: "$7.20",
-      unit: "gal",
-      image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&q=80"
-    }
-  ];
-
-  // Flash Deals
-  const flashDeals = [
-    {
-      id: 101,
-      name: "Avocados (3pk)",
-      discount: "-15%",
-      price: "$3.25",
-      oldPrice: "$3.90",
-      image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400&q=80"
-    },
-    {
-      id: 102,
-      name: "Clover Honey 12oz",
-      discount: "-20%",
-      price: "$8.80",
-      oldPrice: "$11.00",
-      image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=400&q=80"
-    },
-    {
-      id: 103,
-      name: "Savoy Cabbage",
-      discount: "-10%",
-      price: "$1.50",
-      oldPrice: "$1.70",
-      image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&q=80"
-    },
-    {
-      id: 104,
-      name: "Aged Cheddar 8oz",
-      discount: "-15%",
-      price: "$5.95",
-      oldPrice: "$7.00",
-      image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&q=80"
-    },
-    {
-      id: 105,
-      name: "Asparagus Bunch",
-      discount: "-15%",
-      price: "$2.40",
-      oldPrice: "$2.85",
-      image: "https://images.unsplash.com/photo-1515471209610-e3b35f68a69d?w=400&q=80"
-    },
-    {
-      id: 106,
-      name: "Wild Mushrooms Mix",
-      discount: "-10%",
-      price: "$6.75",
-      oldPrice: "$7.50",
-      image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80"
-    }
-  ];
-
-  // New From Local Farms
-  const newArrivals = [
-    {
-      id: 201,
-      farm: "Black Soil Estate",
-      name: "Spring Radishes",
-      price: "$2.50",
-      image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&q=80"
-    },
-    {
-      id: 202,
-      farm: "Hillside Foragers",
-      name: "Wild Ramps",
-      price: "$4.00",
-      image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&q=80"
-    },
-    {
-      id: 203,
-      farm: "Oak Grove Creamery",
-      name: "Herbed Goat Cheese",
-      price: "$9.50",
-      image: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=400&q=80"
-    },
-    {
-      id: 204,
-      farm: "Old Town Bakery",
-      name: "Walnut Sourdough",
-      price: "$6.75",
-      image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80"
-    },
-    {
-      id: 205,
-      farm: "Cider Hill Orchards",
-      name: "Unfiltered Apple Cider",
-      price: "$8.00",
-      image: "https://images.unsplash.com/photo-1576675784201-0e1697726a07?w=400&q=80"
-    }
-  ];
-
-  // Recommended For You
-  const recommendedItems = [
-    {
-      id: 301,
-      farm: "Clean Greens Farms",
-      name: "Organic Broccoli",
-      price: "$3.50",
-      unit: "lb",
-      image: "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=400&q=80"
-    },
-    {
-      id: 302,
-      farm: "Fair Trade Farms",
-      name: "Organic Bananas",
-      price: "$0.89",
-      unit: "lb",
-      image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80"
-    },
-    {
-      id: 303,
-      farm: "Valley Nut Co.",
-      name: "Raw Whole Almonds",
-      price: "$12.50",
-      image: "https://images.unsplash.com/photo-1508061252227-814144342217?w=400&q=80"
-    },
-    {
-      id: 304,
-      farm: "Green Leafy Gardens",
-      name: "Curly Kale Bunch",
-      price: "$2.99",
-      image: "https://images.unsplash.com/photo-1524179091875-bf0a08c5745f?w=400&q=80"
-    },
-    {
-      id: 305,
-      farm: "The Cheese Monger",
-      name: "Artisan Cheese Board",
-      price: "$24.00",
-      image: "https://images.unsplash.com/photo-1631379578550-7038263db699?w=400&q=80"
-    }
-  ];
+  const activeFarmerSupplies = supplies.filter((s: any) => s.status === 'accepted' || s.status === 'pending');
+  const flashDealSupplies = activeFarmerSupplies.filter((s: any) => s.is_discounted);
 
   // Circular Category Icons
   const categoryBubbles = [
@@ -221,48 +47,146 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     { name: "Bakery", category: "Grains", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&q=80" },
     { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&q=80" },
     { name: "Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1598170845058-12ef4a457939?w=200&q=80" },
-    { name: "Eggs", category: "Animal-Based", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&q=80" },
-    { name: "Herbs", category: "Vegetables", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=200&q=80" }
+    { name: "Animal", category: "Animal-Based", image: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&q=80" }
   ];
+
+  if (loading) {
+    return (
+      <div className="bg-[#f5f4ef] text-[#1c1c18] font-sans min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#144227] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (products.length === 0 && supplies.length === 0) {
+    return (
+      <div className="bg-[#f5f4ef] text-[#1c1c18] font-sans min-h-screen space-y-12 pb-16">
+        {/* Empty state banner */}
+        <section className="max-w-4xl mx-auto px-4 pt-16 text-center space-y-6">
+          <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-[#eef7f0] mx-auto flex items-center justify-center border-4 border-white shadow-sm overflow-hidden p-4">
+            <img 
+              src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=300&q=80" 
+              alt="First Harvest" 
+              className="w-full h-full object-cover rounded-full" 
+            />
+          </div>
+
+          <div className="space-y-3 max-w-lg mx-auto">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#144227] tracking-tight">
+              We're bringing our first harvest online
+            </h1>
+            <p className="text-xs sm:text-sm text-[#717971] leading-relaxed font-medium">
+              Our local farms are currently preparing their finest seasonal produce. We'll be live with our first delivery slots in just a few days.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-2 max-w-md mx-auto">
+            <input 
+              type="email" 
+              placeholder="Email Address" 
+              className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-[#c1c9c0] text-xs focus:outline-none focus:border-[#144227] bg-white"
+            />
+            <button className="w-full sm:w-auto px-6 py-2.5 bg-[#144227] hover:bg-[#376847] text-white text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap">
+              Notify Me
+            </button>
+          </div>
+
+          <div className="pt-2">
+            <button 
+              onClick={() => onNavigate('catalog')}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#144227] hover:underline cursor-pointer"
+            >
+              Are you a farmer? Apply to supply <ArrowRight size={14} />
+            </button>
+          </div>
+        </section>
+
+        {/* Promo Split Cards */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+          <div className="relative rounded-3xl overflow-hidden min-h-[220px] p-8 flex flex-col justify-end text-white shadow-md">
+            <img src="https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80" alt="Farmer" className="w-full h-full object-cover absolute inset-0" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="relative z-10 space-y-2">
+              <h3 className="text-2xl font-extrabold">Become a Supplier</h3>
+              <p className="text-xs text-white/80 max-w-sm">Partner with Harvest Hill to reach thousands of local customers looking for fresh, farm-direct goods.</p>
+              <button onClick={() => onNavigate('catalog')} className="bg-white text-[#144227] font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#f0eee7]">Learn More</button>
+            </div>
+          </div>
+
+          <div className="relative rounded-3xl overflow-hidden min-h-[220px] p-8 flex flex-col justify-end text-white shadow-md">
+            <img src="https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80" alt="Bulk Pricing" className="w-full h-full object-cover absolute inset-0" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#144227]/90 via-[#144227]/50 to-transparent" />
+            <div className="relative z-10 space-y-2">
+              <h3 className="text-2xl font-extrabold">Order in Bulk</h3>
+              <p className="text-xs text-white/80 max-w-sm">Stocking a restaurant or business? Access our wholesale rates and priority morning delivery windows.</p>
+              <button onClick={() => onNavigate('catalog')} className="bg-[#9ed0ab] text-[#144227] font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#8cc49a]">Inquire Now</button>
+            </div>
+          </div>
+        </section>
+
+        {/* Explore Categories */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 pt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold text-[#1c1c18]">Explore Categories</h2>
+            <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">View All</button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {categoryBubbles.slice(0, 6).map((cat, idx) => (
+              <div 
+                key={idx}
+                onClick={() => onNavigate('catalog', cat.category)}
+                className="bg-white rounded-2xl p-4 border border-[#e5e2db] flex flex-col items-center gap-3 cursor-pointer hover:shadow-md transition-all text-center"
+              >
+                <div className="w-12 h-12 rounded-full bg-[#eef7f0] flex items-center justify-center text-[#144227]">
+                  <Leaf size={20} />
+                </div>
+                <span className="text-xs font-bold text-[#1c1c18]">{cat.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#f5f4ef] text-[#1c1c18] font-sans space-y-10 pb-16">
       
       {/* 1. HERO BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="relative rounded-3xl overflow-hidden min-h-[360px] sm:min-h-[420px] flex items-center shadow-md">
+        <div className="relative rounded-3xl overflow-hidden min-h-[380px] sm:min-h-[440px] flex items-center shadow-lg border border-[#e5e2db]">
           <img 
-            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&q=80" 
-            alt="Farm Hero" 
-            className="w-full h-full object-cover absolute inset-0"
+            src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&q=80" 
+            alt="Harvest Hill Organic Produce" 
+            className="w-full h-full object-cover absolute inset-0 transform scale-105 hover:scale-100 transition-transform duration-700"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#144227]/90 via-[#144227]/60 to-transparent" />
           
-          <div className="relative z-10 p-8 sm:p-14 max-w-xl text-white space-y-4">
-            <span className="inline-block bg-[#ffc72c] text-black font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-md">
-              SEASONAL SPECIAL
+          <div className="relative z-10 p-8 sm:p-14 max-w-xl text-white space-y-5">
+            <span className="inline-block bg-[#9ed0ab] text-[#00210f] font-extrabold text-[10px] uppercase tracking-widest px-3.5 py-1.5 rounded-full shadow-sm">
+              FRESH LOCAL HARVESTS
             </span>
-            <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight">
-              Fresh Organic Harvests Delivered Daily.
+            <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight font-sans text-white drop-shadow-sm">
+              Farm-Direct Goods Delivered To Your Table.
             </h1>
             <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
-              Support 200+ local family farms. Zero middleman, maximum freshness, delivered straight to your doorstep.
+              Connecting local Rwandan family farms directly with your kitchen. Guaranteed freshness, fair pricing, and 100% sustainable produce.
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex items-center gap-3">
               <button
                 onClick={() => onNavigate('catalog')}
-                className="bg-[#9ed0ab] text-[#144227] hover:bg-[#8cc49a] font-extrabold text-xs px-6 py-3 rounded-full transition-all cursor-pointer shadow-md"
+                className="bg-[#9ed0ab] text-[#00210f] hover:bg-[#8cc49a] font-extrabold text-xs px-7 py-3.5 rounded-xl transition-all cursor-pointer shadow-lg hover:shadow-xl active:scale-95"
               >
-                Shop Spring Picks
+                Explore Marketplace
+              </button>
+              <button
+                onClick={() => onNavigate('catalog', 'Vegetables')}
+                className="bg-white/15 backdrop-blur-md text-white border border-white/30 hover:bg-white/25 font-bold text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer"
+              >
+                In-Season Veg
               </button>
             </div>
-          </div>
-
-          {/* Dots */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-            <div className="w-2 h-2 rounded-full bg-white" />
-            <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
-            <div className="w-1.5 h-1.5 rounded-full bg-white/50" />
           </div>
         </div>
       </section>
@@ -293,29 +217,45 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {popularItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
-              <div>
-                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+            const isSupply = !!item.product_detail;
+            const name = isSupply ? item.product_detail?.name : item.name;
+            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+
+            return (
+              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                    <img 
+                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                      alt={name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
+                  <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold mt-1">
+                    <Star size={10} fill="currentColor" /> 4.9 (Fresh)
+                  </div>
                 </div>
-                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
-                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
-                <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold mt-1">
-                  <Star size={10} fill="currentColor" /> {item.rating}
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm font-extrabold text-[#1c1c18]">
+                    RWF {priceVal.toLocaleString()}
+                    <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
+                  </span>
+                  <button 
+                    onClick={() => addToCart(item)}
+                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}<span className="text-[10px] text-[#717971] font-normal">/{item.unit || 'lb'}</span></span>
-                <button 
-                  onClick={() => addToCart(item)}
-                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -327,21 +267,38 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          {flashDeals.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl p-2.5 border border-[#e5e2db] shadow-sm relative">
-              <span className="absolute top-4 left-4 bg-[#ba1a1a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                {item.discount}
-              </span>
-              <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-2">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-              </div>
-              <h4 className="text-xs font-bold text-[#1c1c18] truncate">{item.name}</h4>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="text-xs font-extrabold text-[#ba1a1a]">{item.price}</span>
-                <span className="text-[10px] text-[#717971] line-through">{item.oldPrice}</span>
-              </div>
+          {flashDealSupplies.length > 0 ? (
+            flashDealSupplies.map((item: any) => {
+              const original = Number(item.price);
+              const disc = Number(item.discount_price || item.price);
+              const pct = original > 0 ? Math.round(((original - disc) / original) * 100) : 15;
+              const prodName = item.product_detail?.name || 'Farm Produce';
+              const imgUrl = item.photo || item.product_detail?.image_url || 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400&q=80';
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => onNavigate('product-detail', undefined, item.product_detail?.id || item.product)}
+                  className="bg-white rounded-2xl p-2.5 border border-[#e5e2db] shadow-sm relative cursor-pointer hover:shadow-md transition-all"
+                >
+                  <span className="absolute top-4 left-4 bg-[#ba1a1a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                    -{pct}%
+                  </span>
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-2">
+                    <img src={imgUrl} alt={prodName} className="w-full h-full object-cover" />
+                  </div>
+                  <h4 className="text-xs font-bold text-[#1c1c18] truncate">{prodName}</h4>
+                  <div className="flex items-baseline gap-1.5 mt-1">
+                    <span className="text-xs font-extrabold text-[#ba1a1a]">RWF {disc.toLocaleString()}</span>
+                    <span className="text-[10px] text-[#717971] line-through">RWF {original.toLocaleString()}</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full bg-white rounded-2xl p-6 text-center text-xs text-[#717971] border border-[#e5e2db]">
+              No active flash deal discounts right now. Check back soon!
             </div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -356,27 +313,39 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {newArrivals.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
-              <div>
-                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
-                  <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+            const isSupply = !!item.product_detail;
+            const name = isSupply ? item.product_detail?.name : item.name;
+            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+
+            return (
+              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
+                    <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                    <img 
+                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                      alt={name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
                 </div>
-                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
-                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm font-extrabold text-[#1c1c18]">RWF {priceVal.toLocaleString()}</span>
+                  <button 
+                    onClick={() => addToCart(item)}
+                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}</span>
-                <button 
-                  onClick={() => addToCart(item)}
-                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -392,7 +361,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="relative z-10 space-y-2">
             <h3 className="text-2xl font-extrabold">Become a Supplier</h3>
-            <p className="text-xs text-white/80 max-w-sm">Join our network of 200+ local family farms and reach thousands of customers.</p>
+            <p className="text-xs text-white/80 max-w-sm">Join our network of local family farms and reach thousands of customers.</p>
             <button onClick={() => onNavigate('catalog')} className="bg-white text-[#144227] font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#f0eee7]">Apply Now</button>
           </div>
         </div>
@@ -407,7 +376,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="relative z-10 space-y-2">
             <h3 className="text-2xl font-extrabold">Bulk Pricing</h3>
-            <p className="text-xs text-white/80 max-w-sm">Stock up and save up to 25% on wholesale-size produce crates for families and events.</p>
+            <p className="text-xs text-white/80 max-w-sm">Stock up and save on wholesale-size produce crates for families and events.</p>
             <button onClick={() => onNavigate('catalog')} className="bg-[#ff9800] text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer hover:bg-[#e68900]">Shop Bulk</button>
           </div>
         </div>
@@ -423,26 +392,42 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {recommendedItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
-              <div>
-                <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+            const isSupply = !!item.product_detail;
+            const name = isSupply ? item.product_detail?.name : item.name;
+            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+
+            return (
+              <div key={item.id} className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                    <img 
+                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                      alt={name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
                 </div>
-                <span className="text-[10px] text-[#717971] block font-medium">{item.farm}</span>
-                <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{item.name}</h4>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm font-extrabold text-[#1c1c18]">
+                    RWF {priceVal.toLocaleString()}
+                    <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
+                  </span>
+                  <button 
+                    onClick={() => addToCart(item)}
+                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-sm font-extrabold text-[#1c1c18]">{item.price}{item.unit && <span className="text-[10px] text-[#717971] font-normal">/{item.unit}</span>}</span>
-                <button 
-                  onClick={() => addToCart(item)}
-                  className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -454,7 +439,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           {[
             { name: "Fresh Fruits", category: "Fruits", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&q=80" },
             { name: "Organic Veg", category: "Vegetables", image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&q=80" },
-            { name: "Pantry Essentials", category: "Grains", image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=500&q=80" },
+            { name: "Grains", category: "Grains", image: "https://images.unsplash.com/photo-1587049352847-4a222e784d38?w=500&q=80" },
             { name: "Butcher Shop", category: "Animal-Based", image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=500&q=80" }
           ].map((dept, idx) => (
             <div 

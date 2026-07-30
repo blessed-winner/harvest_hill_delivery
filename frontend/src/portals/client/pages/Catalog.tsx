@@ -8,9 +8,10 @@ interface CatalogProps {
   onNavigate: (screen: string, category?: string, productId?: number) => void;
   addToCart: (product?: any) => void;
   initialCategory?: string;
+  initialSearch?: string;
 }
 
-export default function Catalog({ onNavigate, addToCart, initialCategory }: CatalogProps) {
+export default function Catalog({ onNavigate, addToCart, initialCategory, initialSearch }: CatalogProps) {
   // State
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch || '');
   const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
   const [topFarmer, setTopFarmer] = useState<any>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]); // Store all products for category list
@@ -46,19 +47,24 @@ export default function Catalog({ onNavigate, addToCart, initialCategory }: Cata
   useEffect(() => {
     const fetchTopFarmer = async () => {
       try {
-        const farmerResp = await clientApi.dashboardTopFarmer();
-        setTopFarmer(farmerResp?.farmer);
+        const farmerResp = await clientApi.dashboardTopFarmer().catch(() => null);
+        if (farmerResp?.farmer) {
+          setTopFarmer(farmerResp.farmer);
+        }
       } catch (err) {
-        console.error('Failed to fetch top farmer:', err);
+        // Silence unauthenticated 401 error for guest catalog views
       }
     };
     fetchTopFarmer();
   }, []);
 
-  // Update category when initialCategory prop changes
+  // Update category and search query when initial props change
   useEffect(() => {
     setSelectedCategory(initialCategory || 'all');
-  }, [initialCategory]);
+    if (initialSearch !== undefined) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialCategory, initialSearch]);
 
   // Fetch all products once to get categories
   useEffect(() => {

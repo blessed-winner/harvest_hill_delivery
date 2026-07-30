@@ -43,7 +43,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
   });
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
+    if (response.status === 401 && token && typeof window !== 'undefined') {
       const refreshToken = window.localStorage.getItem('refresh_token');
       if (refreshToken && !_retry) {
         if (isRefreshing) {
@@ -82,7 +82,6 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
       window.localStorage.removeItem('user_role');
-      window.location.href = '/';
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
     try {
@@ -103,6 +102,15 @@ export const clientApi = {
   dashboardTopFarmer: () => apiRequest('/api/client/dashboard/top_farmer/'),
   topFarmer: () => apiRequest('/api/client/dashboard/top_farmer/'),
 
+  // ── Supplies / Harvests ───────────────────────────────────────────────────
+  supplies: {
+    list: (params?: Record<string, string>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return apiRequest(`/api/supplies/${query}`);
+    },
+    get: (id: string | number) => apiRequest(`/api/supplies/${id}/`),
+  },
+
   // ── Products / Browsing ────────────────────────────────────────────────────
   products: {
     list: (params?: Record<string, string>) => {
@@ -110,6 +118,7 @@ export const clientApi = {
       return apiRequest(`/api/client/products/${query}`);
     },
     get: (id: string | number) => apiRequest(`/api/client/products/${id}/`),
+    create: (payload: any) => apiRequest('/api/client/products/', { method: 'POST', body: JSON.stringify(payload) }),
   },
 
   // ── Orders ─────────────────────────────────────────────────────────────────

@@ -31,7 +31,7 @@ class SupplySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product', 'product_detail', 'quantity', 'unit', 'price', 'proposed_price', 'base_price', 
             'status', 'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
-            'farmer_name', 'farmer_location', 'is_archived'
+            'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 'rating', 'rating_count'
         ]
         read_only_fields = ['created_at']
 
@@ -205,6 +205,24 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 supply.photo = next_img.image if next_img else None
                 supply.save()
             return Response({"status": "success"})
-        except SupplyImage.DoesNotExist:
-            return Response({"error": "Image not found"}, status=404)
+    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny], url_path='rate')
+    def rate(self, request, pk=None):
+        supply = self.get_object()
+        user_rating = float(request.data.get('rating', 5))
+        if user_rating < 1 or user_rating > 5:
+            return Response({"error": "Rating must be between 1 and 5"}, status=400)
+        
+        current_total = float(supply.rating) * supply.rating_count
+        new_count = supply.rating_count + 1
+        new_avg = round((current_total + user_rating) / new_count, 2)
+        
+        supply.rating = new_avg
+        supply.rating_count = new_count
+        supply.save()
+        
+        return Response({
+            "status": "success",
+            "rating": supply.rating,
+            "rating_count": supply.rating_count
+        })
 

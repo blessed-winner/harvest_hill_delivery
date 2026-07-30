@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Package, AlertCircle, Handshake, X, Check, FileText } from 'lucide-react';
+import { ChevronRight, Heart, ShoppingCart, Plus, Minus, ArrowLeft, Loader2, Package, AlertCircle, Handshake, X, Check, FileText, Star } from 'lucide-react';
 import { clientApi, apiRequest } from '../lib/api';
 import { SuccessModal } from '../../../components/SuccessModal';
 import { useAlert } from '../../../context/AlertContext';
@@ -459,15 +459,47 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
             </p>
 
+            <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await apiRequest(`/api/supplies/${product.id}/rate/`, {
+                          method: 'POST',
+                          body: JSON.stringify({ rating: star })
+                        });
+                        setProduct((prev: any) => ({ ...prev, rating: res.rating, rating_count: res.rating_count }));
+                        toast(`Thank you for rating ${star} stars!`, "success");
+                      } catch (err) {
+                        toast("Failed to submit rating.", "error");
+                      }
+                    }}
+                    className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                  >
+                    <Star 
+                      size={18} 
+                      className={star <= Math.round(Number(product.rating || 5)) ? "text-amber-500 fill-amber-500" : "text-gray-300"} 
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs font-bold text-amber-600 font-mono">
+                {Number(product.rating || 5).toFixed(1)} ({product.rating_count || 1} {product.rating_count === 1 ? 'rating' : 'ratings'})
+              </span>
+            </div>
+
             <div className="flex items-center gap-4 pt-1">
               <div className="text-2xl font-black text-[#1c1c18] flex items-baseline gap-2">
                 {negotiatedPrice !== null ? (
                   <>
-                    <span className="line-through text-red-600">${parseFloat(product.price || 0).toFixed(2)}</span>
-                    <span className="text-emerald-700 font-extrabold text-2xl">${negotiatedPrice.toFixed(2)}</span>
+                    <span className="line-through text-red-600">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                    <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()}</span>
                   </>
                 ) : (
-                  <span>${parseFloat(product.price || 0).toFixed(2)}</span>
+                  <span>RWF {parseFloat(product.price || 0).toLocaleString()}</span>
                 )}
                 <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'kg'}</span>
               </div>

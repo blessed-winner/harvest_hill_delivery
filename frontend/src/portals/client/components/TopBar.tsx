@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, History, Bell, ShoppingCart, Menu, X, Clock, Handshake, Package, AlertCircle } from 'lucide-react';
+import { User, History, Bell, ShoppingCart, Menu, X, Clock, Handshake, Package, AlertCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { clientApi } from '../lib/api';
 import { CurrencyToggle } from '../../../components/CurrencyToggle';
@@ -7,7 +7,7 @@ import { DefaultProfileAvatar } from '../../../components/DefaultProfileAvatar';
 
 interface TopBarProps {
   activeScreen: string;
-  onNavigate: (screen: string, category?: string) => void;
+  onNavigate: (screen: string, category?: string, productId?: number, querySearch?: string) => void;
   cartCount: number;
   onMenuClick?: () => void;
 }
@@ -39,6 +39,8 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
+  const [searchCategory, setSearchCategory] = useState('all');
+  const [topSearchTerm, setTopSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = (id: string) => {
@@ -166,52 +168,45 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           </button>
         </div>
 
+        {/* Working TopNav Search Bar */}
+        <div className="flex-1 max-w-xl mx-4 hidden md:flex items-center">
+          <div className="flex w-full bg-[#f0eee7] border border-[#c1c9c0] rounded-xl overflow-hidden shadow-inner">
+            <select 
+              value={searchCategory}
+              onChange={(e) => setSearchCategory(e.target.value)}
+              className="bg-transparent text-xs font-bold px-3 text-[#414942] border-r border-[#c1c9c0] outline-none cursor-pointer"
+            >
+              <option value="all">All</option>
+              <option value="Fruits">Fruits</option>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Animal-Based">Animal-Based</option>
+              <option value="Grains">Grains</option>
+            </select>
+            <input
+              type="text"
+              value={topSearchTerm}
+              onChange={(e) => setTopSearchTerm(e.target.value)}
+              placeholder="Search for fresh produce, dairy, or meats..."
+              className="flex-1 bg-transparent px-3 py-2 text-xs text-[#1c1c18] focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onNavigate('catalog', searchCategory !== 'all' ? searchCategory : undefined, undefined, topSearchTerm);
+                }
+              }}
+            />
+            <button 
+              onClick={() => onNavigate('catalog', searchCategory !== 'all' ? searchCategory : undefined, undefined, topSearchTerm)}
+              className="bg-[#144227] text-white px-4 py-2 hover:bg-[#376847] transition-colors cursor-pointer flex items-center justify-center"
+            >
+              <Search size={15} />
+            </button>
+          </div>
+        </div>
+
         {/* Category Nav Links */}
-        <nav className="hidden md:flex items-center gap-6 overflow-x-auto py-1 scrollbar-hide">
-          <button
-            onClick={() => onNavigate('landing')}
-            className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
-          >
-            Home
-          </button>
-          {isLoggedIn ? (
-            /* Logged in Client Portal Navigation */
-            <>
-              {[
-                { name: 'Fruits', category: 'Fruits' },
-                { name: 'Vegetables', category: 'Vegetables' },
-                { name: 'Animal-Based', category: 'Animal-Based' },
-                { name: 'Grains', category: 'Grains' },
-                { name: 'Seasonal', category: 'all' },
-              ].map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => onNavigate('catalog', item.category)}
-                  className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </>
-          ) : (
-            /* Guest / Landing Page Section Navigation */
-            <>
-              {[
-                { name: 'How It Works', target: 'how-it-works' },
-                { name: 'Shop Categories', target: 'categories' },
-                { name: 'Testimonials', target: 'testimonials' },
-                { name: 'FAQ', target: 'faq' },
-              ].map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => handleScroll(item.target)}
-                  className="text-[#414942] hover:text-[#144227] hover:underline underline-offset-4 text-sm font-medium transition-all whitespace-nowrap cursor-pointer"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </>
-          )}
+        <nav className="hidden lg:flex items-center gap-5 overflow-x-auto py-1 scrollbar-hide text-xs font-semibold text-[#414942]">
+          <button onClick={() => onNavigate('landing')} className="hover:text-[#144227] cursor-pointer font-bold">Home</button>
+          <button onClick={() => onNavigate('faq')} className="hover:text-[#144227] cursor-pointer font-bold">FAQ</button>
         </nav>
 
         {/* Right Action Bar */}

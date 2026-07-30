@@ -46,11 +46,26 @@ export default function LoginPage() {
       localStorage.setItem('user_email', data.user.email || '');
       localStorage.setItem('user_username', data.user.username || '');
 
-      // Redirect depending on user role
+      // Transfer guest cart to user cart
+      try {
+        const guestCart = localStorage.getItem('guest_cart');
+        if (guestCart && data.user.role === 'client') {
+          const cartKey = `client_cart_${data.user.email}`;
+          localStorage.setItem(cartKey, guestCart);
+          localStorage.removeItem('guest_cart');
+        }
+      } catch {}
+
+      // Redirect depending on user role or redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+
       if (data.user.role === 'admin') {
         router.push('/admin');
       } else if (data.user.role === 'farmer') {
         router.push('/farmer');
+      } else if (redirect === 'checkout') {
+        router.push('/client?screen=checkout');
       } else {
         router.push('/client');
       }

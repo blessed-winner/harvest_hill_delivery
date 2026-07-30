@@ -592,6 +592,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <option value="crate">crate</option>
                 <option value="jar">jar</option>
                 <option value="bundle">bundle</option>
+                <option value="dozen">dozen</option>
               </select>
             </div>
           </div>

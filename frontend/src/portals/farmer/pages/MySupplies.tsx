@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save } from 'lucide-react';
+import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Tag } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
@@ -25,6 +25,59 @@ export default function MySupplies() {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editSupply, setEditSupply] = useState<any | null>(null);
+
+  // Discount modal state
+  const [discountSupply, setDiscountSupply] = useState<any | null>(null);
+  const [newDiscountPrice, setNewDiscountPrice] = useState('');
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+
+  const handleDiscountClick = (supply: any) => {
+    setDiscountSupply(supply);
+    setNewDiscountPrice(supply.discount_price ? String(supply.discount_price) : String(Math.round(Number(supply.price) * 0.85)));
+  };
+
+  const handleSaveDiscount = async () => {
+    if (!discountSupply) return;
+    const discPrice = Number(newDiscountPrice);
+    if (isNaN(discPrice) || discPrice <= 0 || discPrice >= Number(discountSupply.price)) {
+      toast("Discounted price must be greater than 0 and lower than original price", "warning");
+      return;
+    }
+    try {
+      setIsApplyingDiscount(true);
+      await api.updateSupply(discountSupply.id, {
+        is_discounted: true,
+        discount_price: discPrice,
+      });
+      toast("Discount applied! Item will now feature in Flash Deals.", "success");
+      setDiscountSupply(null);
+      loadSupplies();
+    } catch (err) {
+      console.error("Failed to apply discount:", err);
+      toast("Failed to apply discount.", "error");
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = async () => {
+    if (!discountSupply) return;
+    try {
+      setIsApplyingDiscount(true);
+      await api.updateSupply(discountSupply.id, {
+        is_discounted: false,
+        discount_price: null,
+      });
+      toast("Discount removed.", "success");
+      setDiscountSupply(null);
+      loadSupplies();
+    } catch (err) {
+      console.error("Failed to remove discount:", err);
+      toast("Failed to remove discount.", "error");
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
 
   // Edit form state
   const [editQuantity, setEditQuantity] = useState('');
@@ -391,20 +444,41 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-mono text-sm font-bold text-on-surface">
-                        {(() => {
-                          const val = Number(supply.proposed_price || supply.price || 0);
-                          const rwf = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
-                          return `RWF ${rwf.toLocaleString()}`;
-                        })()}
-                      </span>
-                      {supply.status === 'accepted' && (
+                      {supply.is_discounted && supply.discount_price ? (
+                        <>
+                          <span className="font-mono text-xs text-red-600 line-through">
+                            RWF {Number(supply.price).toLocaleString()}
+                          </span>
+                          <span className="font-mono text-sm font-bold text-emerald-700">
+                            RWF {Number(supply.discount_price).toLocaleString()}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-mono text-sm font-bold text-on-surface">
+                          {(() => {
+                            const val = Number(supply.proposed_price || supply.price || 0);
+                            const rwf = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
+                            return `RWF ${rwf.toLocaleString()}`;
+                          })()}
+                        </span>
+                      )}
+                      {supply.is_discounted && (
+                        <span className="text-[9px] text-red-600 font-extrabold uppercase tracking-tighter">Discounted</span>
+                      )}
+                      {!supply.is_discounted && supply.status === 'accepted' && (
                         <span className="text-[9px] text-tertiary font-bold uppercase tracking-tighter">Negotiated</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleDiscountClick(supply)}
+                        className="p-2 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                        title="Discount item for Flash Deals"
+                      >
+                        <Tag size={18} />
+                      </button>
                       <button 
                         onClick={() => handleEditClick(supply)}
                         className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
@@ -746,6 +820,81 @@ export default function MySupplies() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      {/* Discount Modal */}
+      <AnimatePresence>
+        {discountSupply && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDiscountSupply(null)}
+              className="fixed inset-0 bg-[#144227]/40 z-[60] backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              className="fixed inset-0 m-auto w-[90vw] max-w-md h-fit bg-white z-[70] rounded-3xl border border-outline-variant shadow-2xl overflow-hidden flex flex-col p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b pb-3 border-outline-variant">
+                <div className="flex items-center gap-2 text-primary font-bold">
+                  <Tag size={20} />
+                  <h3 className="text-base text-on-surface">Discount Supply #{discountSupply.id}</h3>
+                </div>
+                <button onClick={() => setDiscountSupply(null)} className="text-on-surface-variant hover:text-on-surface cursor-pointer">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <p className="text-on-surface-variant font-medium">
+                  Set a promotional discounted price for <span className="font-bold text-on-surface">{discountSupply.product_detail?.name}</span>. This item will display with a discount badge in Flash Deals.
+                </p>
+
+                <div className="p-3 bg-surface-container-low rounded-xl flex justify-between items-center">
+                  <span className="text-[#717971] font-bold">Original Price:</span>
+                  <span className="font-mono font-bold text-on-surface">RWF {Number(discountSupply.price).toLocaleString()}</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971]">
+                    New Discounted Price (RWF)
+                  </label>
+                  <input
+                    type="number"
+                    value={newDiscountPrice}
+                    onChange={(e) => setNewDiscountPrice(e.target.value)}
+                    placeholder="Enter discounted price..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-outline-variant text-sm font-bold text-emerald-800 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                {discountSupply.is_discounted && (
+                  <button
+                    type="button"
+                    disabled={isApplyingDiscount}
+                    onClick={handleRemoveDiscount}
+                    className="px-4 py-2.5 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 cursor-pointer"
+                  >
+                    Remove Discount
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={isApplyingDiscount}
+                  onClick={handleSaveDiscount}
+                  className="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer"
+                >
+                  Save & Feature in Flash Deals
+                </button>
+              </div>
             </motion.div>
           </>
         )}

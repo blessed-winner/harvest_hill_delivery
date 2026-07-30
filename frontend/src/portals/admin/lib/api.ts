@@ -165,6 +165,7 @@ export const api = {
   // Supplies Management
   supplies: {
     list: () => apiRequest('/api/supplies/'),
+    create: (payload: any) => apiRequest('/api/supplies/', { method: 'POST', body: JSON.stringify(payload) }),
     update: (id: string | number, payload: any) => apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
     delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),
   },
