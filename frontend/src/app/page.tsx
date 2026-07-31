@@ -99,8 +99,16 @@ export default function HomePage() {
         localStorage.setItem(cartKey, JSON.stringify(cartItems));
         setCartCount(cartItems.length);
       } catch {}
+
+      if (!isLoggedIn) {
+        router.push('/login?redirect=cart');
+        return;
+      }
     } else {
       setCartCount((prev) => prev + 1);
+      if (!isLoggedIn) {
+        router.push('/login?redirect=cart');
+      }
     }
   };
 

@@ -50,8 +50,25 @@ export default function LoginPage() {
       try {
         const guestCart = localStorage.getItem('guest_cart');
         if (guestCart && data.user.role === 'client') {
-          const cartKey = `client_cart_${data.user.email}`;
-          localStorage.setItem(cartKey, guestCart);
+          const role = data.user.role;
+          const email = data.user.email || data.user.username || 'client';
+          const userCartKey = `cart_items_${role}_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          
+          const existingUserCart = localStorage.getItem(userCartKey);
+          const userItems = existingUserCart ? JSON.parse(existingUserCart) : [];
+          const guestItems = JSON.parse(guestCart);
+
+          // Merge guest items into user cart
+          guestItems.forEach((gItem: any) => {
+            const idx = userItems.findIndex((uItem: any) => uItem.id === gItem.id);
+            if (idx >= 0) {
+              userItems[idx].qty += gItem.qty;
+            } else {
+              userItems.push(gItem);
+            }
+          });
+
+          localStorage.setItem(userCartKey, JSON.stringify(userItems));
           localStorage.removeItem('guest_cart');
         }
       } catch {}
@@ -66,6 +83,8 @@ export default function LoginPage() {
         router.push('/farmer');
       } else if (redirect === 'checkout') {
         router.push('/client?screen=checkout');
+      } else if (redirect === 'cart') {
+        router.push('/client?screen=cart');
       } else {
         router.push('/client');
       }
