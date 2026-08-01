@@ -145,7 +145,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    role = serializers.ChoiceField(choices=[('client', 'Client')], default='client')
+    role = serializers.ChoiceField(choices=[('client', 'Client'), ('farmer', 'Farmer')], default='client')
     business_name = serializers.CharField(required=False, allow_blank=True)
     farm_name = serializers.CharField(required=False, allow_blank=True)
     delivery_address = serializers.CharField(required=False, allow_blank=True)
