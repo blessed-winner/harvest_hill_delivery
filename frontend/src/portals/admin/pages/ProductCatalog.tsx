@@ -778,9 +778,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     onChange={(e) => setHarvestGrade(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-bold outline-none transition-all bg-white cursor-pointer"
                   >
-                    <option value="premium">⭐ Premium (Grade A)</option>
-                    <option value="standard">🌿 Standard (Grade B)</option>
-                    <option value="economy">📦 Economy (Grade C)</option>
+                    <option value="premium">Premium (Grade A)</option>
+                    <option value="standard">Standard (Grade B)</option>
+                    <option value="economy">Economy (Grade C)</option>
                   </select>
                 </div>
               </div>
