@@ -126,52 +126,61 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">View All</button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
-            const isSupply = !!item.product_detail;
-            const name = isSupply ? item.product_detail?.name : item.name;
-            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
-            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
-            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
-            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
+        {(supplies.length > 0 || products.length > 0) ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+              const isSupply = !!item.product_detail;
+              const name = isSupply ? item.product_detail?.name : item.name;
+              const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+              const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+              const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+              const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+              const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
-            return (
-              <div 
-                key={item.id} 
-                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
-                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
-              >
-                <div>
-                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
-                    <img 
-                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
-                      alt={name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                    />
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                  className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                      <img 
+                        src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                        alt={name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                      />
+                    </div>
+                    <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                    <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
                   </div>
-                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
-                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm font-extrabold text-[#1c1c18]">
+                      RWF {priceVal.toLocaleString()}
+                      <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
+                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                      className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm font-extrabold text-[#1c1c18]">
-                    RWF {priceVal.toLocaleString()}
-                    <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
-                  </span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
+            <p className="text-xs font-extrabold text-[#144227]">🌱 Fresh Produce Coming Soon</p>
+            <p className="text-xs text-[#717971] max-w-sm mx-auto">
+              Our partner farmers and Harvest Hill Delivery team are preparing the latest harvest batches.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* 4. FLASH DEALS BANNER & CARDS */}
@@ -227,49 +236,58 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">See New Arrivals</button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
-            const isSupply = !!item.product_detail;
-            const name = isSupply ? item.product_detail?.name : item.name;
-            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
-            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
-            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
-            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
+        {(supplies.length > 0 || products.length > 0) ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+              const isSupply = !!item.product_detail;
+              const name = isSupply ? item.product_detail?.name : item.name;
+              const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+              const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+              const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+              const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
-            return (
-              <div 
-                key={item.id} 
-                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
-                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
-              >
-                <div>
-                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
-                    <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
-                    <img 
-                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
-                      alt={name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                    />
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                  className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3 relative">
+                      <span className="absolute top-2 left-2 bg-[#144227] text-white text-[8px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                      <img 
+                        src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                        alt={name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                      />
+                    </div>
+                    <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                    <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
                   </div>
-                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
-                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm font-extrabold text-[#1c1c18]">RWF {priceVal.toLocaleString()}</span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                      className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm font-extrabold text-[#1c1c18]">RWF {priceVal.toLocaleString()}</span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
+            <p className="text-xs font-extrabold text-[#144227]">🚜 No New Harvest Batches Yet</p>
+            <p className="text-xs text-[#717971] max-w-sm mx-auto">
+              Farmer harvests will appear here immediately once approved by Harvest Hill Delivery.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* 6. PROMO CARDS (BECOME A SUPPLIER / BULK PRICING) */}
@@ -314,52 +332,61 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
-            const isSupply = !!item.product_detail;
-            const name = isSupply ? item.product_detail?.name : item.name;
-            const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
-            const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
-            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
-            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-            const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
+        {(supplies.length > 0 || products.length > 0) ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+              const isSupply = !!item.product_detail;
+              const name = isSupply ? item.product_detail?.name : item.name;
+              const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+              const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
+              const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
+              const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+              const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
 
-            return (
-              <div 
-                key={item.id} 
-                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
-                className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
-              >
-                <div>
-                  <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
-                    <img 
-                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
-                      alt={name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                    />
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+                  className="bg-white rounded-2xl p-3 border border-[#e5e2db] shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-md transition-all"
+                >
+                  <div>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-[#f6f3ec] mb-3">
+                      <img 
+                        src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+                        alt={name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                      />
+                    </div>
+                    <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
+                    <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
                   </div>
-                  <span className="text-[10px] text-[#717971] block font-medium">{farm}</span>
-                  <h4 className="text-xs font-bold text-[#1c1c18] line-clamp-1">{name}</h4>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm font-extrabold text-[#1c1c18]">
+                      RWF {priceVal.toLocaleString()}
+                      <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
+                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                      className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm font-extrabold text-[#1c1c18]">
-                    RWF {priceVal.toLocaleString()}
-                    <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
-                  </span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    className="w-7 h-7 bg-[#144227] text-white hover:bg-[#376847] rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
+            <p className="text-xs font-extrabold text-[#144227]">🧺 Catalog Empty</p>
+            <p className="text-xs text-[#717971] max-w-sm mx-auto">
+              Add catalog products or submit farmer harvests in the portal to populate recommendations.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* 8. BROWSE ALL DEPARTMENTS */}
