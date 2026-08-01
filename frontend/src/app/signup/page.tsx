@@ -18,6 +18,8 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [farmName, setFarmName] = useState('');
+  const [farmLocation, setFarmLocation] = useState('');
   const [role, setRole] = useState('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -65,17 +67,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/accounts/register/`, {
+      const payload: any = {
+        email,
+        password,
+        role: role, // Explicitly pass the active state role ('farmer' or 'client')
+        full_name: fullName,
+        username: username.toLowerCase().trim(),
+        phone: phone,
+      };
+
+      if (role === 'farmer') {
+        payload.farm_name = farmName;
+        payload.location = farmLocation;
+      } else {
+        payload.business_name = fullName;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/accounts/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          role,
-          full_name: fullName,
-          username: username.toLowerCase().trim(),
-          phone: phone
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -252,6 +263,31 @@ export default function SignupPage() {
                 />
               </div>
             </div>
+
+            {role === 'farmer' && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                  <label className="block text-[10px] font-bold text-[#1c1c18]">Farm / Business Name</label>
+                  <input
+                    type="text"
+                    value={farmName}
+                    onChange={(e) => setFarmName(e.target.value)}
+                    placeholder="Kigali Organic Produce"
+                    className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg px-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <label className="block text-[10px] font-bold text-[#1c1c18]">Farm Location</label>
+                  <input
+                    type="text"
+                    value={farmLocation}
+                    onChange={(e) => setFarmLocation(e.target.value)}
+                    placeholder="Musanze, Northern"
+                    className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg px-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-0.5">
               <label className="block text-[10px] font-bold text-[#1c1c18]">Password</label>
