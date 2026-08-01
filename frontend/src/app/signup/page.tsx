@@ -161,6 +161,35 @@ export default function SignupPage() {
 
 
 
+            {/* Role Selector Toggle */}
+            <div className="space-y-1 pt-1">
+              <label className="block text-[10px] font-bold text-[#1c1c18] uppercase tracking-wider">Account Type</label>
+              <div className="grid grid-cols-2 gap-2 bg-[#f0eee7] p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setRole('client')}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    role === 'client'
+                      ? 'bg-[#144227] text-white shadow-sm'
+                      : 'text-[#414942] hover:text-[#1c1c18]'
+                  }`}
+                >
+                  🛒 Client / Buyer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('farmer')}
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    role === 'farmer'
+                      ? 'bg-[#144227] text-white shadow-sm'
+                      : 'text-[#414942] hover:text-[#1c1c18]'
+                  }`}
+                >
+                  🌾 Farmer / Supplier
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-0.5">
               <label className="block text-[10px] font-bold text-[#1c1c18]">Full Name</label>
               <input
@@ -168,7 +197,7 @@ export default function SignupPage() {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
+                placeholder={role === 'farmer' ? "e.g. Jean-Paul Hakizimana" : "John Doe"}
                 className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg px-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
               />
             </div>
@@ -185,7 +214,7 @@ export default function SignupPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                  placeholder="greenvalley"
+                  placeholder={role === 'farmer' ? "kigali_farm" : "john_doe"}
                   minLength={3}
                   maxLength={30}
                   className="w-full bg-white border border-[#c1c9c0] focus:border-[#144227] rounded-lg pl-7 pr-3 py-1.5 text-xs focus:outline-none transition-all placeholder-[#717971]"
@@ -280,7 +309,7 @@ export default function SignupPage() {
               disabled={loading || success}
               className="w-full bg-[#144227] text-white hover:bg-[#376847] disabled:opacity-50 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-colors shadow-sm cursor-pointer"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Account...' : `Register as ${role === 'farmer' ? 'Supplier' : 'Client'}`}
             </button>
           </form>
 
@@ -293,15 +322,6 @@ export default function SignupPage() {
                 className="font-bold text-[#144227] hover:underline underline-offset-2"
               >
                 Log in
-              </Link>
-            </div>
-            <div className="pt-2 border-t border-[#e5e2db] text-[11px] text-[#717971]">
-              Are you a grower or supplier?{' '}
-              <Link 
-                href="/apply" 
-                className="font-bold text-[#144227] hover:underline"
-              >
-                Apply to become a supplier
               </Link>
             </div>
           </div>
