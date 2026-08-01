@@ -22,8 +22,17 @@ export default function HomePage() {
       const role = localStorage.getItem('user_role');
       setIsLoggedIn(!!token);
       setUserRole(role);
+
+      if (token && role === 'admin') {
+        router.replace('/admin');
+        return;
+      }
+      if (token && role === 'farmer') {
+        router.replace('/farmer');
+        return;
+      }
     }
-  }, []);
+  }, [router]);
 
   const [activeScreen, setActiveScreen] = useState('landing');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

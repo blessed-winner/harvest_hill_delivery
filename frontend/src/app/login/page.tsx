@@ -78,9 +78,9 @@ export default function LoginPage() {
       const redirect = params.get('redirect');
 
       if (data.user.role === 'admin') {
-        router.push('/admin');
+        router.replace('/admin');
       } else if (data.user.role === 'farmer') {
-        router.push('/farmer');
+        router.replace('/farmer');
       } else if (redirect === 'checkout') {
         router.push('/client?screen=checkout');
       } else if (redirect === 'cart') {
