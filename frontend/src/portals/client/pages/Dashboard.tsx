@@ -215,7 +215,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       localStorage.removeItem('user_role');
       
       alert("Your account deletion has been scheduled. You will be logged out now.");
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (err: any) {
       alert(err.message || "Failed to schedule account deletion");
     } finally {
@@ -391,7 +391,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                   localStorage.removeItem('access_token');
                   localStorage.removeItem('refresh_token');
                   localStorage.removeItem('user_role');
-                  window.location.href = '/login';
+                  window.location.href = '/';
                 }}
                 className="flex items-center gap-3 px-4 py-3.5 text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6]/20 transition-colors cursor-pointer text-left border-b border-[#f0eee7]"
               >

@@ -40,7 +40,7 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_role');
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (

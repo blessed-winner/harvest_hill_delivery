@@ -142,7 +142,7 @@ export default function Settings() {
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('user_role');
           alert("Your account deletion has been scheduled. You will be logged out now.");
-          window.location.href = '/login';
+          window.location.href = '/';
         } catch (err: any) {
           alert(err.message || "Failed to schedule account deletion");
         } finally {

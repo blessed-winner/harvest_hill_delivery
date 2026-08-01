@@ -38,7 +38,7 @@ export function Sidebar({ currentView, onViewChange, isOpen = false, onClose }: 
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_role');
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (
