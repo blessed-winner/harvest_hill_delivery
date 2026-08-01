@@ -138,7 +138,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setHarvestPrice(product.base_price ? String(product.base_price) : '');
     setHarvestDate(new Date().toISOString().slice(0, 10));
     setHarvestGrade('premium');
-    setHarvestNotes('Admin Farm Produce Submission');
+    setHarvestNotes('');
   };
 
   const handleAdminSubmitHarvest = async () => {
@@ -701,87 +701,108 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
       {/* Admin Harvest Submission Window Modal */}
       {harvestProduct && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/50 space-y-5">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
-              <div className="flex items-center gap-2 text-primary font-bold">
-                <Sprout size={20} />
-                <h3 className="text-base text-on-surface">Submit Harvest: {harvestProduct.name}</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-outline-variant/60 space-y-6">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#e5e2db] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#eef7f0] text-[#144227] flex items-center justify-center shadow-sm">
+                  <Sprout size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#1c1c18] tracking-tight">Record Harvest Batch</h3>
+                  <p className="text-xs text-[#717971] font-medium">{harvestProduct.name} • <span className="text-[#144227] font-bold">{harvestProduct.category}</span></p>
+                </div>
               </div>
-              <button onClick={() => setHarvestProduct(null)} className="text-on-surface-variant hover:text-on-surface cursor-pointer">
-                <X size={20} />
+              <button 
+                onClick={() => setHarvestProduct(null)} 
+                className="w-8 h-8 rounded-full bg-[#f6f3ec] hover:bg-[#e5e2db] text-[#414942] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={18} />
               </button>
             </div>
 
+            {/* Modal Form Fields */}
             <div className="space-y-4">
-              <p className="text-xs text-on-surface-variant">
-                Submit fresh farm produce as an admin supplier directly into the supply chain inventory.
-              </p>
+              <div className="bg-[#f0eee7]/60 p-3 rounded-xl flex items-center justify-between text-xs text-[#414942]">
+                <span className="font-semibold text-[#717971]">Supply Status:</span>
+                <span className="bg-[#bceec8] text-[#00210f] font-extrabold text-[10px] uppercase px-2.5 py-0.5 rounded-full tracking-wider">
+                  Auto-Accepted (Instant Live)
+                </span>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity ({harvestProduct.unit})</label>
+                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">
+                    Quantity ({harvestProduct.unit})
+                  </label>
                   <input
                     type="number"
                     value={harvestQty}
                     onChange={(e) => setHarvestQty(e.target.value)}
-                    placeholder="e.g. 50"
-                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                    placeholder={`e.g. 50 ${harvestProduct.unit}`}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 bg-white"
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Asking Price (RWF)</label>
+                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">
+                    Asking Price (RWF / {harvestProduct.unit})
+                  </label>
                   <input
                     type="number"
                     value={harvestPrice}
                     onChange={(e) => setHarvestPrice(e.target.value)}
-                    placeholder="e.g. 1500"
-                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                    placeholder="e.g. 1200"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 bg-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Available Date</label>
+                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Harvest Date</label>
                   <input
                     type="date"
                     value={harvestDate}
                     onChange={(e) => setHarvestDate(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all bg-white"
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quality Grade</label>
+                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Quality Grade</label>
                   <select
                     value={harvestGrade}
                     onChange={(e) => setHarvestGrade(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-bold outline-none transition-all bg-white cursor-pointer"
                   >
-                    <option value="premium">Premium</option>
-                    <option value="standard">Standard</option>
-                    <option value="economy">Economy</option>
+                    <option value="premium">⭐ Premium (Grade A)</option>
+                    <option value="standard">🌿 Standard (Grade B)</option>
+                    <option value="economy">📦 Economy (Grade C)</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Notes / Farm Batch Info</label>
+                <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Batch Notes & Storage Instructions</label>
                 <textarea
                   rows={2}
                   value={harvestNotes}
                   onChange={(e) => setHarvestNotes(e.target.value)}
-                  placeholder="Storage or farm harvest details..."
-                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                  placeholder="Optional details e.g. Harvested from Sector A, cold storage ready..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 resize-none bg-white"
                 />
               </div>
             </div>
 
+            {/* Modal Actions */}
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setHarvestProduct(null)}
-                className="w-1/2 py-3 border border-outline-variant text-on-surface-variant rounded-xl text-xs font-bold hover:bg-surface-container-high transition-colors cursor-pointer"
+                className="w-1/3 py-3 border border-[#c1c9c0] text-[#414942] hover:bg-[#f6f3ec] rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -789,12 +810,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 type="button"
                 disabled={isSubmittingHarvest}
                 onClick={handleAdminSubmitHarvest}
-                className="w-1/2 py-3 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+                className="w-2/3 py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
               >
                 {isSubmittingHarvest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sprout size={16} />}
-                Confirm Harvest
+                Record Batch Harvest
               </button>
             </div>
+
           </div>
         </div>
       )}
