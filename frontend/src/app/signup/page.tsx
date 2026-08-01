@@ -320,7 +320,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          {/* Login & Role links */}
+          {/* Login link */}
           <div className="text-center text-xs text-[#414942] font-medium space-y-2">
             <div>
               Already have an account?{' '}
@@ -330,16 +330,6 @@ export default function SignupPage() {
               >
                 Log in
               </Link>
-            </div>
-            <div className="pt-2 border-t border-[#e5e2db] text-[11px] text-[#717971]">
-              Are you a grower or supplier?{' '}
-              <button 
-                type="button"
-                onClick={() => setRole('farmer')}
-                className="font-bold text-[#144227] hover:underline cursor-pointer"
-              >
-                Apply here
-              </button>
             </div>
           </div>
 
