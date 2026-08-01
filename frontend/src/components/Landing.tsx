@@ -175,7 +175,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
-            <p className="text-xs font-extrabold text-[#144227]">🌱 Fresh Produce Coming Soon</p>
+            <p className="text-xs font-extrabold text-[#144227]">Fresh Produce Coming Soon</p>
             <p className="text-xs text-[#717971] max-w-sm mx-auto">
               Our partner farmers and Harvest Hill Delivery team are preparing the latest harvest batches.
             </p>
@@ -282,7 +282,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
-            <p className="text-xs font-extrabold text-[#144227]">🚜 No New Harvest Batches Yet</p>
+            <p className="text-xs font-extrabold text-[#144227]">No New Harvest Batches Yet</p>
             <p className="text-xs text-[#717971] max-w-sm mx-auto">
               Farmer harvests will appear here immediately once approved by Harvest Hill Delivery.
             </p>
@@ -381,7 +381,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         ) : (
           <div className="bg-white rounded-2xl p-8 text-center space-y-2 border border-[#e5e2db] shadow-sm">
-            <p className="text-xs font-extrabold text-[#144227]">🧺 Catalog Empty</p>
+            <p className="text-xs font-extrabold text-[#144227]">Catalog Empty</p>
             <p className="text-xs text-[#717971] max-w-sm mx-auto">
               Add catalog products or submit farmer harvests in the portal to populate recommendations.
             </p>
