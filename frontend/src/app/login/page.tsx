@@ -252,7 +252,7 @@ export default function LoginPage() {
             <Tractor size={16} />
             <span>Are you a farmer or supplier?</span>
             <Link 
-              href="/apply" 
+              href="/signup?role=farmer" 
               className="font-bold text-[#144227] hover:underline underline-offset-2"
             >
               Apply here
