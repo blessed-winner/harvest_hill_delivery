@@ -18,7 +18,14 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [role, setRole] = useState('client');
+  const [role, setRole] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get('role');
+      if (urlRole === 'farmer' || urlRole === 'supplier') return 'farmer';
+    }
+    return 'client';
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -313,7 +320,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          {/* Login link */}
+          {/* Login & Role links */}
           <div className="text-center text-xs text-[#414942] font-medium space-y-2">
             <div>
               Already have an account?{' '}
@@ -323,6 +330,16 @@ export default function SignupPage() {
               >
                 Log in
               </Link>
+            </div>
+            <div className="pt-2 border-t border-[#e5e2db] text-[11px] text-[#717971]">
+              Are you a grower or supplier?{' '}
+              <button 
+                type="button"
+                onClick={() => setRole('farmer')}
+                className="font-bold text-[#144227] hover:underline cursor-pointer"
+              >
+                Apply here
+              </button>
             </div>
           </div>
 
