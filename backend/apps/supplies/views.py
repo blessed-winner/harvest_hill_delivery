@@ -89,7 +89,9 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             farmer_profile.farm_name = "Harvest Hill"
             farmer_profile.save(update_fields=['farm_name'])
 
-        instance = serializer.save(farmer=farmer_profile, photo=photo_file)
+        # Admin submissions are auto-accepted immediately; farmer submissions start as pending
+        initial_status = 'accepted' if self.request.user.role == 'admin' else 'pending'
+        instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
         
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage

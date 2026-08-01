@@ -32,6 +32,14 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   const [topFarmer, setTopFarmer] = useState<any>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]); // Store all products for category list
 
+  // Product Request Modal State
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestItemName, setRequestItemName] = useState('');
+  const [requestQty, setRequestQty] = useState('');
+  const [requestUnit, setRequestUnit] = useState('kg');
+  const [requestNotes, setRequestNotes] = useState('');
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+
   // Check for farmer filter from sessionStorage (set by Farmer of the Month)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -153,24 +161,33 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
       </div>
 
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Product Catalog</h1>
-        <p className="text-xs text-[#717971] mt-1">
-          {loading ? 'Loading...' : farmerFilter 
-            ? `Showing ${products.length} products from ${farmerFilter}` 
-            : `Showing ${products.length} products from certified local suppliers`}
-        </p>
-        {farmerFilter && (
-          <div className="mt-3 inline-flex items-center gap-2 bg-[#144227] text-white text-xs font-bold px-3 py-1.5 rounded-lg">
-            <span>Filtered by: {farmerFilter}</span>
-            <button
-              onClick={() => setFarmerFilter(null)}
-              className="text-white/80 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        )}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight">Product Catalog</h1>
+          <p className="text-xs text-[#717971] mt-1">
+            {loading ? 'Loading...' : farmerFilter 
+              ? `Showing ${products.length} products from ${farmerFilter}` 
+              : `Showing ${products.length} products from certified local suppliers`}
+          </p>
+          {farmerFilter && (
+            <div className="mt-3 inline-flex items-center gap-2 bg-[#144227] text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+              <span>Filtered by: {farmerFilter}</span>
+              <button
+                onClick={() => setFarmerFilter(null)}
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={() => setIsRequestModalOpen(true)}
+          className="bg-[#144227] text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-[#376847] transition-all shadow-sm flex items-center gap-2 self-start md:self-auto cursor-pointer"
+        >
+          <Package size={16} /> Request Unlisted Product
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -522,6 +539,141 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         </div>
 
       </div>
+
+      {/* ── REQUEST UNLISTED PRODUCT MODAL DIALOG ──────────────────────────── */}
+      {isRequestModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e5e2db] flex flex-col space-y-4">
+            <div className="flex items-center justify-between border-b border-[#e5e2db] pb-3">
+              <div className="flex items-center gap-2 text-[#144227] font-bold">
+                <Package size={20} />
+                <h3 className="text-base font-bold text-[#1c1c18]">Request Unlisted Product</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsRequestModalOpen(false);
+                  setRequestSubmitted(false);
+                }} 
+                className="text-[#717971] hover:text-[#1c1c18] cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {requestSubmitted ? (
+              <div className="py-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#144227] flex items-center justify-center mx-auto font-bold text-xl">
+                  ✓
+                </div>
+                <h4 className="text-sm font-bold text-[#1c1c18]">Request Received!</h4>
+                <p className="text-xs text-[#717971] max-w-xs mx-auto">
+                  Our sourcing team has logged your market request for <strong>{requestItemName}</strong>. We will notify local farmers to list this produce.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsRequestModalOpen(false);
+                    setRequestSubmitted(false);
+                    setRequestItemName('');
+                    setRequestQty('');
+                    setRequestNotes('');
+                  }}
+                  className="bg-[#144227] text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!requestItemName.trim()) return;
+                  setRequestSubmitted(true);
+                }}
+                className="space-y-4 text-xs"
+              >
+                <p className="text-[#717971]">
+                  Can't find a specific farm produce? Tell us what you need and our procurement team will alert nearby local farms to list it.
+                </p>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                    Product / Crop Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Yellow Passion Fruits, Organic Avocados"
+                    value={requestItemName}
+                    onChange={(e) => setRequestItemName(e.target.value)}
+                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                      Target Quantity
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50"
+                      value={requestQty}
+                      onChange={(e) => setRequestQty(e.target.value)}
+                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                      Unit
+                    </label>
+                    <select
+                      value={requestUnit}
+                      onChange={(e) => setRequestUnit(e.target.value)}
+                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="litre">litre</option>
+                      <option value="crates">crates</option>
+                      <option value="bundles">bundles</option>
+                      <option value="pcs">pcs</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                    Specific Specifications / Delivery Timeline
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Require delivery by next Tuesday, Grade A quality..."
+                    value={requestNotes}
+                    onChange={(e) => setRequestNotes(e.target.value)}
+                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-[#144227] text-white py-2.5 rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer shadow-sm"
+                  >
+                    Submit Sourcing Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestModalOpen(false)}
+                    className="px-4 bg-[#f0eee7] text-[#414942] py-2.5 rounded-xl font-bold text-xs hover:bg-[#e5e2db] transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

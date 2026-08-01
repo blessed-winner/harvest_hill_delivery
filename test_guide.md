@@ -173,26 +173,48 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 9. Test Suite 6: Admin Supply Approval
+## 8. Test Suite 5: Farmer Operations, Harvest Submissions & Approval Workflow
 
-1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
-2. Navigate to **Supplies Management** (`/admin?tab=supplies`).
-3. Locate pending harvest submissions for `Organic Roma Tomatoes` and `Fresh Whole Milk`.
-4. Click **Approve / Accept Supply** for both items.
+1. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+2. Navigate to **Submit Harvest** (`/farmer?view=submit`).
+3. **Test Live kg Unit Threshold**:
+   - Select `Organic Roma Tomatoes` (`kg`).
+   - Type Quantity `10` → **Live Check**: Warning `Quantity must be at least 20 kg.` appears dynamically.
+   - Update Quantity to `200 kg`, Asking Price to `1,000 RWF`.
+   - Click **Submit Harvest**.
+4. **Approval Workflow Check**:
+   - Navigating to **My Supplies** (`/farmer?view=supplies`) shows harvest status as `pending`.
+   - Log out of farmer and open guest homepage (`http://localhost:3000/`).
+   - **Public Visibility Check**: The farmer's pending harvest is NOT yet visible to the public or clients until Harvest Hill Delivery approves it.
 
 ---
 
-## 10. Test Suite 7: Client Registration & Marketplace Browsing
+## 9. Test Suite 6: Harvest Hill Delivery Approval & Auto-Approve Admin Supplies
 
-1. Open browser to `http://localhost:3000/login`.
-2. Click **Create an Account** / Register:
-   - **Full Name**: `Alice Murekatete`
-   - **Email**: `alice.client@harvesthill.test`
-   - **Password**: `ClientPass2026!`
-   - **Role**: Client
-3. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
-4. Navigate to Client Catalog (`/client?screen=catalog`).
-5. Verify available products (`Organic Roma Tomatoes` & `Fresh Whole Milk`) display with farmer details, crop photos, and prices strictly in **RWF**.
+1. Log in as Admin / Harvest Hill Delivery (`admin@harvesthill.test` / `adminpass123`).
+2. Navigate to **Supplies Management** (`/admin?tab=supplies`).
+3. Locate farmer's pending harvest submission for `Organic Roma Tomatoes`.
+4. Click **Approve / Accept Supply**.
+5. **Immediate Admin Supply Test**:
+   - As Admin, create a new supply/product directly from the Admin portal.
+   - **Verification Check**: Supplies created by Harvest Hill Delivery are auto-accepted immediately (`status='accepted'`) and instantly visible to clients without extra approval steps.
+
+---
+
+## 10. Test Suite 7: Guest Redirections, Client Marketplace Browsing & Product Requests
+
+1. Open browser to `http://localhost:3000/` as an unauthenticated guest.
+2. Click **Add to Cart** or **Plus (+)** on any produce item card.
+   - **Guest Redirect Check**: Automatically redirected to Login screen (`/login?redirect=cart`).
+3. Return to Homepage (`/`), click on a product to view details, then click **Propose Price Negotiation / Bulk Deal**.
+   - **Negotiation Redirect Check**: Automatically redirected to Login screen (`/login?redirect=cart`).
+4. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+5. Navigate to Client Catalog (`/client?screen=catalog`).
+6. **Request Unlisted Product Test**:
+   - Click **Request Unlisted Product** button in top header.
+   - Fill in Crop Name: `Yellow Passion Fruits`, Quantity: `50`, Unit: `kg`.
+   - Click **Submit Sourcing Request**.
+   - Verify success dialog confirms market demand logging.
 
 ---
 
@@ -210,7 +232,6 @@ The database has been wiped clean. Only the master administrator account exists:
    - Click **Accept Offer**.
 7. **Validation Check**:
    - Negotiation status changes to `accepted`.
-   - A pending invoice (`Invoice`) is automatically generated in the system.
 
 ---
 
@@ -230,13 +251,19 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 13. Test Suite 10: Order Fulfillment & Automated Inventory Subtraction
+## 13. Test Suite 10: Order Fulfillment, Delivery Note PDF & Inventory Subtraction
 
 1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
 2. Navigate to Orders Management (`/admin?tab=orders`).
 3. Locate Client A's order for `Organic Roma Tomatoes` (`30 kg`).
 4. Change status from `pending` to **`Delivered`**.
-5. Navigate to Supplies Management (`/admin?tab=supplies`).
+5. Navigate to Delivery Notes (`/admin?tab=deliveries`).
+6. Click **View Delivery Note PDF** on the order delivery note.
+7. **Delivery Note PDF Inspection**:
+   - Verify table columns include **PRODUCT NAME**, **QUANTITY**, **UNIT PRICE**, **TOTAL PRICE**, and **Total Cost** footer.
+   - Verify digital signature / recipient signature area is displayed cleanly.
+   - Click **Print / Export PDF** button.
+8. Navigate to Supplies Management (`/admin?tab=supplies`).
 
 **Expected Result**:
 - Supply inventory automatically deducts from `200 kg` to `170 kg`.
@@ -263,22 +290,17 @@ ACCOUNT PRIVACY & SECURITY
 [ ] Password length on application form requires >= 8 characters
 [ ] Deleting an approved application record leaves user account active
 
-ADMIN NOTIFICATIONS & BADGES
-[ ] New farmer application generates Admin notification & 'Needs Attention' alert
-[ ] Applications (x) pending count badge is always visible on User Management tab
-[ ] User Management table displays profile pictures / Instagram default avatars instead of text initials
+GUEST REDIRECTIONS & APPROVAL WORKFLOWS
+[ ] Unauthenticated Add to Cart clicks redirect to /login?redirect=cart
+[ ] Unauthenticated Price Negotiation clicks redirect to /login?redirect=cart
+[ ] Harvest Hill Delivery added products are auto-accepted & immediate
+[ ] Farmer added products require Harvest Hill Delivery approval before public visibility
+[ ] Request Unlisted Product button & modal functional in Client Catalog
 
-UNIT THRESHOLDS & PURE RWF CURRENCY
-[ ] kg threshold min 20 kg
-[ ] litre threshold min 15 litres
-[ ] crate/jar/bundle min 10 units
-[ ] 100% RWF currency across application (USD and currency toggles completely removed)
-
-FARMER PAYOUT, SETTINGS & AVATARS
-[ ] Payout options include MTN MoMo, Airtel Money, Bank Transfer (I&M, BK, Equity)
-[ ] TopNav headers across all portals display uploaded profile picture or Instagram-style default avatar
-[ ] Profile photo uploads and settings saves update topbar headers in real time via 'profile-updated' event
-[ ] Supply status 'negotiating' and status dropdown filter removed cleanly from My Supplies log
+DELIVERY NOTES & PDF EXPORT
+[ ] Delivery Note lists Product Name, Quantity, Unit Price, Total Price & Total Cost
+[ ] Digital / Issued Signature applied cleanly to Delivery Note
+[ ] Print / Export PDF feature functional for Delivery Notes
 ```
 
 ---

@@ -491,7 +491,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
             {/* Price Negotiation Trigger Button - Always Present */}
             <button
-              onClick={() => setIsNegotiating(true)}
+              onClick={() => {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                if (!token) {
+                  window.location.href = '/login?redirect=cart';
+                  return;
+                }
+                setIsNegotiating(true);
+              }}
               className="w-full bg-white border border-[#144227] text-[#144227] hover:bg-[#f6f3ec] py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <Handshake size={16} /> 

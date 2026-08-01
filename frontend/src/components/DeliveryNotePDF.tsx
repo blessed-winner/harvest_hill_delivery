@@ -234,11 +234,13 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
           </div>
 
           {/* Goods Table */}
-          <table className="w-full text-left border-collapse mb-12">
+          <table className="w-full text-left border-collapse mb-8">
             <thead>
               <tr className="bg-gray-100 text-[10px] font-extrabold uppercase tracking-wider text-gray-700">
-                <th className="py-3 px-4">DESCRIPTION</th>
-                <th className="py-3 px-4 text-right">QUANTITY</th>
+                <th className="py-3 px-4">PRODUCT NAME</th>
+                <th className="py-3 px-4 text-center">QUANTITY</th>
+                <th className="py-3 px-4 text-right">UNIT PRICE</th>
+                <th className="py-3 px-4 text-right">TOTAL PRICE</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-xs">
@@ -246,11 +248,15 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
                 orderItems.map((item: any, idx: number) => {
                   const prodName = item.product_detail?.name || item.product_name || item.name || `Item #${idx + 1}`;
                   const unit = item.product_detail?.unit || item.unit || 'pcs';
-                  const qty = item.quantity || 1;
+                  const qty = Number(item.quantity || 1);
+                  const price = Number(item.price || item.unit_price || 0);
+                  const itemTotal = qty * price;
                   return (
                     <tr key={idx}>
                       <td className="py-3.5 px-4 font-medium text-gray-800">{prodName}</td>
-                      <td className="py-3.5 px-4 text-right font-semibold text-gray-900">{qty} {unit}</td>
+                      <td className="py-3.5 px-4 text-center font-semibold text-gray-900">{qty} {unit}</td>
+                      <td className="py-3.5 px-4 text-right text-gray-700">RWF {price.toLocaleString()}</td>
+                      <td className="py-3.5 px-4 text-right font-bold text-gray-900">RWF {itemTotal.toLocaleString()}</td>
                     </tr>
                   );
                 })
@@ -259,10 +265,22 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
                   <td className="py-3.5 px-4 font-medium text-gray-800">
                     {note?.details || order?.delivery_address || 'Fresh Harvest Produce Dispatch'}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-semibold text-gray-900">1 pkg</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-gray-900">1 pkg</td>
+                  <td className="py-3.5 px-4 text-right text-gray-700">RWF 0</td>
+                  <td className="py-3.5 px-4 text-right font-bold text-gray-900">RWF 0</td>
                 </tr>
               )}
             </tbody>
+            {orderItems.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 font-bold text-xs bg-gray-50">
+                  <td colSpan={3} className="py-3 px-4 text-right uppercase tracking-wider text-gray-900">Total Cost:</td>
+                  <td className="py-3 px-4 text-right font-extrabold text-emerald-900 text-sm">
+                    RWF {orderItems.reduce((sum: number, item: any) => sum + (Number(item.quantity || 1) * Number(item.price || item.unit_price || 0)), 0).toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
 
           {/* Signature Footer */}
