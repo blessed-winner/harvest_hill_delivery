@@ -416,9 +416,6 @@ export default function MySupplies() {
                         <p className="font-sans font-bold text-primary">
                           {supply.product_detail?.name}
                         </p>
-                        <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                          #{supply.id}
-                        </p>
                       </div>
                     </div>
                   </td>
@@ -572,7 +569,6 @@ export default function MySupplies() {
                 </div>
                 <div>
                   <h3 className="font-sans text-base font-extrabold tracking-tight">Confirm Deletion</h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record #{selectedDeleteSupply.id}</p>
                 </div>
               </div>
 
@@ -629,7 +625,7 @@ export default function MySupplies() {
                   </div>
                   <div>
                     <h3 className="font-sans text-base font-extrabold tracking-tight">Update Harvest Supply</h3>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} (#{editSupply.id})</p>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name}</p>
                   </div>
                 </div>
                 <button 
@@ -844,7 +840,7 @@ export default function MySupplies() {
               <div className="flex items-center justify-between border-b pb-3 border-outline-variant">
                 <div className="flex items-center gap-2 text-primary font-bold">
                   <Tag size={20} />
-                  <h3 className="text-base text-on-surface">Discount Supply #{discountSupply.id}</h3>
+                  <h3 className="text-base text-on-surface">Discount Supply</h3>
                 </div>
                 <button onClick={() => setDiscountSupply(null)} className="text-on-surface-variant hover:text-on-surface cursor-pointer">
                   <X size={20} />

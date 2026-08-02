@@ -257,7 +257,7 @@ export default function Negotiations() {
                       {neg.supply_detail?.product_detail?.name}
                     </h3>
                     <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">
-                      #{neg.supply_detail?.id} - {neg.supply_detail?.quantity} {neg.supply_detail?.unit}
+                      {neg.supply_detail?.quantity} {neg.supply_detail?.unit}
                     </p>
                   </div>
                 </div>

@@ -298,7 +298,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                       </td>
                       <td className="px-6 py-4 font-mono text-sm font-bold">#DLV-{note.id}</td>
                       <td className="px-6 py-4 font-mono text-sm text-primary font-bold">
-                        {note.order ? `#ORD-${note.order}` : (note.supply ? `#SUP-${note.supply}` : '—')}
+                        {note.order ? `#ORD-${note.order}` : (note.supply ? `Supply Batch ${note.supply}` : '—')}
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-variant truncate max-w-xs">{note.details}</td>
                       <td className="px-6 py-4">
@@ -379,7 +379,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         isOpen={!!selectedNote}
         onClose={() => setSelectedNote(null)}
         title={selectedNote ? `Delivery Note #DLV-${selectedNote.id}` : ''}
-        subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order #ORD-' + selectedNote.order : 'Supply #SUP-' + selectedNote.supply}` : ''}
+        subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order #ORD-' + selectedNote.order : 'Supply Batch ' + selectedNote.supply}` : ''}
         footer={
           selectedNote && (
             <div className="flex flex-col gap-3 w-full font-sans">
