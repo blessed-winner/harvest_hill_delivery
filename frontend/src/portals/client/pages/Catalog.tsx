@@ -35,10 +35,36 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   // Product Request Modal State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestItemName, setRequestItemName] = useState('');
+  const [requestCategory, setRequestCategory] = useState('Vegetables');
   const [requestQty, setRequestQty] = useState('');
   const [requestUnit, setRequestUnit] = useState('kg');
+  const [requestPrice, setRequestPrice] = useState('');
   const [requestNotes, setRequestNotes] = useState('');
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestItemName.trim() || !requestQty.trim()) {
+      return;
+    }
+    try {
+      setSubmittingRequest(true);
+      await clientApi.productRequests.create({
+        product_name: requestItemName,
+        category: requestCategory,
+        quantity_needed: parseFloat(requestQty),
+        unit: requestUnit,
+        preferred_price: requestPrice ? parseFloat(requestPrice) : null,
+        notes: requestNotes,
+      });
+      setRequestSubmitted(true);
+    } catch (err) {
+      console.error("Failed to submit product request:", err);
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
 
   // Check for farmer filter from sessionStorage (set by Farmer of the Month)
   useEffect(() => {
@@ -579,7 +605,10 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                     setIsRequestModalOpen(false);
                     setRequestSubmitted(false);
                     setRequestItemName('');
+                    setRequestCategory('Vegetables');
                     setRequestQty('');
+                    setRequestUnit('kg');
+                    setRequestPrice('');
                     setRequestNotes('');
                   }}
                   className="bg-[#144227] text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer"
@@ -589,11 +618,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
               </div>
             ) : (
               <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!requestItemName.trim()) return;
-                  setRequestSubmitted(true);
-                }}
+                onSubmit={handleRequestSubmit}
                 className="space-y-4 text-xs"
               >
                 <p className="text-[#717971]">
@@ -617,15 +642,18 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
-                      Target Quantity
+                      Category
                     </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 50"
-                      value={requestQty}
-                      onChange={(e) => setRequestQty(e.target.value)}
+                    <select
+                      value={requestCategory}
+                      onChange={(e) => setRequestCategory(e.target.value)}
                       className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
-                    />
+                    >
+                      <option value="Vegetables">Vegetables</option>
+                      <option value="Fruits">Fruits</option>
+                      <option value="Grains">Grains</option>
+                      <option value="Animal-Based">Animal-Based</option>
+                    </select>
                   </div>
 
                   <div>
@@ -639,10 +667,41 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                     >
                       <option value="kg">kg</option>
                       <option value="litre">litre</option>
-                      <option value="crates">crates</option>
-                      <option value="bundles">bundles</option>
-                      <option value="pcs">pcs</option>
+                      <option value="crate">crate</option>
+                      <option value="jar">jar</option>
+                      <option value="bundle">bundle</option>
+                      <option value="dozen">dozen</option>
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                      Quantity Needed *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 100"
+                      value={requestQty}
+                      onChange={(e) => setRequestQty(e.target.value)}
+                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#717971] mb-1">
+                      Preferred Price (RWF / Unit)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Optional price target"
+                      value={requestPrice}
+                      onChange={(e) => setRequestPrice(e.target.value)}
+                      className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs text-[#1c1c18] focus:outline-none focus:border-[#144227] focus:bg-white"
+                    />
                   </div>
                 </div>
 
@@ -662,9 +721,10 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                 <div className="flex gap-2 pt-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-[#144227] text-white py-2.5 rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer shadow-sm"
+                    disabled={submittingRequest}
+                    className="flex-1 bg-[#144227] text-white py-2.5 rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer shadow-sm disabled:opacity-50"
                   >
-                    Submit Sourcing Request
+                    {submittingRequest ? "Submitting..." : "Submit Sourcing Request"}
                   </button>
                   <button
                     type="button"

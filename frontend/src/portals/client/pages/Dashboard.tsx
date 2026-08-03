@@ -78,14 +78,6 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   // Product Requests states
   const [productRequests, setProductRequests] = useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [requestFormName, setRequestFormName] = useState('');
-  const [requestFormCategory, setRequestFormCategory] = useState('Vegetables');
-  const [requestFormQty, setRequestFormQty] = useState('');
-  const [requestFormUnit, setRequestFormUnit] = useState('kg');
-  const [requestFormPrice, setRequestFormPrice] = useState('');
-  const [requestFormNotes, setRequestFormNotes] = useState('');
-  const [submittingRequest, setSubmittingRequest] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -104,36 +96,6 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       fetchRequests();
     }
   }, [activeTab]);
-
-  const handleRequestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!requestFormName.trim() || !requestFormQty.trim()) {
-      return;
-    }
-    try {
-      setSubmittingRequest(true);
-      await clientApi.productRequests.create({
-        product_name: requestFormName,
-        category: requestFormCategory,
-        quantity_needed: parseFloat(requestFormQty),
-        unit: requestFormUnit,
-        preferred_price: requestFormPrice ? parseFloat(requestFormPrice) : null,
-        notes: requestFormNotes,
-      });
-      setRequestFormName('');
-      setRequestFormCategory('Vegetables');
-      setRequestFormQty('');
-      setRequestFormUnit('kg');
-      setRequestFormPrice('');
-      setRequestFormNotes('');
-      setIsRequestModalOpen(false);
-      fetchRequests();
-    } catch (err) {
-      console.error("Failed to submit request:", err);
-    } finally {
-      setSubmittingRequest(false);
-    }
-  };
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -346,12 +308,6 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
           <h1 className="text-3xl font-extrabold text-[#144227] tracking-tight font-sans">Client Portal Dashboard</h1>
           <p className="text-xs text-[#717971] mt-1">Overview of procurement, active orders, and profile configuration.</p>
         </div>
-        <button
-          onClick={() => setIsRequestModalOpen(true)}
-          className="bg-[#144227] text-white font-sans text-xs font-bold px-5 py-3 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-md active:scale-95 cursor-pointer"
-        >
-          <Leaf size={14} /> Request a Product
-        </button>
       </div>
 
       {/* ── KPI Metric Cards ───────────────────────────────────────────── */}
@@ -812,7 +768,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 <div className="flex justify-between items-center pb-3 border-b border-[#f0eee7]">
                   <h3 className="text-base font-bold text-[#1c1c18]">My Product Requests</h3>
                   <button
-                    onClick={() => setIsRequestModalOpen(true)}
+                    onClick={() => onNavigate('catalog')}
                     className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                   >
                     <Plus size={12} /> New Request
@@ -875,121 +831,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
         </div>
       </div>
 
-      {/* PRODUCT REQUEST MODAL */}
-      {isRequestModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#e5e2db] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#f0eee7] pb-3">
-              <div className="flex items-center gap-2 text-[#144227]">
-                <Leaf size={20} />
-                <h3 className="text-base font-extrabold text-[#1c1c18]">Request a Crop / Product</h3>
-              </div>
-              <button onClick={() => setIsRequestModalOpen(false)} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
 
-            <form onSubmit={handleRequestSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Product Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Organic Roma Tomatoes"
-                  value={requestFormName}
-                  onChange={(e) => setRequestFormName(e.target.value)}
-                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Category</label>
-                  <select
-                    value={requestFormCategory}
-                    onChange={(e) => setRequestFormCategory(e.target.value)}
-                    className="w-full bg-white border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
-                  >
-                    <option value="Vegetables">Vegetables</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Grains">Grains</option>
-                    <option value="Animal-Based">Animal-Based</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Unit</label>
-                  <select
-                    value={requestFormUnit}
-                    onChange={(e) => setRequestFormUnit(e.target.value)}
-                    className="w-full bg-white border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
-                  >
-                    <option value="kg">kg</option>
-                    <option value="litre">litre</option>
-                    <option value="crate">crate</option>
-                    <option value="jar">jar</option>
-                    <option value="bundle">bundle</option>
-                    <option value="dozen">dozen</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Quantity Needed</label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    placeholder="e.g. 500"
-                    value={requestFormQty}
-                    onChange={(e) => setRequestFormQty(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Preferred Price (RWF / Unit)</label>
-                  <input
-                    type="number"
-                    placeholder="Optional target price"
-                    value={requestFormPrice}
-                    onChange={(e) => setRequestFormPrice(e.target.value)}
-                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Notes / Specifications</label>
-                <textarea
-                  placeholder="Describe your quality standards, target dates, etc."
-                  value={requestFormNotes}
-                  onChange={(e) => setRequestFormNotes(e.target.value)}
-                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227] h-20 resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsRequestModalOpen(false)}
-                  className="px-4 py-2 border border-[#c1c9c0] text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingRequest}
-                  className="px-5 py-2 bg-[#144227] hover:bg-[#376847] text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-2"
-                >
-                  {submittingRequest ? "Submitting..." : "Submit Request"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ACCOUNT DELETION CONFIRMATION MODAL */}
       {showDeleteModal && (
