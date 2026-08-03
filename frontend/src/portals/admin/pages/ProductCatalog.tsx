@@ -441,13 +441,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                           <>
                             <button
                               onClick={() => handleUpdateRequestStatus(req.id, 'approved')}
-                              className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                              className="px-2.5 py-1.5 bg-[#144227] hover:bg-[#0c2a18] text-white rounded-lg transition-all cursor-pointer shadow-sm"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleUpdateRequestStatus(req.id, 'rejected')}
-                              className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                              className="px-2.5 py-1.5 bg-[#7f1d1d] hover:bg-[#450a0a] text-white rounded-lg transition-all cursor-pointer shadow-sm"
                             >
                               Reject
                             </button>
