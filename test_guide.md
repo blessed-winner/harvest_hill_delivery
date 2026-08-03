@@ -194,8 +194,13 @@ The database has been wiped clean. Only the master administrator account exists:
 *(Requirement: Clients can request specific products not listed on the Harvest Hill portal. Admin approves, and farmers view requests to know market needs.)*
 
 1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
-2. Click **Request a Product** button in the top header bar, or go to **My Product Requests** setting tab.
-3. Fill Request Form:
+2. **Navigate to the Client Dashboard**:
+   - By default, logged-in clients land on the public Marketplace homepage.
+   - Click the **User Avatar (Profile Settings)** icon in the top-right corner of the navigation header bar to enter the **Client Portal Dashboard**.
+3. **Open Request Modal**:
+   - Once on the dashboard, click the green **Request a Product** button in the dashboard's top header bar (next to the "Client Portal Dashboard" title).
+   - Alternatively, scroll down to the **Account & Profile Settings** section at the bottom of the page, click the **My Product Requests** tab on the left settings menu, and click **New Request**.
+4. Fill Request Form:
    - **Product Name**: `Yellow Passion Fruits`
    - **Category**: `Fruits`
    - **Quantity Needed**: `100`
@@ -203,8 +208,8 @@ The database has been wiped clean. Only the master administrator account exists:
    - **Preferred Price**: `1500` (RWF/kg)
    - **Notes**: `Require Grade A quality for juice production.`
    - Click **Submit Request**.
-4. Navigate to **My Product Requests** in settings:
-   - Verify the request for `Yellow Passion Fruits` is listed with status **`pending`**.
+5. **Verify Request Status**:
+   - Scroll down to the **Account & Profile Settings** section, select the **My Product Requests** tab, and verify that the request for `Yellow Passion Fruits` is listed with status **`pending`**.
 5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
 6. Navigate to **Product Catalog** (`/admin?tab=products`) → Click **Client Requests** tab.
    - Locate the request for `Yellow Passion Fruits` from `Alice Murekatete`.
