@@ -412,7 +412,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Qty Needed</th>
                     <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Target Price</th>
                     <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Status</th>
-                    <th scope="col" className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Actions</th>
+                    <th scope="col" className="px-6 py-4 text-center text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/10 bg-white">
@@ -436,7 +436,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                           {req.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-xs font-bold space-x-2">
                         {req.status === 'pending' && (
                           <>
                             <button
