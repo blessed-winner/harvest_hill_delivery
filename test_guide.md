@@ -194,31 +194,30 @@ The database has been wiped clean. Only the master administrator account exists:
 *(Requirement: Clients can request specific products not listed on the Harvest Hill portal. Admin approves, and farmers view requests to know market needs.)*
 
 1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
-2. **Navigate to the Client Dashboard**:
-   - By default, logged-in clients land on the public Marketplace homepage.
-   - Click the **User Avatar (Profile Settings)** icon in the top-right corner of the navigation header bar to enter the **Client Portal Dashboard**.
+2. **Navigate to the Client Catalog**:
+   - By default, logged-in clients land on the public Marketplace catalog/homepage. If you are in another tab, click **Catalog** or navigate to `/client?screen=catalog`.
 3. **Open Request Modal**:
-   - Once on the dashboard, click the green **Request a Product** button in the dashboard's top header bar (next to the "Client Portal Dashboard" title).
-   - Alternatively, scroll down to the **Account & Profile Settings** section at the bottom of the page, click the **My Product Requests** tab on the left settings menu, and click **New Request**.
-4. Fill Request Form:
-   - **Product Name**: `Yellow Passion Fruits`
-   - **Category**: `Fruits`
+   - Click the **Request Unlisted Product** button in the Catalog top header area.
+4. Fill Sourcing Request Form:
+   - **Product / Crop Name**: `Yellow Passion Fruits`
+   - **Category**: Select `Fruits`.
+   - **Unit**: Select `kg`.
    - **Quantity Needed**: `100`
-   - **Unit**: `kg`
    - **Preferred Price**: `1500` (RWF/kg)
-   - **Notes**: `Require Grade A quality for juice production.`
-   - Click **Submit Request**.
+   - **Specific Specifications / Delivery Timeline**: `Require Grade A quality for juice production.`
+   - Click **Submit Sourcing Request**.
 5. **Verify Request Status**:
-   - Scroll down to the **Account & Profile Settings** section, select the **My Product Requests** tab, and verify that the request for `Yellow Passion Fruits` is listed with status **`pending`**.
-5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
-6. Navigate to **Product Catalog** (`/admin?tab=products`) → Click **Client Requests** tab.
+   - Click the **User Avatar (Profile Settings)** icon in the top-right corner of the header bar to enter the **Client Portal Dashboard**.
+   - Scroll down to the **Account & Profile Settings** section at the bottom, select the **My Product Requests** tab, and verify that the request for `Yellow Passion Fruits` is listed with status **`pending`**.
+6. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+7. Navigate to **Product Catalog** (`/admin?tab=products`) → Click **Client Requests** tab.
    - Locate the request for `Yellow Passion Fruits` from `Alice Murekatete`.
    - Click **Approve** (Changes status to `approved` so farmers can see it).
    - Click **Create Template** next to the request:
      - Verify the Add Product drawer slide-out opens with name, category, unit, quantity, and preferred price prefilled!
      - Upload product image and click **Save Product**.
-7. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
-8. Click **Client Requests** on the sidebar:
+8. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+9. Click **Client Requests** on the sidebar:
    - Verify `Yellow Passion Fruits` is visible as an approved market demand.
    - Click **Supply This Demand**:
      - Verify it redirects to the Submit Harvest form drawer prefilled with category, unit, quantity requested, and preferred price!
