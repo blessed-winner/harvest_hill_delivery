@@ -206,6 +206,15 @@ export const clientApi = {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
+    update: (id: string | number, payload: any) =>
+      apiRequest(`/api/products/requests/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: string | number) =>
+      apiRequest(`/api/products/requests/${id}/`, {
+        method: 'DELETE',
+      }),
   },
 
   // ── Notifications ──────────────────────────────────────────────────────────

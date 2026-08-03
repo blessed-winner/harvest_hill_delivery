@@ -16,16 +16,19 @@ class AuthenticationTestCase(APITestCase):
     def setUp(self):
         # Create users
         self.farmer1 = User.objects.create_user(
+            username='farmer1_test',
             email='farmer1@test.com',
             password='Password123!',
             role='farmer'
         )
         self.farmer2 = User.objects.create_user(
+            username='farmer2_test',
             email='farmer2@test.com',
             password='Password123!',
             role='farmer'
         )
         self.client_user = User.objects.create_user(
+            username='client_test',
             email='client@test.com',
             password='Password123!',
             role='client'

@@ -70,3 +70,9 @@ class ProductRequestViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Only clients can create product requests.")
 
+    def perform_update(self, serializer):
+        if self.request.user.role == 'client':
+            serializer.save(status='pending')
+        else:
+            serializer.save()
+

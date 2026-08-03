@@ -170,6 +170,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(payload),
       }),
+    delete: (id: string | number) =>
+      apiRequest(`/api/products/requests/${id}/`, {
+        method: 'DELETE',
+      }),
   },
 
   // Supplies Management

@@ -111,6 +111,19 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     }
   };
 
+  const handleDeleteRequest = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this client request?")) {
+      return;
+    }
+    try {
+      await api.productRequests.delete(id);
+      toast("Client request deleted successfully.", "success");
+      loadRequests();
+    } catch (err: any) {
+      toast(err.message || "Failed to delete request.", "error");
+    }
+  };
+
   const handleCreateProductFromRequest = (req: any) => {
     setFormName(req.product_name);
     setFormCategory(req.category || 'Vegetables');
@@ -448,6 +461,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             <Plus size={11} className="mr-1" /> Create Template
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteRequest(req.id)}
+                          className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1 inline-flex"
+                          title="Delete Request"
+                        >
+                          <Trash2 size={11} className="mr-1" /> Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

@@ -78,6 +78,15 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
   // Product Requests states
   const [productRequests, setProductRequests] = useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestFormName, setRequestFormName] = useState('');
+  const [requestFormCategory, setRequestFormCategory] = useState('Vegetables');
+  const [requestFormQty, setRequestFormQty] = useState('');
+  const [requestFormUnit, setRequestFormUnit] = useState('kg');
+  const [requestFormPrice, setRequestFormPrice] = useState('');
+  const [requestFormNotes, setRequestFormNotes] = useState('');
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
 
   const fetchRequests = async () => {
     try {
@@ -96,6 +105,67 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       fetchRequests();
     }
   }, [activeTab]);
+
+  const handleEditRequest = (req: any) => {
+    setEditingRequest(req);
+    setRequestFormName(req.product_name || '');
+    setRequestFormCategory(req.category || 'Vegetables');
+    setRequestFormQty(req.quantity_needed?.toString() || '');
+    setRequestFormUnit(req.unit || 'kg');
+    setRequestFormPrice(req.preferred_price?.toString() || '');
+    setRequestFormNotes(req.notes || '');
+    setIsRequestModalOpen(true);
+  };
+
+  const handleDeleteRequest = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this sourcing request?")) {
+      return;
+    }
+    try {
+      await clientApi.productRequests.delete(id);
+      fetchRequests();
+    } catch (err) {
+      console.error("Failed to delete request:", err);
+    }
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestFormName.trim() || !requestFormQty.trim()) {
+      return;
+    }
+    try {
+      setSubmittingRequest(true);
+      const payload: any = {
+        product_name: requestFormName,
+        category: requestFormCategory,
+        quantity_needed: parseFloat(requestFormQty),
+        unit: requestFormUnit,
+        preferred_price: requestFormPrice ? parseFloat(requestFormPrice) : null,
+        notes: requestFormNotes,
+      };
+
+      if (editingRequest) {
+        await clientApi.productRequests.update(editingRequest.id, payload);
+      } else {
+        await clientApi.productRequests.create(payload);
+      }
+
+      setRequestFormName('');
+      setRequestFormCategory('Vegetables');
+      setRequestFormQty('');
+      setRequestFormUnit('kg');
+      setRequestFormPrice('');
+      setRequestFormNotes('');
+      setIsRequestModalOpen(false);
+      setEditingRequest(null);
+      fetchRequests();
+    } catch (err) {
+      console.error("Failed to submit request:", err);
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -768,7 +838,16 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 <div className="flex justify-between items-center pb-3 border-b border-[#f0eee7]">
                   <h3 className="text-base font-bold text-[#1c1c18]">My Product Requests</h3>
                   <button
-                    onClick={() => onNavigate('catalog')}
+                    onClick={() => {
+                      setEditingRequest(null);
+                      setRequestFormName('');
+                      setRequestFormCategory('Vegetables');
+                      setRequestFormQty('');
+                      setRequestFormUnit('kg');
+                      setRequestFormPrice('');
+                      setRequestFormNotes('');
+                      setIsRequestModalOpen(true);
+                    }}
                     className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                   >
                     <Plus size={12} /> New Request
@@ -790,7 +869,7 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                 ) : (
                   <div className="mt-6 space-y-4">
                     {productRequests.map((req) => (
-                      <div key={req.id} className="border border-[#e5e2db] rounded-xl p-4 bg-[#fcf9f2]/20 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
+                      <div key={req.id} className="border border-[#e5e2db] rounded-xl p-4 bg-[#fcf9f2]/20 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center group relative hover:border-[#144227] transition-all">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-bold text-[#1c1c18]">{req.product_name}</h4>
@@ -808,9 +887,29 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
                             <p className="text-[11px] text-[#717971] italic mt-1 bg-white border border-[#e5e2db]/50 p-2 rounded-lg">"{req.notes}"</p>
                           )}
                         </div>
-                        <div className="shrink-0">
+                        
+                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white border border-[#e5e2db] p-1 rounded-xl shadow-sm">
+                            <button
+                              type="button"
+                              onClick={() => handleEditRequest(req)}
+                              className="p-1 hover:bg-[#144227]/10 rounded text-[#144227] cursor-pointer"
+                              title="Edit Request"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRequest(req.id)}
+                              className="p-1 hover:bg-red-50 rounded text-red-600 cursor-pointer"
+                              title="Delete Request"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          
                           <span className={cn(
-                            "px-2.5 py-1 rounded-full font-mono text-[9px] uppercase tracking-wider font-extrabold text-center block shadow-sm border",
+                            "px-2.5 py-1 rounded-full font-mono text-[9px] uppercase tracking-wider font-extrabold text-center block shadow-sm border shrink-0",
                             req.status === 'approved' && "bg-[#bceec8] text-[#00210f] border-[#bceec8]",
                             req.status === 'pending' && "bg-amber-100 text-amber-800 border-amber-200",
                             req.status === 'fulfilled' && "bg-blue-100 text-blue-800 border-blue-200",
@@ -832,6 +931,133 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       </div>
 
 
+
+      {/* PRODUCT REQUEST MODAL */}
+      {isRequestModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 border border-[#e5e2db] shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f0eee7] pb-3">
+              <div className="flex items-center gap-2 text-[#144227]">
+                <Leaf size={20} />
+                <h3 className="text-base font-extrabold text-[#1c1c18]">
+                  {editingRequest ? "Update Product Request" : "Request a Crop / Product"}
+                </h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsRequestModalOpen(false);
+                  setEditingRequest(null);
+                }} 
+                className="text-[#717971] hover:text-[#1c1c18] cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleRequestSubmit} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Product Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Organic Roma Tomatoes"
+                  value={requestFormName}
+                  onChange={(e) => setRequestFormName(e.target.value)}
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Category</label>
+                  <select
+                    value={requestFormCategory}
+                    onChange={(e) => setRequestFormCategory(e.target.value)}
+                    className="w-full bg-white border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
+                  >
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Animal-Based">Animal-Based</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Unit</label>
+                  <select
+                    value={requestFormUnit}
+                    onChange={(e) => setRequestFormUnit(e.target.value)}
+                    className="w-full bg-white border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="litre">litre</option>
+                    <option value="crate">crate</option>
+                    <option value="jar">jar</option>
+                    <option value="bundle">bundle</option>
+                    <option value="dozen">dozen</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Quantity Needed</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="e.g. 500"
+                    value={requestFormQty}
+                    onChange={(e) => setRequestFormQty(e.target.value)}
+                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Preferred Price (RWF / Unit)</label>
+                  <input
+                    type="number"
+                    placeholder="Optional target price"
+                    value={requestFormPrice}
+                    onChange={(e) => setRequestFormPrice(e.target.value)}
+                    className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] uppercase font-bold tracking-wider text-[#717971]">Notes / Specifications</label>
+                <textarea
+                  placeholder="Describe your quality standards, target dates, etc."
+                  value={requestFormNotes}
+                  onChange={(e) => setRequestFormNotes(e.target.value)}
+                  className="w-full bg-[#f6f3ec]/60 border border-[#c1c9c0] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#144227] h-20 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRequestModalOpen(false);
+                    setEditingRequest(null);
+                  }}
+                  className="px-4 py-2 border border-[#c1c9c0] text-xs font-bold rounded-lg hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingRequest}
+                  className="px-5 py-2 bg-[#144227] hover:bg-[#376847] text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-2"
+                >
+                  {submittingRequest ? "Submitting..." : (editingRequest ? "Update Request" : "Submit Request")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ACCOUNT DELETION CONFIRMATION MODAL */}
       {showDeleteModal && (

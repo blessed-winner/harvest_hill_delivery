@@ -11,6 +11,7 @@ class AdminAPITestCase(APITestCase):
     def setUp(self):
         # Create users
         self.admin = User.objects.create_user(
+            username='admin_test',
             email='admin@harvesthill.test',
             password='Adminpass123!',
             role='admin',
@@ -18,11 +19,13 @@ class AdminAPITestCase(APITestCase):
             is_superuser=True
         )
         self.farmer = User.objects.create_user(
+            username='farmer_test',
             email='farmer@farms.test',
             password='Farmerpass123!',
             role='farmer'
         )
         self.client_user = User.objects.create_user(
+            username='client_test',
             email='client@greens.test',
             password='Clientpass123!',
             role='client'
@@ -76,7 +79,8 @@ class AdminAPITestCase(APITestCase):
             'name': 'Gala Apples',
             'category': 'Fruits',
             'unit': 'lbs',
-            'base_price': '1.50'
+            'base_price': '1.50',
+            'quantity_needed': 10
         }
         res = self.client.post(url_list, data, format='json')
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
