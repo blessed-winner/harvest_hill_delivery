@@ -16,7 +16,10 @@ class Supply(models.Model):
         ('economy', 'Economy')
     ]
     farmer = models.ForeignKey(FarmerProfile, on_delete=models.CASCADE, related_name='supplies')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplies')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplies', null=True, blank=True)
+    custom_product_name = models.CharField(max_length=255, blank=True, default='')
+    custom_category = models.CharField(max_length=100, blank=True, default='')
+    custom_unit = models.CharField(max_length=20, blank=True, default='kg')
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -32,7 +35,8 @@ class Supply(models.Model):
     is_archived = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.product.name} - {self.quantity} ({self.status})"
+        name = self.product.name if self.product else self.custom_product_name
+        return f"{name} - {self.quantity} ({self.status})"
 
 
 class SupplyImage(models.Model):

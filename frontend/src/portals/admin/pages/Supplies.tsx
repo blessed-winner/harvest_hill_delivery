@@ -145,9 +145,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     }
 
     const matchesSearch = searchTerm 
-      ? (s.product_detail?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ? (s.product_detail?.name || s.custom_product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.farmer_name || s.farmer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.product_detail?.category || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (s.product_detail?.category || s.custom_category || '').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
     return matchesSearch;
   });
@@ -277,9 +277,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-sm font-bold">{s.product_detail?.name || 'Crop'}</p>
+                        <p className="text-sm font-bold">{s.product_detail?.name || s.custom_product_name || 'Crop'}</p>
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">
-                          Category: {s.product_detail?.category || 'General'}
+                          Category: {s.product_detail?.category || s.custom_category || 'General'}
                         </p>
                       </div>
                     </td>
@@ -351,7 +351,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       <DetailDrawer
         isOpen={!!selectedSupply}
         onClose={() => setSelectedSupply(null)}
-        title={selectedSupply?.product_detail?.name || 'Supply Details'}
+        title={selectedSupply?.product_detail?.name || selectedSupply?.custom_product_name || 'Supply Details'}
         subtitle="Inbound Supply Manager"
         footer={
           selectedSupply && (
@@ -415,6 +415,16 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       >
         {selectedSupply && (
           <div className="space-y-6">
+            {!selectedSupply.product && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                  <AlertCircle size={14} /> Custom Crop Proposal
+                </p>
+                <p className="text-[11px] text-amber-700 leading-relaxed">
+                  This crop is not currently in the product catalog. You can accept or reject this supply proposal directly. 
+                </p>
+              </div>
+            )}
             <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30 space-y-3">
               <div className="flex justify-between">
                 <span className="text-xs text-on-surface-variant font-bold">Farmer</span>

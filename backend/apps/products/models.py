@@ -12,3 +12,26 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProductRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('fulfilled', 'Fulfilled'),
+        ('rejected', 'Rejected'),
+    ]
+    client = models.ForeignKey('accounts.ClientProfile', on_delete=models.CASCADE, related_name='product_requests')
+    product_name = models.CharField(max_length=255)
+    category = models.CharField(max_length=100, blank=True, default='')
+    quantity_needed = models.DecimalField(max_digits=10, decimal_places=2)
+    unit = models.CharField(max_length=20, default='kg')
+    preferred_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    linked_product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.product_name} - {self.status}"
+

@@ -398,7 +398,7 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
                   Sign In
                 </Link>
                 <Link
-                  href="/login"
+                  href="/signup"
                   className="bg-[#144227] text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-[#376847] transition-colors cursor-pointer"
                 >
                   Sign Up

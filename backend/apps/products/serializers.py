@@ -1,6 +1,5 @@
-from django.db.models import Q
 from rest_framework import serializers
-from .models import Product
+from .models import Product, ProductRequest
 
 
 def _product_has_image(image):
@@ -99,3 +98,17 @@ class ProductShortSerializer(serializers.ModelSerializer):
             return url
         except Exception:
             return None
+
+
+class ProductRequestSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source='client.business_name', read_only=True)
+
+    class Meta:
+        model = ProductRequest
+        fields = [
+            'id', 'client', 'client_name', 'product_name', 'category',
+            'quantity_needed', 'unit', 'preferred_price', 'notes',
+            'status', 'created_at', 'linked_product'
+        ]
+        read_only_fields = ['client', 'created_at', 'linked_product']
+

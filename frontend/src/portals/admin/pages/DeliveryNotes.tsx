@@ -298,7 +298,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                       </td>
                       <td className="px-6 py-4 font-mono text-sm font-bold">#DLV-{note.id}</td>
                       <td className="px-6 py-4 font-mono text-sm text-primary font-bold">
-                        {note.order ? `#ORD-${note.order}` : (note.supply ? `Supply Batch ${note.supply}` : '—')}
+                        {note.order ? `#ORD-${note.order}` : (note.supply ? `#SUP-${note.supply}` : '—')}
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-variant truncate max-w-xs">{note.details}</td>
                       <td className="px-6 py-4">

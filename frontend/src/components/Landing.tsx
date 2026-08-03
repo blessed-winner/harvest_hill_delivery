@@ -36,7 +36,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchData();
   }, []);
 
-  const activeFarmerSupplies = supplies.filter((s: any) => s.status === 'accepted' || s.status === 'pending');
+  const activeFarmerSupplies = supplies.filter((s: any) => s.status === 'accepted');
   const flashDealSupplies = activeFarmerSupplies.filter((s: any) => s.is_discounted);
 
   // Circular Category Icons
@@ -187,7 +187,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         <div className="flex items-center gap-3">
           <span className="bg-[#ba1a1a] text-white text-[10px] font-extrabold px-2.5 py-1 rounded uppercase tracking-wider">FLASH DEALS</span>
-          <span className="text-xs font-bold text-[#1c1c18]">Ends in <span className="font-mono text-sm font-extrabold text-[#ba1a1a]">04:22:15</span></span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">

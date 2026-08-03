@@ -114,6 +114,7 @@ export const api = {
   // ── Products / Demands ─────────────────────────────────────────────────────
   currentDemands: () => apiRequest('/api/products/?is_currently_needed=true'),
   allProducts: () => apiRequest('/api/products/'),
+  clientRequests: () => apiRequest('/api/products/requests/'),
 
   // ── Supplies ───────────────────────────────────────────────────────────────
   supplies: () => apiRequest('/api/supplies/'),

@@ -353,16 +353,15 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        # Show all supplies except rejected and draft ones
+        # Show only accepted supplies
         qs = Supply.objects.filter(
-            is_archived=False
-        ).exclude(
-            status__in=['rejected', 'draft']
+            is_archived=False,
+            status='accepted'
         ).select_related('product', 'farmer')
         
-        # Fallback: if no supplies exist at all, return all supplies regardless of status
+        # Fallback: if no accepted supplies exist, return empty list
         if not qs.exists():
-            qs = Supply.objects.filter(is_archived=False).select_related('product', 'farmer')
+            return Supply.objects.none()
             
         return qs.order_by('-created_at')
 

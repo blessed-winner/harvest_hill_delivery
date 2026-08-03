@@ -1,6 +1,6 @@
 # 🌾 Harvest Hill Delivery — Complete End-to-End Test Guide
 
-> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, and administrative controls starting from a clean database.**
+> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, client product requests, custom crop proposals, multi-image galleries, and session locks starting from a clean database.**
 
 ---
 
@@ -14,12 +14,15 @@
 - [6. Test Suite 3: Admin Direct Harvest Submission (Auto-Accepted)](#6-test-suite-3-admin-direct-harvest-submission-auto-accepted)
 - [7. Test Suite 4: Farmer Harvest Submission & Admin Approval Workflow](#7-test-suite-4-farmer-harvest-submission--admin-approval-workflow)
 - [8. Test Suite 5: Guest User Redirections (Add to Cart & Negotiation)](#8-test-suite-5-guest-user-redirections-add-to-cart--negotiation)
-- [9. Test Suite 6: Sourcing Unlisted Products (Market Demand Requests)](#9-test-suite-6-sourcing-unlisted-products-market-demand-requests)
-- [10. Test Suite 7: Price Counter-Proposals & Negotiation Threads](#10-test-suite-7-price-counter-proposals--negotiation-threads)
-- [11. Test Suite 8: Client Cart, Checkout & User-Scoped Privacy Isolation](#11-test-suite-8-client-cart-checkout--user-scoped-privacy-isolation)
-- [12. Test Suite 9: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#12-test-suite-9-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
-- [13. Test Suite 10: Settings, Avatars & Real-Time Profile Sync](#13-test-suite-10-settings-avatars--real-time-profile-sync)
-- [14. Quick Sanity Verification Checklist](#14-quick-sanity-verification-checklist)
+- [9. Test Suite 6: Sourcing Unlisted Products (Client Product Requests)](#9-test-suite-6-sourcing-unlisted-products-client-product-requests)
+- [10. Test Suite 7: Free-Form Harvest Submissions (Custom Crop Proposals)](#10-test-suite-7-free-form-harvest-submissions-custom-crop-proposals)
+- [11. Test Suite 8: Price Counter-Proposals & Negotiation Threads](#11-test-suite-8-price-counter-proposals--negotiation-threads)
+- [12. Test Suite 9: Client Cart, Checkout & User-Scoped Privacy Isolation](#12-test-suite-9-client-cart-checkout--user-scoped-privacy-isolation)
+- [13. Test Suite 10: Multi-Image Uploads & Gallery Selector View](#13-test-suite-10-multi-image-uploads--gallery-selector-view)
+- [14. Test Suite 11: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#14-test-suite-11-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
+- [15. Test Suite 12: Portal Security, Session Lock & Logout Redirection](#15-test-suite-12-portal-security-session-lock--logout-redirection)
+- [16. Test Suite 13: Settings, Avatars & Real-Time Profile Sync](#16-test-suite-13-settings-avatars--real-time-profile-sync)
+- [17. Quick Sanity Verification Checklist](#17-quick-sanity-verification-checklist)
 
 ---
 
@@ -61,20 +64,20 @@ The database has been wiped clean. Only the master administrator account exists:
        ↓ (Selects 🛒 Client/Buyer or 🌾 Farmer/Supplier role toggle; registers directly)
 [3. Admin Submits Own Harvest @ /admin?tab=products] 
        ↓ (Auto-accepted status='accepted'; immediately live for public & clients)
-[4. Farmer Submits Harvest Batch @ /farmer?view=submit] 
-       ↓ (Saved as status='pending'; hidden from public until Harvest Hill approves)
-[5. Admin Approves Farmer Supply @ /admin?tab=supplies] 
-       ↓ (Publishes item to Client Catalog with farmer profile & RWF price)
-[6. Unauthenticated Guest Tries Cart/Negotiation @ /] 
-       ↓ (Automatically redirected to /login?redirect=cart)
-[7. Client Requests Unlisted Product @ /client?screen=catalog] 
-       ↓ (Submits custom crop demand request to inform market procurement needs)
+[4. Client Requests Unlisted Product @ /client?screen=dashboard] 
+       ↓ (Client submits product request → Admin approves request & creates template)
+[5. Farmer Proposes Custom Harvest @ /farmer?view=submit] 
+       ↓ (Uses "Submit Custom Crop" card to submit harvest without an admin product template)
+[6. Admin Approves Custom Supply @ /admin?tab=supplies] 
+       ↓ (Accepts the custom proposal batch and links it to catalog crop)
+[7. Farmer Fulfills Client Request @ /farmer?view=client-requests] 
+       ↓ (Sees approved client requests board → Supplies against the requested demand)
 [8. Price Negotiation @ /client?screen=product-detail] 
-       ↓ (NegotiationThread created; farmer accepts offer)
-[9. Client Places Order & Admin Marks 'Delivered'] 
-       ↓ (Order items deducted from supply batch; Delivery Note generated)
-[10. Delivery Note PDF Inspection & Export]
-       ↓ (Displays Product Name, Qty, Unit Price, Total Price, Total Cost & Signature)
+       ↓ (Client proposes custom negotiation; farmer accepts counter offer)
+[9. Client Checkout & Multi-Image Gallery Selector] 
+       ↓ (Selects images in product detail pane; places order for harvest batch)
+[10. Order Fulfillment & Delivery Note PDF]
+       ↓ (Admin delivers order; invoice auto-generated; delivery note lists totals & signature)
 ```
 
 ---
@@ -133,7 +136,7 @@ The database has been wiped clean. Only the master administrator account exists:
 4. On the newly created `Organic Roma Tomatoes` card, click **🌾 Submit Harvest**:
    - **Quantity**: `200 kg`
    - **Asking Price**: `1,000 RWF`
-   - **Quality Grade**: `Premium`
+   - **Quality Grade**: `Premium` (Ensure no emojis appear in selector dropdown)
    - Click **Record Harvest Batch**.
 5. **Immediate Public Visibility Check**:
    - Open homepage (`http://localhost:3000/`) or guest catalog.
@@ -154,6 +157,7 @@ The database has been wiped clean. Only the master administrator account exists:
    - Click **Submit Harvest**.
 4. Check Farmer Supply Log (`/farmer?view=supplies`):
    - Verify status is **`pending`**.
+   - Verify the ID format uses `#SUP-{id}`.
 5. **Public Visibility Check (Pending State)**:
    - Open guest homepage (`http://localhost:3000/`).
    - **Validation Check**: Farmer's `pending` harvest is **NOT visible** to clients or the public yet.
@@ -185,39 +189,79 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 9. Test Suite 6: Sourcing Unlisted Products (Market Demand Requests)
+## 9. Test Suite 6: Sourcing Unlisted Products (Client Product Requests)
 
-*(Requirement: Clients will have the functionality to request specific products not listed on the Harvest Hill portal to know market needs.)*
+*(Requirement: Clients can request specific products not listed on the Harvest Hill portal. Admin approves, and farmers view requests to know market needs.)*
 
 1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
-2. Navigate to Client Catalog (`/client?screen=catalog`).
-3. Click **Request Unlisted Product** button in top header.
-4. Fill Sourcing Request Form:
-   - **Product / Crop Name**: `Yellow Passion Fruits`
-   - **Target Quantity**: `50`
+2. Click **Request a Product** button in the top header bar, or go to **My Product Requests** setting tab.
+3. Fill Request Form:
+   - **Product Name**: `Yellow Passion Fruits`
+   - **Category**: `Fruits`
+   - **Quantity Needed**: `100`
    - **Unit**: `kg`
-   - **Specifications / Timeline**: `Require delivery by next Tuesday, Grade A quality.`
-5. Click **Submit Sourcing Request**.
-6. **Validation Check**: Success dialog confirms market request logged for procurement analysis.
+   - **Preferred Price**: `1500` (RWF/kg)
+   - **Notes**: `Require Grade A quality for juice production.`
+   - Click **Submit Request**.
+4. Navigate to **My Product Requests** in settings:
+   - Verify the request for `Yellow Passion Fruits` is listed with status **`pending`**.
+5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+6. Navigate to **Product Catalog** (`/admin?tab=products`) → Click **Client Requests** tab.
+   - Locate the request for `Yellow Passion Fruits` from `Alice Murekatete`.
+   - Click **Approve** (Changes status to `approved` so farmers can see it).
+   - Click **Create Template** next to the request:
+     - Verify the Add Product drawer slide-out opens with name, category, unit, quantity, and preferred price prefilled!
+     - Upload product image and click **Save Product**.
+7. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+8. Click **Client Requests** on the sidebar:
+   - Verify `Yellow Passion Fruits` is visible as an approved market demand.
+   - Click **Supply This Demand**:
+     - Verify it redirects to the Submit Harvest form drawer prefilled with category, unit, quantity requested, and preferred price!
 
 ---
 
-## 10. Test Suite 7: Price Counter-Proposals & Negotiation Threads
+## 10. Test Suite 7: Free-Form Harvest Submissions (Custom Crop Proposals)
 
-1. As Client (`alice.client@harvesthill.test`), click on `Organic Roma Tomatoes` in catalog.
-2. Click **Propose Price Negotiation / Bulk Deal**:
+*(Requirement: Farmers can submit harvests even when admin's product template is not present; Admin verifies/confirms.)*
+
+1. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+2. Navigate to **Submit Harvest** (`/farmer?view=submit`).
+3. Click the dashed card **Submit Custom Crop** at the top of the grid.
+4. Fill Custom Crop Specification details:
+   - **Crop / Product Name**: `Red Gala Apples`
+   - **Category**: Select `Fruits`.
+   - **Unit**: Select `kg`.
+   - **Quantity Available**: `150` (Will trigger unit validation rules of min 20kg).
+   - **Asking Price**: `1800` (RWF/kg).
+   - **Ready Date**: Select tomorrow's date.
+   - **Quality Grade**: Select `Premium` (Ensure no emojis appear in options).
+   - Upload 1-2 photos of apples.
+   - Click **Submit Harvest**.
+5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+6. Navigate to **Supplies Management** (`/admin?tab=supplies`).
+   - Locate the proposal crop batch for `Red Gala Apples`.
+   - **Validation Check**: A yellow warning banner is displayed: `⚠ Custom Crop Proposal: This crop is not currently in the product catalog.`
+   - Click **Accept Proposal** to approve the batch.
+
+---
+
+## 11. Test Suite 8: Price Counter-Proposals & Negotiation Threads
+
+1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+2. Navigate to `Organic Roma Tomatoes` in catalog.
+3. Click **Propose Price Negotiation / Bulk Deal**:
    - Proposed Price: `950 RWF` per kg.
    - Quantity: `50 kg`.
-   - Message: `Requesting bulk restaurant discount.`
-3. Click **Send Offer**.
+   - Message: `Requesting bulk discount.`
+   - Click **Send Offer**.
 4. Log in as Farmer (`jeanpaul.farmer@harvesthill.test`).
 5. Navigate to **Negotiations** (`/farmer?view=negotiations`).
-6. Open active thread → Click **Accept Offer**.
-7. **Validation Check**: Status updates to `accepted`.
+6. Open active thread → Click **Accept Offer** or type a message counter-proposal.
+7. **Validation Check**: Status updates to `accepted` for both client and supplier.
 
 ---
 
-## 11. Test Suite 8: Client Cart, Checkout & User-Scoped Privacy Isolation
+## 12. Test Suite 9: Client Cart, Checkout & User-Scoped Privacy Isolation
 
 1. Log in as **Client A** (`alice.client@harvesthill.test`).
 2. Add `30 kg` of `Organic Roma Tomatoes` to Cart.
@@ -233,7 +277,26 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 12. Test Suite 9: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction
+## 13. Test Suite 10: Multi-Image Uploads & Gallery Selector View
+
+*(Requirement: Ensure that when adding multiple product images, all of them display in a detail selector gallery pane.)*
+
+1. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+2. Navigate to **Submit Harvest** (`/farmer?view=submit`).
+3. Select `Organic Roma Tomatoes`.
+4. Locate the Image Upload section:
+   - Select and upload 3 different images.
+   - Verify the thumbnails preview all 3 images cleanly.
+   - Click **Submit Harvest**.
+5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`) and approve the supply proposal.
+6. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+7. Go to catalog and click on `Organic Roma Tomatoes` to view details:
+   - **Validation Check**: Check that all 3 uploaded images are displayed inside the small thumbnail selector div list underneath the main large photo display.
+   - Click each thumbnail image and verify it swaps the active picture in the main container layout immediately.
+
+---
+
+## 14. Test Suite 11: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction
 
 *(Requirement: Delivery note lists product names, quantity, unit price, total price, total cost, signature, PDF view and download.)*
 
@@ -258,7 +321,22 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 13. Test Suite 10: Settings, Avatars & Real-Time Profile Sync
+## 15. Test Suite 12: Portal Security, Session Lock & Logout Redirection
+
+*(Requirement: Once logged in, active users cannot navigate back to the landing page via browser back button. Logging out must perform complete clean-up and redirect to / landing page.)*
+
+1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+2. Verify you are redirected to the Client Portal Dashboard `/client`.
+3. Try clicking the browser **Back Button**:
+   - **Validation Check**: Verify the portal blocks navigation back to the landing page `/` and maintains the active authenticated session on `/client`.
+4. Click **Sign Out** / **Logout** button:
+   - **Validation Check**: Local storage tokens are cleared, and the page is immediately redirected back to the public homepage `/`.
+5. Try clicking the browser **Forward Button**:
+   - **Validation Check**: Verify you cannot access `/client` and are forced back to `/login` due to session guard validation.
+
+---
+
+## 16. Test Suite 13: Settings, Avatars & Real-Time Profile Sync
 
 1. Open Farmer Profile & Settings (`/farmer?view=settings`).
 2. Upload a new profile picture.
@@ -268,7 +346,7 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 14. Quick Sanity Verification Checklist
+## 17. Quick Sanity Verification Checklist
 
 ```
 UNIFIED SIGNUP & PRIVACY
@@ -277,17 +355,27 @@ UNIFIED SIGNUP & PRIVACY
 [ ] Database baseline reset cleanly with master admin@harvesthill.test
 [ ] Cart storage is user-scoped (cart_items_role_email)
 
-GUEST REDIRECTIONS
+GUEST REDIRECTIONS & SESSION SECURITY
 [ ] Unauthenticated Add to Cart clicks redirect to /login?redirect=cart
 [ ] Unauthenticated Price Negotiation clicks redirect to /login?redirect=cart
+[ ] Active portal sessions lock browser back button navigation to landing page
+[ ] Click Sign Out clears tokens and redirects back to / public homepage
 
-SUPPLY APPROVAL WORKFLOWS
+SUPPLY APPROVAL WORKFLOWS & CUSTOM PROPOSALS
 [ ] Harvest Hill Delivery direct harvest submissions are auto-accepted & immediate
 [ ] Farmer added products require Harvest Hill Delivery approval before public visibility
-[ ] Public catalog displays all approved Harvest Hill & Farmer products
+[ ] Farmers can propose custom crops using "Submit Custom Crop" card (Template-free)
+[ ] Admins can view/approve Custom Crop Proposals with warnings in supplies manager
 
-MARKET NEED SOURCING
-[ ] Request Unlisted Product button & modal functional in Client Catalog
+MARKET NEED SOURCING (CLIENT REQUESTS)
+[ ] Clients can request unlisted products via form (listed under My Requests)
+[ ] Admins can approve client requests and click "Create Template" to prefill crop catalog
+[ ] Farmers can view approved Requests on client requests page and click "Supply This Demand"
+
+MULTI-IMAGE PRODUCE GALLERIES
+[ ] Farmers can upload up to 5 photos during harvest submission
+[ ] Product Detail pane displays gallery selector with all thumbnails
+[ ] Clicking a thumbnail swaps the main large product photo preview
 
 DELIVERY NOTES & PDF EXPORT
 [ ] Delivery Note lists Product Name, Quantity, Unit Price, Total Price for each item
@@ -298,4 +386,4 @@ DELIVERY NOTES & PDF EXPORT
 
 ---
 
-*Last Updated: 2026-08-01*
+*Last Updated: 2026-08-03*

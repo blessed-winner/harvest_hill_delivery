@@ -27,6 +27,9 @@ type HarvestFormState = {
   qualityGrade: 'premium' | 'standard' | 'economy';
   notes: string;
   photo: File | null;
+  customProductName?: string;
+  customCategory?: string;
+  customUnit?: string;
 };
 
 const referenceProductImages: Record<string, string> = {
@@ -85,11 +88,19 @@ const initialFormState: HarvestFormState = {
   qualityGrade: 'premium',
   notes: '',
   photo: null,
+  customProductName: '',
+  customCategory: 'Vegetables',
+  customUnit: 'kg',
 };
 
-export default function SubmitHarvest() {
+interface SubmitHarvestProps {
+  preselectedProduct?: any | null;
+  clearPreselected?: () => void;
+}
+
+export default function SubmitHarvest({ preselectedProduct, clearPreselected }: SubmitHarvestProps = {}) {
   const { toast } = useAlert();
-  const [selectedProduct, setSelectedProduct] = useState<DemandProduct | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [demands, setDemands] = useState<DemandProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<HarvestFormState>(initialFormState);
@@ -103,6 +114,7 @@ export default function SubmitHarvest() {
   const [validationErrors, setValidationErrors] = useState<{
     quantity?: string;
     askingPrice?: string;
+    customProductName?: string;
   }>({});
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -192,6 +204,78 @@ export default function SubmitHarvest() {
     };
   }, []);
 
+  useEffect(() => {
+    if (preselectedProduct) {
+      const isRequest = typeof preselectedProduct.id === 'string' && preselectedProduct.id.startsWith('req-');
+      if (isRequest) {
+        const reqProd = {
+          id: null,
+          name: preselectedProduct.name,
+          category: preselectedProduct.category,
+          unit: preselectedProduct.unit,
+          base_price: preselectedProduct.base_price,
+          quantity_needed: preselectedProduct.quantity_needed,
+          isRequest: true,
+          requestId: preselectedProduct.id.replace('req-', ''),
+        };
+        setSelectedProduct(reqProd);
+        setForm({
+          quantity: String(preselectedProduct.quantity_needed || ''),
+          availableDate: new Date().toISOString().slice(0, 10),
+          askingPrice: preselectedProduct.base_price ? String(preselectedProduct.base_price) : '',
+          qualityGrade: 'standard',
+          notes: `Supplying in response to client request.`,
+          photo: null,
+          customProductName: preselectedProduct.name,
+          customCategory: preselectedProduct.category || 'Vegetables',
+          customUnit: preselectedProduct.unit || 'kg',
+        });
+      } else {
+        setSelectedProduct(preselectedProduct);
+        let baseVal = Number(preselectedProduct.base_price || 0);
+        if (baseVal > 0 && baseVal < 100) {
+          baseVal = Math.round(baseVal * 1473.97);
+        }
+        setForm({
+          quantity: preselectedProduct.quantity_needed ? String(preselectedProduct.quantity_needed).split(' ')[0] : '',
+          availableDate: new Date().toISOString().slice(0, 10),
+          askingPrice: baseVal ? String(baseVal) : '',
+          qualityGrade: 'standard',
+          notes: '',
+          photo: null,
+          customProductName: '',
+          customCategory: 'Vegetables',
+          customUnit: 'kg',
+        });
+      }
+      if (clearPreselected) clearPreselected();
+    }
+  }, [preselectedProduct, clearPreselected]);
+
+  const openCustomProduct = () => {
+    const customProd = {
+      id: null,
+      name: 'Custom Product Submission',
+      category: 'Vegetables',
+      unit: 'kg',
+      isCustom: true
+    };
+    setSelectedProduct(customProd);
+    setForm({
+      quantity: '',
+      availableDate: new Date().toISOString().slice(0, 10),
+      askingPrice: '',
+      qualityGrade: 'standard',
+      notes: '',
+      photo: null,
+      customProductName: '',
+      customCategory: 'Vegetables',
+      customUnit: 'kg'
+    });
+    setPhotoPreview(null);
+    setValidationErrors({});
+  };
+
   const openProduct = (product: DemandProduct) => {
     setSelectedProduct(product);
     let baseVal = Number(product.base_price || 0);
@@ -222,8 +306,16 @@ export default function SubmitHarvest() {
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
+    if (selectedProduct.isCustom && !form.customProductName?.trim()) {
+      errors.customProductName = "Product name is required.";
+      hasErrors = true;
+    }
+
     // Check unit thresholds (20kg, 15 litres, 10 crates, 10 jars, 10 bundles)
-    const unit = selectedProduct.unit?.toLowerCase() || 'kg';
+    const unit = (selectedProduct.isCustom || selectedProduct.isRequest)
+      ? (form.customUnit?.toLowerCase() || 'kg')
+      : (selectedProduct.unit?.toLowerCase() || 'kg');
+
     let minQty = 1;
     let minMsg = "Quantity must be greater than zero.";
 
@@ -265,10 +357,8 @@ export default function SubmitHarvest() {
     setIsSubmitting(true);
 
     try {
-      await api.submitSupply({
-        product: selectedProduct.id,
+      const payload: Record<string, any> = {
         quantity: qty,
-        unit: selectedProduct.unit,
         price: askingPriceRWF,
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
@@ -276,11 +366,23 @@ export default function SubmitHarvest() {
         photo: photos[0] || null,
         images: photos,
         status: isDraft ? 'draft' : 'pending',
-      });
+      };
+
+      if (selectedProduct.isCustom || selectedProduct.isRequest || !selectedProduct.id) {
+        payload.product = null;
+        payload.custom_product_name = selectedProduct.isCustom ? form.customProductName : selectedProduct.name;
+        payload.custom_category = selectedProduct.isCustom ? form.customCategory : selectedProduct.category;
+        payload.custom_unit = selectedProduct.isCustom ? form.customUnit : selectedProduct.unit;
+      } else {
+        payload.product = selectedProduct.id;
+        payload.unit = selectedProduct.unit;
+      }
+
+      await api.submitSupply(payload);
 
       setSuccessModal({
         isOpen: true,
-        productName: selectedProduct.name,
+        productName: selectedProduct.isCustom ? form.customProductName! : selectedProduct.name,
         isDraft,
       });
       setSelectedProduct(null);
@@ -430,6 +532,26 @@ export default function SubmitHarvest() {
 
       {/* Product grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+        {!isLoading && (
+          <motion.div
+            whileHover={{ y: -2 }}
+            onClick={() => openCustomProduct()}
+            className={cn(
+              'bg-[#fcf9f2] rounded-xl border-2 border-dashed border-[#c1c9c0] p-4.5 custom-shadow cursor-pointer transition-all duration-300 group flex flex-col items-center justify-center text-center min-h-[220px] h-full justify-between',
+              selectedProduct?.isCustom ? 'border-primary ring-1 ring-primary/30' : 'hover:border-primary/50'
+            )}
+          >
+            <div className="flex flex-col items-center justify-center flex-grow py-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <Plus className="text-primary" size={24} />
+              </div>
+              <h3 className="font-sans text-sm font-bold text-primary">Submit Custom Crop</h3>
+              <p className="font-sans text-[11px] text-[#717971] max-w-[180px] mt-1 leading-relaxed">
+                Submit a harvest for a crop not listed in active demands.
+              </p>
+            </div>
+          </motion.div>
+        )}
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-2 animate-pulse">
@@ -440,22 +562,6 @@ export default function SubmitHarvest() {
               </div>
             </div>
           ))
-        ) : filteredDemands.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 gap-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center">
-              <Leaf size={28} className="text-outline" />
-            </div>
-            <p className="font-sans text-sm font-bold text-on-surface">
-              {searchQuery || selectedCategory !== 'All Categories' || urgencyFilter !== 'All' || priceFilter !== 'All'
-                ? 'No products match your filters.'
-                : 'No products are currently needed.'}
-            </p>
-            <p className="font-sans text-xs text-on-surface-variant max-w-xs">
-              {searchQuery || selectedCategory !== 'All Categories' || urgencyFilter !== 'All' || priceFilter !== 'All'
-                ? 'Try adjusting or clearing your filters.'
-                : 'Harvest Hill will post new demands soon. Check back later.'}
-            </p>
-          </div>
         ) : currentDemands.map((product) => {
           let baseVal = Number(product.base_price || 0);
           if (baseVal > 0 && baseVal < 100) {
@@ -590,18 +696,85 @@ export default function SubmitHarvest() {
                     <X size={18} />
                   </button>
                   <div>
-                    <h3 className="font-sans text-base font-bold text-primary">Submit Harvest: {selectedProduct.name}</h3>
+                    <h3 className="font-sans text-base font-bold text-primary">
+                      {selectedProduct.isCustom ? 'Propose New Crop Harvest' : `Submit Harvest: ${selectedProduct.name}`}
+                    </h3>
                     <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest font-bold">
-                      Demand Base Price: {isSelectedProductRwf 
-                        ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                        : `$${Number(selectedProduct.base_price || 0).toFixed(2)}`
-                      }
+                      {selectedProduct.isCustom ? 'Custom Crop Submission' : (
+                        `Demand Base Price: ${isSelectedProductRwf 
+                          ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                          : `$${Number(selectedProduct.base_price || 0).toFixed(2)}`
+                        }`
+                      )}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="flex-1 p-4 sm:p-5 space-y-5 sm:space-y-6">
+                {(selectedProduct.isCustom || selectedProduct.isRequest) && (
+                  <div className="space-y-4 p-4 border border-outline-variant/60 rounded-xl bg-surface-container-low/20">
+                    <h4 className="font-mono text-[9px] uppercase tracking-wider text-primary font-bold">Custom Crop Specification</h4>
+                    
+                    {selectedProduct.isCustom && (
+                      <div className="space-y-1.5">
+                        <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Crop / Product Name</label>
+                        <input
+                          className={cn(
+                            "w-full px-3 py-2 rounded-lg border bg-surface-container-lowest font-sans text-xs font-semibold focus:border-primary outline-none transition-all",
+                            validationErrors.customProductName ? "border-error focus:ring-error" : "border-outline-variant"
+                          )}
+                          placeholder="e.g. Red Gala Apples"
+                          type="text"
+                          required
+                          value={form.customProductName}
+                          onChange={(e) => {
+                            setForm(current => ({ ...current, customProductName: e.target.value }));
+                            setValidationErrors(prev => ({ ...prev, customProductName: undefined }));
+                          }}
+                        />
+                        {validationErrors.customProductName && (
+                          <p className="text-error font-mono text-[9px] uppercase font-bold mt-0.5 pl-0.5">
+                            {validationErrors.customProductName}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Category</label>
+                        <select
+                          className="w-full px-2 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest font-sans text-xs focus:border-primary outline-none"
+                          value={form.customCategory}
+                          onChange={(e) => setForm(current => ({ ...current, customCategory: e.target.value }))}
+                        >
+                          <option value="Vegetables">Vegetables</option>
+                          <option value="Fruits">Fruits</option>
+                          <option value="Grains">Grains</option>
+                          <option value="Animal-Based">Animal-Based</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Unit</label>
+                        <select
+                          className="w-full px-2 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest font-sans text-xs focus:border-primary outline-none"
+                          value={form.customUnit}
+                          onChange={(e) => setForm(current => ({ ...current, customUnit: e.target.value }))}
+                        >
+                          <option value="kg">kg</option>
+                          <option value="litre">litre</option>
+                          <option value="crate">crate</option>
+                          <option value="jar">jar</option>
+                          <option value="bundle">bundle</option>
+                          <option value="dozen">dozen</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1.5">
                     <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Quantity Available</label>
@@ -618,7 +791,9 @@ export default function SubmitHarvest() {
                           const val = event.target.value;
                           setForm((current) => ({ ...current, quantity: val }));
                           const qtyNum = Number(val);
-                          const unit = selectedProduct.unit?.toLowerCase() || 'kg';
+                          const unit = (selectedProduct.isCustom || selectedProduct.isRequest)
+                            ? (form.customUnit?.toLowerCase() || 'kg')
+                            : (selectedProduct.unit?.toLowerCase() || 'kg');
                           if (val) {
                             let err: string | undefined = undefined;
                             if (unit.includes('kg')) {
@@ -640,7 +815,9 @@ export default function SubmitHarvest() {
                           }
                         }}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-on-surface-variant font-bold">{selectedProduct.unit}</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-on-surface-variant font-bold">
+                        {(selectedProduct.isCustom || selectedProduct.isRequest) ? form.customUnit : selectedProduct.unit}
+                      </span>
                     </div>
                     {validationErrors.quantity && (
                       <p className="text-error font-mono text-[9px] uppercase font-bold mt-0.5 pl-0.5">

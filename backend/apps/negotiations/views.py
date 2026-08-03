@@ -40,10 +40,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                 thread.save()
         else:
             from apps.notifications.utils import send_live_notification
+            prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
             send_live_notification(
                 user=thread.supply.farmer.user,
                 title="New Negotiation Started",
-                message=f"A buyer ({request.user.email}) has initiated a price negotiation for your supply: {thread.supply.product.name}."
+                message=f"A buyer ({request.user.email}) has initiated a price negotiation for your supply: {prod_name}."
             )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
@@ -98,10 +99,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         from apps.notifications.utils import send_live_notification
         recipient = thread.supply.farmer.user if request.user == thread.buyer else thread.buyer
         if recipient:
+            prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
             send_live_notification(
                 user=recipient,
                 title="Negotiation Update",
-                message=f"New message/offer sent for {thread.supply.product.name}."
+                message=f"New message/offer sent for {prod_name}."
             )
 
         return Response(NegotiationThreadSerializer(thread).data)
@@ -132,10 +134,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
 
         # Send live notification to the farmer
         from apps.notifications.utils import send_live_notification
+        prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
         send_live_notification(
             user=thread.supply.farmer.user,
             title="Agreement Reached",
-            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply #{thread.supply.id} ({thread.supply.product.name})."
+            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply #{thread.supply.id} ({prod_name})."
         )
 
         # Send live notification to all admins
@@ -146,7 +149,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             send_live_notification(
                 user=admin,
                 title="Negotiation Finalized",
-                message=f"Negotiation for supply #{thread.supply.id} ({thread.supply.product.name}) has been finalized."
+                message=f"Negotiation for supply #{thread.supply.id} ({prod_name}) has been finalized."
             )
 
         # Log action to AuditLog

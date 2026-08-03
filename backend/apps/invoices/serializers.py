@@ -63,8 +63,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             total = float(obj.amount) if (obj.amount and float(obj.amount) > 0) else float(obj.supply.price * obj.supply.quantity)
             return [
                 {
-                    "description": obj.supply.product.name if obj.supply.product else "Crop",
-                    "quantity": f"{obj.supply.quantity} {obj.supply.product.unit if obj.supply.product else ''}",
+                    "description": obj.supply.product.name if obj.supply.product else (obj.supply.custom_product_name or "Crop"),
+                    "quantity": f"{obj.supply.quantity} {obj.supply.product.unit if obj.supply.product else (obj.supply.custom_unit or 'kg')}",
                     "total": total
                 }
             ]

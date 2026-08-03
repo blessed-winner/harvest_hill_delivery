@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut, 
   X,
-  UserCircle
+  UserCircle,
+  ClipboardList
 } from 'lucide-react';
 import { View } from '../../types';
 import { cn } from '../lib/utils';
@@ -26,6 +27,7 @@ export default function Sidebar({ activeView, onViewChange, isOpen = false, onCl
   const navItems = [
     { id: 'dashboard' as View, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'submit' as View, label: 'Submit Harvest', icon: Sprout },
+    { id: 'client-requests' as View, label: 'Client Requests', icon: ClipboardList },
     { id: 'supplies' as View, label: 'My Supplies', icon: Package },
     { id: 'negotiations' as View, label: 'Negotiations', icon: Handshake },
     { id: 'invoices' as View, label: 'Invoices & Payments', icon: ReceiptText },

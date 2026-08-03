@@ -470,6 +470,11 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                            if (!token) {
+                              window.location.href = '/login';
+                              return;
+                            }
                             addToCart(product);
                           }}
                           className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"

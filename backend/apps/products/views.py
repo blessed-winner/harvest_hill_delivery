@@ -1,7 +1,7 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from .models import Product
-from .serializers import ProductSerializer
+from .models import Product, ProductRequest
+from .serializers import ProductSerializer, ProductRequestSerializer
 from .utils import delete_cloudinary_image
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -47,3 +47,26 @@ class ProductViewSet(viewsets.ModelViewSet):
         from apps.common.utils import log_action
         instance.delete()
         log_action(self.request, actor=self.request.user, action="product_removed", target_model="Product", target_id=prod_id)
+
+
+class ProductRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = ProductRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'admin':
+            return ProductRequest.objects.all().order_by('-created_at')
+        elif user.role == 'farmer':
+            return ProductRequest.objects.filter(status='approved').order_by('-created_at')
+        elif user.role == 'client':
+            return ProductRequest.objects.filter(client=user.client_profile).order_by('-created_at')
+        return ProductRequest.objects.none()
+
+    def perform_create(self, serializer):
+        if self.request.user.role == 'client':
+            serializer.save(client=self.request.user.client_profile)
+        else:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only clients can create product requests.")
+

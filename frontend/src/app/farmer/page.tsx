@@ -9,12 +9,15 @@ import MySupplies from '../../portals/farmer/pages/MySupplies';
 import Negotiations from '../../portals/farmer/pages/Negotiations';
 import Invoices from '../../portals/farmer/pages/Invoices';
 import Settings from '../../portals/farmer/pages/Settings';
+import ClientRequests from '../../portals/farmer/pages/ClientRequests';
 import { View } from '../../portals/types';
 
 export default function FarmerPage() {
   const router = useRouter();
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [authorized, setAuthorized] = useState(false);
+
+  const [preselectedProduct, setPreselectedProduct] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -55,8 +58,13 @@ export default function FarmerPage() {
     );
   }
 
-  const handleViewChange = (view: View) => {
+  const handleViewChange = (view: View, extraData?: any) => {
     setActiveView(view);
+    if (extraData) {
+      setPreselectedProduct(extraData);
+    } else {
+      setPreselectedProduct(null);
+    }
     if (typeof window !== 'undefined') {
       window.history.pushState({ view }, '', `/farmer?view=${view}`);
     }
@@ -65,7 +73,7 @@ export default function FarmerPage() {
   const renderView = () => {
     switch (activeView) {
       case 'submit':
-        return <SubmitHarvest />;
+        return <SubmitHarvest preselectedProduct={preselectedProduct} clearPreselected={() => setPreselectedProduct(null)} />;
       case 'supplies':
         return <MySupplies />;
       case 'negotiations':
@@ -74,6 +82,8 @@ export default function FarmerPage() {
         return <Invoices />;
       case 'settings':
         return <Settings />;
+      case 'client-requests':
+        return <ClientRequests onViewChange={handleViewChange} />;
       case 'dashboard':
       default:
         return <Dashboard onViewChange={handleViewChange} />;

@@ -85,25 +85,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         if (fetchedSupply) {
           const imagesList: string[] = [];
           const seenPaths = new Set<string>();
-          const seenBases = new Set<string>();
-
-          const getBaseName = (url: string) => {
-            if (!url) return '';
-            const path = normalizeUrlPath(url);
-            const rawFilename = path.split('/').pop() || '';
-            const filename = rawFilename.split('?')[0];
-            return filename.split('.')[0].replace(/_[a-zA-Z0-9]+$/, '');
-          };
 
           const addImage = (url: string | null | undefined) => {
             if (!url) return;
             const fullUrl = getFullImageUrl(url);
             const normalized = normalizeUrlPath(fullUrl);
-            const base = getBaseName(fullUrl);
 
-            if (!seenPaths.has(normalized) && (!base || !seenBases.has(base))) {
+            if (!seenPaths.has(normalized)) {
               seenPaths.add(normalized);
-              if (base) seenBases.add(base);
               imagesList.push(fullUrl);
             }
           };
@@ -478,6 +467,11 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
               <button
                 onClick={() => {
+                  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                  if (!token) {
+                    window.location.href = '/login';
+                    return;
+                  }
                   for (let i = 0; i < qty; i++) {
                     addToCart(product);
                   }

@@ -198,6 +198,16 @@ export const clientApi = {
       }),
   },
 
+  // ── Product Requests ───────────────────────────────────────────────────────
+  productRequests: {
+    list: () => apiRequest('/api/products/requests/'),
+    create: (payload: any) =>
+      apiRequest('/api/products/requests/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+  },
+
   // ── Notifications ──────────────────────────────────────────────────────────
   notifications: {
     list: () => apiRequest('/api/notifications/'),

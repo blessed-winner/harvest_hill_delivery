@@ -4,7 +4,8 @@ export type View =
   | 'supplies'
   | 'negotiations'
   | 'invoices'
-  | 'settings';
+  | 'settings'
+  | 'client-requests';
 
 export type ViewType =
   | 'dashboard'

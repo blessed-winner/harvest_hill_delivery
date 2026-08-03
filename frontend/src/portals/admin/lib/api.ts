@@ -162,6 +162,16 @@ export const api = {
     delete: (id: string | number) => apiRequest(`/api/products/${id}/`, { method: 'DELETE' }),
   },
 
+  // Product Requests
+  productRequests: {
+    list: () => apiRequest('/api/products/requests/'),
+    update: (id: string | number, payload: any) =>
+      apiRequest(`/api/products/requests/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }),
+  },
+
   // Supplies Management
   supplies: {
     list: () => apiRequest('/api/supplies/'),

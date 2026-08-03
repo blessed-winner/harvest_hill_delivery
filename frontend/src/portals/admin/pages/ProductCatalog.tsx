@@ -37,7 +37,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const [activeCategory, setActiveCategory] = useState('All Products');
-  const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Animal-Based'];
+  const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Animal-Based', 'Client Requests'];
+
+  // Product Requests states
+  const [requests, setRequests] = useState<any[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,9 +87,52 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       });
   };
 
+  const loadRequests = () => {
+    setIsLoadingRequests(true);
+    api.productRequests.list()
+      .then(res => {
+        setRequests(res || []);
+      })
+      .catch(err => {
+        console.error("Failed to load requests:", err);
+      })
+      .finally(() => {
+        setIsLoadingRequests(false);
+      });
+  };
+
+  const handleUpdateRequestStatus = async (requestId: number, newStatus: string) => {
+    try {
+      await api.productRequests.update(requestId, { status: newStatus });
+      toast(`Request ${newStatus} successfully.`, "success");
+      loadRequests();
+    } catch (err: any) {
+      toast(err.message || "Failed to update request status.", "error");
+    }
+  };
+
+  const handleCreateProductFromRequest = (req: any) => {
+    setFormName(req.product_name);
+    setFormCategory(req.category || 'Vegetables');
+    setFormUnit(req.unit || 'kg');
+    setFormPrice(req.preferred_price ? String(req.preferred_price) : '');
+    setFormCurrencyCode("RWF");
+    setFormIsCurrentlyNeeded(true);
+    setFormUrgency("medium");
+    setFormQuantityNeeded(String(req.quantity_needed));
+    setImageFile(null);
+    setImagePreviewUrl("");
+    setErrorMessage("");
+    setSelectedProduct("new");
+  };
+
   useEffect(() => {
-    loadProducts();
-  }, [searchTerm]);
+    if (activeCategory === 'Client Requests') {
+      loadRequests();
+    } else {
+      loadProducts();
+    }
+  }, [searchTerm, activeCategory]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -332,130 +379,210 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       </div>
 
       <div className="p-8 flex-1">
-        {isLoading ? (
-          <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading catalog...</div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
-            <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
-            <p className="text-sm font-bold">No products found.</p>
-            <p className="text-xs">Add new crops or change categories.</p>
-          </div>
+        {activeCategory === 'Client Requests' ? (
+          isLoadingRequests ? (
+            <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading requests...</div>
+          ) : requests.length === 0 ? (
+            <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+              <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+              <p className="text-sm font-bold">No product requests found.</p>
+              <p className="text-xs">Client requests will appear here once submitted.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto bg-white rounded-xl border border-outline-variant/30 shadow-sm">
+              <table className="min-w-full divide-y divide-outline-variant/20">
+                <thead className="bg-surface-container-low">
+                  <tr>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Client</th>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Requested Crop</th>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Category</th>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Qty Needed</th>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Target Price</th>
+                    <th scope="col" className="px-6 py-4 text-left text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Status</th>
+                    <th scope="col" className="px-6 py-4 text-right text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10 bg-white">
+                  {requests.map((req) => (
+                    <tr key={req.id} className="hover:bg-surface-container-low/20 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-on-surface">{req.client_name || 'Client'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-primary">{req.product_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-on-surface-variant">{req.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono font-bold text-on-surface">{parseFloat(req.quantity_needed).toLocaleString()} {req.unit}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-emerald-700 font-bold">
+                        {req.preferred_price ? `RWF ${parseFloat(req.preferred_price).toLocaleString()}` : 'Flexible'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs">
+                        <span className={cn(
+                          "px-2.5 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-wider font-extrabold border shadow-sm inline-block",
+                          req.status === 'approved' && "bg-[#bceec8] text-[#00210f] border-[#bceec8]",
+                          req.status === 'pending' && "bg-amber-100 text-amber-800 border-amber-200",
+                          req.status === 'fulfilled' && "bg-blue-100 text-blue-800 border-blue-200",
+                          req.status === 'rejected' && "bg-red-100 text-red-800 border-red-200"
+                        )}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold space-x-2">
+                        {req.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateRequestStatus(req.id, 'approved')}
+                              className="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUpdateRequestStatus(req.id, 'rejected')}
+                              className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all cursor-pointer shadow-sm"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {req.status === 'approved' && (
+                          <button
+                            onClick={() => handleCreateProductFromRequest(req)}
+                            className="px-2.5 py-1.5 bg-[#144227] hover:bg-[#376847] text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1.5 inline-flex"
+                          >
+                            <Plus size={11} className="mr-1" /> Create Template
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {currentProducts.map((product, i) => (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  key={product.id}
-                  onClick={() => handleOpenEditProduct(product)}
-                  className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
-                >
-                  <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
-                    {product.image_url ? (
-                      <img 
-                        src={product.image_url} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        alt={product.name} 
-                      />
-                    ) : (
-                      <Package className="w-12 h-12 text-outline-variant" />
-                    )}
-                    
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center shadow-sm">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full mr-2",
-                        product.is_currently_needed ? "bg-green-600 animate-pulse" : "bg-outline"
-                      )} />
-                      <span className="text-[10px] font-bold text-on-surface uppercase tracking-tighter">
-                        {product.is_currently_needed ? 'Needed' : 'Normal'}
-                      </span>
-                    </div>
-
-                    {product.is_currently_needed && (
-                      <div className="absolute top-3 right-3">
-                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm", getUrgencyBadgeClass(product.urgency))}>
-                          {product.urgency || 'Medium'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-sm truncate pr-2">{product.name}</h3>
-                      <button 
-                        onClick={(e) => handleDeleteProduct(product, e)}
-                        className="p-1 text-on-surface-variant hover:text-red-600 rounded-full hover:bg-surface-container transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-3">
-                      <div>
-                        <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Base Price</p>
-                        <p className="font-mono text-sm font-bold text-primary">{formatPrice(product.base_price)} / {product.unit}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Qty Needed</p>
-                        <p className="font-mono text-sm font-bold text-on-surface">{parseFloat(product.quantity_needed).toLocaleString()} {product.unit}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-outline-variant/30 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
-                        <div 
-                          onClick={(e) => handleToggleNeeded(product, e)}
-                          className={cn(
-                            "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
-                            product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
-                          )}
-                        >
+            {isLoading ? (
+              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading catalog...</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
+                <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
+                <p className="text-sm font-bold">No products found.</p>
+                <p className="text-xs">Add new crops or change categories.</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {currentProducts.map((product, i) => (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.05 }}
+                      key={product.id}
+                      onClick={() => handleOpenEditProduct(product)}
+                      className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                    >
+                      <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
+                        {product.image_url ? (
+                          <img 
+                            src={product.image_url} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            alt={product.name} 
+                          />
+                        ) : (
+                          <Package className="w-12 h-12 text-outline-variant" />
+                        )}
+                        
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center shadow-sm">
                           <div className={cn(
-                            "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                            product.is_currently_needed ? "translate-x-5" : "translate-x-0"
+                            "w-2 h-2 rounded-full mr-2",
+                            product.is_currently_needed ? "bg-green-600 animate-pulse" : "bg-outline"
                           )} />
+                          <span className="text-[10px] font-bold text-on-surface uppercase tracking-tighter">
+                            {product.is_currently_needed ? 'Needed' : 'Normal'}
+                          </span>
+                        </div>
+    
+                        {product.is_currently_needed && (
+                          <div className="absolute top-3 right-3">
+                            <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm", getUrgencyBadgeClass(product.urgency))}>
+                              {product.urgency || 'Medium'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+    
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-1">
+                          <h3 className="font-bold text-sm truncate pr-2">{product.name}</h3>
+                          <button 
+                            onClick={(e) => handleDeleteProduct(product, e)}
+                            className="p-1 text-on-surface-variant hover:text-red-600 rounded-full hover:bg-surface-container transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-3">
+                          <div>
+                            <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Base Price</p>
+                            <p className="font-mono text-sm font-bold text-primary">{formatPrice(product.base_price)} / {product.unit}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Qty Needed</p>
+                            <p className="font-mono text-sm font-bold text-on-surface">{parseFloat(product.quantity_needed).toLocaleString()} {product.unit}</p>
+                          </div>
+                        </div>
+    
+                        <div className="mt-4 pt-3 border-t border-outline-variant/30 space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
+                            <div 
+                              onClick={(e) => handleToggleNeeded(product, e)}
+                              className={cn(
+                                "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
+                                product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
+                                product.is_currently_needed ? "translate-x-5" : "translate-x-0"
+                              )} />
+                            </div>
+                          </div>
+    
+                          <button
+                            onClick={(e) => handleOpenHarvestModal(product, e)}
+                            className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                          >
+                            <Sprout size={14} /> Submit Harvest
+                          </button>
                         </div>
                       </div>
-
+                    </motion.div>
+                  ))}
+                </div>
+    
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-8 px-6 py-4 bg-surface-container-low border border-outline-variant rounded-xl flex items-center justify-between">
+                    <span className="text-xs text-on-surface-variant font-bold">
+                      Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} crops
+                    </span>
+                    <div className="flex gap-2">
                       <button
-                        onClick={(e) => handleOpenHarvestModal(product, e)}
-                        className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
                       >
-                        <Sprout size={14} /> Submit Harvest
+                        Previous
+                      </button>
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        Next
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-8 px-6 py-4 bg-surface-container-low border border-outline-variant rounded-xl flex items-center justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">
-                  Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} crops
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </>
         )}

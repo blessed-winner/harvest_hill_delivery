@@ -19,11 +19,11 @@ class SupplyImageSerializer(serializers.ModelSerializer):
 
 class SupplySerializer(serializers.ModelSerializer):
     proposed_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2, read_only=True)
-    base_price = serializers.DecimalField(source='product.base_price', max_digits=10, decimal_places=2, read_only=True)
+    base_price = serializers.SerializerMethodField()
     product_detail = ProductShortSerializer(source='product', read_only=True)
     farmer_name = serializers.CharField(source='farmer.farm_name', read_only=True)
     farmer_location = serializers.CharField(source='farmer.location', read_only=True)
-    unit = serializers.CharField(source='product.unit', read_only=True)
+    unit = serializers.SerializerMethodField()
     images = SupplyImageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -31,9 +31,20 @@ class SupplySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product', 'product_detail', 'quantity', 'unit', 'price', 'proposed_price', 'base_price', 
             'status', 'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
-            'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 'rating', 'rating_count'
+            'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 'rating', 'rating_count',
+            'custom_product_name', 'custom_category', 'custom_unit'
         ]
         read_only_fields = ['created_at']
+
+    def get_base_price(self, obj):
+        if obj.product:
+            return obj.product.base_price
+        return None
+
+    def get_unit(self, obj):
+        if obj.product:
+            return obj.product.unit
+        return obj.custom_unit or 'kg'
 
     def validate(self, attrs):
         # Only validate fields if they are provided (handles partial updates/PATCH cleanly)
@@ -44,19 +55,35 @@ class SupplySerializer(serializers.ModelSerializer):
         elif not self.instance:
             raise serializers.ValidationError({"price": "Price is required."})
 
+        product = attrs.get('product') or (self.instance.product if self.instance else None)
+        custom_product = attrs.get('custom_product_name') or (self.instance.custom_product_name if self.instance else '')
+        if not product and not custom_product:
+            raise serializers.ValidationError({"product": "Either product template or custom product name is required."})
+
         if 'quantity' in attrs:
             quantity = attrs['quantity']
-            # Get the product to check its unit
-            product = attrs.get('product') or (self.instance.product if self.instance else None)
+            unit = (product.unit if product else (attrs.get('custom_unit') or (self.instance.custom_unit if self.instance else 'kg'))).lower()
             
-            if product and product.unit.lower() == 'kg':
-                # Only enforce 20kg minimum for kg units
-                if float(quantity) < 20:
-                    raise serializers.ValidationError({"quantity": "Quantity must be at least 20 kg."})
-            else:
-                # For non-kg units, just ensure quantity is positive
-                if float(quantity) <= 0:
-                    raise serializers.ValidationError({"quantity": "Quantity must be greater than zero."})
+            min_qty = 1
+            min_msg = "Quantity must be greater than zero."
+            if 'kg' in unit:
+                min_qty = 20
+                min_msg = "Quantity must be at least 20 kg."
+            elif 'litre' in unit or 'liter' in unit or unit == 'l':
+                min_qty = 15
+                min_msg = "Quantity must be at least 15 litres."
+            elif 'crate' in unit:
+                min_qty = 10
+                min_msg = "Quantity must be at least 10 crates."
+            elif 'jar' in unit:
+                min_qty = 10
+                min_msg = "Quantity must be at least 10 jars."
+            elif 'bundle' in unit:
+                min_qty = 10
+                min_msg = "Quantity must be at least 10 bundles."
+
+            if float(quantity) < min_qty:
+                raise serializers.ValidationError({"quantity": min_msg})
         elif not self.instance:
             raise serializers.ValidationError({"quantity": "Quantity is required."})
 
@@ -133,44 +160,47 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         # Send notification to farmer when admin updates their harvest
         if self.request.user.role == 'admin':
             from apps.notifications.models import Notification
+            prod_name = instance.product.name if instance.product else instance.custom_product_name
             Notification.objects.create(
                 user=instance.farmer.user,
                 title="Harvest Updated",
-                message=f"Your harvest submission for {instance.product.name} has been updated by admin."
+                message=f"Your harvest submission for {prod_name} has been updated by admin."
             )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
         if old_status != 'accepted' and new_status == 'accepted':
             product = instance.product
-            # Subtract the supply quantity from the product's quantity_needed
-            product.quantity_needed = max(0, product.quantity_needed - instance.quantity)
-            
-            # If the remaining quantity required becomes <= 0, the demand is met (hide from farmer)
-            if product.quantity_needed <= 0:
-                product.is_currently_needed = False
-            else:
-                product.is_currently_needed = True
-            
-            # Update the product image if supply has a photo and product doesn't
-            if instance.photo and not product.image:
-                product.image = instance.photo
-            product.save()
+            if product:
+                # Subtract the supply quantity from the product's quantity_needed
+                product.quantity_needed = max(0, product.quantity_needed - instance.quantity)
+                
+                # If the remaining quantity required becomes <= 0, the demand is met (hide from farmer)
+                if product.quantity_needed <= 0:
+                    product.is_currently_needed = False
+                else:
+                    product.is_currently_needed = True
+                
+                # Update the product image if supply has a photo and product doesn't
+                if instance.photo and not product.image:
+                    product.image = instance.photo
+                product.save()
         
         # When supply is delivered or archived, check if product should still be visible in client catalog
         # Note: We exclude 'rejected' from here to keep the demand active on farmers' screens as per requirements.
         if new_status in ['delivered'] or instance.is_archived:
             product = instance.product
-            # Check if there are other accepted, non-archived supplies for this product
-            has_other_accepted = Supply.objects.filter(
-                product=product,
-                status='accepted',
-                is_archived=False
-            ).exclude(id=instance.id).exists()
-            
-            # If no other accepted supplies, hide the product from customer catalog
-            if not has_other_accepted:
-                product.is_currently_needed = False
-                product.save()
+            if product:
+                # Check if there are other accepted, non-archived supplies for this product
+                has_other_accepted = Supply.objects.filter(
+                    product=product,
+                    status='accepted',
+                    is_archived=False
+                ).exclude(id=instance.id).exists()
+                
+                # If no other accepted supplies, hide the product from customer catalog
+                if not has_other_accepted:
+                    product.is_currently_needed = False
+                    product.save()
 
     @action(detail=True, methods=['post'], url_path='upload-image')
     def upload_image(self, request, pk=None):
