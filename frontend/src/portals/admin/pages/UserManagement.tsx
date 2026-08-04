@@ -458,7 +458,7 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
         </div>
         
         <div className="flex border-b border-outline-variant">
-          {['All Users', 'Clients', 'Farmers & Suppliers', 'Applications'].map((tab) => (
+          {['All Users', 'Clients', 'Farmers & Suppliers'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -467,12 +467,11 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                 activeTab === tab ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:bg-surface-container-low"
               )}
             >
-              {tab}{tab === 'Applications' && applications.filter(a => a.status === 'pending').length > 0 ? ` (${applications.filter(a => a.status === 'pending').length})` : ''}
+              {tab}
             </button>
           ))}
         </div>
 
-        {activeTab !== 'Applications' && (
         <div className="py-2 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
@@ -502,126 +501,13 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
             <Plus className="w-4 h-4" /> Add User
           </button>
         </div>
-        )}
       </div>
-
       <div className="flex-1 min-h-0 px-4 sm:px-6 pb-4 sm:pb-6">
         <div className="h-full min-h-0 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden flex flex-col justify-between">
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
 
-            {/* ── APPLICATIONS TAB ── */}
-            {activeTab === 'Applications' ? (
-              appsLoading ? (
-                <div className="p-12 text-center text-on-surface-variant font-medium animate-pulse">Loading applications...</div>
-              ) : applications.length === 0 ? (
-                <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
-                  <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
-                  <p className="text-sm font-bold">No farmer applications yet.</p>
-                  <p className="text-xs">Applications submitted via the farmer registration form will appear here.</p>
-                </div>
-              ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
-                    <tr>
-                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Applicant</th>
-                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Farm</th>
-                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant">
-                    {applications.map((app) => (
-                      <tr
-                        key={app.id}
-                        onClick={() => setSelectedApp(app)}
-                        className="hover:bg-surface-container-high/50 transition-colors cursor-pointer"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            {getUserAvatar(app) ? (
-                              <img
-                                src={getUserAvatar(app)!}
-                                alt={app.full_name}
-                                className="w-9 h-9 rounded-full object-cover border border-outline-variant shadow-sm shrink-0"
-                              />
-                            ) : (
-                              <DefaultProfileAvatar className="w-9 h-9 shadow-sm shrink-0" />
-                            )}
-                            <div>
-                              <p className="text-sm font-bold text-on-surface">{app.full_name}</p>
-                              <p className="text-xs text-on-surface-variant">{app.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-semibold text-on-surface">{app.farm_name}</p>
-                          <p className="text-xs text-on-surface-variant">{app.crops}</p>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{app.location}</td>
-                        <td className="px-6 py-4">
-                          <span className={cn(
-                            "px-2.5 py-1 text-[10px] font-bold rounded-full border",
-                            app.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                            app.status === 'approved' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                            "bg-red-50 text-red-700 border-red-200"
-                          )}>
-                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                            <button
-                              onClick={() => setSelectedApp(app)}
-                              title="View details"
-                              className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant cursor-pointer"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            {app.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveApplication(app)}
-                                  title="Approve"
-                                  className="p-1.5 hover:bg-emerald-50 rounded-lg transition-colors text-emerald-600 cursor-pointer"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleRejectApplication(app)}
-                                  title="Reject"
-                                  className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-500 cursor-pointer"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                            {app.status === 'rejected' && (
-                              <button
-                                onClick={() => handleApproveApplication(app)}
-                                title="Re-approve"
-                                className="p-1.5 hover:bg-emerald-50 rounded-lg transition-colors text-emerald-600 cursor-pointer"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteApplication(app)}
-                              title="Delete application"
-                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-red-600 cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )
-            ) : (
-            // ── USERS TABS ──
-            isLoading ? (
+            {/* ── USERS TABS ── */}
+            {isLoading ? (
               <div className="p-12 text-center text-on-surface-variant font-medium animate-pulse">Loading user data...</div>
             ) : users.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
@@ -715,11 +601,11 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                   ))}
                 </tbody>
               </table>
-            ))}
+            )}
           </div>
 
           {/* Pagination Footer */}
-          {activeTab !== 'Applications' && !isLoading && totalPages > 1 && (
+          {!isLoading && totalPages > 1 && (
             <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
               <span className="text-xs text-on-surface-variant font-bold">
                 Showing {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, users.length)} of {users.length} users
