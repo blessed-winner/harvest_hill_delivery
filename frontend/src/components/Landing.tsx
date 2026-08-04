@@ -83,16 +83,16 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             <p className="text-xs sm:text-sm text-white/90 font-medium leading-relaxed">
               Connecting local Rwandan family farms directly with your kitchen. Guaranteed freshness, fair pricing, and 100% sustainable produce.
             </p>
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex flex-row items-center gap-3">
               <button
                 onClick={() => onNavigate('catalog')}
-                className="bg-[#9ed0ab] text-[#00210f] hover:bg-[#8cc49a] font-extrabold text-xs px-7 py-3.5 rounded-xl transition-all cursor-pointer shadow-lg hover:shadow-xl active:scale-95"
+                className="bg-[#9ed0ab] text-[#00210f] hover:bg-[#8cc49a] font-extrabold text-xs px-4 py-2.5 sm:px-7 sm:py-3.5 rounded-xl transition-all cursor-pointer shadow-lg hover:shadow-xl active:scale-95 whitespace-nowrap"
               >
                 Explore Marketplace
               </button>
               <button
                 onClick={() => onNavigate('catalog', 'Vegetables')}
-                className="bg-white/15 backdrop-blur-md text-white border border-white/30 hover:bg-white/25 font-bold text-xs px-6 py-3.5 rounded-xl transition-all cursor-pointer"
+                className="bg-white/15 backdrop-blur-md text-white border border-white/30 hover:bg-white/25 font-bold text-xs px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-xl transition-all cursor-pointer whitespace-nowrap"
               >
                 In-Season Veg
               </button>
