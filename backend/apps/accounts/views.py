@@ -530,11 +530,13 @@ class AdminDashboardView(APIView):
             })
         # Pending supplies
         for s in Supply.objects.filter(status='pending')[:2]:
+            p_name = s.product.name if s.product else s.custom_product_name
+            p_unit = s.product.unit if s.product else s.custom_unit
             needs_attention.append({
                 "type": "supply",
                 "id": s.id,
-                "title": f"New Supply Submission: {s.product.name}",
-                "sub": f"From: {s.farmer.farm_name or s.farmer.user.email} • {s.quantity} {s.product.unit}",
+                "title": f"New Supply Submission: {p_name}",
+                "sub": f"From: {s.farmer.farm_name or s.farmer.user.email} • {s.quantity} {p_unit}",
                 "color": "text-primary",
                 "icon": "Clock"
             })
