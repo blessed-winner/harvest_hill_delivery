@@ -363,23 +363,25 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     <div className="flex flex-col h-full bg-[#f9f9f7] pb-10">
       <div className="p-8 shrink-0 bg-white border-b border-outline-variant">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-4">
-          <div>
+          <div className="w-full">
             <h2 className="text-2xl font-bold text-on-surface mb-4">Product Catalog</h2>
-            <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-fit">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer",
-                    activeCategory === cat 
-                      ? "bg-white text-primary shadow-sm" 
-                      : "text-on-surface-variant hover:bg-surface-container-high"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="max-w-full overflow-x-auto scrollbar-thin py-1">
+              <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-max">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer whitespace-nowrap",
+                      activeCategory === cat 
+                        ? "bg-white text-primary shadow-sm" 
+                        : "text-on-surface-variant hover:bg-surface-container-high"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <button 
