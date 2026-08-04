@@ -15,8 +15,10 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [cartCount, setCartCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token');
       const role = localStorage.getItem('user_role');
@@ -136,6 +138,10 @@ export default function HomePage() {
         return <Landing onNavigate={handleNavigate} addToCart={handleAddToCart} />;
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <CurrencyProvider>
