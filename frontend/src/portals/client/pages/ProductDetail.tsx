@@ -97,6 +97,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             }
           };
 
+          if (fetchedSupply.product_detail?.image_url) {
+            addImage(fetchedSupply.product_detail.image_url);
+          }
+
           if (fetchedSupply.photo) {
             addImage(fetchedSupply.photo);
           }
@@ -106,10 +110,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               const url = imgObj.image_url || imgObj.image;
               if (url) addImage(url);
             });
-          }
-          
-          if (imagesList.length === 0 && fetchedSupply.product_detail?.image_url) {
-            addImage(fetchedSupply.product_detail.image_url);
           }
 
           const mappedProduct = {
@@ -121,9 +121,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             unit: fetchedSupply.unit,
             price: fetchedSupply.price,
             status: fetchedSupply.status,
-            image_url: fetchedSupply.photo 
-              ? getFullImageUrl(fetchedSupply.photo) 
-              : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
+            image_url: fetchedSupply.product_detail?.image_url 
+              ? getFullImageUrl(fetchedSupply.product_detail.image_url) 
+              : (fetchedSupply.photo ? getFullImageUrl(fetchedSupply.photo) : ''),
             images: imagesList.length > 0 ? imagesList : undefined,
             farmer_name: fetchedSupply.farmer_name,
             farmer_location: fetchedSupply.farmer_location,
