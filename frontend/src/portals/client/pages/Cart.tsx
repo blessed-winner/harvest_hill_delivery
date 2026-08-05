@@ -271,7 +271,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
                 <div className="bg-[#f0eee7]/80 p-3 rounded-xl border border-[#e5e2db] space-y-1 mt-2">
                   <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#144227]">
-                    🚚 Transport Fee & Tax Assessment
+                    Transport Fee & Tax Assessment
                   </span>
                   <p className="text-[11px] text-[#414942] leading-relaxed">
                     Transport fee & tax will be determined by the Admin based on your delivery address upon order approval. You will review and confirm the final total before payment.

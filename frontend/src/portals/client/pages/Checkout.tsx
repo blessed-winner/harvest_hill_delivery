@@ -328,7 +328,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                 </div>
                 <div className="bg-[#f0eee7] p-3 rounded-xl border border-[#e5e2db] space-y-1">
                   <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#144227]">
-                    🚚 Transport Fee & Tax Assessment
+                    Transport Fee & Tax Assessment
                   </span>
                   <p className="text-[10px] text-[#414942] leading-relaxed">
                     Based on your delivery address, the Admin will calculate and attach the transport fee and taxes upon order approval. You will review the complete itemized breakdown prior to payment.

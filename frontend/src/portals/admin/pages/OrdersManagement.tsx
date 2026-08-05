@@ -576,7 +576,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
             <section className="bg-primary/5 rounded-2xl p-5 border border-primary/20 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                  🚚 Transport Fee & Tax Determination
+                  Transport Fee & Tax Determination
                 </h4>
                 {selectedOrder.is_assessed && (
                   <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">
