@@ -135,7 +135,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
               const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
               const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-              const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
+              const targetProdId = item.id;
 
               return (
                 <div 
