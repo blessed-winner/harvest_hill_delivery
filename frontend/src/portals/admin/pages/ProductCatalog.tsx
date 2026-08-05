@@ -53,6 +53,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestDate, setHarvestDate] = useState(new Date().toISOString().slice(0, 10));
   const [harvestGrade, setHarvestGrade] = useState('premium');
   const [harvestNotes, setHarvestNotes] = useState('');
+  const [harvestPhotos, setHarvestPhotos] = useState<File[]>([]);
+  const [harvestPhotoPreviews, setHarvestPhotoPreviews] = useState<string[]>([]);
   const [isSubmittingHarvest, setIsSubmittingHarvest] = useState(false);
 
   // Custom Dialog Modal State
@@ -199,6 +201,31 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setHarvestDate(new Date().toISOString().slice(0, 10));
     setHarvestGrade('premium');
     setHarvestNotes('');
+    setHarvestPhotos([]);
+    setHarvestPhotoPreviews([]);
+  };
+
+  const handleHarvestPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+    
+    if (harvestPhotos.length + selectedFiles.length > 5) {
+      toast("You can upload a maximum of 5 images per harvest batch.", "warning");
+    }
+
+    const availableSlots = 5 - harvestPhotos.length;
+    const filesToAdd = selectedFiles.slice(0, availableSlots);
+
+    const newPhotos = [...harvestPhotos, ...filesToAdd];
+    setHarvestPhotos(newPhotos);
+
+    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
+    setHarvestPhotoPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveHarvestPhoto = (index: number) => {
+    setHarvestPhotos(prev => prev.filter((_, i) => i !== index));
+    setHarvestPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAdminSubmitHarvest = async () => {
@@ -208,7 +235,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     }
     try {
       setIsSubmittingHarvest(true);
-      await api.supplies.create({
+
+      const payload: any = {
         product: harvestProduct.id,
         quantity: parseFloat(harvestQty),
         price: parseFloat(harvestPrice),
@@ -216,9 +244,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         quality_grade: harvestGrade,
         notes: harvestNotes,
         status: 'accepted' // Auto-accept admin farm harvest
-      });
-      toast(`Harvest submission for ${harvestProduct.name} recorded successfully!`, "success");
+      };
+
+      if (harvestPhotos.length > 0) {
+        payload.photoFile = harvestPhotos[0];
+        payload.additionalPhotos = harvestPhotos.slice(1);
+      }
+
+      await api.supplies.create(payload);
+      toast(`Harvest submission for ${harvestProduct.name} recorded successfully with ${harvestPhotos.length} image(s)!`, "success");
       setHarvestProduct(null);
+      setHarvestPhotos([]);
+      setHarvestPhotoPreviews([]);
       loadProducts();
     } catch (err: any) {
       console.error("Failed to submit admin harvest:", err);
@@ -943,6 +980,48 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   placeholder="Optional details e.g. Harvested from Sector A, cold storage ready..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 resize-none bg-white"
                 />
+              </div>
+
+              {/* Multi-Image Upload Section */}
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">
+                    Batch Photos (Up to 5 images)
+                  </label>
+                  <span className="text-[10px] text-[#717971] font-mono">
+                    {harvestPhotos.length}/5 photos
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {harvestPhotoPreviews.map((preview, idx) => (
+                    <div key={idx} className="relative h-16 rounded-xl overflow-hidden border border-[#c1c9c0] group shadow-sm">
+                      <img src={preview} className="w-full h-full object-cover" alt={`Batch photo ${idx + 1}`} />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveHarvestPhoto(idx)}
+                        className="absolute top-1 right-1 bg-red-600/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                        title="Remove image"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {harvestPhotos.length < 5 && (
+                    <label className="h-16 rounded-xl border-2 border-dashed border-[#c1c9c0] hover:border-[#144227] flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#f6f3ec]/40 hover:bg-[#f6f3ec]">
+                      <Plus size={16} className="text-[#144227]" />
+                      <span className="text-[9px] font-bold text-[#717971] mt-0.5">Add</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleHarvestPhotoSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
 
