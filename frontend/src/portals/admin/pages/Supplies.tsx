@@ -360,31 +360,31 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         subtitle="Inbound Supply Manager"
         footer={
           selectedSupply && (
-            <div className="space-y-3 w-full">
+            <div className="space-y-2.5 w-full font-sans text-xs">
               {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button 
                     onClick={() => handleUpdateStatus(selectedSupply.id, 'accepted')}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white rounded-lg font-bold shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#144227] text-white rounded-xl font-bold shadow-sm hover:bg-[#376847] transition-all cursor-pointer text-xs"
                   >
-                    <Check className="w-5 h-5" /> Accept Proposal
+                    <Check size={15} /> Accept Proposal
                   </button>
                   <button 
                     onClick={() => handleUpdateStatus(selectedSupply.id, 'rejected')}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-red-600 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm"
                   >
-                    <X className="w-5 h-5" /> Reject Proposal
+                    <X size={15} /> Reject Proposal
                   </button>
                 </div>
               )}
 
               {!selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button 
                     onClick={() => handleArchiveSupply(selectedSupply.id)}
-                    className="w-full py-3 bg-surface-container-highest text-primary rounded-lg font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#c1c9c0]"
+                    className="w-full py-2.5 bg-white border border-outline-variant/60 text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                   >
-                    <Archive className="w-5 h-5" /> Archive
+                    <Archive size={14} className="text-on-surface-variant" /> Archive
                   </button>
                   <button 
                     onClick={async () => {
@@ -402,15 +402,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         }
                       }
                     }}
-                    className="w-full py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                   >
-                    <Trash2 className="w-5 h-5" /> Delete
+                    <Trash2 size={14} /> Delete
                   </button>
                 </div>
               )}
               <button 
                 onClick={() => setSelectedSupply(null)}
-                className="w-full py-3 bg-surface-container-high text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-highest transition-all cursor-pointer"
+                className="w-full py-2.5 bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer text-xs"
               >
                 Close
               </button>
