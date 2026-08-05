@@ -492,14 +492,6 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                   Generate Delivery Note
                 </button>
               )}
-                {selectedOrder.status === 'pending' && !selectedOrder.is_archived && (
-                  <button 
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'processing')}
-                    className="py-2.5 bg-primary text-white font-bold rounded-lg shadow-md hover:opacity-90 transition-all cursor-pointer text-xs"
-                  >
-                    Approve Order
-                  </button>
-                )}
                 {selectedOrder.status === 'processing' && !selectedOrder.is_archived && (
                   <button 
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'shipped')}
