@@ -47,30 +47,10 @@ export default function LoginPage() {
       localStorage.setItem('user_username', data.user.username || '');
 
       // Transfer guest cart to user cart
+      // Clean any transient unauthenticated cart data
       try {
-        const guestCart = localStorage.getItem('guest_cart');
-        if (guestCart && data.user.role === 'client') {
-          const role = data.user.role;
-          const email = data.user.email || data.user.username || 'client';
-          const userCartKey = `cart_items_${role}_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          
-          const existingUserCart = localStorage.getItem(userCartKey);
-          const userItems = existingUserCart ? JSON.parse(existingUserCart) : [];
-          const guestItems = JSON.parse(guestCart);
-
-          // Merge guest items into user cart
-          guestItems.forEach((gItem: any) => {
-            const idx = userItems.findIndex((uItem: any) => uItem.id === gItem.id);
-            if (idx >= 0) {
-              userItems[idx].qty += gItem.qty;
-            } else {
-              userItems.push(gItem);
-            }
-          });
-
-          localStorage.setItem(userCartKey, JSON.stringify(userItems));
-          localStorage.removeItem('guest_cart');
-        }
+        localStorage.removeItem('guest_cart');
+        localStorage.removeItem('cart_items_guest');
       } catch {}
 
       // Redirect depending on user role or redirect parameter
