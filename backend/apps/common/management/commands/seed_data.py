@@ -25,10 +25,10 @@ class Command(BaseCommand):
         admin_user, created = User.objects.get_or_create(
             email='admin@harvesthill.test',
             defaults={
+                'username': 'admin@harvesthill.test',
                 'role': 'admin',
                 'is_staff': True,
                 'is_superuser': True,
-                'is_email_verified': True
             }
         )
         if created:
@@ -47,7 +47,7 @@ class Command(BaseCommand):
         for c in clients_data:
             user, u_created = User.objects.get_or_create(
                 email=c['email'],
-                defaults={'role': 'client', 'is_email_verified': True}
+                defaults={'username': c['email'], 'role': 'client'}
             )
             if u_created:
                 user.set_password('clientpass123')
@@ -73,7 +73,7 @@ class Command(BaseCommand):
         for f in farmers_data:
             user, u_created = User.objects.get_or_create(
                 email=f['email'],
-                defaults={'role': 'farmer', 'is_email_verified': True}
+                defaults={'username': f['email'], 'role': 'farmer'}
             )
             if u_created:
                 user.set_password('farmerpass123')

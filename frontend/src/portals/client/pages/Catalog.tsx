@@ -420,7 +420,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                   urgency: prod.product_detail?.urgency || prod.urgency,
                   unit: prod.unit,
                   price: prod.price,
-                  image_url: prod.product_detail?.image_url || prod.photo,
+                  image_url: prod.photo || prod.product_detail?.image_url,
                   farmer_name: prod.farmer_name,
                   quantity: prod.quantity
                 };
