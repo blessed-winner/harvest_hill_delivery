@@ -14,6 +14,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [activeStatusTab, setActiveStatusTab] = useState('All');
 
   // Pagination state
@@ -76,6 +77,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     setCurrentPage(1);
     setSelectedIds([]);
   }, [activeStatusTab, searchTerm]);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [selectedSupply]);
 
   const handleUpdateStatus = async (supplyId: number | string, newStatus: string) => {
     try {
@@ -414,61 +419,132 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         }
       >
         {selectedSupply && (
-          <div className="space-y-6">
+          <div className="space-y-5 font-sans text-xs">
+            {/* Multi-Image Gallery Selector */}
+            {(() => {
+              const galleryImages: string[] = [];
+              const seen = new Set<string>();
+
+              const addImg = (url?: string | null) => {
+                if (!url) return;
+                if (!seen.has(url)) {
+                  seen.add(url);
+                  galleryImages.push(url);
+                }
+              };
+
+              // Prioritize custom batch photo
+              addImg(selectedSupply.photo);
+
+              // Add additional uploaded batch photos
+              if (Array.isArray(selectedSupply.images) && selectedSupply.images.length > 0) {
+                selectedSupply.images.forEach((imgObj: any) => {
+                  addImg(imgObj.image_url || imgObj.image);
+                });
+              }
+
+              // Fall back to catalog template image if present
+              addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
+
+              if (galleryImages.length === 0) return null;
+
+              const activeImg = galleryImages[activeImageIndex] || galleryImages[0];
+
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center px-0.5">
+                    <h4 className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-widest">
+                      Harvest Photos ({galleryImages.length})
+                    </h4>
+                    {galleryImages.length > 1 && (
+                      <span className="text-[10px] text-on-surface-variant/70 font-mono">
+                        {activeImageIndex + 1} of {galleryImages.length}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Main Active Image Display */}
+                  <div className="h-56 w-full rounded-2xl overflow-hidden border border-outline-variant/30 bg-surface-container-low shadow-sm relative group">
+                    <img 
+                      src={activeImg} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      alt="Selected harvest batch" 
+                    />
+                  </div>
+
+                  {/* Interactive Thumbnail Gallery Selector */}
+                  {galleryImages.length > 1 && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {galleryImages.map((imgUrl, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setActiveImageIndex(index)}
+                          className={cn(
+                            "w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0 bg-surface-container-low",
+                            activeImageIndex === index 
+                              ? "border-primary ring-2 ring-primary/20 scale-105 shadow-sm" 
+                              : "border-outline-variant/40 opacity-70 hover:opacity-100 hover:border-outline"
+                          )}
+                        >
+                          <img src={imgUrl} className="w-full h-full object-cover" alt={`Thumbnail ${index + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Custom Crop Notice Banner */}
             {!selectedSupply.product && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-                <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
-                  <AlertCircle size={14} /> Custom Crop Proposal
+              <div className="p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-xl space-y-1">
+                <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <AlertCircle size={14} className="text-amber-700" /> Custom Crop Proposal
                 </p>
-                <p className="text-[11px] text-amber-700 leading-relaxed">
-                  This crop is not currently in the product catalog. You can accept or reject this supply proposal directly. 
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  This harvest was submitted as a custom proposal. You can review all details and photos above before approving or rejecting.
                 </p>
               </div>
             )}
-            <div className="p-4 bg-surface-container rounded-xl border border-outline-variant/30 space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Farmer</span>
-                <span className="text-sm font-extrabold">{selectedSupply.farmer_name || 'Farmer'}</span>
+
+            {/* Demure Itemized Particulars Card */}
+            <div className="p-4 bg-surface-container-low/70 rounded-2xl border border-outline-variant/30 space-y-2.5">
+              <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
+                <span className="text-xs text-on-surface-variant font-medium">Farmer / Supplier</span>
+                <span className="text-xs font-bold text-on-surface">{selectedSupply.farmer_name || 'Farmer'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Location</span>
-                <span className="text-sm font-extrabold text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-on-surface-variant font-medium">Origin Location</span>
+                <span className="text-xs font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Quantity</span>
-                <span className="text-sm font-extrabold">{selectedSupply.quantity} {selectedSupply.unit}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-on-surface-variant font-medium">Quantity Available</span>
+                <span className="text-xs font-bold text-on-surface">{selectedSupply.quantity} {selectedSupply.unit}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Proposed Price</span>
-                <span className="text-sm font-extrabold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-on-surface-variant font-medium">Proposed Asking Price</span>
+                <span className="text-xs font-bold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Market Base Price</span>
-                <span className="text-sm font-extrabold text-outline">{formatCurrency(selectedSupply.base_price || selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-on-surface-variant font-medium">Catalog Base Price</span>
+                <span className="text-xs font-semibold text-on-surface-variant/80">{formatCurrency(selectedSupply.base_price || selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-on-surface-variant font-bold">Total Valued Price</span>
-                <span className="text-sm font-extrabold text-secondary">
+              <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
+                <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
+                <span className="text-sm font-black text-secondary">
                   {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
                 </span>
               </div>
             </div>
 
+            {/* Farmer Notes Section */}
             {selectedSupply.notes && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Farmer Notes</h4>
-                <p className="p-3 bg-surface-container-low rounded-xl text-sm border border-outline-variant/30">
+              <div className="space-y-1.5">
+                <h4 className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-widest">Farmer Notes</h4>
+                <p className="p-3 bg-surface-container-lowest rounded-xl text-xs border border-outline-variant/30 text-on-surface leading-relaxed">
                   {selectedSupply.notes}
                 </p>
-              </div>
-            )}
-
-            {selectedSupply.photo && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Batch Photo Preview</h4>
-                <div className="h-48 rounded-xl overflow-hidden border border-outline-variant/30">
-                  <img src={selectedSupply.photo} className="w-full h-full object-cover" alt="Supply Batch" />
-                </div>
               </div>
             )}
           </div>
