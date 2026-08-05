@@ -443,8 +443,11 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 });
               }
 
-              // Fall back to catalog template image if present
-              addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
+              // Fall back to catalog template image if no batch photos OR if it's an Admin (Harvest Hill) supply
+              const isAdminSupply = !selectedSupply.farmer_name || selectedSupply.farmer_name.toLowerCase().includes('harvest hill');
+              if (galleryImages.length === 0 || isAdminSupply) {
+                addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
+              }
 
               if (galleryImages.length === 0) return null;
 

@@ -101,15 +101,17 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             addImage(fetchedSupply.photo);
           }
 
-          if (fetchedSupply.product_detail?.image_url) {
-            addImage(fetchedSupply.product_detail.image_url);
-          }
-          
           if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
               const url = imgObj.image_url || imgObj.image;
               if (url) addImage(url);
             });
+          }
+
+          // Only include catalog template image if no custom batch photos exist OR if it's an admin/Harvest Hill supply
+          const isAdminSupply = !fetchedSupply.farmer_name || fetchedSupply.farmer_name.toLowerCase().includes('harvest hill');
+          if ((imagesList.length === 0 || isAdminSupply) && fetchedSupply.product_detail?.image_url) {
+            addImage(fetchedSupply.product_detail.image_url);
           }
 
           const mappedProduct = {
