@@ -19,10 +19,11 @@
 - [11. Test Suite 8: Price Counter-Proposals & Negotiation Threads](#11-test-suite-8-price-counter-proposals--negotiation-threads)
 - [12. Test Suite 9: Client Cart, Checkout & User-Scoped Privacy Isolation](#12-test-suite-9-client-cart-checkout--user-scoped-privacy-isolation)
 - [13. Test Suite 10: Multi-Image Uploads & Gallery Selector View](#13-test-suite-10-multi-image-uploads--gallery-selector-view)
-- [14. Test Suite 11: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#14-test-suite-11-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
-- [15. Test Suite 12: Portal Security, Session Lock & Logout Redirection](#15-test-suite-12-portal-security-session-lock--logout-redirection)
-- [16. Test Suite 13: Settings, Avatars & Real-Time Profile Sync](#16-test-suite-13-settings-avatars--real-time-profile-sync)
-- [17. Quick Sanity Verification Checklist](#17-quick-sanity-verification-checklist)
+- [14. Test Suite 11: Dynamic Transport Fee & Tax Assessment by Admin](#14-test-suite-11-dynamic-transport-fee--tax-assessment-by-admin)
+- [15. Test Suite 12: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#15-test-suite-12-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
+- [16. Test Suite 13: Portal Security, Session Lock & Logout Redirection](#16-test-suite-13-portal-security-session-lock--logout-redirection)
+- [17. Test Suite 14: Settings, Avatars & Real-Time Profile Sync](#17-test-suite-14-settings-avatars--real-time-profile-sync)
+- [18. Quick Sanity Verification Checklist](#18-quick-sanity-verification-checklist)
 
 ---
 
@@ -307,7 +308,30 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 14. Test Suite 11: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction
+## 14. Test Suite 11: Dynamic Transport Fee & Tax Assessment by Admin
+
+*(Requirement: Static delivery fees and taxes are removed. Final transport fee and taxes are assessed dynamically by the Admin based on destination delivery address upon order review.)*
+
+1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+2. Add products to Cart (`/client?screen=cart`) → Proceed to Checkout (`/client?screen=checkout`).
+3. **Cart & Checkout Notice Verification**:
+   - Verify static 2,500 RWF delivery fee and 5% tax are **removed**.
+   - Verify a prominent notice renders: `🚚 Transport Fee & Tax Assessment: Based on your delivery address, the Admin will calculate and attach the transport fee and taxes upon order approval.`
+4. Enter Delivery Address (`124 KG 7 Ave, Remera, Kigali`) and click **Place Your Order**.
+5. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+6. Navigate to Orders Management (`/admin?tab=orders`).
+7. Click the pending order to open the Detail Drawer:
+   - **Form Card Check**: Verify the **🚚 Transport Fee & Tax Determination** section renders.
+   - **Delivery Address Display**: Verify the destination address `124 KG 7 Ave, Remera, Kigali` is displayed prominently in a highlighted card.
+   - Enter **Transport / Logistics Fee**: `3,500 RWF`.
+   - Enter **Tax Amount**: `1,500 RWF`.
+   - Click **Approve Order & Attach Assessment**.
+8. **Grand Total Calculation Check**:
+   - Verify the order summary grand total updates to `Items Subtotal + Transport Fee (3,500 RWF) + Tax Amount (1,500 RWF)`.
+
+---
+
+## 15. Test Suite 12: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction
 
 *(Requirement: Delivery note lists product names, quantity, unit price, total price, total cost, signature, PDF view and download.)*
 
@@ -332,7 +356,7 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 15. Test Suite 12: Portal Security, Session Lock & Logout Redirection
+## 16. Test Suite 13: Portal Security, Session Lock & Logout Redirection
 
 *(Requirement: Once logged in, active users cannot navigate back to the landing page via browser back button. Logging out must perform complete clean-up and redirect to / landing page.)*
 
@@ -347,7 +371,7 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 16. Test Suite 13: Settings, Avatars & Real-Time Profile Sync
+## 17. Test Suite 14: Settings, Avatars & Real-Time Profile Sync
 
 1. Open Farmer Profile & Settings (`/farmer?view=settings`).
 2. Upload a new profile picture.
