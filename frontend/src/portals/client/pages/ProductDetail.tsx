@@ -409,7 +409,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               <div className="text-2xl font-black text-[#1c1c18] flex items-baseline gap-2">
                 {negotiatedPrice !== null ? (
                   <>
-                    <span className="line-through text-red-600">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                    <span className="line-through text-red-600 text-xs font-semibold opacity-75">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
                     <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()}</span>
                   </>
                 ) : (

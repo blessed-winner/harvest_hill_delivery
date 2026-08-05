@@ -446,7 +446,7 @@ export default function MySupplies() {
                     <div className="flex flex-col">
                       {supply.is_discounted && supply.discount_price ? (
                         <>
-                          <span className="font-mono text-xs text-red-600 line-through">
+                          <span className="font-mono text-[10px] text-red-600 line-through opacity-75">
                             RWF {Number(supply.price).toLocaleString()}
                           </span>
                           <span className="font-mono text-sm font-bold text-emerald-700">
