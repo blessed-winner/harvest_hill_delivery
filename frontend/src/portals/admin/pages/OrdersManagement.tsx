@@ -52,6 +52,53 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Admin Transport Fee & Tax Assessment Form State
+  const [transportFeeInput, setTransportFeeInput] = useState('');
+  const [taxAmountInput, setTaxAmountInput] = useState('');
+  const [isSubmittingAssessment, setIsSubmittingAssessment] = useState(false);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setTransportFeeInput(selectedOrder.transport_fee ? String(selectedOrder.transport_fee) : '');
+      setTaxAmountInput(selectedOrder.tax_amount ? String(selectedOrder.tax_amount) : '');
+    }
+  }, [selectedOrder]);
+
+  const handleSaveAssessment = async (approve = false) => {
+    if (!selectedOrder) return;
+    const tFee = parseFloat(transportFeeInput || '0');
+    const tTax = parseFloat(taxAmountInput || '0');
+
+    if (isNaN(tFee) || tFee < 0) {
+      toast("Please enter a valid transport fee", "warning");
+      return;
+    }
+    if (isNaN(tTax) || tTax < 0) {
+      toast("Please enter a valid tax amount", "warning");
+      return;
+    }
+
+    try {
+      setIsSubmittingAssessment(true);
+      const payload: any = {
+        transport_fee: tFee,
+        tax_amount: tTax,
+        is_assessed: true
+      };
+      if (approve) {
+        payload.status = 'processing';
+      }
+      await api.orders.update(selectedOrder.id, payload);
+      toast(approve ? "Order approved with transport fee & tax assessment!" : "Transport fee & tax updated successfully", "success");
+      setSelectedOrder(null);
+      loadOrders();
+    } catch (err: any) {
+      toast(err.message || "Failed to update assessment.", "error");
+    } finally {
+      setIsSubmittingAssessment(false);
+    }
+  };
+
   const loadOrders = () => {
     setIsLoading(true);
     api.orders.list()
@@ -525,6 +572,84 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
               </div>
             </section>
 
+            {/* Admin Transport Fee & Tax Assessment Form */}
+            <section className="bg-primary/5 rounded-2xl p-5 border border-primary/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  🚚 Transport Fee & Tax Determination
+                </h4>
+                {selectedOrder.is_assessed && (
+                  <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase">
+                    Assessed
+                  </span>
+                )}
+              </div>
+
+              {/* Prominent Delivery Address Display */}
+              <div className="bg-white rounded-xl p-3.5 border border-outline-variant/30 text-xs space-y-1 shadow-sm">
+                <span className="block text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">
+                  📍 Destination Delivery Address
+                </span>
+                <p className="font-bold text-on-surface text-sm leading-snug">
+                  {selectedOrder.delivery_address || 'Address not specified'}
+                </p>
+                <p className="text-[10px] text-on-surface-variant/80">
+                  Client: <strong className="text-on-surface">{selectedOrder.client_detail?.business_name || selectedOrder.client_detail?.user?.email}</strong>
+                </p>
+              </div>
+
+              {/* Assessment Form Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Transport / Logistics Fee (RWF)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 3500"
+                    value={transportFeeInput}
+                    onChange={(e) => setTransportFeeInput(e.target.value)}
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                    Tax Amount (RWF)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1500"
+                    value={taxAmountInput}
+                    onChange={(e) => setTaxAmountInput(e.target.value)}
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              {selectedOrder.status === 'pending' && !selectedOrder.is_archived ? (
+                <button
+                  type="button"
+                  onClick={() => handleSaveAssessment(true)}
+                  disabled={isSubmittingAssessment}
+                  className="w-full py-3 bg-primary text-white font-extrabold rounded-xl shadow-md hover:bg-primary-container transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
+                >
+                  ✓ Approve Order & Attach Assessment
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSaveAssessment(false)}
+                  disabled={isSubmittingAssessment}
+                  className="w-full py-2.5 bg-white border border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-all cursor-pointer text-xs"
+                >
+                  Update Assessment Fees
+                </button>
+              )}
+            </section>
+
             <section className="space-y-4">
               <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Order Summary</h4>
               <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 divide-y divide-outline-variant/20">
@@ -543,13 +668,39 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                     </div>
                   );
                 })}
+                <div className="pt-3 space-y-1.5 text-xs text-on-surface-variant">
+                  <div className="flex justify-between">
+                    <span>Items Subtotal</span>
+                    <span className="font-mono font-bold text-on-surface">
+                      RWF {(selectedOrder.subtotal || getOrderTotal(selectedOrder)).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Transport Fee</span>
+                    <span className="font-mono font-bold text-primary">
+                      RWF {parseFloat(selectedOrder.transport_fee || transportFeeInput || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Taxes</span>
+                    <span className="font-mono font-bold text-on-surface">
+                      RWF {parseFloat(selectedOrder.tax_amount || taxAmountInput || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex justify-between pt-3 text-sm font-bold text-primary">
                   <span>Grand Total</span>
                   <span className="font-mono">
                     {(() => {
-                      const val = getOrderTotal(selectedOrder);
-                      const rwfVal = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
-                      return `RWF ${rwfVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+                      const itemsSum = (selectedOrder.items || []).reduce((acc: number, item: any) => {
+                        const pNum = parseFloat(item.price || 0);
+                        const pRwf = pNum > 0 && pNum < 100 ? Math.round(pNum * 1473.97) : pNum;
+                        return acc + pRwf * parseFloat(item.quantity || 1);
+                      }, 0);
+                      const tFee = parseFloat(selectedOrder.transport_fee || transportFeeInput || 0);
+                      const tTax = parseFloat(selectedOrder.tax_amount || taxAmountInput || 0);
+                      const grand = itemsSum + tFee + tTax;
+                      return `RWF ${grand.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
                     })()}
                   </span>
                 </div>

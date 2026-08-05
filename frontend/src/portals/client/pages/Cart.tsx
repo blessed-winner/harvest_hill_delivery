@@ -124,9 +124,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
   // Calculate totals in RWF
   const subtotal = items.reduce((sum, item) => sum + (parsePrice(item.price) * item.qty), 0);
-  const deliveryFee = items.length > 0 ? 2500 : 0;
-  const taxes = Math.round(subtotal * 0.05); // 5% tax
-  const grandTotal = subtotal + deliveryFee + taxes;
+  const grandTotal = subtotal;
 
   if (loading) {
     return (
@@ -271,19 +269,19 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                   <span className="font-bold text-[#1c1c18]">RWF {subtotal.toLocaleString()}</span>
                 </div>
 
-                <div className="flex justify-between">
-                  <span>Delivery Fee</span>
-                  <span className="font-bold text-[#1c1c18]">RWF {deliveryFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Est. Taxes (5%)</span>
-                  <span className="font-bold text-[#1c1c18]">RWF {taxes.toLocaleString()}</span>
+                <div className="bg-[#f0eee7]/80 p-3 rounded-xl border border-[#e5e2db] space-y-1 mt-2">
+                  <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#144227]">
+                    🚚 Transport Fee & Tax Assessment
+                  </span>
+                  <p className="text-[11px] text-[#414942] leading-relaxed">
+                    Transport fee & tax will be determined by the Admin based on your delivery address upon order approval. You will review and confirm the final total before payment.
+                  </p>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="border-t border-[#f0eee7] pt-4 flex justify-between items-baseline text-sm font-extrabold text-[#1c1c18]">
-                <span>Total Amount</span>
+                <span>Items Subtotal</span>
                 <span className="text-[#144227] text-2xl font-black">RWF {grandTotal.toLocaleString()}</span>
               </div>
 
@@ -314,8 +312,8 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                       items,
                       deliveryDate,
                       subtotal,
-                      deliveryFee,
-                      taxes,
+                      deliveryFee: 0,
+                      taxes: 0,
                       grandTotal
                     }));
                     onNavigate('checkout');

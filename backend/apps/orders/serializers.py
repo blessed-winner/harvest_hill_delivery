@@ -75,12 +75,16 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'id', 'client', 'client_detail', 'status', 'delivery_address', 
+            'transport_fee', 'tax_amount', 'is_assessed',
             'items', 'total_amount', 'subtotal', 'is_archived', 'is_deleted_by_client', 'is_quantity_deducted', 'created_at'
         ]
         read_only_fields = ['created_at', 'client']
 
     def get_total_amount(self, obj):
-        return sum(float(item.price * item.quantity) for item in obj.items.all())
+        items_total = sum(float(item.price * item.quantity) for item in obj.items.all())
+        transport = float(obj.transport_fee or 0)
+        tax = float(obj.tax_amount or 0)
+        return items_total + transport + tax
 
     def get_subtotal(self, obj):
         return sum(float(item.price * item.quantity) for item in obj.items.all())
@@ -103,6 +107,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
         instance.status = new_status
         instance.delivery_address = validated_data.get('delivery_address', instance.delivery_address)
+        instance.transport_fee = validated_data.get('transport_fee', instance.transport_fee)
+        instance.tax_amount = validated_data.get('tax_amount', instance.tax_amount)
+        instance.is_assessed = validated_data.get('is_assessed', instance.is_assessed)
         instance.is_archived = validated_data.get('is_archived', instance.is_archived)
         instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
         instance.save()

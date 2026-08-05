@@ -323,23 +323,23 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
               {/* Calculations */}
               <div className="border-t border-[#f0eee7] pt-4 space-y-2 text-xs">
                 <div className="flex justify-between text-[#414942]">
-                  <span>Subtotal</span>
+                  <span>Items Subtotal</span>
                   <span className="font-bold text-[#1c1c18]">{formatCurrency(checkoutData?.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-[#414942]">
-                  <span>Delivery Fee</span>
-                  <span className="font-bold text-[#376847]">{formatCurrency(checkoutData?.deliveryFee || 2500)}</span>
-                </div>
-                <div className="flex justify-between text-[#414942]">
-                  <span>Estimated Tax</span>
-                  <span className="font-bold text-[#1c1c18]">{formatCurrency(checkoutData?.taxes)}</span>
+                <div className="bg-[#f0eee7] p-3 rounded-xl border border-[#e5e2db] space-y-1">
+                  <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#144227]">
+                    🚚 Transport Fee & Tax Assessment
+                  </span>
+                  <p className="text-[10px] text-[#414942] leading-relaxed">
+                    Based on your delivery address, the Admin will calculate and attach the transport fee and taxes upon order approval. You will review the complete itemized breakdown prior to payment.
+                  </p>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="border-t border-[#f0eee7] pt-4 flex justify-between text-sm font-extrabold text-[#1c1c18]">
-                <span>Total</span>
-                <span className="text-[#144227] text-lg font-black">{formatCurrency(checkoutData?.grandTotal)}</span>
+                <span>Initial Subtotal</span>
+                <span className="text-[#144227] text-lg font-black">{formatCurrency(checkoutData?.subtotal)}</span>
               </div>
 
               {/* Error Message */}
