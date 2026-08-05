@@ -82,6 +82,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       window.localStorage.removeItem('access_token');
       window.localStorage.removeItem('refresh_token');
       window.localStorage.removeItem('user_role');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-changed'));
+      }
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
     try {

@@ -83,14 +83,19 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
         loadNotifications();
         const interval = setInterval(loadNotifications, 30000);
 
-        const handleProfileUpdated = () => {
-          loadProfilePhoto();
+        const handleAuthChanged = () => {
+          const freshToken = localStorage.getItem('access_token');
+          setIsLoggedIn(!!freshToken);
+          if (!freshToken) setNotifications([]);
         };
+
         window.addEventListener('profile-updated', handleProfileUpdated);
+        window.addEventListener('auth-changed', handleAuthChanged);
 
         return () => {
           clearInterval(interval);
           window.removeEventListener('profile-updated', handleProfileUpdated);
+          window.removeEventListener('auth-changed', handleAuthChanged);
         };
       }
     }
