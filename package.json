@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev:admin": "cd web/admin && npm run dev",
-    "dev:supplier": "cd web/supplier && npm run dev",
-    "build:admin": "cd web/admin && npm run build",
-    "build:supplier": "cd web/supplier && npm run build",
-    "start:admin": "cd web/admin && npm run start",
-    "start:supplier": "cd web/supplier && npm run start"
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint"
   }
 }
+
