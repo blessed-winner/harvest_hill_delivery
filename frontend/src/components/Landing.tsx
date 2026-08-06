@@ -126,12 +126,12 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">View All</button>
         </div>
 
-        {(supplies.length > 0 || products.length > 0) ? (
+        {supplies.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+            {supplies.slice(0, 5).map((item: any) => {
               const isSupply = !!item.product_detail;
               const name = isSupply ? item.product_detail?.name : item.name;
-              const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+              const farm = item.farmer_name || 'Harvest Hill Farm';
               const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
               const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
               const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
@@ -200,7 +200,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               return (
                 <div 
                   key={item.id} 
-                  onClick={() => onNavigate('product-detail', undefined, item.product_detail?.id || item.product)}
+                  onClick={() => onNavigate('product-detail', undefined, item.id)}
                   className="bg-white rounded-2xl p-2.5 border border-[#e5e2db] shadow-sm relative cursor-pointer hover:shadow-md transition-all"
                 >
                   <span className="absolute top-4 left-4 bg-[#ba1a1a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
@@ -235,15 +235,15 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <button onClick={() => onNavigate('catalog')} className="text-xs font-bold text-[#717971] hover:text-[#144227]">See New Arrivals</button>
         </div>
 
-        {(supplies.length > 0 || products.length > 0) ? (
+        {supplies.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {(supplies.length > 0 ? supplies.slice(0, 5) : products.slice(0, 5)).map((item: any) => {
+            {supplies.slice(0, 5).map((item: any) => {
               const isSupply = !!item.product_detail;
               const name = isSupply ? item.product_detail?.name : item.name;
-              const farm = isSupply ? (item.farmer_name || 'Local Farm') : 'Harvest Hill Farm';
+              const farm = item.farmer_name || 'Harvest Hill Farm';
               const priceVal = isSupply ? Number(item.price) : Number(item.base_price || 0);
               const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.image);
-              const targetProdId = isSupply ? (item.product_detail?.id || item.product || item.id) : item.id;
+              const targetProdId = item.id;
 
               return (
                 <div 
