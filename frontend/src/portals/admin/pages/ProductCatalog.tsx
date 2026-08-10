@@ -781,6 +781,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <option value="jar">jar</option>
                 <option value="bundle">bundle</option>
                 <option value="dozen">dozen</option>
+                <option value="bunch">bunch</option>
+                <option value="tray">tray</option>
+                <option value="pack">pack</option>
+                <option value="box">box</option>
+                <option value="bottle">bottle</option>
+                <option value="punnet">punnet</option>
+                <option value="head">head</option>
+                <option value="block">block</option>
               </select>
             </div>
           </div>

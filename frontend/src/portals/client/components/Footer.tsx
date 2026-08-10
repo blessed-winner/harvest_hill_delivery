@@ -151,60 +151,52 @@ export default function Footer({ activeScreen, onNavigate }: FooterProps) {
     );
   }
 
-  // Default / Dashboard Footer
   return (
-    <footer className="bg-[#e9e6df] border-t border-[#dcdad3] py-12 text-[#414942] font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Col 1: Logo */}
-        <div className="space-y-4">
-          <h3
-            onClick={() => onNavigate('landing')}
-            className="text-2xl font-bold text-[#144227] cursor-pointer hover:opacity-85"
-          >
-            Harvest Hill
-          </h3>
-          <p className="text-sm leading-relaxed text-[#414942]/90 max-w-xs">
-            Bridging the gap between artisanal local farms and high-end culinary professionals through a transparent supply chain.
-          </p>
-        </div>
-
-        {/* Col 2: Explore */}
-        <div>
-          <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Explore</h4>
-          <ul className="space-y-2 text-sm">
-            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Quality Assurance</button></li>
-            <li><button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Support Center</button></li>
-            <li><button onClick={() => onNavigate('order-history')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Order History</button></li>
+    <footer className="bg-[#FAF7F0] border-t border-[#E8E4DA] pt-8 pb-6 text-[#414942] font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        {/* Column 1: Harvest Hill */}
+        <div className="space-y-2.5">
+          <h4 className="font-extrabold text-[#2D5A3D] text-xs uppercase tracking-wider mb-3">Harvest Hill Delivery</h4>
+          <ul className="space-y-1.5 text-xs">
+            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">About Us</button></li>
+            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Become a Supplier</button></li>
+            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Food Safety & Quality</button></li>
+            <li><button onClick={() => onNavigate('catalog')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Refer a Friend</button></li>
           </ul>
         </div>
 
-        {/* Col 3: Legal */}
-        <div>
-          <h4 className="font-bold text-[#144227] text-xs uppercase tracking-wider mb-4">Legal</h4>
-          <ul className="space-y-2 text-sm">
-            <li><button onClick={() => onNavigate('delivery-note')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Shipping Policy</button></li>
-            <li><button onClick={() => onNavigate('invoices')} className="hover:text-[#144227] transition-colors cursor-pointer text-left">Billing & Invoices</button></li>
+        {/* Column 2: Help & Support */}
+        <div className="space-y-2.5">
+          <h4 className="font-extrabold text-[#2D5A3D] text-xs uppercase tracking-wider mb-3">Help & Support</h4>
+          <ul className="space-y-1.5 text-xs">
+            <li><button onClick={() => onNavigate('faq')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Contact Support</button></li>
+            <li><button onClick={() => onNavigate('faq')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Delivery Schedules</button></li>
+            <li><button onClick={() => onNavigate('faq')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">FAQ</button></li>
+            <li><button onClick={() => onNavigate('faq')} className="hover:text-[#2D5A3D] transition-colors cursor-pointer text-left">Accessibility Statement</button></li>
           </ul>
         </div>
 
-        {/* Col 4: Market Status */}
-        <div className="bg-[#f2efe7] border border-[#dcdad3] rounded-xl p-5 shadow-sm space-y-3 max-w-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-xs uppercase tracking-wider text-[#144227]">Market Status</span>
-            <div className="flex items-center gap-1.5 bg-white border border-[#c1c9c0] py-0.5 px-2 rounded-full text-[10px] font-bold text-[#376847]">
-              <span className="w-1.5 h-1.5 bg-[#376847] rounded-full animate-pulse"></span>
-              Open for Dispatch
-            </div>
-          </div>
-          <p className="text-xs text-[#414942] leading-relaxed">
-            Orders placed before 2PM will be scheduled for next-day sunrise delivery.
+        {/* Column 3: Platform Info */}
+        <div className="space-y-2 text-xs">
+          <h4 className="font-extrabold text-[#2D5A3D] uppercase tracking-wider mb-3">Direct Supply Chain</h4>
+          <p className="text-xs text-[#717971] leading-relaxed">
+            Connecting local Rwandan family farms with homes and culinary businesses with guaranteed fresh produce.
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#dcdad3] mt-10 pt-6 text-center text-xs">
-        © 2026 Harvest Hill Supply Chain. All rights reserved.
+      {/* Bottom Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-[#E8E4DA] mt-8 pt-4 flex flex-col sm:flex-row justify-between items-center text-xs text-[#717971] gap-2">
+        <div>© 2026 Harvest Hill Delivery. All rights reserved.</div>
+        <div className="flex gap-4">
+          <button onClick={() => onNavigate('faq')} className="hover:underline cursor-pointer">Privacy Policy</button>
+          <span>•</span>
+          <button onClick={() => onNavigate('faq')} className="hover:underline cursor-pointer">Terms of Use</button>
+          <span>•</span>
+          <button onClick={() => onNavigate('faq')} className="hover:underline cursor-pointer">Security</button>
+        </div>
       </div>
     </footer>
   );
 }
+
