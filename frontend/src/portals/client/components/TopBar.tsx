@@ -187,7 +187,6 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
             onClick={() => onNavigate('landing')}
             className="flex items-center gap-1.5 text-lg sm:text-2xl font-extrabold text-[#2D5A3D] tracking-tight hover:opacity-90 transition-opacity cursor-pointer"
           >
-            <span className="bg-[#2D5A3D] text-white px-2 py-0.5 rounded-lg text-xs font-black">HH</span>
             <span>Harvest Hill<span className="text-[#4A7C59] font-normal text-xs sm:text-sm hidden sm:inline ml-1">Delivery</span></span>
           </button>
         </div>
@@ -365,7 +364,7 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
             onClick={() => onNavigate('catalog', 'Deals')} 
             className="text-[#D9381E] font-extrabold hover:underline cursor-pointer flex items-center gap-1 shrink-0"
           >
-            <span className="bg-[#FFF0ED] text-[#D9381E] px-1.5 py-0.5 rounded text-[10px]">%</span> Fresh Discounts
+            <span className="bg-[#FFF0ED] text-[#D9381E] px-1.5 py-0.5 rounded text-[10px]">%</span> Deals
           </button>
           <button onClick={() => onNavigate('catalog', 'Vegetables')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Vegetables</button>
           <button onClick={() => onNavigate('catalog', 'Fruits')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Fruits</button>
