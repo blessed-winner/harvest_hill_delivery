@@ -31,7 +31,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageSectionConfig[] = [
   },
   {
     id: 'deals',
-    title: "Fresh Deals — This week's best for less",
+    title: 'Fresh Discounts',
     category: 'Deals',
     itemsPerPage: 8,
     rows: 2,

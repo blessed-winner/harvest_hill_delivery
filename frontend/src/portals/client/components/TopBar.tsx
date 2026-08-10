@@ -365,7 +365,7 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
             onClick={() => onNavigate('catalog', 'Deals')} 
             className="text-[#D9381E] font-extrabold hover:underline cursor-pointer flex items-center gap-1 shrink-0"
           >
-            <span className="bg-[#FFF0ED] text-[#D9381E] px-1.5 py-0.5 rounded text-[10px]">%</span> Deals
+            <span className="bg-[#FFF0ED] text-[#D9381E] px-1.5 py-0.5 rounded text-[10px]">%</span> Fresh Discounts
           </button>
           <button onClick={() => onNavigate('catalog', 'Vegetables')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Vegetables</button>
           <button onClick={() => onNavigate('catalog', 'Fruits')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Fruits</button>
