@@ -16,7 +16,8 @@ export type ViewType =
   | 'invoices'
   | 'supplies'
   | 'reports'
-  | 'settings';
+  | 'settings'
+  | 'homepage';
 
 export interface Invoice {
   id: string;

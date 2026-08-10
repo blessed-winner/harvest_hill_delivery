@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowRight, Plus, ChevronLeft, ChevronRight, 
-  ShieldCheck, Leaf, Sparkles, Tag, Package, Zap, ArrowUpRight
+  ArrowRight, Plus, ChevronRight, ChevronLeft,
+  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
+import { DEFAULT_HOMEPAGE_CONFIG, HomepageSectionConfig } from '../portals/admin/pages/HomepageCustomizer';
 
 interface LandingProps {
   onNavigate: (screen: string, category?: string, productId?: number, search?: string) => void;
   addToCart: (product?: any) => void;
 }
 
-// Fallback high-quality curated Rwandan farm items to guarantee 10-12 items in each rail
+// Curated farm items to ensure full category rails even when API products are few
 const DEFAULT_POPULAR_ITEMS = [
   {
     id: 101,
@@ -21,6 +22,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 1800,
     unit: "kg",
     size: "approx. 1 kg (4-5 pcs)",
+    category: "Fruits",
     verified: true,
     photo: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=500&auto=format&fit=crop&q=80"
   },
@@ -31,6 +33,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 950,
     unit: "kg",
     size: "approx. 2.5 kg bag",
+    category: "Vegetables",
     verified: true,
     photo: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=500&auto=format&fit=crop&q=80"
   },
@@ -41,6 +44,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 1200,
     unit: "L",
     size: "1 Liter bottle",
+    category: "Dairy",
     verified: true,
     photo: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500&auto=format&fit=crop&q=80"
   },
@@ -51,6 +55,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 2400,
     unit: "kg",
     size: "pack of 3 mixed",
+    category: "Vegetables",
     verified: true,
     photo: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=500&auto=format&fit=crop&q=80"
   },
@@ -61,6 +66,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 3100,
     unit: "kg",
     size: "approx. 1 kg (10-12 pcs)",
+    category: "Fruits",
     verified: true,
     photo: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&auto=format&fit=crop&q=80"
   },
@@ -71,6 +77,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 1400,
     unit: "bunch",
     size: "bunch of 8-10",
+    category: "Fruits",
     verified: true,
     photo: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=500&auto=format&fit=crop&q=80"
   },
@@ -81,6 +88,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 800,
     unit: "bunch",
     size: "approx. 350g bunch",
+    category: "Vegetables",
     verified: true,
     photo: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&auto=format&fit=crop&q=80"
   },
@@ -91,6 +99,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 4500,
     unit: "jar",
     size: "500g glass jar",
+    category: "Grains",
     verified: true,
     photo: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=500&auto=format&fit=crop&q=80"
   },
@@ -101,6 +110,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 3600,
     unit: "tray",
     size: "tray of 15 eggs",
+    category: "Dairy",
     verified: true,
     photo: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=500&auto=format&fit=crop&q=80"
   },
@@ -111,6 +121,7 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 900,
     unit: "pack",
     size: "approx. 100g fresh cut",
+    category: "Herbs",
     verified: true,
     photo: "https://images.unsplash.com/photo-1608686207856-001b95cf60ca?w=500&auto=format&fit=crop&q=80"
   },
@@ -121,8 +132,64 @@ const DEFAULT_POPULAR_ITEMS = [
     price: 1100,
     unit: "kg",
     size: "1 kg bundle",
+    category: "Vegetables",
     verified: true,
     photo: "https://images.unsplash.com/photo-1598170845058-12ef4a45753b?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 112,
+    name: "Crisp Green Lettuce Heads",
+    farm: "HUYE HYDROPONICS",
+    price: 850,
+    unit: "head",
+    size: "pack of 2 twin heads",
+    category: "Vegetables",
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 113,
+    name: "Fresh Red Onions Mesh Sack",
+    farm: "NORTHERN VALLEY FARMS",
+    price: 1400,
+    unit: "kg",
+    size: "2 kg mesh sack",
+    category: "Vegetables",
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 114,
+    name: "Juicy Red Vine Tomatoes",
+    farm: "NYARUGENGE GROWERS",
+    price: 1500,
+    unit: "kg",
+    size: "approx. 1 kg crate",
+    category: "Vegetables",
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 115,
+    name: "Fresh Farm Cucumbers",
+    farm: "GASABO VEGGIE HUB",
+    price: 990,
+    unit: "kg",
+    size: "pack of 4 whole",
+    category: "Vegetables",
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 116,
+    name: "Sweet Local Strawberries Punnet",
+    farm: "KIGALI BERRY VALLEY",
+    price: 3600,
+    unit: "box",
+    size: "400g punnet",
+    category: "Fruits",
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=500&auto=format&fit=crop&q=80"
   }
 ];
 
@@ -135,6 +202,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 1500,
     unit: "kg",
     size: "approx. 1 kg crate",
+    category: "Vegetables",
     savingsPct: 32,
     sponsored: true,
     verified: true,
@@ -148,6 +216,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 3600,
     unit: "box",
     size: "400g punnet",
+    category: "Fruits",
     savingsPct: 25,
     sponsored: false,
     verified: true,
@@ -161,6 +230,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 2100,
     unit: "kg",
     size: "2 kg flour bag",
+    category: "Grains",
     savingsPct: 30,
     sponsored: false,
     verified: true,
@@ -174,6 +244,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 990,
     unit: "kg",
     size: "pack of 4 whole",
+    category: "Vegetables",
     savingsPct: 34,
     sponsored: true,
     verified: true,
@@ -187,6 +258,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 2400,
     unit: "kg",
     size: "approx. 1.5 kg net",
+    category: "Fruits",
     savingsPct: 25,
     sponsored: false,
     verified: true,
@@ -200,6 +272,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 4900,
     unit: "block",
     size: "350g artisan block",
+    category: "Dairy",
     savingsPct: 24,
     sponsored: false,
     verified: true,
@@ -213,6 +286,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 850,
     unit: "head",
     size: "pack of 2 twin heads",
+    category: "Vegetables",
     savingsPct: 29,
     sponsored: false,
     verified: true,
@@ -226,6 +300,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 1400,
     unit: "kg",
     size: "2 kg mesh sack",
+    category: "Vegetables",
     savingsPct: 30,
     sponsored: false,
     verified: true,
@@ -239,6 +314,7 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 2800,
     unit: "kg",
     size: "approx. 1 kg (3-4 pcs)",
+    category: "Fruits",
     savingsPct: 26,
     sponsored: false,
     verified: true,
@@ -252,19 +328,53 @@ const DEFAULT_DEAL_ITEMS = [
     discountPrice: 750,
     unit: "pack",
     size: "approx. 150g bundle",
+    category: "Herbs",
     savingsPct: 31,
     sponsored: false,
     verified: true,
     photo: "https://images.unsplash.com/photo-1608686207856-001b95cf60ca?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 211,
+    name: "Gisenyi Golden Passion Fruit",
+    farm: "LAKE KIVU ORCHARDS",
+    originalPrice: 4200,
+    discountPrice: 3100,
+    unit: "kg",
+    size: "approx. 1 kg (10-12 pcs)",
+    category: "Fruits",
+    savingsPct: 26,
+    sponsored: false,
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&auto=format&fit=crop&q=80"
+  },
+  {
+    id: 212,
+    name: "Highland Organic Carrots",
+    farm: "NORTHERN RIDGE FARMS",
+    originalPrice: 1600,
+    discountPrice: 1100,
+    unit: "kg",
+    size: "1 kg bundle",
+    category: "Vegetables",
+    savingsPct: 31,
+    sponsored: false,
+    verified: true,
+    photo: "https://images.unsplash.com/photo-1598170845058-12ef4a45753b?w=500&auto=format&fit=crop&q=80"
   }
 ];
 
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [heroSlide, setHeroSlide] = useState(0);
 
-  // Hero carousel slides (moderate height, seasonal promotions)
+  // Dynamic Homepage Configuration state
+  const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionConfig[]>(DEFAULT_HOMEPAGE_CONFIG);
+  const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
+
+  // Hero carousel slides
   const heroSlides = [
     {
       title: "Peak Season Organic Harvest",
@@ -289,7 +399,31 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
   ];
 
-  // Auto rotate hero carousel every 5 seconds
+  // Load section configuration from localStorage or DOM event
+  const loadSectionConfig = () => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('homepage_sections_config');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSectionsConfig(parsed.sort((a, b) => a.order - b.order));
+            return;
+          }
+        } catch {}
+      }
+    }
+    setSectionsConfig(DEFAULT_HOMEPAGE_CONFIG);
+  };
+
+  useEffect(() => {
+    loadSectionConfig();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('homepage_config_updated', loadSectionConfig);
+      return () => window.removeEventListener('homepage_config_updated', loadSectionConfig);
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setHeroSlide((prev) => (prev + 1) % heroSlides.length);
@@ -301,9 +435,12 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     async function fetchData() {
       try {
         setLoading(true);
-        const suppRes = await clientApi.supplies.list().catch(() => []);
-        const apiSupplies = suppRes?.results || suppRes || [];
-        setSupplies(apiSupplies);
+        const [prodRes, suppRes] = await Promise.all([
+          clientApi.products.list().catch(() => []),
+          clientApi.supplies.list().catch(() => [])
+        ]);
+        setProducts(prodRes?.results || prodRes || []);
+        setSupplies(suppRes?.results || suppRes || []);
       } catch (err) {
         console.error("Failed to fetch landing data:", err);
       } finally {
@@ -313,16 +450,52 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchData();
   }, []);
 
-  // Merge API data with default curated data to ensure 10-12 scrollable items in rails
+  // Active supplies & products
   const activeSupplies = supplies.filter((s: any) => s.status === 'accepted');
-  
-  const popularList = activeSupplies.length > 0
-    ? [...activeSupplies, ...DEFAULT_POPULAR_ITEMS].slice(0, 11)
-    : DEFAULT_POPULAR_ITEMS;
 
-  const dealsList = activeSupplies.filter((s: any) => s.is_discounted).length > 0
-    ? [...activeSupplies.filter((s: any) => s.is_discounted), ...DEFAULT_DEAL_ITEMS].slice(0, 10)
-    : DEFAULT_DEAL_ITEMS;
+  // Helper to resolve items for a category
+  const getSectionItems = (categoryTarget: string) => {
+    const targetLower = categoryTarget.toLowerCase();
+    
+    if (targetLower === 'deals') {
+      const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
+      return matchedDeals.length > 0 ? [...matchedDeals, ...DEFAULT_DEAL_ITEMS] : DEFAULT_DEAL_ITEMS;
+    }
+    
+    if (targetLower === 'popular' || targetLower === 'all') {
+      return activeSupplies.length > 0 ? [...activeSupplies, ...DEFAULT_POPULAR_ITEMS] : DEFAULT_POPULAR_ITEMS;
+    }
+
+    if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
+      const matchedSupplies = activeSupplies.filter((s: any) => {
+        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+        return cat.includes('vegetable') || cat.includes('herb');
+      });
+      const matchedProducts = products.filter((p: any) => {
+        const cat = (p.category || '').toLowerCase();
+        return cat.includes('vegetable') || cat.includes('herb');
+      });
+      const defaultFiltered = DEFAULT_POPULAR_ITEMS.filter(item => {
+        const c = item.category?.toLowerCase() || '';
+        return c.includes('vegetable') || c.includes('herb');
+      });
+      const combined = [...matchedSupplies, ...matchedProducts];
+      return combined.length > 0 ? [...combined, ...defaultFiltered, ...DEFAULT_POPULAR_ITEMS] : (defaultFiltered.length > 0 ? defaultFiltered : DEFAULT_POPULAR_ITEMS);
+    }
+
+    const matchedSupplies = activeSupplies.filter((s: any) => {
+      const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+      return cat.includes(targetLower);
+    });
+    const matchedProducts = products.filter((p: any) => {
+      const cat = (p.category || '').toLowerCase();
+      return cat.includes(targetLower);
+    });
+    const defaultFiltered = DEFAULT_POPULAR_ITEMS.filter(item => item.category?.toLowerCase().includes(targetLower));
+
+    const combined = [...matchedSupplies, ...matchedProducts];
+    return combined.length > 0 ? [...combined, ...defaultFiltered, ...DEFAULT_POPULAR_ITEMS] : (defaultFiltered.length > 0 ? defaultFiltered : DEFAULT_POPULAR_ITEMS);
+  };
 
   if (loading) {
     return (
@@ -335,12 +508,114 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     );
   }
 
+  // Reusable Product Card Renderer
+  const renderProductCard = (item: any, isDeal = false, idx = 0) => {
+    const isSupply = !!item.product_detail;
+    const name = isSupply ? item.product_detail?.name : item.name;
+    const farm = isSupply ? (item.farmer_name || 'Harvest Hill Farm') : (item.farm || 'Local Certified Farm');
+    const origPrice = isSupply ? Number(item.price) : Number(item.originalPrice || item.price * 1.3 || 2500);
+    const discPrice = isSupply ? Number(item.discount_price || item.price) : Number(item.discountPrice || item.price || item.base_price || 0);
+    const priceVal = isSupply ? Number(item.price) : Number(item.price || item.base_price || 0);
+    const pct = item.savingsPct || (origPrice > 0 ? Math.round(((origPrice - discPrice) / origPrice) * 100) : 20);
+    const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.photo || item.image_url || item.image);
+    const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
+    const sizeText = item.size || `approx. 1 ${unit}`;
+    const isSponsored = item.sponsored || (isDeal && (idx === 0 || idx === 3));
+    const targetProdId = item.id;
+
+    return (
+      <div 
+        key={item.id}
+        onClick={() => onNavigate('product-detail', undefined, targetProdId)}
+        className="bg-white border border-[#E8E4DA] rounded-[12px] p-3 flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all h-full cursor-pointer group relative"
+      >
+        <div>
+          {isSponsored && (
+            <span className="absolute top-2 right-2 z-10 text-[9px] font-semibold text-[#888888] bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded border border-[#E8E4DA]">
+              Sponsored
+            </span>
+          )}
+
+          {/* Product Photo */}
+          <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative">
+            <img 
+              src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
+              alt={name} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            {isDeal ? (
+              <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
+                Save {pct}%
+              </span>
+            ) : (
+              <span className="absolute bottom-1.5 left-1.5 bg-[#2D5A3D]/95 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
+                <ShieldCheck size={9} />
+                <span>Verified Farm</span>
+              </span>
+            )}
+          </div>
+
+          <span className="text-[9px] font-bold text-[#717971] uppercase tracking-wider block mb-0.5 truncate">
+            {farm}
+          </span>
+
+          <h3 className="text-xs font-semibold text-[#1C2A1E] line-clamp-1 group-hover:text-[#2D5A3D] transition-colors leading-snug">
+            {name}
+          </h3>
+
+          <p className="text-[10px] text-[#777777] font-normal mt-0.5">
+            {sizeText}
+          </p>
+        </div>
+
+        {/* Pricing */}
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F0ECE1]">
+          <div>
+            {isDeal ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-extrabold text-[#D9381E]">
+                    RWF {discPrice.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-[#888888] line-through font-normal">
+                    RWF {origPrice.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-[#717971]">/{unit}</span>
+                </div>
+              </>
+            ) : (
+              <div>
+                <span className="text-sm font-extrabold text-[#1C2A1E]">
+                  RWF {priceVal.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart(item);
+            }}
+            className="w-7 h-7 bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] rounded-lg flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-sm"
+            title="Add to cart"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const enabledSections = sectionsConfig.filter(sec => sec.enabled);
+
   return (
-    <div className="bg-[#FAF7F0] text-[#1C2A1E] font-sans space-y-6 pb-12 min-h-screen">
+    <div className="bg-[#FAF7F0] text-[#1C2A1E] font-sans space-y-10 pb-16 min-h-screen">
       
       {/* SECTION 4: Hero Carousel + Quick Links */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-4">
-        {/* Moderate height rotating seasonal banner */}
         <div className="relative rounded-[12px] overflow-hidden h-48 sm:h-56 md:h-60 shadow-sm border border-[#E8E4DA] bg-[#1C2A1E]">
           <img 
             src={heroSlides[heroSlide].bgImage} 
@@ -370,7 +645,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             </div>
           </div>
 
-          {/* Carousel Dot Navigation */}
           <div className="absolute bottom-3 right-4 z-20 flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full border border-white/20">
             {heroSlides.map((_, idx) => (
               <button
@@ -383,7 +657,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         </div>
 
-        {/* 5 Compact Quick-Link Tiles with Rich Intentional Produce Visuals */}
+        {/* 5 Compact Quick-Link Tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {[
             {
@@ -450,221 +724,70 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
       </section>
 
-      {/* SECTION 5: "Popular Now" Rail */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-bold text-[#1C2A1E] tracking-tight">Popular now</h2>
-          <button 
-            onClick={() => onNavigate('catalog')}
-            className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer"
-          >
-            <span>View all</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
+      {/* DYNAMIC HOMEPAGE SECTIONS CONFIGURATOR */}
+      {enabledSections.map((sec) => {
+        const allItems = getSectionItems(sec.category);
+        const perPage = sec.itemsPerPage || 8;
+        const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+        const currentPage = sectionPages[sec.id] || 0;
 
-        {/* Scrollable Rail of Product Cards */}
-        <div className="flex overflow-x-auto gap-3.5 pb-2 pt-0.5 scrollbar-hide scroll-smooth">
-          {popularList.map((item: any) => {
-            const isSupply = !!item.product_detail;
-            const name = isSupply ? item.product_detail?.name : item.name;
-            const farm = isSupply ? (item.farmer_name || 'Harvest Hill Farm') : (item.farm || 'Local Certified Farm');
-            const priceVal = isSupply ? Number(item.price) : Number(item.price || item.base_price || 0);
-            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.photo || item.image_url);
-            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-            const sizeText = item.size || `approx. 1 ${unit}`;
-            const targetProdId = item.id;
+        const visibleItems = allItems.slice(currentPage * perPage, (currentPage + 1) * perPage);
+        const isDealSection = sec.category.toLowerCase() === 'deals';
 
-            return (
-              <div 
-                key={item.id}
-                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
-                className="bg-white border border-[#E8E4DA] rounded-[12px] p-3 flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all w-[180px] sm:w-[200px] shrink-0 cursor-pointer group relative"
-              >
-                <div>
-                  {/* Square Product Photo */}
-                  <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative">
-                    <img 
-                      src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
-                      alt={name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {/* Small Green Verified Farm Badge */}
-                    <span className="absolute bottom-1.5 left-1.5 bg-[#2D5A3D]/95 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
-                      <ShieldCheck size={9} />
-                      <span>Verified Farm</span>
-                    </span>
-                  </div>
-
-                  {/* Supplier/Farm name in small caps */}
-                  <span className="text-[9px] font-bold text-[#717971] uppercase tracking-wider block mb-0.5 truncate">
-                    {farm}
-                  </span>
-
-                  {/* Product Name (Regular weight, slightly larger) */}
-                  <h3 className="text-xs font-semibold text-[#1C2A1E] line-clamp-1 group-hover:text-[#2D5A3D] transition-colors leading-snug">
-                    {name}
-                  </h3>
-
-                  {/* Secondary small grey text for size/quantity */}
-                  <p className="text-[10px] text-[#777777] font-normal mt-0.5">
-                    {sizeText}
-                  </p>
-                </div>
-
-                {/* Price & Add Button */}
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F0ECE1]">
-                  <div>
-                    <span className="text-sm font-extrabold text-[#1C2A1E]">
-                      RWF {priceVal.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    className="w-7 h-7 bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] rounded-lg flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-sm"
-                    title="Add to cart"
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
+        return (
+          <section key={sec.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+            {/* Section Header */}
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E8E4DA]">
+              <div>
+                <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
+                  {sec.title}
+                </h2>
               </div>
-            );
-          })}
 
-          {/* Final Scrollable Card: View All Popular Now */}
-          <div 
-            onClick={() => onNavigate('catalog')}
-            className="bg-white border-2 border-dashed border-[#2D5A3D]/40 rounded-[12px] p-4 flex flex-col items-center justify-center text-center w-[160px] sm:w-[180px] shrink-0 cursor-pointer group hover:bg-[#2D5A3D]/5 transition-all"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#2D5A3D]/10 text-[#2D5A3D] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <ArrowUpRight size={18} />
-            </div>
-            <span className="text-xs font-bold text-[#2D5A3D]">View all Popular now</span>
-            <span className="text-[10px] text-[#717971] mt-1">Browse 50+ items</span>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 6: "Fresh Deals" Rail */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-[#1C2A1E] tracking-tight">Fresh Deals — This week's best for less</h2>
-          </div>
-          <button 
-            onClick={() => onNavigate('catalog', 'Deals')}
-            className="text-xs font-bold text-[#D9381E] hover:underline flex items-center gap-0.5 cursor-pointer"
-          >
-            <span>View all</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-
-        {/* Scrollable Rail of Deal Cards */}
-        <div className="flex overflow-x-auto gap-3.5 pb-2 pt-0.5 scrollbar-hide scroll-smooth">
-          {dealsList.map((item: any, idx: number) => {
-            const isSupply = !!item.product_detail;
-            const name = isSupply ? item.product_detail?.name : item.name;
-            const farm = isSupply ? (item.farmer_name || 'Harvest Hill Farm') : (item.farm || 'Local Farm');
-            const origPrice = isSupply ? Number(item.price) : Number(item.originalPrice || item.price * 1.3 || 2500);
-            const discPrice = isSupply ? Number(item.discount_price || item.price) : Number(item.discountPrice || item.price);
-            const pct = item.savingsPct || (origPrice > 0 ? Math.round(((origPrice - discPrice) / origPrice) * 100) : 20);
-            const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.photo || item.image_url);
-            const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-            const sizeText = item.size || `approx. 1 ${unit}`;
-            const isSponsored = item.sponsored || idx === 0 || idx === 3;
-            const targetProdId = item.id;
-
-            return (
-              <div 
-                key={item.id}
-                onClick={() => onNavigate('product-detail', undefined, targetProdId)}
-                className="bg-white border border-[#E8E4DA] rounded-[12px] p-3 flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all w-[180px] sm:w-[200px] shrink-0 cursor-pointer group relative"
-              >
-                <div>
-                  {/* Top Bar inside card: Sponsored label if applicable */}
-                  {isSponsored && (
-                    <span className="absolute top-2 right-2 z-10 text-[9px] font-semibold text-[#888888] bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded border border-[#E8E4DA]">
-                      Sponsored
+              <div className="flex items-center gap-3 self-end sm:self-auto">
+                {/* Pagination controls for this section */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1.5 bg-white border border-[#E8E4DA] rounded-xl px-2.5 py-1 shadow-sm text-xs font-bold text-[#414942]">
+                    <button
+                      disabled={currentPage === 0}
+                      onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.max(0, currentPage - 1) }))}
+                      className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                      title="Previous page"
+                    >
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="font-mono text-[11px] px-1">
+                      {currentPage + 1} / {totalPages}
                     </span>
-                  )}
-
-                  {/* Square Product Photo */}
-                  <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative">
-                    <img 
-                      src={imgUrl || "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400&q=80"} 
-                      alt={name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {/* Save X% Tag */}
-                    <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
-                      Save {pct}%
-                    </span>
+                    <button
+                      disabled={currentPage >= totalPages - 1}
+                      onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.min(totalPages - 1, currentPage + 1) }))}
+                      className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                      title="Next page"
+                    >
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
+                )}
 
-                  {/* Farm Name in Small Caps */}
-                  <span className="text-[9px] font-bold text-[#717971] uppercase tracking-wider block mb-0.5 truncate">
-                    {farm}
-                  </span>
-
-                  {/* Product Name */}
-                  <h3 className="text-xs font-semibold text-[#1C2A1E] line-clamp-1 group-hover:text-[#2D5A3D] transition-colors leading-snug">
-                    {name}
-                  </h3>
-
-                  {/* Size / quantity text */}
-                  <p className="text-[10px] text-[#777777] font-normal mt-0.5">
-                    {sizeText}
-                  </p>
-                </div>
-
-                {/* Sale Pricing & Add Button */}
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F0ECE1]">
-                  <div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-sm font-extrabold text-[#D9381E]">
-                        RWF {discPrice.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-[#888888] line-through font-normal">
-                        RWF {origPrice.toLocaleString()}
-                      </span>
-                      <span className="text-[10px] text-[#717971]">/{unit}</span>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(item);
-                    }}
-                    className="w-7 h-7 bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] rounded-lg flex items-center justify-center cursor-pointer transition-colors active:scale-95 shadow-sm"
-                    title="Add to cart"
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
+                {/* View All link */}
+                <button
+                  onClick={() => onNavigate('catalog', sec.category !== 'Popular' && sec.category !== 'All' ? sec.category : undefined)}
+                  className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
+                >
+                  <span>View all</span>
+                  <ChevronRight size={14} />
+                </button>
               </div>
-            );
-          })}
-
-          {/* Final Scrollable Card: View All Fresh Deals */}
-          <div 
-            onClick={() => onNavigate('catalog', 'Deals')}
-            className="bg-white border-2 border-dashed border-[#D9381E]/40 rounded-[12px] p-4 flex flex-col items-center justify-center text-center w-[160px] sm:w-[180px] shrink-0 cursor-pointer group hover:bg-[#FFF0ED]/50 transition-all"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#FFF0ED] text-[#D9381E] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-              <ArrowUpRight size={18} />
             </div>
-            <span className="text-xs font-bold text-[#D9381E]">View all Fresh Deals</span>
-            <span className="text-[10px] text-[#717971] mt-1">Save up to 40%</span>
-          </div>
-        </div>
-      </section>
+
+            {/* Product Grid (e.g. 2-row x 4-col, 3-row x 4-col, etc.) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx))}
+            </div>
+          </section>
+        );
+      })}
 
     </div>
   );

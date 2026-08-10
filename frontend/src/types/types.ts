@@ -1,4 +1,4 @@
-export type ViewType = 'dashboard' | 'users' | 'products' | 'orders' | 'deliveries' | 'invoices' | 'supplies' | 'reports';
+export type ViewType = 'dashboard' | 'users' | 'products' | 'orders' | 'deliveries' | 'invoices' | 'supplies' | 'reports' | 'settings' | 'homepage';
 
 export interface KPIStats {
   label: string;

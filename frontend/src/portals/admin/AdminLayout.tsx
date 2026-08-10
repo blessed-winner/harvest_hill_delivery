@@ -12,6 +12,7 @@ import { Invoices } from './pages/Invoices';
 import { Supplies } from './pages/Supplies';
 import { Reports } from './pages/Reports';
 import { SettingsPage } from './pages/Settings';
+import { HomepageCustomizer } from './pages/HomepageCustomizer';
 import { ViewType } from '../types';
 import { api, apiRequest } from './lib/api';
 import { cn } from './lib/utils';
@@ -63,6 +64,8 @@ export default function AdminLayout() {
         return <UserManagement />;
       case 'products':
         return <ProductCatalog />;
+      case 'homepage':
+        return <HomepageCustomizer />;
       case 'orders':
         return <OrdersManagement />;
       case 'deliveries':

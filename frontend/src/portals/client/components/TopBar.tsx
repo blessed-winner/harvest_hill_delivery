@@ -347,11 +347,13 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           {/* Cart Icon */}
           <button
             onClick={() => onNavigate('cart')}
-            className="flex items-center gap-1.5 bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-            title="Cart"
+            className="p-1.5 hover:bg-[#FAF7F0] rounded-xl transition-colors relative cursor-pointer text-[#1C2A1E] hover:text-[#2D5A3D]"
+            title="Harvest Cart"
           >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="text-xs font-extrabold">{cartCount}</span>
+            <ShoppingCart className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] bg-[#2D5A3D] text-white font-mono text-[9px] font-extrabold flex items-center justify-center rounded-full px-1 shadow-sm border border-white">
+              {cartCount}
+            </span>
           </button>
         </div>
       </div>

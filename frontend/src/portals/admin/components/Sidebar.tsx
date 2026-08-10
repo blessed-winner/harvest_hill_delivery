@@ -10,7 +10,8 @@ import {
   BarChart3, 
   UserCircle, 
   LogOut,
-  X
+  X,
+  Layout
 } from 'lucide-react';
 import { ViewType } from '../../types';
 import { cn } from '../lib/utils';
@@ -26,6 +27,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'products', label: 'Products', icon: Package },
+  { id: 'homepage', label: 'Homepage Layout', icon: Layout },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'deliveries', label: 'Delivery Notes', icon: Truck },
   { id: 'invoices', label: 'Invoices', icon: Receipt },
