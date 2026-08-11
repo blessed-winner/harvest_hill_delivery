@@ -381,7 +381,75 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 17. Quick Sanity Verification Checklist
+## 17. Test Suite 13: Bulk Deals & Volume Tier Discounts
+
+*(Requirement: Farmers and Admin can submit optional bulk deals with min bulk qty and special bulk unit price. Bulk deal discounts automatically apply when purchasing in bulk.)*
+
+1. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`) or Admin (`admin@harvesthill.test` / `adminpass123`).
+2. Submit a harvest batch for `Organic Roma Tomatoes`:
+   - Set **Asking Price**: `1,200 RWF / kg`.
+   - In **Optional Bulk Deal Offer**:
+     - **Min Bulk Qty**: `50 kg`.
+     - **Bulk Price / Unit**: `950 RWF`.
+   - Click **Submit Harvest**.
+3. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+4. Go to Catalog (`/client?screen=catalog`).
+   - **Validation Check**: Verify the card displays `⚡ Bulk Offer Available` and price starting `From RWF 1,200 / kg`.
+5. Click the product to open **Product Detail**:
+   - **Validation Check**: Verify the **⚡ Bulk Purchase Offer** banner displays: `Buy 50 kg or more for RWF 950/kg!`.
+6. Set Quantity to `10 kg` (Standard order):
+   - Verify unit price displays `RWF 1,200 / kg`.
+7. Increase Quantity to `50 kg` (Qualifies for Bulk Deal):
+   - **Validation Check**: Verify unit price updates to `RWF 950 / kg` with a `Bulk Deal Applied` badge!
+8. Click **Add to Cart** and view Cart (`/client?screen=cart`):
+   - Verify line item displays `⚡ Bulk Price Applied (RWF 950/unit)` and subtotal is `47,500 RWF`.
+
+---
+
+## 18. Test Suite 14: Single-Product Grouped Catalog & Farmer Anonymity Toggle
+
+*(Requirement: Client catalog lists only 1 clean card per product type, aggregating stock across background suppliers. Farmer names are hidden by default for clients under Harvest Hill Delivery brand, with Admin toggle capability.)*
+
+1. **Farmer Anonymity Verification**:
+   - Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+   - Browse catalog & product detail screens.
+   - **Validation Check**: Verify farmer supplier name displays as **Harvest Hill Delivery** (Farmer real identity is hidden).
+2. **Admin Privacy Toggle**:
+   - Log in as Admin (`admin@harvesthill.test` / `adminpass123`) and navigate to Supplies (`/admin?tab=supplies`).
+   - Click **🔒 Client Privacy: Farmer Names Hidden** in top bar header.
+   - Verify toast notifies: `Farmer names are now VISIBLE to clients.`
+3. **Client Visibility Check**:
+   - Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`) and refresh.
+   - Verify real farm name (e.g., `Jean Paul Farm`) is now visible.
+4. **Grouped Product Catalog Check**:
+   - Have multiple suppliers submit harvest batches for `Roma Tomatoes`.
+   - Log in as Client and navigate to Catalog (`/client?screen=catalog`).
+   - **Validation Check**: Verify `Roma Tomatoes` appears **only ONCE** on the catalog, displaying combined total stock and starting price, rather than multiple duplicate cards.
+
+---
+
+## 19. Test Suite 15: Herbs Category & Flexible Order Quantities (> 0)
+
+*(Requirement: "Herbs" is supported as a product category. Fixed 20kg minimum constraints are removed so clients and suppliers can order/supply any quantity > 0.)*
+
+1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+2. Go to Product Catalog (`/admin?tab=catalog`) and click **Add Product Spec**:
+   - Set **Product Name**: `Fresh Rosemary Herbs`.
+   - Set **Category**: `Herbs`.
+   - Set **Quantity Needed**: `5 kg` (Verify system accepts < 20kg without error).
+   - Click **Save Product Spec**.
+3. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+4. Go to **Submit Harvest**:
+   - Select `Herbs` in category filter or submit a custom crop under `Herbs` category.
+   - Set Quantity to `2 kg` (Verify submission succeeds cleanly without 20kg restriction).
+5. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+6. Click `Herbs` category bubble or filter in catalog:
+   - Verify `Fresh Rosemary Herbs` is listed.
+   - Set quantity to `1 kg` and proceed to checkout successfully.
+
+---
+
+## 20. Quick Sanity Verification Checklist
 
 ```
 UNIFIED SIGNUP & PRIVACY
@@ -389,6 +457,18 @@ UNIFIED SIGNUP & PRIVACY
 [ ] Farmer registration via /signup succeeds cleanly without 400 error
 [ ] Database baseline reset cleanly with master admin@harvesthill.test
 [ ] Cart storage is user-scoped (cart_items_role_email)
+[ ] Farmer names hidden by default on client portal (Harvest Hill Delivery brand)
+[ ] Admin privacy toggle switches farmer identity visibility for clients
+
+BULK DEALS & TIERED PRICING
+[ ] Farmers & Admin can include optional Bulk Deal (min qty & bulk price per unit)
+[ ] Product Detail displays Bulk Offer banner and auto-applies bulk price when qty threshold met
+[ ] Cart & Checkout calculate subtotals using dynamic bulk deal unit pricing
+
+SINGLE-PRODUCT CATALOG GROUPING & CATEGORIES
+[ ] Client catalog lists only ONE card per product type (e.g. Eggs/Tomatoes), aggregating total stock
+[ ] "Herbs" category supported in backend models and frontend pickers/filters
+[ ] Minimum order/supply thresholds (e.g. 20kg) removed so any valid quantity > 0 is allowed
 
 GUEST REDIRECTIONS & SESSION SECURITY
 [ ] Unauthenticated Add to Cart clicks redirect to /login?redirect=cart
@@ -402,16 +482,6 @@ SUPPLY APPROVAL WORKFLOWS & CUSTOM PROPOSALS
 [ ] Farmers can propose custom crops using "Submit Custom Crop" card (Template-free)
 [ ] Admins can view/approve Custom Crop Proposals with warnings in supplies manager
 
-MARKET NEED SOURCING (CLIENT REQUESTS)
-[ ] Clients can request unlisted products via form (listed under My Requests)
-[ ] Admins can approve client requests and click "Create Template" to prefill crop catalog
-[ ] Farmers can view approved Requests on client requests page and click "Supply This Demand"
-
-MULTI-IMAGE PRODUCE GALLERIES
-[ ] Farmers can upload up to 5 photos during harvest submission
-[ ] Product Detail pane displays gallery selector with all thumbnails
-[ ] Clicking a thumbnail swaps the main large product photo preview
-
 DELIVERY NOTES & PDF EXPORT
 [ ] Delivery Note lists Product Name, Quantity, Unit Price, Total Price for each item
 [ ] Total Cost for all listed products displayed in table footer
@@ -421,4 +491,5 @@ DELIVERY NOTES & PDF EXPORT
 
 ---
 
-*Last Updated: 2026-08-03*
+*Last Updated: 2026-08-11*
+

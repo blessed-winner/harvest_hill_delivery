@@ -222,29 +222,8 @@ export default function MySupplies() {
     let hasErrors = false;
     const errors: typeof validationErrors = {};
 
-    const unit = (editSupply.product_detail?.unit || editSupply.unit || 'kg').toLowerCase();
-    let minQty = 1;
-    let minMsg = "Quantity must be greater than zero.";
-
-    if (unit.includes('kg')) {
-      minQty = 20;
-      minMsg = "Quantity must be at least 20 kg.";
-    } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
-      minQty = 15;
-      minMsg = "Quantity must be at least 15 litres.";
-    } else if (unit.includes('crate')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 crates.";
-    } else if (unit.includes('jar')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 jars.";
-    } else if (unit.includes('bundle')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 bundles.";
-    }
-
-    if (isNaN(qty) || qty < minQty) {
-      errors.quantity = minMsg;
+    if (isNaN(qty) || qty <= 0) {
+      errors.quantity = "Quantity must be greater than zero.";
       hasErrors = true;
     }
 
@@ -372,6 +351,7 @@ export default function MySupplies() {
             <option>All Categories</option>
             <option>Vegetables</option>
             <option>Fruits</option>
+            <option>Herbs</option>
             <option>Grains</option>
             <option>Animal-Based</option>
           </select>

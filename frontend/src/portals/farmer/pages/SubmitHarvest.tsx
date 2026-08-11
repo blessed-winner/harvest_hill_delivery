@@ -30,6 +30,22 @@ type HarvestFormState = {
   customProductName?: string;
   customCategory?: string;
   customUnit?: string;
+  bulkMinQty?: string;
+  bulkPrice?: string;
+};
+
+const initialFormState: HarvestFormState = {
+  quantity: '',
+  availableDate: new Date().toISOString().slice(0, 10),
+  askingPrice: '',
+  qualityGrade: 'premium',
+  notes: '',
+  photo: null,
+  customProductName: '',
+  customCategory: 'Vegetables',
+  customUnit: 'kg',
+  bulkMinQty: '',
+  bulkPrice: '',
 };
 
 const referenceProductImages: Record<string, string> = {
@@ -79,18 +95,6 @@ const getBadgeMeta = (name: string, urgency?: string) => {
   }
 
   return null;
-};
-
-const initialFormState: HarvestFormState = {
-  quantity: '',
-  availableDate: new Date().toISOString().slice(0, 10),
-  askingPrice: '',
-  qualityGrade: 'premium',
-  notes: '',
-  photo: null,
-  customProductName: '',
-  customCategory: 'Vegetables',
-  customUnit: 'kg',
 };
 
 interface SubmitHarvestProps {
@@ -311,36 +315,8 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       hasErrors = true;
     }
 
-    // Check unit thresholds (20kg, 15 litres, 10 crates, 10 jars, 10 bundles)
-    const unit = (selectedProduct.isCustom || selectedProduct.isRequest)
-      ? (form.customUnit?.toLowerCase() || 'kg')
-      : (selectedProduct.unit?.toLowerCase() || 'kg');
-
-    let minQty = 1;
-    let minMsg = "Quantity must be greater than zero.";
-
-    if (unit.includes('kg')) {
-      minQty = 20;
-      minMsg = "Quantity must be at least 20 kg.";
-    } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
-      minQty = 15;
-      minMsg = "Quantity must be at least 15 litres.";
-    } else if (unit.includes('crate')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 crates.";
-    } else if (unit.includes('jar')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 jars.";
-    } else if (unit.includes('bundle')) {
-      minQty = 10;
-      minMsg = "Quantity must be at least 10 bundles.";
-    } else if (unit.includes('dozen')) {
-      minQty = 5;
-      minMsg = "Quantity must be at least 5 dozen.";
-    }
-
-    if (isNaN(qty) || qty < minQty) {
-      errors.quantity = minMsg;
+    if (isNaN(qty) || qty <= 0) {
+      errors.quantity = "Quantity must be greater than zero.";
       hasErrors = true;
     }
 
@@ -367,6 +343,11 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
         images: photos,
         status: isDraft ? 'draft' : 'pending',
       };
+
+      if (form.bulkMinQty && form.bulkPrice) {
+        payload.bulk_min_qty = Number(form.bulkMinQty);
+        payload.bulk_price = Number(form.bulkPrice);
+      }
 
       if (selectedProduct.isCustom || selectedProduct.isRequest || !selectedProduct.id) {
         payload.product = null;
@@ -751,6 +732,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         >
                           <option value="Vegetables">Vegetables</option>
                           <option value="Fruits">Fruits</option>
+                          <option value="Herbs">Herbs</option>
                           <option value="Grains">Grains</option>
                           <option value="Animal-Based">Animal-Based</option>
                         </select>
@@ -799,24 +781,8 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                           const val = event.target.value;
                           setForm((current) => ({ ...current, quantity: val }));
                           const qtyNum = Number(val);
-                          const unit = (selectedProduct.isCustom || selectedProduct.isRequest)
-                            ? (form.customUnit?.toLowerCase() || 'kg')
-                            : (selectedProduct.unit?.toLowerCase() || 'kg');
                           if (val) {
-                            let err: string | undefined = undefined;
-                            if (unit.includes('kg')) {
-                              if (isNaN(qtyNum) || qtyNum < 20) err = "Quantity must be at least 20 kg.";
-                            } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
-                              if (isNaN(qtyNum) || qtyNum < 15) err = "Quantity must be at least 15 litres.";
-                            } else if (unit.includes('crate')) {
-                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 crates.";
-                            } else if (unit.includes('jar')) {
-                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 jars.";
-                            } else if (unit.includes('bundle')) {
-                              if (isNaN(qtyNum) || qtyNum < 10) err = "Quantity must be at least 10 bundles.";
-                            } else {
-                              if (isNaN(qtyNum) || qtyNum <= 0) err = "Quantity must be greater than zero.";
-                            }
+                            const err = (isNaN(qtyNum) || qtyNum <= 0) ? "Quantity must be greater than zero." : undefined;
                             setValidationErrors(prev => ({ ...prev, quantity: err }));
                           } else {
                             setValidationErrors(prev => ({ ...prev, quantity: undefined }));
@@ -841,7 +807,39 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         className="w-full pl-9 pr-3 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest font-sans text-xs focus:border-primary outline-none"
                         type="date"
                         value={form.availableDate}
-                        onChange={(event) => setForm((current) => ({ ...current, availableDate: event.target.value }))}
+                        onChange={(e) => setForm(current => ({ ...current, availableDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional Bulk Deal Offer Section */}
+                <div className="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-widest flex items-center gap-1">
+                      ⚡ Optional Bulk Deal Offer
+                    </span>
+                    <span className="text-[9px] font-medium text-emerald-700">Tiered Discount for Volume Buyers</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-emerald-900 uppercase">Min Bulk Qty</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 50"
+                        value={form.bulkMinQty || ''}
+                        onChange={(e) => setForm(c => ({ ...c, bulkMinQty: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:ring-1 focus:ring-emerald-600"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-emerald-900 uppercase">Bulk Price / Unit (RWF)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1000"
+                        value={form.bulkPrice || ''}
+                        onChange={(e) => setForm(c => ({ ...c, bulkPrice: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:ring-1 focus:ring-emerald-600"
                       />
                     </div>
                   </div>

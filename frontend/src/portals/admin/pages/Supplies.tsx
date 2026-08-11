@@ -16,6 +16,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [selectedSupply, setSelectedSupply] = useState<any | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [activeStatusTab, setActiveStatusTab] = useState('All');
+  const [showFarmerNames, setShowFarmerNames] = useState(false);
+
+  useEffect(() => {
+    api.systemSettings.get().then((res: any) => {
+      if (res && res.show_farmer_names_to_clients !== undefined) {
+        setShowFarmerNames(!!res.show_farmer_names_to_clients);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,21 +178,47 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       <div className="mb-5 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary mb-1">Supply Logs</h2>
-          <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and price agreements.</p>
+          <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals, bulk deals, and client privacy controls.</p>
         </div>
-        <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-          {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
-            <button 
-              key={t} 
-              onClick={() => setActiveStatusTab(t)}
-              className={cn(
-                "px-4 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap",
-                activeStatusTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"
-              )}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              const nextVal = !showFarmerNames;
+              setShowFarmerNames(nextVal);
+              try {
+                await api.systemSettings.update({ show_farmer_names_to_clients: nextVal });
+                toast(nextVal ? "Farmer names are now VISIBLE to clients." : "Farmer names are now HIDDEN (Showing Harvest Hill Delivery).", "success");
+              } catch (err) {
+                toast("Failed to update setting.", "error");
+                setShowFarmerNames(!nextVal);
+              }
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 shadow-sm",
+              showFarmerNames 
+                ? "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100" 
+                : "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100"
+            )}
+            title="Toggle whether farmer farm names appear on the client portal or remain hidden under Harvest Hill Delivery"
+          >
+            <span className="font-extrabold">{showFarmerNames ? "👁️ Client Privacy: Showing Farmer Names" : "🔒 Client Privacy: Farmer Names Hidden"}</span>
+          </button>
+
+          <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
+            {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
+              <button 
+                key={t} 
+                onClick={() => setActiveStatusTab(t)}
+                className={cn(
+                  "px-4 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap",
+                  activeStatusTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

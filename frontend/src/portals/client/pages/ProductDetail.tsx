@@ -335,48 +335,47 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-12 font-sans">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
-      {/* Navigation Breadcrumb */}
+      {/* Breadcrumbs */}
       <div className="text-xs text-[#717971] flex items-center gap-1.5">
-        <button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors flex items-center gap-1 cursor-pointer">
-          <ArrowLeft size={12} /> Marketplace
-        </button>
+        <button onClick={() => onNavigate('dashboard')} className="hover:text-[#144227] transition-colors cursor-pointer">Home</button>
         <ChevronRight size={12} />
-        <button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer">
-          {product.category || 'Products'}
-        </button>
+        <button onClick={() => onNavigate('catalog')} className="hover:text-[#144227] transition-colors cursor-pointer">Catalog</button>
         <ChevronRight size={12} />
         <span className="text-[#1c1c18] font-bold">{product.name}</span>
       </div>
 
-      {/* Main product columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 bg-white rounded-3xl p-6 sm:p-8 border border-[#e5e2db] shadow-sm">
         
-        {/* Left Column: Image viewer */}
+        {/* Left Column: Image Gallery */}
         <div className="space-y-4">
-          <div className="w-full aspect-[4/3] bg-[#f6f3ec] rounded-2xl overflow-hidden border border-[#e5e2db] shadow-sm">
-            <img
-              src={images[activeImgIndex]}
-              alt={product.name}
-              className="w-full h-full object-cover transition-opacity duration-300"
+          <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
+            <img 
+              src={product.images?.[activeImgIndex] || product.image_url || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&q=80'} 
+              alt={product.name} 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
 
-          {/* Thumbnails row */}
-          <div className="grid grid-cols-5 gap-2.5">
-            {images.map((img: string, index: number) => (
-              <button
-                key={index}
-                onClick={() => setActiveImgIndex(index)}
-                className={`aspect-square rounded-lg overflow-hidden border-2 bg-[#f6f3ec] transition-all cursor-pointer ${
-                  activeImgIndex === index ? 'border-[#144227] scale-102 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'
-                }`}
-              >
-                <img src={img} alt="thumb" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
+          {/* Gallery Thumbnails */}
+          {product.images && product.images.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {product.images.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImgIndex(idx)}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#f6f3ec] ${
+                    activeImgIndex === idx ? 'border-[#144227] scale-105 shadow-sm' : 'border-[#e5e2db] opacity-75 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Info & Actions */}

@@ -117,7 +117,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         if (farmerFilter) params.farmer = farmerFilter;
         
         const response = await clientApi.products.list(params);
-        let fetchedProducts = response?.results || [];
+        let fetchedProducts = response?.results || response || [];
         
         // Apply client-side filters
         if (organicOnly) {
@@ -126,15 +126,68 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
           );
         }
         if (bulkAvailable) {
-          fetchedProducts = fetchedProducts.filter((p: any) => parseFloat(p.quantity || 0) >= 100);
+          fetchedProducts = fetchedProducts.filter((p: any) => (p.bulk_min_qty && p.bulk_price) || parseFloat(p.quantity || 0) >= 50);
         }
 
+        // Group supplies by unique product type/name for single clean card listing
+        const groupedMap = new Map<string, any>();
+        fetchedProducts.forEach((s: any) => {
+          const prodName = (s.product_detail?.name || s.custom_product_name || s.name || 'Produce').trim();
+          const prodCategory = s.product_detail?.category || s.custom_category || s.category || 'Vegetables';
+          const prodUnit = s.product_detail?.unit || s.custom_unit || s.unit || 'kg';
+          const groupKey = (s.product || prodName).toString().toLowerCase();
+
+          const priceVal = Number(s.price || 0);
+          const qtyVal = Number(s.quantity || 0);
+          const bulkMin = s.bulk_min_qty ? Number(s.bulk_min_qty) : null;
+          const bulkP = s.bulk_price ? Number(s.bulk_price) : null;
+
+          if (!groupedMap.has(groupKey)) {
+            groupedMap.set(groupKey, {
+              id: s.id,
+              product: s.product,
+              name: prodName,
+              category: prodCategory,
+              unit: prodUnit,
+              price: priceVal,
+              quantity: qtyVal,
+              photo: s.photo || s.product_detail?.image_url,
+              farmer_name: s.farmer_name,
+              urgency: s.product_detail?.urgency || s.urgency,
+              notes: s.notes,
+              bulk_min_qty: bulkMin,
+              bulk_price: bulkP,
+              has_bulk_deal: !!(bulkMin && bulkP),
+              supplies_count: 1,
+              supplies: [s]
+            });
+          } else {
+            const existing = groupedMap.get(groupKey);
+            existing.quantity += qtyVal;
+            existing.supplies_count += 1;
+            existing.supplies.push(s);
+            if (priceVal > 0 && (existing.price === 0 || priceVal < existing.price)) {
+              existing.price = priceVal;
+              existing.id = s.id; // route to top pricing supply
+            }
+            if (bulkMin && bulkP) {
+              existing.has_bulk_deal = true;
+              if (!existing.bulk_price || bulkP < existing.bulk_price) {
+                existing.bulk_min_qty = bulkMin;
+                existing.bulk_price = bulkP;
+              }
+            }
+          }
+        });
+
+        let groupedProducts = Array.from(groupedMap.values());
+
         // Apply client-side sorting
-        fetchedProducts.sort((a: any, b: any) => {
-          const nameA = (a.product_detail?.name || a.name || '').toLowerCase();
-          const nameB = (b.product_detail?.name || b.name || '').toLowerCase();
-          const priceA = parseFloat(a.price || 0);
-          const priceB = parseFloat(b.price || 0);
+        groupedProducts.sort((a: any, b: any) => {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+          const priceA = Number(a.price || 0);
+          const priceB = Number(b.price || 0);
 
           if (sortBy === 'name') {
             return nameA.localeCompare(nameB);
@@ -148,11 +201,11 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
           return 0;
         });
         
-        setProducts(fetchedProducts);
+        setProducts(groupedProducts);
         if (allProducts.length === 0) {
-          setAllProducts(fetchedProducts);
+          setAllProducts(groupedProducts);
         }
-        setTotalCount(fetchedProducts.length);
+        setTotalCount(groupedProducts.length);
         setCurrentPage(1); // Reset to first page on filter change
       } catch (err: any) {
         console.error('Failed to fetch products:', err);

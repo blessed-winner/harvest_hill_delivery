@@ -84,3 +84,12 @@ class FarmerApplication(models.Model):
 
     def __str__(self):
         return f"{self.farm_name} ({self.full_name}) - {self.status}"
+
+
+class SystemSetting(models.Model):
+    key = models.CharField(max_length=100, unique=True)
+    value = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return f"{self.key}={self.value}"
+

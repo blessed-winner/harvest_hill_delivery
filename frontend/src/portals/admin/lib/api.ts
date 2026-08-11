@@ -115,6 +115,12 @@ export const api = {
   updateMe: (payload: any) => apiRequest('/api/accounts/me/', { method: 'PUT', body: JSON.stringify(payload) }),
   changePassword: (payload: any) => apiRequest('/api/accounts/change-password/', { method: 'POST', body: JSON.stringify(payload) }),
 
+  // System Settings
+  systemSettings: {
+    get: () => apiRequest('/api/accounts/system-settings/'),
+    update: (payload: any) => apiRequest('/api/accounts/system-settings/', { method: 'POST', body: JSON.stringify(payload) }),
+  },
+
   // Dashboard Metrics
   dashboardSummary: (params: Record<string, string> = {}) => {
     const query = new URLSearchParams(params).toString();

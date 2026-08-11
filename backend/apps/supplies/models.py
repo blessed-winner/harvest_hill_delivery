@@ -30,6 +30,8 @@ class Supply(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_discounted = models.BooleanField(default=False)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bulk_min_qty = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bulk_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.00)
     rating_count = models.IntegerField(default=1)
     is_archived = models.BooleanField(default=False)

@@ -235,6 +235,12 @@ export const clientApi = {
     deleteAll: () =>
       apiRequest('/api/notifications/delete-all/', { method: 'DELETE' }),
   },
+
+  // ── System Settings ────────────────────────────────────────────────────────
+  systemSettings: {
+    get: () => apiRequest('/api/accounts/system-settings/'),
+    update: (payload: any) => apiRequest('/api/accounts/system-settings/', { method: 'POST', body: JSON.stringify(payload) }),
+  },
 };
 
 // Utility functions

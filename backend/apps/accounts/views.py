@@ -852,3 +852,33 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
         log_action(request, actor=request.user, action="farmer_application_deleted", target_model="FarmerApplication", target_id=app_id)
         
         return Response({"detail": "Application deleted successfully."}, status=status.HTTP_200_OK)
+
+
+class SystemSettingsView(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        from .models import SystemSetting
+        settings_dict = {}
+        for s in SystemSetting.objects.all():
+            settings_dict[s.key] = s.value.lower() == 'true' if s.value.lower() in ['true', 'false'] else s.value
+        
+        # Default show_farmer_names_to_clients to False if not explicitly set
+        if 'show_farmer_names_to_clients' not in settings_dict:
+            settings_dict['show_farmer_names_to_clients'] = False
+
+        return Response(settings_dict)
+
+    def post(self, request):
+        if not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return Response({"detail": "Only admins can change system settings."}, status=status.HTTP_403_FORBIDDEN)
+
+        from .models import SystemSetting
+        data = request.data
+        for key, val in data.items():
+            setting, _ = SystemSetting.objects.get_or_create(key=key)
+            setting.value = str(val)
+            setting.save()
+
+        return Response({"detail": "System settings updated successfully."})
+

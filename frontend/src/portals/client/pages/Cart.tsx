@@ -122,8 +122,16 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
     localStorage.removeItem(getCartStorageKey());
   };
 
+  // Calculate item unit price with bulk deal tier evaluation
+  const getItemUnitPrice = (item: any) => {
+    if (item.bulk_min_qty && item.bulk_price && item.qty >= Number(item.bulk_min_qty)) {
+      return parsePrice(item.bulk_price);
+    }
+    return parsePrice(item.price);
+  };
+
   // Calculate totals in RWF
-  const subtotal = items.reduce((sum, item) => sum + (parsePrice(item.price) * item.qty), 0);
+  const subtotal = items.reduce((sum, item) => sum + (getItemUnitPrice(item) * item.qty), 0);
   const grandTotal = subtotal;
 
   if (loading) {

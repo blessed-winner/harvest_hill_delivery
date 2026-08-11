@@ -37,7 +37,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const [activeCategory, setActiveCategory] = useState('All Products');
-  const categories = ['All Products', 'Vegetables', 'Fruits', 'Grains', 'Animal-Based', 'Client Requests'];
+  const categories = ['All Products', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
 
   // Product Requests states
   const [requests, setRequests] = useState<any[]>([]);
@@ -50,6 +50,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestProduct, setHarvestProduct] = useState<any | null>(null);
   const [harvestQty, setHarvestQty] = useState('');
   const [harvestPrice, setHarvestPrice] = useState('');
+  const [harvestBulkMinQty, setHarvestBulkMinQty] = useState('');
+  const [harvestBulkPrice, setHarvestBulkPrice] = useState('');
   const [harvestDate, setHarvestDate] = useState(new Date().toISOString().slice(0, 10));
   const [harvestGrade, setHarvestGrade] = useState('premium');
   const [harvestNotes, setHarvestNotes] = useState('');
@@ -198,6 +200,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setHarvestProduct(product);
     setHarvestQty(product.quantity_needed ? String(product.quantity_needed) : '');
     setHarvestPrice(product.base_price ? String(product.base_price) : '');
+    setHarvestBulkMinQty('');
+    setHarvestBulkPrice('');
     setHarvestDate(new Date().toISOString().slice(0, 10));
     setHarvestGrade('premium');
     setHarvestNotes('');
@@ -246,6 +250,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         status: 'accepted' // Auto-accept admin farm harvest
       };
 
+      if (harvestBulkMinQty && harvestBulkPrice) {
+        payload.bulk_min_qty = parseFloat(harvestBulkMinQty);
+        payload.bulk_price = parseFloat(harvestBulkPrice);
+      }
+
       if (harvestPhotos.length > 0) {
         payload.photoFile = harvestPhotos[0];
         payload.additionalPhotos = harvestPhotos.slice(1);
@@ -280,29 +289,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
-    let minQtyNeeded = 1;
-    let minQtyMsg = "Quantity needed must be greater than zero.";
-    const lowerUnit = formUnit.toLowerCase();
-
-    if (lowerUnit.includes('kg')) {
-      minQtyNeeded = 20;
-      minQtyMsg = "Quantity needed must be at least 20 kg.";
-    } else if (lowerUnit.includes('litre') || lowerUnit.includes('liter') || lowerUnit === 'l') {
-      minQtyNeeded = 15;
-      minQtyMsg = "Quantity needed must be at least 15 litres.";
-    } else if (lowerUnit.includes('crate')) {
-      minQtyNeeded = 10;
-      minQtyMsg = "Quantity needed must be at least 10 crates.";
-    } else if (lowerUnit.includes('jar')) {
-      minQtyNeeded = 10;
-      minQtyMsg = "Quantity needed must be at least 10 jars.";
-    } else if (lowerUnit.includes('bundle')) {
-      minQtyNeeded = 10;
-      minQtyMsg = "Quantity needed must be at least 10 bundles.";
-    }
-
-    if (qtyVal < minQtyNeeded) {
-      setErrorMessage(minQtyMsg);
+    if (qtyVal <= 0) {
+      setErrorMessage("Quantity needed must be greater than zero.");
       return;
     }
 
@@ -764,6 +752,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               >
                 <option value="Vegetables">Vegetables</option>
                 <option value="Fruits">Fruits</option>
+                <option value="Herbs">Herbs</option>
                 <option value="Animal-Based">Animal-Based</option>
                 <option value="Grains">Grains</option>
               </select>
@@ -812,15 +801,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
               <input 
                 type="number" 
-                placeholder={(() => {
-                  const u = (formUnit || 'kg').toLowerCase();
-                  if (u.includes('kg')) return 'Min 20 kg';
-                  if (u.includes('litre') || u.includes('liter') || u === 'l') return 'Min 15 litres';
-                  if (u.includes('crate')) return 'Min 10 crates';
-                  if (u.includes('jar')) return 'Min 10 jars';
-                  if (u.includes('bundle')) return 'Min 10 bundles';
-                  return 'Min 1 unit';
-                })()}
+                placeholder="e.g. 50"
                 value={formQuantityNeeded}
                 onChange={(e) => setFormQuantityNeeded(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
@@ -953,6 +934,38 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     placeholder="e.g. 1200"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 bg-white"
                   />
+                </div>
+              </div>
+
+              {/* Optional Bulk Deal Offer */}
+              <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
+                    ⚡ Optional Bulk Deal Offer
+                  </span>
+                  <span className="text-[9px] font-semibold text-emerald-700">Tiered Pricing</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold text-emerald-900 uppercase">Min Bulk Qty</label>
+                    <input
+                      type="number"
+                      value={harvestBulkMinQty}
+                      onChange={(e) => setHarvestBulkMinQty(e.target.value)}
+                      placeholder="e.g. 50"
+                      className="w-full px-3 py-2 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:border-emerald-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold text-emerald-900 uppercase">Bulk Price / Unit (RWF)</label>
+                    <input
+                      type="number"
+                      value={harvestBulkPrice}
+                      onChange={(e) => setHarvestBulkPrice(e.target.value)}
+                      placeholder="e.g. 1000"
+                      className="w-full px-3 py-2 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:border-emerald-600"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -21,8 +21,8 @@ class SupplySerializer(serializers.ModelSerializer):
     proposed_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2, read_only=True)
     base_price = serializers.SerializerMethodField()
     product_detail = ProductShortSerializer(source='product', read_only=True)
-    farmer_name = serializers.CharField(source='farmer.farm_name', read_only=True)
-    farmer_location = serializers.CharField(source='farmer.location', read_only=True)
+    farmer_name = serializers.SerializerMethodField()
+    farmer_location = serializers.SerializerMethodField()
     unit = serializers.SerializerMethodField()
     images = SupplyImageSerializer(many=True, read_only=True)
 
@@ -31,10 +31,40 @@ class SupplySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product', 'product_detail', 'quantity', 'unit', 'price', 'proposed_price', 'base_price', 
             'status', 'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
-            'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 'rating', 'rating_count',
+            'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
+            'bulk_min_qty', 'bulk_price', 'rating', 'rating_count',
             'custom_product_name', 'custom_category', 'custom_unit'
         ]
         read_only_fields = ['created_at']
+
+    def get_farmer_name(self, obj):
+        request = self.context.get('request')
+        from apps.accounts.models import SystemSetting
+        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
+        show_names = (setting.value.lower() == 'true') if setting else False
+
+        # If user is admin or farmer inspecting their dashboard, show real farm name
+        if request and request.user and request.user.is_authenticated and request.user.role in ['admin', 'farmer']:
+            return obj.farmer.farm_name or 'Harvest Hill Partner Farm'
+        
+        if show_names:
+            return obj.farmer.farm_name or 'Harvest Hill Partner Farm'
+
+        return "Harvest Hill Delivery"
+
+    def get_farmer_location(self, obj):
+        request = self.context.get('request')
+        from apps.accounts.models import SystemSetting
+        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
+        show_names = (setting.value.lower() == 'true') if setting else False
+
+        if request and request.user and request.user.is_authenticated and request.user.role in ['admin', 'farmer']:
+            return obj.farmer.location or 'Rwanda'
+        
+        if show_names:
+            return obj.farmer.location or 'Rwanda'
+
+        return "Kigali, Rwanda"
 
     def get_base_price(self, obj):
         if obj.product:
@@ -62,30 +92,18 @@ class SupplySerializer(serializers.ModelSerializer):
 
         if 'quantity' in attrs:
             quantity = attrs['quantity']
-            unit = (product.unit if product else (attrs.get('custom_unit') or (self.instance.custom_unit if self.instance else 'kg'))).lower()
-            
-            min_qty = 1
-            min_msg = "Quantity must be greater than zero."
-            if 'kg' in unit:
-                min_qty = 20
-                min_msg = "Quantity must be at least 20 kg."
-            elif 'litre' in unit or 'liter' in unit or unit == 'l':
-                min_qty = 15
-                min_msg = "Quantity must be at least 15 litres."
-            elif 'crate' in unit:
-                min_qty = 10
-                min_msg = "Quantity must be at least 10 crates."
-            elif 'jar' in unit:
-                min_qty = 10
-                min_msg = "Quantity must be at least 10 jars."
-            elif 'bundle' in unit:
-                min_qty = 10
-                min_msg = "Quantity must be at least 10 bundles."
-
-            if float(quantity) < min_qty:
-                raise serializers.ValidationError({"quantity": min_msg})
+            if float(quantity) <= 0:
+                raise serializers.ValidationError({"quantity": "Quantity must be greater than zero."})
         elif not self.instance:
             raise serializers.ValidationError({"quantity": "Quantity is required."})
+
+        # Validate bulk deal fields if provided
+        bulk_min = attrs.get('bulk_min_qty')
+        bulk_p = attrs.get('bulk_price')
+        if bulk_min is not None and float(bulk_min) <= 0:
+            raise serializers.ValidationError({"bulk_min_qty": "Bulk minimum quantity must be greater than zero."})
+        if bulk_p is not None and float(bulk_p) <= 0:
+            raise serializers.ValidationError({"bulk_price": "Bulk special price must be greater than zero."})
 
         return attrs
 
