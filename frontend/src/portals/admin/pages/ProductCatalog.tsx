@@ -941,7 +941,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
-                    ⚡ Optional Bulk Deal Offer
+                    Optional Bulk Deal Offer
                   </span>
                   <span className="text-[9px] font-semibold text-emerald-700">Tiered Pricing</span>
                 </div>

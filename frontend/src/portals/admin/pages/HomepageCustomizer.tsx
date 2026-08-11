@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowUp, ArrowDown, Eye, EyeOff, Save, RotateCcw, 
-  Grid, Layout, CheckCircle2
+  Grid, Layout, CheckCircle2, Plus, Trash2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -120,6 +120,28 @@ export function HomepageCustomizer() {
     }
   };
 
+  const handleAddSection = () => {
+    const newId = `section_${Date.now()}`;
+    const newSection: HomepageSectionConfig = {
+      id: newId,
+      title: `New Produce Section ${sections.length + 1}`,
+      category: 'Vegetables & Herbs',
+      itemsPerPage: 8,
+      rows: 2,
+      cols: 4,
+      order: sections.length + 1,
+      enabled: true,
+    };
+    const updated = [...sections, newSection];
+    setSections(updated);
+  };
+
+  const handleDeleteSection = (index: number) => {
+    const updated = sections.filter((_, idx) => idx !== index);
+    const reordered = updated.map((sec, idx) => ({ ...sec, order: idx + 1 }));
+    setSections(reordered);
+  };
+
   const moveSection = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= sections.length) return;
@@ -156,13 +178,21 @@ export function HomepageCustomizer() {
             <Layout size={16} />
             <span>Homepage Section Manager</span>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-on-surface">Homepage Layout Customizer</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-on-surface">Manage Sections</h1>
           <p className="text-xs text-on-surface-variant mt-1 font-medium">
-            Customize section order, display capacity, and category mapping on the homepage.
+            Customize homepage section order, display capacity, add custom sections, and map categories.
           </p>
         </div>
         
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <button
+            onClick={handleAddSection}
+            className="px-4 py-2.5 bg-emerald-700 text-white hover:bg-emerald-800 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <Plus size={15} />
+            <span>Add New Section</span>
+          </button>
+
           <button
             onClick={handleResetDefault}
             className="px-4 py-2.5 border border-outline-variant text-on-surface-variant hover:bg-surface-container-high rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
@@ -176,7 +206,7 @@ export function HomepageCustomizer() {
             className="px-5 py-2.5 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center gap-2"
           >
             <Save size={15} />
-            <span>Save Layout</span>
+            <span>Save Sections</span>
           </button>
         </div>
       </div>
@@ -257,8 +287,11 @@ export function HomepageCustomizer() {
                   <option value="Deals">Fresh Deals</option>
                   <option value="Vegetables & Herbs">Vegetables & Herbs</option>
                   <option value="Fruits">Fruits</option>
+                  <option value="Herbs">Herbs</option>
                   <option value="Dairy">Dairy & Eggs</option>
                   <option value="Grains">Grains & Organic Staples</option>
+                  <option value="Animal-Based">Animal-Based / Meat</option>
+                  <option value="All">All Products</option>
                 </select>
               </div>
 
@@ -279,8 +312,8 @@ export function HomepageCustomizer() {
               </div>
             </div>
 
-            {/* Right Enable/Disable Toggle */}
-            <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+            {/* Right Enable/Disable & Delete Toggles */}
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
               <button
                 type="button"
                 onClick={() => updateSection(idx, 'enabled', !section.enabled)}
@@ -302,6 +335,15 @@ export function HomepageCustomizer() {
                     <span>Hidden</span>
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDeleteSection(idx)}
+                className="p-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer"
+                title="Remove Section"
+              >
+                <Trash2 size={14} />
               </button>
             </div>
           </div>
