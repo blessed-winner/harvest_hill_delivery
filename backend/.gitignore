@@ -10,4 +10,6 @@ htmlcov/
 .coverage
 
 test_guide.md
+clean_db.py
+
 

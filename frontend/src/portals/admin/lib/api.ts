@@ -185,8 +185,70 @@ export const api = {
   // Supplies Management
   supplies: {
     list: () => apiRequest('/api/supplies/'),
-    create: (payload: any) => apiRequest('/api/supplies/', { method: 'POST', body: JSON.stringify(payload) }),
-    update: (id: string | number, payload: any) => apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    create: (payload: any) => {
+      if (payload instanceof FormData) {
+        return apiRequest('/api/supplies/', { method: 'POST', body: payload });
+      }
+      const hasFiles = payload && typeof payload === 'object' && Object.values(payload).some(val => 
+        val instanceof File || (Array.isArray(val) && val.some(item => item instanceof File))
+      );
+      if (hasFiles) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, val]) => {
+          if (val !== null && val !== undefined) {
+            if (key === 'images' || key === 'additionalPhotos') {
+              if (Array.isArray(val)) {
+                val.forEach((file: any) => {
+                  if (file instanceof File) {
+                    formData.append('images', file);
+                  }
+                });
+              }
+            } else if (key === 'photo' || key === 'photoFile') {
+              if (val instanceof File) {
+                formData.append('photo', val);
+              }
+            } else {
+              formData.append(key, String(val));
+            }
+          }
+        });
+        return apiRequest('/api/supplies/', { method: 'POST', body: formData });
+      }
+      return apiRequest('/api/supplies/', { method: 'POST', body: JSON.stringify(payload) });
+    },
+    update: (id: string | number, payload: any) => {
+      if (payload instanceof FormData) {
+        return apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: payload });
+      }
+      const hasFiles = payload && typeof payload === 'object' && Object.values(payload).some(val => 
+        val instanceof File || (Array.isArray(val) && val.some(item => item instanceof File))
+      );
+      if (hasFiles) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, val]) => {
+          if (val !== null && val !== undefined) {
+            if (key === 'images' || key === 'additionalPhotos') {
+              if (Array.isArray(val)) {
+                val.forEach((file: any) => {
+                  if (file instanceof File) {
+                    formData.append('images', file);
+                  }
+                });
+              }
+            } else if (key === 'photo' || key === 'photoFile') {
+              if (val instanceof File) {
+                formData.append('photo', val);
+              }
+            } else {
+              formData.append(key, String(val));
+            }
+          }
+        });
+        return apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: formData });
+      }
+      return apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) });
+    },
     delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),
   },
 

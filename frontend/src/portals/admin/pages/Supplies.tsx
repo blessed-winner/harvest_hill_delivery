@@ -178,33 +178,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       <div className="mb-5 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-2xl sm:text-3xl font-sans font-extrabold text-primary mb-1">Supply Logs</h2>
-          <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals, bulk deals, and client privacy controls.</p>
+          <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and bulk deals.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              const nextVal = !showFarmerNames;
-              setShowFarmerNames(nextVal);
-              try {
-                await api.systemSettings.update({ show_farmer_names_to_clients: nextVal });
-                toast(nextVal ? "Farmer names are now VISIBLE to clients." : "Farmer names are now HIDDEN (Showing Harvest Hill Delivery).", "success");
-              } catch (err) {
-                toast("Failed to update setting.", "error");
-                setShowFarmerNames(!nextVal);
-              }
-            }}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 shadow-sm",
-              showFarmerNames 
-                ? "bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100" 
-                : "bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100"
-            )}
-            title="Toggle whether farmer farm names appear on the client portal or remain hidden under Harvest Hill Delivery"
-          >
-            <span className="font-extrabold">{showFarmerNames ? "👁️ Client Privacy: Showing Farmer Names" : "🔒 Client Privacy: Farmer Names Hidden"}</span>
-          </button>
-
           <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
             {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
               <button 
@@ -460,11 +436,19 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               const galleryImages: string[] = [];
               const seen = new Set<string>();
 
+              const getFullImageUrl = (url?: string | null) => {
+                if (!url) return '';
+                if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+              };
+
               const addImg = (url?: string | null) => {
                 if (!url) return;
-                if (!seen.has(url)) {
-                  seen.add(url);
-                  galleryImages.push(url);
+                const fullUrl = getFullImageUrl(url);
+                if (fullUrl && !seen.has(fullUrl)) {
+                  seen.add(fullUrl);
+                  galleryImages.push(fullUrl);
                 }
               };
 
@@ -478,9 +462,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 });
               }
 
-              // Fall back to catalog template image if no batch photos OR if it's an Admin (Harvest Hill) supply
-              const isAdminSupply = !selectedSupply.farmer_name || selectedSupply.farmer_name.toLowerCase().includes('harvest hill');
-              if (galleryImages.length === 0 || isAdminSupply) {
+              // Fall back to catalog template image ONLY if no batch photos exist
+              if (galleryImages.length === 0) {
                 addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
               }
 

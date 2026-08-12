@@ -256,8 +256,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       }
 
       if (harvestPhotos.length > 0) {
-        payload.photoFile = harvestPhotos[0];
-        payload.additionalPhotos = harvestPhotos.slice(1);
+        payload.photo = harvestPhotos[0];
+        payload.images = harvestPhotos;
       }
 
       await api.supplies.create(payload);
