@@ -87,11 +87,33 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       }
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
+    let errFields: any = null;
     try {
       const errData = await response.json();
-      errMsg = errData.error || errData.detail || JSON.stringify(errData);
+      errFields = errData;
+      if (errData.errors && typeof errData.errors === 'object') {
+        errFields = errData.errors;
+        const firstKey = Object.keys(errData.errors)[0];
+        const val = errData.errors[firstKey];
+        errMsg = Array.isArray(val) ? val[0] : String(val);
+      } else if (errData.detail) {
+        errMsg = errData.detail;
+      } else if (errData.error) {
+        errMsg = errData.error;
+      } else {
+        const keys = Object.keys(errData);
+        if (keys.length > 0) {
+          const firstKey = keys[0];
+          const val = errData[firstKey];
+          errMsg = Array.isArray(val) ? val[0] : String(val);
+        } else {
+          errMsg = JSON.stringify(errData);
+        }
+      }
     } catch {}
-    throw new Error(errMsg);
+    const error: any = new Error(errMsg);
+    error.fields = errFields;
+    throw error;
   }
 
   if (response.status === 204) return null;
@@ -256,7 +278,29 @@ export function formatCurrency(value: unknown, fallback = 'RWF 0'): string {
 
 export function getCartStorageKey(): string {
   if (typeof window === 'undefined') return 'cart_items_guest';
+  const token = localStorage.getItem('access_token');
   const role = localStorage.getItem('user_role') || 'client';
-  const email = localStorage.getItem('user_email') || localStorage.getItem('user_username') || 'client';
-  return `cart_items_${role}_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const rawEmail = (localStorage.getItem('user_email') || '').trim();
+  const rawUsername = (localStorage.getItem('user_username') || '').trim();
+  const identifier = rawEmail || rawUsername;
+
+  if (!token || !identifier) {
+    return 'cart_items_guest';
+  }
+
+  const safeId = identifier.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return `cart_items_${role}_${safeId}`;
+}
+
+export function formatOrderNumber(order: any): string {
+  if (!order) return '';
+  if (typeof order === 'object') {
+    if (order.order_number) return order.order_number;
+    if (order.orderNumber) return order.orderNumber;
+  }
+  const idNum = typeof order === 'object' ? Number(order.id) : Number(order);
+  if (!isNaN(idNum) && idNum > 0) {
+    return idNum > 999999 ? `ORD-${idNum}` : `ORD-${String(idNum).padStart(6, '0')}`;
+  }
+  return String(typeof order === 'object' ? order.id || '' : order || '');
 }

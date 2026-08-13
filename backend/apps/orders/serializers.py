@@ -68,17 +68,19 @@ def deduct_inventory_for_order(order):
 class OrderSerializer(serializers.ModelSerializer):
     client_detail = ClientProfileSerializer(source='client', read_only=True)
     items = OrderItemSerializer(many=True, required=False)
+    order_number = serializers.CharField(source='formatted_order_number', read_only=True)
+    orderNumber = serializers.CharField(source='formatted_order_number', read_only=True)
     total_amount = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
-            'id', 'client', 'client_detail', 'status', 'delivery_address', 
+            'id', 'order_number', 'orderNumber', 'client', 'client_detail', 'status', 'delivery_address', 
             'transport_fee', 'tax_amount', 'is_assessed',
             'items', 'total_amount', 'subtotal', 'is_archived', 'is_deleted_by_client', 'is_quantity_deducted', 'created_at'
         ]
-        read_only_fields = ['created_at', 'client']
+        read_only_fields = ['created_at', 'client', 'order_number', 'orderNumber']
 
     def get_total_amount(self, obj):
         items_total = sum(float(item.price * item.quantity) for item in obj.items.all())
@@ -88,6 +90,39 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_subtotal(self, obj):
         return sum(float(item.price * item.quantity) for item in obj.items.all())
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError("Order must contain at least one item.")
+        
+        from apps.supplies.models import Supply
+        from django.db.models import Sum
+
+        for item in value:
+            product = item.get('product')
+            qty = float(item.get('quantity') or 0)
+            if not product or qty <= 0:
+                continue
+
+            # Calculate total available stock across active non-archived supplies for this product
+            total_available = float(
+                Supply.objects.filter(product=product, is_archived=False)
+                .aggregate(total=Sum('quantity'))['total'] or 0
+            )
+
+            product_name = getattr(product, 'name', f"Product #{product.id}")
+            unit = getattr(product, 'unit', 'kg')
+
+            if total_available <= 0:
+                raise serializers.ValidationError(
+                    f"'{product_name}' is currently out of stock."
+                )
+            if qty > total_available:
+                raise serializers.ValidationError(
+                    f"Requested quantity for '{product_name}' ({qty:g} {unit}) exceeds total available stock ({total_available:g} {unit})."
+                )
+
+        return value
 
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])

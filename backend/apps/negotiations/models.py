@@ -1,8 +1,10 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from apps.supplies.models import Supply
 
 class NegotiationThread(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='negotiation_threads')
     buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='buyer_negotiations', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -15,6 +17,7 @@ class NegotiationThread(models.Model):
 
 
 class NegotiationOffer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     thread = models.ForeignKey(NegotiationThread, on_delete=models.CASCADE, related_name='offers')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=2)

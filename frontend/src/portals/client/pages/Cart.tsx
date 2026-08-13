@@ -81,7 +81,13 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
     setItems(prev => {
       const updated = prev.map(item => {
         if (item.id === id) {
-          const newQty = Math.max(1, item.qty + delta);
+          const maxAvailable = parseFloat((item as any).available_quantity || 9999);
+          const targetQty = item.qty + delta;
+          if (targetQty > maxAvailable) {
+            alert(`Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`);
+            return { ...item, qty: maxAvailable };
+          }
+          const newQty = Math.max(1, targetQty);
           return { ...item, qty: newQty };
         }
         return item;
@@ -95,10 +101,15 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
   // Direct manual quantity input handler
   const handleManualQtyChange = (id: string, rawVal: string) => {
     const parsed = parseInt(rawVal, 10);
-    const validQty = isNaN(parsed) ? 1 : Math.max(1, parsed);
     setItems(prev => {
       const updated = prev.map(item => {
         if (item.id === id) {
+          const maxAvailable = parseFloat((item as any).available_quantity || 9999);
+          let validQty = isNaN(parsed) ? 1 : Math.max(1, parsed);
+          if (validQty > maxAvailable) {
+            alert(`Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`);
+            validQty = maxAvailable;
+          }
           return { ...item, qty: validQty };
         }
         return item;

@@ -50,9 +50,13 @@ export default function ClientPage() {
           const savedCart = localStorage.getItem(cartKey);
           if (savedCart) {
             const items = JSON.parse(savedCart);
-            setCartCount(items.length);
+            setCartCount(Array.isArray(items) ? items.length : 0);
+          } else {
+            setCartCount(0);
           }
-        } catch {}
+        } catch {
+          setCartCount(0);
+        }
       }
     }
   }, [router]);
@@ -105,12 +109,20 @@ export default function ClientPage() {
         const savedCart = localStorage.getItem(cartKey);
         const cartItems = savedCart ? JSON.parse(savedCart) : [];
         
-        // Check if product already exists in cart (use supply ID for uniqueness)
         const existingIndex = cartItems.findIndex((item: any) => item.id === product.id);
-        
+        const currentQty = existingIndex >= 0 ? cartItems[existingIndex].qty : 0;
+        const availableQty = parseFloat(product.quantity || product.available_quantity || product.quantity_needed || 9999);
+        const unit = product.unit || 'kg';
+
+        if (currentQty + 1 > availableQty) {
+          alert(`Cannot add more. Maximum available stock for "${product.name || 'this product'}" is ${availableQty} ${unit}.`);
+          return;
+        }
+
         if (existingIndex >= 0) {
           // Increment quantity
           cartItems[existingIndex].qty += 1;
+          cartItems[existingIndex].available_quantity = availableQty;
         } else {
           // Add new product
           cartItems.push({
@@ -119,7 +131,8 @@ export default function ClientPage() {
             name: product.name,
             category: product.category,
             price: product.price,
-            unit: product.unit,
+            unit: unit,
+            available_quantity: availableQty,
             qty: 1,
             image_url: product.image_url || product.image
           });

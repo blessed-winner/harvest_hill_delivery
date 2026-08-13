@@ -33,20 +33,20 @@ class ProductSerializer(serializers.ModelSerializer):
         min_msg = "Quantity needed must be greater than zero."
         
         if 'kg' in unit:
-            min_qty = 20
-            min_msg = "Quantity needed must be at least 20 kg."
+            min_qty = 10
+            min_msg = "Quantity needed must be at least 10 kg."
         elif 'litre' in unit or 'liter' in unit or unit == 'l':
-            min_qty = 15
-            min_msg = "Quantity needed must be at least 15 litres."
+            min_qty = 10
+            min_msg = "Quantity needed must be at least 10 litres."
         elif 'crate' in unit:
-            min_qty = 10
-            min_msg = "Quantity needed must be at least 10 crates."
+            min_qty = 5
+            min_msg = "Quantity needed must be at least 5 crates."
         elif 'jar' in unit:
-            min_qty = 10
-            min_msg = "Quantity needed must be at least 10 jars."
+            min_qty = 5
+            min_msg = "Quantity needed must be at least 5 jars."
         elif 'bundle' in unit:
-            min_qty = 10
-            min_msg = "Quantity needed must be at least 10 bundles."
+            min_qty = 5
+            min_msg = "Quantity needed must be at least 5 bundles."
 
         if float(quantity_needed) < min_qty:
             raise serializers.ValidationError({"quantity_needed": min_msg})
@@ -111,4 +111,29 @@ class ProductRequestSerializer(serializers.ModelSerializer):
             'status', 'created_at', 'linked_product'
         ]
         read_only_fields = ['client', 'created_at', 'linked_product']
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        product_name = attrs.get('product_name', instance.product_name if instance else '').strip()
+        
+        request_obj = self.context.get('request')
+        if request_obj and hasattr(request_obj.user, 'client_profile'):
+            client_profile = request_obj.user.client_profile
+            
+            # Check for existing non-rejected request for the same product by this client
+            existing_active = ProductRequest.objects.filter(
+                client=client_profile,
+                product_name__iexact=product_name
+            ).exclude(status='rejected')
+
+            if instance:
+                existing_active = existing_active.exclude(pk=instance.pk)
+
+            if existing_active.exists():
+                active_status = existing_active.first().status
+                raise serializers.ValidationError({
+                    "product_name": f"You have already requested '{product_name}' and it is currently {active_status}. You can resubmit if an admin rejects your previous request."
+                })
+
+        return attrs
 

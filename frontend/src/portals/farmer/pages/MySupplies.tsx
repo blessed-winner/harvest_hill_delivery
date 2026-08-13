@@ -397,7 +397,7 @@ export default function MySupplies() {
                           {supply.product_detail?.name}
                         </p>
                         <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                          #SUP-{supply.id}
+                          #{supply.id}
                         </p>
                       </div>
                     </div>
@@ -552,7 +552,7 @@ export default function MySupplies() {
                 </div>
                 <div>
                   <h3 className="font-sans text-base font-extrabold tracking-tight">Confirm Deletion</h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record #SUP-{selectedDeleteSupply.id}</p>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record #{selectedDeleteSupply.id}</p>
                 </div>
               </div>
 
@@ -609,7 +609,7 @@ export default function MySupplies() {
                   </div>
                   <div>
                     <h3 className="font-sans text-base font-extrabold tracking-tight">Update Harvest Supply</h3>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} (#SUP-{editSupply.id})</p>
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} (#{editSupply.id})</p>
                   </div>
                 </div>
                 <button 
@@ -637,20 +637,7 @@ export default function MySupplies() {
                         const qNum = Number(val);
                         const unit = (editSupply.unit || 'kg').toLowerCase();
                         if (val) {
-                          let err: string | undefined = undefined;
-                          if (unit.includes('kg')) {
-                            if (isNaN(qNum) || qNum < 20) err = "Quantity must be at least 20 kg.";
-                          } else if (unit.includes('litre') || unit.includes('liter') || unit === 'l') {
-                            if (isNaN(qNum) || qNum < 15) err = "Quantity must be at least 15 litres.";
-                          } else if (unit.includes('crate')) {
-                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 crates.";
-                          } else if (unit.includes('jar')) {
-                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 jars.";
-                          } else if (unit.includes('bundle')) {
-                            if (isNaN(qNum) || qNum < 10) err = "Quantity must be at least 10 bundles.";
-                          } else {
-                            if (isNaN(qNum) || qNum <= 0) err = "Quantity must be greater than zero.";
-                          }
+                          const err = (isNaN(qNum) || qNum <= 0) ? "Quantity must be greater than zero." : undefined;
                           setValidationErrors(prev => ({ ...prev, quantity: err }));
                         } else {
                           setValidationErrors(prev => ({ ...prev, quantity: undefined }));
@@ -824,7 +811,7 @@ export default function MySupplies() {
               <div className="flex items-center justify-between border-b pb-3 border-outline-variant">
                 <div className="flex items-center gap-2 text-primary font-bold">
                   <Tag size={20} />
-                  <h3 className="text-base text-on-surface">Discount Supply #SUP-{discountSupply.id}</h3>
+                  <h3 className="text-base text-on-surface">Discount Supply #{discountSupply.id}</h3>
                 </div>
                 <button onClick={() => setDiscountSupply(null)} className="text-on-surface-variant hover:text-on-surface cursor-pointer">
                   <X size={20} />

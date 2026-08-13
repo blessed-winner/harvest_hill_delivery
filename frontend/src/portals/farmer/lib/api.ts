@@ -93,11 +93,33 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       window.location.href = '/';
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
+    let errFields: any = null;
     try {
       const errData = await response.json();
-      errMsg = errData.error || errData.detail || JSON.stringify(errData);
+      errFields = errData;
+      if (errData.errors && typeof errData.errors === 'object') {
+        errFields = errData.errors;
+        const firstKey = Object.keys(errData.errors)[0];
+        const val = errData.errors[firstKey];
+        errMsg = Array.isArray(val) ? val[0] : String(val);
+      } else if (errData.detail) {
+        errMsg = errData.detail;
+      } else if (errData.error) {
+        errMsg = errData.error;
+      } else {
+        const keys = Object.keys(errData);
+        if (keys.length > 0) {
+          const firstKey = keys[0];
+          const val = errData[firstKey];
+          errMsg = Array.isArray(val) ? val[0] : String(val);
+        } else {
+          errMsg = JSON.stringify(errData);
+        }
+      }
     } catch {}
-    throw new Error(errMsg);
+    const error: any = new Error(errMsg);
+    error.fields = errFields;
+    throw error;
   }
 
   if (response.status === 204) return null;

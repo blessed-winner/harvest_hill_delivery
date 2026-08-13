@@ -509,7 +509,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   }
 
   // Reusable Product Card Renderer
-  const renderProductCard = (item: any, isDeal = false, idx = 0) => {
+  const renderProductCard = (item: any, isDeal = false, idx = 0, secId = '') => {
     const isSupply = !!item.product_detail;
     const name = isSupply ? item.product_detail?.name : item.name;
     const farm = isSupply ? (item.farmer_name || 'Harvest Hill Farm') : (item.farm || 'Local Certified Farm');
@@ -522,10 +522,11 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     const sizeText = item.size || `approx. 1 ${unit}`;
     const isSponsored = item.sponsored || (isDeal && (idx === 0 || idx === 3));
     const targetProdId = item.id;
+    const cardKey = `${secId || 'sec'}-${item.id || item.product_id || idx}-${idx}`;
 
     return (
       <div 
-        key={item.id}
+        key={cardKey}
         onClick={() => onNavigate('product-detail', undefined, targetProdId)}
         className="bg-white border border-[#E8E4DA] rounded-[12px] p-3 flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all h-full cursor-pointer group relative"
       >
@@ -783,7 +784,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
             {/* Product Grid (e.g. 2-row x 4-col, 3-row x 4-col, etc.) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx))}
+              {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx, sec.id))}
             </div>
           </section>
         );

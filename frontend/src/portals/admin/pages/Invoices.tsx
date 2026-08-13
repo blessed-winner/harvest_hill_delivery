@@ -341,7 +341,7 @@ export function Invoices({ searchTerm = '' }: InvoicesProps) {
                   rows={2}
                   value={invoiceDescription}
                   onChange={(e) => setInvoiceDescription(e.target.value)}
-                  placeholder="E.g. Bulk produce shipment #ORD-104"
+                  placeholder="E.g. Bulk produce shipment #104"
                   className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-on-surface"
                 />
               </div>

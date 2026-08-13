@@ -65,7 +65,24 @@ class ProductRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if self.request.user.role == 'client':
-            serializer.save(client=self.request.user.client_profile)
+            instance = serializer.save(client=self.request.user.client_profile)
+
+            # Check total pending product requests count
+            pending_count = ProductRequest.objects.filter(status='pending').count()
+            if pending_count >= 6:
+                try:
+                    from apps.notifications.utils import send_live_notification
+                    from apps.accounts.models import User
+
+                    admins = User.objects.filter(role='admin')
+                    for admin in admins:
+                        send_live_notification(
+                            user=admin,
+                            title="📋 Client Product Requests Need Attention",
+                            message=f"There are currently {pending_count} pending client product requests requiring review and approval in the Product Catalog manager."
+                        )
+                except Exception as e:
+                    print(f"Failed to send admin request threshold notification: {e}")
         else:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Only clients can create product requests.")

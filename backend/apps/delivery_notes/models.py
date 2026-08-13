@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from apps.orders.models import Order
 from apps.supplies.models import Supply
@@ -8,6 +9,7 @@ class DeliveryNote(models.Model):
         ('confirmed', 'Confirmed'),
         ('discrepancy', 'Discrepancy')
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_notes')
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_notes')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

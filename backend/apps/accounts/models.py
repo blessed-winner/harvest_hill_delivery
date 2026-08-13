@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
@@ -8,6 +9,7 @@ class User(AbstractUser):
         ('farmer', 'Farmer'),
         ('client', 'Client'),
     )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='client')
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
@@ -21,6 +23,7 @@ class User(AbstractUser):
 
 
 class FarmerProfile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="farmer_profile")
     farm_name = models.CharField(max_length=255, blank=True)
     location = models.CharField(max_length=255, blank=True)
@@ -42,6 +45,7 @@ class FarmerProfile(models.Model):
 
 
 class ClientProfile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="client_profile")
     business_name = models.CharField(max_length=255, blank=True)
     business_title = models.CharField(max_length=255, blank=True)  # Job title/position
@@ -55,6 +59,7 @@ class ClientProfile(models.Model):
 
 
 class AdminProfile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_profile")
     department = models.CharField(max_length=100, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
@@ -69,6 +74,7 @@ class FarmerApplication(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     full_name = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=50)
@@ -87,6 +93,7 @@ class FarmerApplication(models.Model):
 
 
 class SystemSetting(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key = models.CharField(max_length=100, unique=True)
     value = models.CharField(max_length=255, blank=True, default='')
 

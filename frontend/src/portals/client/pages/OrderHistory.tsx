@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Loader2, Package, Trash2 } from 'lucide-react';
-import { clientApi } from '../lib/api';
+import { clientApi, formatOrderNumber } from '../lib/api';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 
@@ -166,7 +166,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                   </div>
                   <div>
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <span className="text-[10px] font-bold text-[#717971] font-mono">Order #{order.id}</span>
+                      <span className="text-[10px] font-bold text-[#717971] font-mono">Order {formatOrderNumber(order)}</span>
                       <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusColor}`}>
                         {order.status === 'shipped' ? 'delivered' : order.status}
                       </span>
@@ -245,7 +245,7 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
         onClose={() => setDeleteTargetOrder(null)}
         onConfirm={handleConfirmDeleteOrder}
         title="Delete Order"
-        message={`Are you sure you want to delete Order #${deleteTargetOrder?.id}?`}
+        message={`Are you sure you want to delete Order ${formatOrderNumber(deleteTargetOrder)}?`}
         confirmText="Delete Order"
         cancelText="Cancel"
       />

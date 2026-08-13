@@ -446,10 +446,15 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                   value={qty}
                   onChange={(e) => {
                     const parsed = parseInt(e.target.value, 10);
-                    setQty(isNaN(parsed) ? 1 : Math.max(1, parsed));
-                  }}
-                  onBlur={(e) => {
-                    if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                    const maxAvailable = parseFloat(product?.quantity || product?.available_quantity || 9999);
+                    if (!isNaN(parsed)) {
+                      if (parsed > maxAvailable) {
+                        toast(`Maximum available stock is ${maxAvailable} ${product?.unit || 'kg'}`, 'warning');
+                        setQty(maxAvailable);
+                      } else {
+                        setQty(Math.max(1, parsed));
+                      }
+                    } else {
                       setQty(1);
                     }
                   }}
@@ -458,7 +463,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 />
                 <button
                   type="button"
-                  onClick={() => setQty(qty + 1)}
+                  onClick={() => {
+                    const maxAvailable = parseFloat(product?.quantity || product?.available_quantity || 9999);
+                    if (qty + 1 > maxAvailable) {
+                      toast(`Maximum available stock for ${product?.name || 'this product'} is ${maxAvailable} ${product?.unit || 'kg'}`, 'warning');
+                      return;
+                    }
+                    setQty(qty + 1);
+                  }}
                   className="p-3 text-[#414942] hover:bg-[#fcf9f2] transition-colors cursor-pointer select-none"
                   title="Increase quantity"
                 >
@@ -476,6 +488,12 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                       localStorage.setItem('guest_intent_timestamp', String(Date.now()));
                     }
                     window.location.href = '/login';
+                    return;
+                  }
+                  const maxAvailable = parseFloat(product?.quantity || product?.available_quantity || 9999);
+                  if (qty > maxAvailable) {
+                    toast(`Cannot order ${qty} ${product?.unit || 'kg'}. Maximum available stock is ${maxAvailable} ${product?.unit || 'kg'}.`, 'warning');
+                    setQty(maxAvailable);
                     return;
                   }
                   for (let i = 0; i < qty; i++) {

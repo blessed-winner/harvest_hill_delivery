@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { api } from '../lib/api';
+import { api, formatOrderNumber } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { useAlert } from '../../../context/AlertContext';
 import { DeliveryNotePDF } from '../../../components/DeliveryNotePDF';
@@ -298,7 +298,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                       </td>
                       <td className="px-6 py-4 font-mono text-sm font-bold">#DLV-{note.id}</td>
                       <td className="px-6 py-4 font-mono text-sm text-primary font-bold">
-                        {note.order ? `#ORD-${note.order}` : (note.supply ? `#SUP-${note.supply}` : '—')}
+                        {note.order ? formatOrderNumber(note.order_detail || note.order) : (note.supply ? `#${note.supply}` : '—')}
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-variant truncate max-w-xs">{note.details}</td>
                       <td className="px-6 py-4">
@@ -379,7 +379,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
         isOpen={!!selectedNote}
         onClose={() => setSelectedNote(null)}
         title={selectedNote ? `Delivery Note #DLV-${selectedNote.id}` : ''}
-        subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order #ORD-' + selectedNote.order : 'Supply Batch ' + selectedNote.supply}` : ''}
+        subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order ' + formatOrderNumber(selectedNote.order_detail || selectedNote.order) : 'Supply Batch #' + selectedNote.supply}` : ''}
         footer={
           selectedNote && (
             <div className="flex flex-col gap-3 w-full font-sans">

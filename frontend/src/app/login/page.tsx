@@ -40,17 +40,19 @@ export default function LoginPage() {
       }
 
       // Save tokens & user metadata
+      const userEmail = data.user.email || data.user.username || '';
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('refresh_token', data.refresh);
-      localStorage.setItem('user_role', data.user.role);
-      localStorage.setItem('user_email', data.user.email || '');
+      localStorage.setItem('user_role', data.user.role || 'client');
+      localStorage.setItem('user_email', userEmail);
       localStorage.setItem('user_username', data.user.username || '');
 
-      // Transfer guest cart to user cart
-      // Clean any transient unauthenticated cart data
+      // Clean any transient unauthenticated/guest cart data
       try {
         localStorage.removeItem('guest_cart');
         localStorage.removeItem('cart_items_guest');
+        localStorage.removeItem('cart_items_client_client');
+        localStorage.removeItem('cart_items_client');
         localStorage.removeItem('pending_checkout_product_id');
       } catch {}
 

@@ -1,6 +1,8 @@
+import uuid
 from django.db import models
 
 class Product(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=100) # e.g. Fruits, Vegetables, Grains, Animal-Based
     is_currently_needed = models.BooleanField(default=False)
@@ -21,6 +23,7 @@ class ProductRequest(models.Model):
         ('fulfilled', 'Fulfilled'),
         ('rejected', 'Rejected'),
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     client = models.ForeignKey('accounts.ClientProfile', on_delete=models.CASCADE, related_name='product_requests')
     product_name = models.CharField(max_length=255)
     category = models.CharField(max_length=100, blank=True, default='')

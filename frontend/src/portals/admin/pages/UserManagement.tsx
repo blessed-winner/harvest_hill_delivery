@@ -568,33 +568,27 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                       <td className="px-6 py-4 font-mono text-[13px] text-on-surface-variant">
                         {new Date(user.date_joined).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="relative inline-block" ref={openMenuId === user.id ? menuRef : undefined}>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
                           <button 
-                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === user.id ? null : user.id); }}
-                            className="p-2 hover:bg-surface-container-high rounded-full transition-colors text-on-surface-variant cursor-pointer"
+                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
+                            title={user.is_active ? 'Deactivate User' : 'Activate User'}
+                            className={cn(
+                              "p-2 rounded-lg transition-colors cursor-pointer",
+                              user.is_active 
+                                ? "text-on-surface-variant hover:text-amber-700 hover:bg-amber-100/60" 
+                                : "text-on-surface-variant hover:text-emerald-700 hover:bg-emerald-100/60"
+                            )}
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <Power className="w-4 h-4" />
                           </button>
-                          {openMenuId === user.id && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-outline-variant rounded-xl shadow-lg z-50 overflow-hidden min-w-[180px] animate-in fade-in slide-in-from-top-1">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-on-surface hover:bg-surface-container-low transition-all cursor-pointer"
-                              >
-                                <Power className="w-3.5 h-3.5" />
-                                {user.is_active ? 'Deactivate' : 'Activate'}
-                              </button>
-                              <div className="border-t border-outline-variant/30" />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteUser(user); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                Delete User
-                              </button>
-                            </div>
-                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(user); }}
+                            title="Delete User"
+                            className="p-2 text-on-surface-variant hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>

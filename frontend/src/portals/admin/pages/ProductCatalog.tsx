@@ -159,9 +159,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     e.stopPropagation();
     try {
       await api.products.update(product.id, { is_currently_needed: !product.is_currently_needed });
+      toast(`Market demand status for ${product.name} updated!`, "success");
       loadProducts();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle needed status:", err);
+      toast(err.message || "Failed to toggle market demand status.", "warning");
     }
   };
 

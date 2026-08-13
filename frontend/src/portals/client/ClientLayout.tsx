@@ -65,7 +65,7 @@ export default function ClientLayout({ children, activeScreen, onNavigate, cartC
         {/* Floating Sidebar */}
         {showSidebar && (
           <aside className={`
-            fixed lg:sticky top-24 bottom-4 lg:bottom-auto left-6 h-[calc(100vh-120px)] lg:h-[calc(100vh-120px)] w-64 
+            fixed lg:sticky top-[104px] bottom-6 lg:bottom-auto left-6 h-[calc(100vh-128px)] lg:h-[calc(100vh-128px)] w-64 
             bg-[#144227]/95 backdrop-blur-md rounded-2xl border border-[#9ed0ab]/30 shadow-2xl p-6 z-[999] 
             flex flex-col justify-between transition-all duration-300 ease-in-out shrink-0
             lg:translate-x-0 lg:opacity-100

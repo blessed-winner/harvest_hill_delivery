@@ -300,3 +300,16 @@ export function formatCurrency(value: unknown, fallback = 'RWF 0'): string {
   }
   return `RWF ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
+
+export function formatOrderNumber(order: any): string {
+  if (!order) return '';
+  if (typeof order === 'object') {
+    if (order.order_number) return order.order_number;
+    if (order.orderNumber) return order.orderNumber;
+  }
+  const idNum = typeof order === 'object' ? Number(order.id) : Number(order);
+  if (!isNaN(idNum) && idNum > 0) {
+    return idNum > 999999 ? `ORD-${idNum}` : `ORD-${String(idNum).padStart(6, '0')}`;
+  }
+  return String(typeof order === 'object' ? order.id || '' : order || '');
+}

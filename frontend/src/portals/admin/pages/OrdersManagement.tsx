@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { api } from '../lib/api';
+import { api, formatOrderNumber } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { SuccessModal } from '../../../components/SuccessModal';
 import { useAlert } from '../../../context/AlertContext';
@@ -397,7 +397,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                             {isSelected ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
                           </button>
                         </td>
-                        <td className="py-3 px-6 font-mono text-[13px] font-bold">#ORD-{order.id}</td>
+                        <td className="py-3 px-6 font-mono text-[13px] font-bold">{formatOrderNumber(order)}</td>
                         <td className="py-3 px-6 text-sm">{order.client_detail?.business_name || order.client_detail?.user?.email || 'Client'}</td>
                         <td className="py-3 px-6 text-sm text-on-surface-variant">{(order.items || []).length} items</td>
                         <td className="py-3 px-6 font-mono text-sm font-bold">
@@ -477,7 +477,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
       <DetailDrawer
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        title={selectedOrder ? `Order #ORD-${selectedOrder.id}` : ''}
+        title={selectedOrder ? `Order ${formatOrderNumber(selectedOrder)}` : ''}
         subtitle={selectedOrder ? `${selectedOrder.client_detail?.business_name || 'Client'} • ${(selectedOrder.items || []).length} Items` : ''}
         footer={
           selectedOrder && (
@@ -534,7 +534,21 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
         }
       >
         {selectedOrder && (
-          <div className="space-y-8 font-sans">
+          <div className="space-y-6 font-sans text-xs">
+            {/* Status & Date */}
+            <div className="flex justify-between items-center bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
+              <div>
+                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block">Created On</span>
+                <span className="font-mono text-xs font-bold text-on-surface">
+                  {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString() : 'N/A'}
+                </span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                {selectedOrder.status}
+              </span>
+            </div>
+
+            {/* Order Progress */}
             <section>
               <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Order Progress</h4>
               <div className="space-y-6">
@@ -564,6 +578,29 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
               </div>
             </section>
 
+            {/* Client Info */}
+            <section className="space-y-2">
+              <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Client & Shipping Info</h4>
+              <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Business Name</span>
+                  <span className="font-bold text-on-surface">{selectedOrder.client_detail?.business_name || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Contact Phone</span>
+                  <span className="font-mono font-bold text-on-surface">{selectedOrder.client_detail?.phone || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-on-surface-variant">Email</span>
+                  <span className="font-bold text-on-surface">{selectedOrder.client_detail?.user_email || selectedOrder.client_detail?.user?.email || 'N/A'}</span>
+                </div>
+                <div className="border-t border-outline-variant/20 pt-2 flex justify-between">
+                  <span className="text-on-surface-variant">Delivery Address</span>
+                  <span className="font-bold text-on-surface text-right max-w-[200px]">{selectedOrder.delivery_address || 'Default address'}</span>
+                </div>
+              </div>
+            </section>
+
             {/* Admin Transport Fee & Tax Assessment Form */}
             <section className="bg-primary/5 rounded-2xl p-5 border border-primary/20 space-y-4">
               <div className="flex items-center justify-between">
@@ -590,10 +627,10 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                 </p>
               </div>
 
-              {/* Assessment Form Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+              {/* Assessment Form Inputs - Equal Footing 2-Column Baseline Grid */}
+              <div className="grid grid-cols-2 gap-3 items-end pt-1">
+                <div className="flex flex-col">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant min-h-[26px] flex items-end mb-1">
                     Transport / Logistics Fee (RWF)
                   </label>
                   <input
@@ -606,8 +643,8 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                <div className="flex flex-col">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant min-h-[26px] flex items-end mb-1">
                     Tax Amount (RWF)
                   </label>
                   <input
@@ -704,7 +741,7 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
               <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 text-xs space-y-1">
                 <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Client:</span> {selectedOrder.client_detail?.business_name || 'Client'}</p>
                 <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Address:</span> {selectedOrder.delivery_address || 'Not specified'}</p>
-                <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Contact Email:</span> {selectedOrder.client_detail?.user?.email}</p>
+                <p><span className="font-bold text-on-surface-variant uppercase text-[10px]">Contact Email:</span> {selectedOrder.client_detail?.user_email || selectedOrder.client_detail?.user?.email || 'N/A'}</p>
               </div>
             </section>
           </div>

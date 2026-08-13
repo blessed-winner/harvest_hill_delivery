@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from apps.accounts.models import FarmerProfile
 from apps.products.models import Product
@@ -15,6 +16,7 @@ class Supply(models.Model):
         ('standard', 'Standard'),
         ('economy', 'Economy')
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(FarmerProfile, on_delete=models.CASCADE, related_name='supplies')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplies', null=True, blank=True)
     custom_product_name = models.CharField(max_length=255, blank=True, default='')
@@ -42,6 +44,7 @@ class Supply(models.Model):
 
 
 class SupplyImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='supplies/')
     created_at = models.DateTimeField(auto_now_add=True)

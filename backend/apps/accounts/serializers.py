@@ -28,9 +28,11 @@ def check_phone_unique(phone, exclude_user=None):
             raise serializers.ValidationError("This phone number is already in use by another user.")
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
     class Meta:
         model = FarmerProfile
-        fields = ['farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received', 'avatar']
+        fields = ['id', 'user_email', 'farm_name', 'location', 'organic_certified', 'certification_number', 'phone', 'certifications', 'payment_method', 'payment_account_number', 'latitude', 'longitude', 'notify_new_demand', 'notify_negotiation_update', 'notify_payment_received', 'avatar']
 
     def validate_phone(self, value):
         if not value:
@@ -50,9 +52,11 @@ class FarmerProfileSerializer(serializers.ModelSerializer):
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
     class Meta:
         model = ClientProfile
-        fields = ['business_name', 'delivery_address', 'phone', 'business_title', 'avatar', 'signature_data']
+        fields = ['id', 'user_email', 'business_name', 'delivery_address', 'phone', 'business_title', 'avatar', 'signature_data']
 
     def validate_phone(self, value):
         if not value:

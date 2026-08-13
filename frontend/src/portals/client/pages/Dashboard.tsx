@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { cn } from '../../lib/utils';
+import { useAlert } from '../../../context/AlertContext';
 
 interface DashboardProps {
   onNavigate: (screen: string) => void;
@@ -31,6 +32,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
+  const { toast } = useAlert();
   // API Data State
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [volumeData, setVolumeData] = useState<any[]>([]);
@@ -147,8 +149,10 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
 
       if (editingRequest) {
         await clientApi.productRequests.update(editingRequest.id, payload);
+        toast(`Request for "${requestFormName}" updated successfully!`, "success");
       } else {
         await clientApi.productRequests.create(payload);
+        toast(`Request for "${requestFormName}" submitted successfully!`, "success");
       }
 
       setRequestFormName('');
@@ -160,8 +164,9 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
       setIsRequestModalOpen(false);
       setEditingRequest(null);
       fetchRequests();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to submit request:", err);
+      toast(err.message || "Failed to submit product request", "warning");
     } finally {
       setSubmittingRequest(false);
     }
