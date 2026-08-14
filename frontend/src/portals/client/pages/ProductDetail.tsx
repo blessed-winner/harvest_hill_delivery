@@ -470,6 +470,11 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 onClick={() => {
                   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
                   if (!token) {
+                    const prodId = product?.id || product?.product_id;
+                    if (prodId) {
+                      localStorage.setItem('guest_intent_product_id', String(prodId));
+                      localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+                    }
                     window.location.href = '/login';
                     return;
                   }
@@ -489,7 +494,12 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               onClick={() => {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
                 if (!token) {
-                  window.location.href = '/login?redirect=cart';
+                  const prodId = product?.id || product?.product_id;
+                  if (prodId) {
+                    localStorage.setItem('guest_intent_product_id', String(prodId));
+                    localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+                  }
+                  window.location.href = '/login';
                   return;
                 }
                 setIsNegotiating(true);

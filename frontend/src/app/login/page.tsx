@@ -51,22 +51,44 @@ export default function LoginPage() {
       try {
         localStorage.removeItem('guest_cart');
         localStorage.removeItem('cart_items_guest');
+        localStorage.removeItem('pending_checkout_product_id');
       } catch {}
 
-      // Redirect depending on user role or redirect parameter
-      const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect');
+      // Evaluate guest intent window (5 minutes threshold = 300,000 ms)
+      const intentProdId = localStorage.getItem('guest_intent_product_id');
+      const intentTimeStr = localStorage.getItem('guest_intent_timestamp');
+
+      let isValidWindow = false;
+      if (intentProdId && intentTimeStr) {
+        const intentTime = Number(intentTimeStr);
+        const now = Date.now();
+        const diffMs = now - intentTime;
+        // 5 minute window threshold = 300,000 ms (between 0 and 5 minutes)
+        if (!isNaN(intentTime) && diffMs >= 0 && diffMs <= 300000) {
+          isValidWindow = true;
+        }
+      }
+
+      // Always clear guest intent keys after checking so it doesn't linger across sessions
+      localStorage.removeItem('guest_intent_product_id');
+      localStorage.removeItem('guest_intent_timestamp');
 
       if (data.user.role === 'admin') {
         router.replace('/admin');
       } else if (data.user.role === 'farmer') {
         router.replace('/farmer');
-      } else if (redirect === 'checkout') {
-        router.push('/client?screen=checkout');
-      } else if (redirect === 'cart') {
-        router.push('/client?screen=cart');
+      } else if (data.user.role === 'client') {
+        if (isValidWindow && intentProdId) {
+          // Within 5-min threshold -> Go to Product Detail page for that product
+          localStorage.setItem('client_active_screen', 'product-detail');
+          router.push(`/client?screen=product-detail&productId=${intentProdId}`);
+        } else {
+          // Outside 5-min threshold or no product intent -> Go to Dashboard
+          localStorage.setItem('client_active_screen', 'dashboard');
+          router.push('/client?screen=dashboard');
+        }
       } else {
-        router.push('/client');
+        router.push('/');
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');

@@ -9,6 +9,7 @@ import ProductDetail from '../portals/client/pages/ProductDetail';
 import FAQ from '../components/FAQ';
 import Cart from '../portals/client/pages/Cart';
 import { CurrencyProvider } from '../context/CurrencyContext';
+import { getCartStorageKey } from '../portals/client/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
@@ -63,9 +64,12 @@ export default function HomePage() {
   }, []);
 
   const handleNavigate = (screen: string, category?: string, productId?: number, querySearch?: string) => {
-    if (screen === 'checkout' && !isLoggedIn) {
-      localStorage.setItem('pending_checkout_product_id', productId ? String(productId) : '');
-      router.push('/login?redirect=checkout');
+    if ((screen === 'checkout' || screen === 'cart') && !isLoggedIn) {
+      if (productId) {
+        localStorage.setItem('guest_intent_product_id', String(productId));
+        localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+      }
+      router.push('/login');
       return;
     }
     setActiveScreen(screen);
@@ -87,9 +91,19 @@ export default function HomePage() {
   };
 
   const handleAddToCart = (product?: any) => {
+    if (!isLoggedIn) {
+      const prodId = product?.id || product?.product_id;
+      if (prodId) {
+        localStorage.setItem('guest_intent_product_id', String(prodId));
+        localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+      }
+      router.push('/login');
+      return;
+    }
+
     if (product) {
       try {
-        const cartKey = 'guest_cart';
+        const cartKey = getCartStorageKey();
         const savedCart = localStorage.getItem(cartKey);
         const cartItems = savedCart ? JSON.parse(savedCart) : [];
         const existingIndex = cartItems.findIndex((item: any) => item.id === product.id);
@@ -110,16 +124,8 @@ export default function HomePage() {
         localStorage.setItem(cartKey, JSON.stringify(cartItems));
         setCartCount(cartItems.length);
       } catch {}
-
-      if (!isLoggedIn) {
-        router.push('/login?redirect=cart');
-        return;
-      }
     } else {
       setCartCount((prev) => prev + 1);
-      if (!isLoggedIn) {
-        router.push('/login?redirect=cart');
-      }
     }
   };
 

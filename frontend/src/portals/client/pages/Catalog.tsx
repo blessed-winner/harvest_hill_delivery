@@ -551,6 +551,11 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                             e.stopPropagation();
                             const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
                             if (!token) {
+                              const prodId = product.id || product.product_id;
+                              if (prodId) {
+                                localStorage.setItem('guest_intent_product_id', String(prodId));
+                                localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+                              }
                               window.location.href = '/login';
                               return;
                             }

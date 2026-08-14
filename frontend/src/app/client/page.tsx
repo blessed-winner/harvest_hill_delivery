@@ -36,9 +36,13 @@ export default function ClientPage() {
         setAuthorized(true);
         const urlParams = new URLSearchParams(window.location.search);
         const urlScreen = urlParams.get('screen');
+        const urlProductId = urlParams.get('productId');
         const storedScreen = localStorage.getItem('client_active_screen');
-        const initialScreen = urlScreen || storedScreen || 'landing';
+        const initialScreen = urlScreen || storedScreen || 'dashboard';
         setActiveScreen(initialScreen);
+        if (urlProductId) {
+          setSelectedProductId(Number(urlProductId));
+        }
 
         // Load cart count from user-scoped localStorage
         try {

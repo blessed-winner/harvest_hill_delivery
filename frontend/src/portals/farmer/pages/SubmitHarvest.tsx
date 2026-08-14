@@ -817,7 +817,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                 <div className="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-widest flex items-center gap-1">
-                      ⚡ Optional Bulk Deal Offer
+                      Optional Bulk Deal Offer
                     </span>
                     <span className="text-[9px] font-medium text-emerald-700">Tiered Discount for Volume Buyers</span>
                   </div>
