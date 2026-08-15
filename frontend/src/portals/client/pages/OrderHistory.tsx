@@ -204,6 +204,15 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                 <div className="bg-[#fcf9f2]/30 border-t border-[#f0eee7] px-5 py-4 space-y-4 animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-[#f0eee7] pb-2">
                     <span className="text-[10px] font-bold text-[#717971] uppercase tracking-wider">Item Breakdown</span>
+                    {(order.is_assessed || (parseFloat(order.transport_fee || 0) > 0 && parseFloat(order.tax_amount || 0) > 0)) ? (
+                      <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+                        ✓ Fees Assessed & Attached
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full uppercase">
+                        Pending Admin Fee Assessment
+                      </span>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -225,11 +234,54 @@ export default function OrderHistory({ onNavigate }: OrderHistoryProps) {
                       );
                     })}
                   </div>
-                  
-                  <div className="border-t border-[#f0eee7] pt-2 flex justify-between items-center">
-                    <span className="text-xs font-bold text-[#1c1c18]">Total Amount</span>
-                    <span className="text-base font-bold text-[#144227]">{formatPrice(totalAmount)}</span>
-                  </div>
+
+                  {/* Itemized Fee Assessment Summary */}
+                  {(() => {
+                    const itemsSubtotal = (order.items || []).reduce((acc: number, item: any) => acc + (parseFloat(item.price || 0) * parseFloat(item.quantity || 0)), 0);
+                    const tFee = parseFloat(order.transport_fee || 0);
+                    const tTax = parseFloat(order.tax_amount || 0);
+                    const isAssessed = order.is_assessed || (tFee > 0 && tTax > 0);
+                    const grandTotal = itemsSubtotal + tFee + tTax;
+
+                    return (
+                      <div className="border-t border-[#f0eee7] pt-3 space-y-2 text-xs">
+                        <div className="flex justify-between text-[#414942]">
+                          <span>Items Subtotal</span>
+                          <span className="font-bold text-[#1c1c18]">{formatPrice(itemsSubtotal)}</span>
+                        </div>
+
+                        {isAssessed ? (
+                          <>
+                            <div className="flex justify-between text-[#414942]">
+                              <span>Transport / Logistics Fee</span>
+                              <span className="font-bold text-[#144227]">{formatPrice(tFee)}</span>
+                            </div>
+                            <div className="flex justify-between text-[#414942]">
+                              <span>Tax Fee</span>
+                              <span className="font-bold text-[#1c1c18]">{formatPrice(tTax)}</span>
+                            </div>
+                            <div className="border-t border-[#e5e2db] pt-2 flex justify-between items-center">
+                              <span className="text-xs font-black text-[#1c1c18] uppercase tracking-wider">Total Payment Amount</span>
+                              <span className="text-base font-black text-[#144227]">{formatPrice(grandTotal)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-900 space-y-1">
+                              <span className="font-extrabold uppercase text-[9px] block">Pending Admin Fee Assessment</span>
+                              <p className="leading-relaxed text-[#414942]">
+                                Transport fee & tax will be determined by the Admin based on your delivery address upon order approval. Once approved, the exact transport fee, tax, and final total payment will be attached here.
+                              </p>
+                            </div>
+                            <div className="border-t border-[#f0eee7] pt-2 flex justify-between items-center">
+                              <span className="text-xs font-bold text-[#1c1c18]">Items Subtotal (Pending final fees)</span>
+                              <span className="text-base font-bold text-[#144227]">{formatPrice(itemsSubtotal)}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

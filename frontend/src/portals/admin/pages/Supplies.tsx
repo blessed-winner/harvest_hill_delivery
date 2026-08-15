@@ -43,6 +43,53 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     productName: '',
   });
 
+  // Negotiation Agreement Form State
+  const [agreedQtyInput, setAgreedQtyInput] = useState('');
+  const [agreedPriceInput, setAgreedPriceInput] = useState('');
+  const [targetProductId, setTargetProductId] = useState('');
+  const [masterProducts, setMasterProducts] = useState<any[]>([]);
+  const [isSubmittingAgreement, setIsSubmittingAgreement] = useState(false);
+
+  useEffect(() => {
+    if (selectedSupply) {
+      setAgreedQtyInput(selectedSupply.accepted_quantity ? String(selectedSupply.accepted_quantity) : String(selectedSupply.quantity || ''));
+      setAgreedPriceInput(selectedSupply.agreed_price ? String(selectedSupply.agreed_price) : String(selectedSupply.price || ''));
+      setTargetProductId(selectedSupply.product ? String(selectedSupply.product) : '');
+    }
+  }, [selectedSupply]);
+
+  useEffect(() => {
+    api.products.list().then(res => setMasterProducts(res || [])).catch(() => {});
+  }, []);
+
+  const handleAgreeSupply = async () => {
+    if (!selectedSupply) return;
+    try {
+      setIsSubmittingAgreement(true);
+      const payload: any = {
+        accepted_quantity: parseFloat(agreedQtyInput || '0'),
+        agreed_price: parseFloat(agreedPriceInput || '0'),
+        approve_suggested: true
+      };
+      if (targetProductId) {
+        payload.product_id = targetProductId;
+      }
+
+      await api.supplies.agreeSupply(selectedSupply.id, payload);
+      toast("Negotiated terms agreed & supply accepted into master stock!", "success");
+      setSuccessModal({
+        isOpen: true,
+        productName: selectedSupply.product_detail?.name || selectedSupply.suggested_product_name || selectedSupply.custom_product_name || 'Harvest Batch',
+      });
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to agree terms.", "error");
+    } finally {
+      setIsSubmittingAgreement(false);
+    }
+  };
+
   const safeParseFloat = (val: any): number => {
     if (val === null || val === undefined) return 0;
     const parsed = parseFloat(val);
@@ -551,12 +598,102 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 <span className="text-xs text-on-surface-variant font-medium">Catalog Base Price</span>
                 <span className="text-xs font-semibold text-on-surface-variant/80">{formatCurrency(selectedSupply.base_price || selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
-                <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
-                <span className="text-sm font-black text-secondary">
-                  {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
+            </div>
+
+            {/* B2B Term Agreement Form (Farmer <-> Harvest Hill Negotiation) */}
+            <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
+              <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                  <Handshake size={14} className="text-emerald-700" /> Negotiate Terms & Aggregate Inventory
+                </span>
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Harvest Hill Admin Tool
                 </span>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                    Submitted Qty ({selectedSupply.unit})
+                  </label>
+                  <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                    {selectedSupply.quantity} {selectedSupply.unit}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                    Agreed Accepted Qty ({selectedSupply.unit})
+                  </label>
+                  <input 
+                    type="number" 
+                    value={agreedQtyInput} 
+                    onChange={(e) => setAgreedQtyInput(e.target.value)}
+                    placeholder={`e.g. ${selectedSupply.quantity}`}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                    Proposed Price
+                  </label>
+                  <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                    {formatCurrency(selectedSupply.price)}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                    Agreed Farmer Price (RWF)
+                  </label>
+                  <input 
+                    type="number" 
+                    value={agreedPriceInput} 
+                    onChange={(e) => setAgreedPriceInput(e.target.value)}
+                    placeholder="e.g. 1000"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1 pt-1">
+                <label className="text-[9px] font-extrabold uppercase text-emerald-950">Target Master Product</label>
+                <select
+                  value={targetProductId}
+                  onChange={(e) => setTargetProductId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950 cursor-pointer"
+                >
+                  <option value="">
+                    {selectedSupply.is_suggested_product || !selectedSupply.product
+                      ? `[Approve Suggested Master Product: "${selectedSupply.suggested_product_name || selectedSupply.custom_product_name}"]`
+                      : `-- Select Existing Master Product Template --`}
+                  </option>
+                  {masterProducts.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.category} - {formatCurrency(p.base_price)}/{p.unit})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="button"
+                disabled={isSubmittingAgreement}
+                onClick={handleAgreeSupply}
+                className="w-full py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
+              >
+                <CheckCircle2 size={16} /> Confirm Terms & Accept into Master Stock
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
+              <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
+              <span className="text-sm font-black text-secondary">
+                {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
+              </span>
             </div>
 
             {/* Farmer Notes Section */}

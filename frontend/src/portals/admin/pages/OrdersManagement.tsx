@@ -69,12 +69,12 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
     const tFee = parseFloat(transportFeeInput || '0');
     const tTax = parseFloat(taxAmountInput || '0');
 
-    if (isNaN(tFee) || tFee < 0) {
-      toast("Please enter a valid transport fee", "warning");
+    if (isNaN(tFee) || tFee <= 0) {
+      toast("Please enter a valid transport fee before approving/saving assessment.", "warning");
       return;
     }
-    if (isNaN(tTax) || tTax < 0) {
-      toast("Please enter a valid tax amount", "warning");
+    if (isNaN(tTax) || tTax <= 0) {
+      toast("Please enter a valid tax amount before approving/saving assessment.", "warning");
       return;
     }
 
@@ -124,6 +124,21 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   }, [activeTab, searchTerm]);
 
   const handleUpdateStatus = async (orderId: number | string, newStatus: string) => {
+    if (['processing', 'shipped', 'delivered', 'confirmed'].includes(newStatus)) {
+      const targetOrder = orders.find(o => o.id === orderId) || (selectedOrder?.id === orderId ? selectedOrder : null);
+      const tFee = parseFloat(targetOrder?.transport_fee || '0');
+      const tTax = parseFloat(targetOrder?.tax_amount || '0');
+      const isAssessed = (targetOrder?.is_assessed || (tFee > 0 && tTax > 0)) && tFee > 0 && tTax > 0;
+
+      if (!isAssessed) {
+        toast("Order cannot be approved yet. Transport fee and tax amount must be determined first.", "warning");
+        if (targetOrder) {
+          setSelectedOrder(targetOrder);
+        }
+        return;
+      }
+    }
+
     try {
       await api.orders.update(orderId, { status: newStatus });
       setSelectedOrder(null);

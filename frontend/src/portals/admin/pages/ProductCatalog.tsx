@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -58,6 +58,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestPhotos, setHarvestPhotos] = useState<File[]>([]);
   const [harvestPhotoPreviews, setHarvestPhotoPreviews] = useState<string[]>([]);
   const [isSubmittingHarvest, setIsSubmittingHarvest] = useState(false);
+
+  // Master Product Sourcing & Negotiation History Drawer state
+  const [historyProduct, setHistoryProduct] = useState<any | null>(null);
+  const [historySearchTerm, setHistorySearchTerm] = useState('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('All');
 
   // Custom Dialog Modal State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -575,11 +580,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             <p className="font-mono text-sm font-bold text-primary">{formatPrice(product.base_price)} / {product.unit}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Qty Needed</p>
-                            <p className="font-mono text-sm font-bold text-on-surface">{parseFloat(product.quantity_needed).toLocaleString()} {product.unit}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-emerald-800 font-extrabold">Aggregated Stock</p>
+                            <p className="font-mono text-sm font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                              {(product.total_available_quantity || 0).toLocaleString()} {product.unit}
+                            </p>
                           </div>
                         </div>
-    
+
                         <div className="mt-4 pt-3 border-t border-outline-variant/30 space-y-2">
                           <div className="flex justify-between items-center text-xs">
                             <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
@@ -596,13 +603,26 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                               )} />
                             </div>
                           </div>
-    
-                          <button
-                            onClick={(e) => handleOpenHarvestModal(product, e)}
-                            className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                          >
-                            <Sprout size={14} /> Submit Harvest
-                          </button>
+
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHistoryProduct(product);
+                              }}
+                              className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Handshake size={12} /> Sourcing History
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenHarvestModal(product, e)}
+                              className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                            >
+                              <Sprout size={12} /> Add Harvest
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -1073,6 +1093,172 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
         </div>
       )}
+
+      {/* Master Product Sourcing & Negotiation History Audit Drawer */}
+      <DetailDrawer
+        isOpen={!!historyProduct}
+        onClose={() => setHistoryProduct(null)}
+        title={historyProduct ? `Sourcing & Negotiation History: ${historyProduct.name}` : ''}
+        subtitle="Harvest Hill Master Product Audit Trail"
+        footer={
+          <button
+            onClick={() => setHistoryProduct(null)}
+            className="w-full py-2.5 bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer text-xs"
+          >
+            Close Sourcing Audit Log
+          </button>
+        }
+      >
+        {historyProduct && (
+          <div className="space-y-5 font-sans text-xs">
+            {/* Master Product Overview Box */}
+            <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-base text-emerald-950">{historyProduct.name}</h3>
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest">{historyProduct.category}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] uppercase tracking-wider text-emerald-800 font-extrabold block">Aggregated Live Stock</span>
+                  <span className="text-base font-black text-emerald-700 bg-white px-3 py-1 rounded-xl border border-emerald-200 shadow-sm inline-block mt-0.5">
+                    {(historyProduct.total_available_quantity || 0).toLocaleString()} {historyProduct.unit}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-emerald-200/60 text-emerald-900">
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-emerald-800 block">Master Selling Price</span>
+                  <span className="font-extrabold text-sm text-primary">{formatPrice(historyProduct.base_price)} / {historyProduct.unit}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] uppercase font-bold text-emerald-800 block">Contributing Farmers</span>
+                  <span className="font-extrabold text-sm">{historyProduct.sourcing_history_count || 0} Farmer Batches</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h4 className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">
+                  Farmer Negotiation & Batch Log
+                </h4>
+                <span className="text-[10px] font-bold text-[#717971]">
+                  {(historyProduct.sourcing_supplies || []).length} Total Submissions
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Filter by farmer name..."
+                  value={historySearchTerm}
+                  onChange={(e) => setHistorySearchTerm(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-xl border border-[#c1c9c0] text-xs font-semibold outline-none focus:border-[#144227]"
+                />
+                <select
+                  value={historyStatusFilter}
+                  onChange={(e) => setHistoryStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-[#c1c9c0] text-xs font-bold bg-white outline-none focus:border-[#144227] cursor-pointer"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Sourcing Supply List */}
+            {(() => {
+              const items = (historyProduct.sourcing_supplies || []).filter((s: any) => {
+                const matchesName = !historySearchTerm || (s.farmer_name || '').toLowerCase().includes(historySearchTerm.toLowerCase()) || (s.farmer_email || '').toLowerCase().includes(historySearchTerm.toLowerCase());
+                const matchesStatus = historyStatusFilter === 'All' || s.status === historyStatusFilter;
+                return matchesName && matchesStatus;
+              });
+
+              if (items.length === 0) {
+                return (
+                  <div className="p-8 text-center bg-[#f6f3ec]/50 rounded-2xl border border-[#e5e2db] text-[#717971]">
+                    <p className="font-bold text-xs">No farmer negotiation logs found for this filter.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
+                  {items.map((supply: any, idx: number) => (
+                    <div
+                      key={supply.id || idx}
+                      className="p-4 bg-white border border-[#e5e2db] rounded-2xl shadow-sm space-y-3 hover:border-[#144227]/40 transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-extrabold text-xs text-[#1c1c18] block">{supply.farmer_name}</span>
+                          <span className="text-[10px] text-[#717971] font-mono">{supply.farmer_email} • {supply.farmer_phone || 'No phone'}</span>
+                        </div>
+                        <span className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                          supply.status === 'accepted' && "bg-[#bceec8] text-[#00210f] border-[#bceec8]",
+                          supply.status === 'pending' && "bg-amber-100 text-amber-900 border-amber-200",
+                          supply.status === 'rejected' && "bg-red-100 text-red-900 border-red-200"
+                        )}>
+                          {supply.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 bg-[#fcf9f2] p-2.5 rounded-xl border border-[#e5e2db] text-xs">
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-[#717971] block">Quantity</span>
+                          <span className="font-extrabold text-[#1c1c18]">
+                            {supply.accepted_quantity ? `${supply.accepted_quantity} ${supply.unit} agreed` : `${supply.submitted_quantity} ${supply.unit} submitted`}
+                          </span>
+                          {supply.accepted_quantity && supply.accepted_quantity !== supply.submitted_quantity && (
+                            <span className="text-[9px] text-[#717971] block font-mono">({supply.submitted_quantity} {supply.unit} proposed)</span>
+                          )}
+                        </div>
+
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-[#717971] block">Agreed Price</span>
+                          <span className="font-extrabold text-[#144227]">
+                            {formatPrice(supply.agreed_price || supply.proposed_price)} / {supply.unit}
+                          </span>
+                          {supply.agreed_price && supply.agreed_price !== supply.proposed_price && (
+                            <span className="text-[9px] text-[#717971] block font-mono">({formatPrice(supply.proposed_price)} proposed)</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-[#717971] pt-1 border-t border-[#f0eee7]">
+                        <span>Submitted: {supply.created_at ? new Date(supply.created_at).toLocaleDateString() : 'N/A'}</span>
+                        <span className="font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Scope: {supply.visibility_scope?.replace('_', ' ') || 'Private Admin'}
+                        </span>
+                      </div>
+
+                      {/* Proof Photo Thumbnail (Admin Private Audit) */}
+                      {supply.photo_url && (
+                        <div className="pt-1 flex items-center gap-2">
+                          <img
+                            src={supply.photo_url}
+                            alt="Proof of harvest"
+                            className="w-12 h-12 rounded-lg object-cover border border-[#e5e2db]"
+                          />
+                          <div className="text-[9px] text-[#717971]">
+                            <span className="font-bold text-[#1c1c18] block">Proof of Real Harvest Photo</span>
+                            <span>Private to Harvest Hill for negotiation audit</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </DetailDrawer>
     </div>
   );
 }

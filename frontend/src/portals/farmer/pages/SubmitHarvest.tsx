@@ -25,6 +25,7 @@ type HarvestFormState = {
   availableDate: string;
   askingPrice: string;
   qualityGrade: 'premium' | 'standard' | 'economy';
+  visibilityScope: 'private_admin' | 'specific_clients' | 'all_clients' | 'public';
   notes: string;
   photo: File | null;
   customProductName?: string;
@@ -39,6 +40,7 @@ const initialFormState: HarvestFormState = {
   availableDate: new Date().toISOString().slice(0, 10),
   askingPrice: '',
   qualityGrade: 'premium',
+  visibilityScope: 'private_admin',
   notes: '',
   photo: null,
   customProductName: '',
@@ -228,6 +230,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
           availableDate: new Date().toISOString().slice(0, 10),
           askingPrice: preselectedProduct.base_price ? String(preselectedProduct.base_price) : '',
           qualityGrade: 'standard',
+          visibilityScope: 'private_admin',
           notes: `Supplying in response to client request.`,
           photo: null,
           customProductName: preselectedProduct.name,
@@ -245,6 +248,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
           availableDate: new Date().toISOString().slice(0, 10),
           askingPrice: baseVal ? String(baseVal) : '',
           qualityGrade: 'standard',
+          visibilityScope: 'private_admin',
           notes: '',
           photo: null,
           customProductName: '',
@@ -270,6 +274,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       availableDate: new Date().toISOString().slice(0, 10),
       askingPrice: '',
       qualityGrade: 'standard',
+      visibilityScope: 'private_admin',
       notes: '',
       photo: null,
       customProductName: '',
@@ -293,6 +298,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       availableDate: new Date().toISOString().slice(0, 10),
       askingPrice: initialAskingPrice,
       qualityGrade: 'premium',
+      visibilityScope: 'private_admin',
       notes: '',
       photo: null,
     });
@@ -338,6 +344,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
         price: askingPriceRWF,
         available_date: form.availableDate,
         quality_grade: form.qualityGrade,
+        visibility_scope: form.visibilityScope || 'private_admin',
         notes: form.notes,
         photo: photos[0] || null,
         images: photos,
@@ -351,6 +358,8 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
 
       if (selectedProduct.isCustom || selectedProduct.isRequest || !selectedProduct.id) {
         payload.product = null;
+        payload.is_suggested_product = true;
+        payload.suggested_product_name = selectedProduct.isCustom ? form.customProductName : selectedProduct.name;
         payload.custom_product_name = selectedProduct.isCustom ? form.customProductName : selectedProduct.name;
         payload.custom_category = selectedProduct.isCustom ? form.customCategory : selectedProduct.category;
         payload.custom_unit = selectedProduct.isCustom ? form.customUnit : selectedProduct.unit;

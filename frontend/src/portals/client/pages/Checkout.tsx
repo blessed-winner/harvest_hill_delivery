@@ -331,7 +331,7 @@ export default function Checkout({ onNavigate, clearCart }: CheckoutProps) {
                     Transport Fee & Tax Assessment
                   </span>
                   <p className="text-[10px] text-[#414942] leading-relaxed">
-                    Based on your delivery address, the Admin will calculate and attach the transport fee and taxes upon order approval. You will review the complete itemized breakdown prior to payment.
+                    Based on your delivery address, the Admin will calculate and attach the transport fee and taxes upon order review. Once approved, the exact transport fee, tax, and final total payment will be displayed in your order summary.
                   </p>
                 </div>
               </div>

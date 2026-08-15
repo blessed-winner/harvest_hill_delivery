@@ -293,7 +293,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                     Transport Fee & Tax Assessment
                   </span>
                   <p className="text-[11px] text-[#414942] leading-relaxed">
-                    Transport fee & tax will be determined by the Admin based on your delivery address upon order approval. You will review and confirm the final total before payment.
+                    Transport fee & tax will be calculated and attached by the Admin based on your delivery address upon order review. Once approved, the exact transport fee, tax, and final total payment will be attached to your order summary.
                   </p>
                 </div>
               </div>

@@ -8,13 +8,52 @@ def _product_has_image(image):
 
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    total_available_quantity = serializers.FloatField(read_only=True)
+    sourcing_history_count = serializers.IntegerField(read_only=True)
+    sourcing_supplies = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'category', 'is_currently_needed', 'urgency', 'unit', 'base_price', 'image', 'image_url', 'quantity_needed']
+        fields = [
+            'id', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
+            'base_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'sourcing_history_count', 'sourcing_supplies', 'created_at'
+        ]
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
         }
+
+    def get_sourcing_supplies(self, obj):
+        request = self.context.get('request')
+        # Only return detailed sourcing supplies for admin users
+        if not request or not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return []
+        
+        supplies = obj.supplies.exclude(status='rejected').order_by('-created_at')
+        res = []
+        for s in supplies:
+            photo_url = None
+            if s.photo:
+                try:
+                    photo_url = s.photo.url
+                except Exception:
+                    photo_url = None
+            res.append({
+                'id': str(s.id),
+                'farmer_name': s.farmer.farm_name or 'Harvest Hill Partner Farm',
+                'farmer_email': s.farmer.user.email,
+                'farmer_phone': s.farmer.phone,
+                'submitted_quantity': float(s.quantity),
+                'accepted_quantity': float(s.accepted_quantity) if s.accepted_quantity is not None else (float(s.quantity) if s.status == 'accepted' else 0.0),
+                'unit': s.product.unit if s.product else (s.custom_unit or 'kg'),
+                'proposed_price': float(s.price),
+                'agreed_price': float(s.agreed_price) if s.agreed_price is not None else float(s.price),
+                'status': s.status,
+                'visibility_scope': s.visibility_scope,
+                'photo_url': photo_url,
+                'created_at': s.created_at
+            })
+        return res
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)

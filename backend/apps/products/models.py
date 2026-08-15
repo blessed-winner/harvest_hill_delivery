@@ -5,12 +5,30 @@ class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=100) # e.g. Fruits, Vegetables, Grains, Animal-Based
+    description = models.TextField(blank=True, default='')
     is_currently_needed = models.BooleanField(default=False)
     urgency = models.CharField(max_length=20, default='low') # low, medium, high
     unit = models.CharField(max_length=10, default='kg')
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     image = models.ImageField(upload_to='products/', null=True, blank=True)
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    @property
+    def total_available_quantity(self):
+        """Calculates total aggregated quantity from all accepted active farmer supplies."""
+        supplies = self.supplies.filter(is_archived=False).exclude(status='rejected')
+        total = 0.0
+        for s in supplies:
+            if s.accepted_quantity is not None:
+                total += float(s.accepted_quantity)
+            elif s.status == 'accepted':
+                total += float(s.quantity)
+        return total
+
+    @property
+    def sourcing_history_count(self):
+        return self.supplies.exclude(status='rejected').count()
 
     def __str__(self):
         return self.name

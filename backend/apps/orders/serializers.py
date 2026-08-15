@@ -124,6 +124,21 @@ class OrderSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate(self, attrs):
+        target_status = attrs.get('status', self.instance.status if self.instance else 'pending')
+        
+        t_fee = float(attrs.get('transport_fee', self.instance.transport_fee if self.instance else 0) or 0)
+        t_tax = float(attrs.get('tax_amount', self.instance.tax_amount if self.instance else 0) or 0)
+        is_assessed = attrs.get('is_assessed', self.instance.is_assessed if self.instance else False) or (t_fee > 0 and t_tax > 0)
+
+        # Enforce that transport fee and tax amount must be provided before approving an order
+        if target_status in ['delivered', 'confirmed', 'processing', 'shipped']:
+            if not is_assessed or t_fee <= 0 or t_tax <= 0:
+                raise serializers.ValidationError(
+                    "An order cannot be approved until both transport fee and tax amount have been determined and attached."
+                )
+        return attrs
+
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
         order = Order.objects.create(**validated_data)
@@ -140,11 +155,25 @@ class OrderSerializer(serializers.ModelSerializer):
         old_status = instance.status
         new_status = validated_data.get('status', instance.status)
 
+        t_fee = float(validated_data.get('transport_fee', instance.transport_fee) or 0)
+        t_tax = float(validated_data.get('tax_amount', instance.tax_amount) or 0)
+
+        # Enforce that transport fee and tax amount must be provided before approving an order
+        if new_status in ['delivered', 'confirmed', 'processing', 'shipped']:
+            if t_fee <= 0 or t_tax <= 0:
+                raise serializers.ValidationError(
+                    "An order cannot be approved until both transport fee and tax amount have been determined and attached."
+                )
+
+        is_assessed = validated_data.get('is_assessed', instance.is_assessed)
+        if t_fee > 0 and t_tax > 0:
+            is_assessed = True
+
         instance.status = new_status
         instance.delivery_address = validated_data.get('delivery_address', instance.delivery_address)
-        instance.transport_fee = validated_data.get('transport_fee', instance.transport_fee)
-        instance.tax_amount = validated_data.get('tax_amount', instance.tax_amount)
-        instance.is_assessed = validated_data.get('is_assessed', instance.is_assessed)
+        instance.transport_fee = t_fee
+        instance.tax_amount = t_tax
+        instance.is_assessed = is_assessed
         instance.is_archived = validated_data.get('is_archived', instance.is_archived)
         instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
         instance.save()

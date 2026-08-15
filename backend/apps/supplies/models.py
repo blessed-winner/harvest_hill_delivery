@@ -16,15 +16,28 @@ class Supply(models.Model):
         ('standard', 'Standard'),
         ('economy', 'Economy')
     ]
+    VISIBILITY_CHOICES = [
+        ('private_admin', 'Harvest Hill Delivery Only'),
+        ('specific_clients', 'Specific Chosen Clients'),
+        ('all_clients', 'All Registered Clients'),
+        ('public', 'Public (All Visitors)'),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(FarmerProfile, on_delete=models.CASCADE, related_name='supplies')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplies', null=True, blank=True)
     custom_product_name = models.CharField(max_length=255, blank=True, default='')
     custom_category = models.CharField(max_length=100, blank=True, default='')
     custom_unit = models.CharField(max_length=20, blank=True, default='kg')
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2) # Submitted harvest quantity (e.g. 40 kg)
+    accepted_quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Agreed quantity (e.g. 30 kg)
+    price = models.DecimalField(max_digits=10, decimal_places=2) # Farmer's initial proposed price
+    agreed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Agreed price negotiated with Harvest Hill
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='private_admin')
+    target_clients = models.ManyToManyField('accounts.ClientProfile', blank=True, related_name='exclusive_supplies')
+    is_suggested_product = models.BooleanField(default=False)
+    suggested_product_name = models.CharField(max_length=255, blank=True, default='')
+    disclose_farmer_name = models.BooleanField(default=False)
     available_date = models.DateField(null=True, blank=True)
     quality_grade = models.CharField(max_length=20, choices=QUALITY_CHOICES, default='standard')
     notes = models.TextField(blank=True, default='')
@@ -38,9 +51,16 @@ class Supply(models.Model):
     rating_count = models.IntegerField(default=1)
     is_archived = models.BooleanField(default=False)
 
+    @property
+    def effective_quantity(self):
+        """Returns the accepted quantity if agreed upon, otherwise the submitted quantity."""
+        if self.accepted_quantity is not None:
+            return float(self.accepted_quantity)
+        return float(self.quantity)
+
     def __str__(self):
-        name = self.product.name if self.product else self.custom_product_name
-        return f"{name} - {self.quantity} ({self.status})"
+        name = self.product.name if self.product else (self.suggested_product_name or self.custom_product_name)
+        return f"{name} - {self.effective_quantity} ({self.status})"
 
 
 class SupplyImage(models.Model):

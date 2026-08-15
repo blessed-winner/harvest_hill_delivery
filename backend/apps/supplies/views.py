@@ -25,12 +25,15 @@ class SupplySerializer(serializers.ModelSerializer):
     farmer_location = serializers.SerializerMethodField()
     unit = serializers.SerializerMethodField()
     images = SupplyImageSerializer(many=True, read_only=True)
+    effective_quantity = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Supply
         fields = [
-            'id', 'product', 'product_detail', 'quantity', 'unit', 'price', 'proposed_price', 'base_price', 
-            'status', 'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
+            'id', 'product', 'product_detail', 'quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
+            'price', 'proposed_price', 'agreed_price', 'base_price', 
+            'status', 'visibility_scope', 'is_suggested_product', 'suggested_product_name', 'disclose_farmer_name',
+            'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
             'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
             'bulk_min_qty', 'bulk_price', 'rating', 'rating_count',
             'custom_product_name', 'custom_category', 'custom_unit'
@@ -278,4 +281,79 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             "rating": supply.rating,
             "rating_count": supply.rating_count
         })
+
+    @action(detail=True, methods=['post'], url_path='agree-supply')
+    def agree_supply(self, request, pk=None):
+        if not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return Response({"error": "Only Harvest Hill Delivery (admin) can agree and accept supply terms."}, status=403)
+        
+        supply = self.get_object()
+        accepted_qty = request.data.get('accepted_quantity')
+        agreed_p = request.data.get('agreed_price')
+        target_product_id = request.data.get('product_id')
+        approve_suggested = request.data.get('approve_suggested', False)
+
+        if accepted_qty is not None:
+            try:
+                acc_val = float(accepted_qty)
+                if acc_val <= 0 or acc_val > float(supply.quantity):
+                    return Response({"error": f"Accepted quantity must be between 1 and submitted quantity ({supply.quantity:g})."}, status=400)
+                supply.accepted_quantity = acc_val
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid accepted quantity format."}, status=400)
+
+        if agreed_p is not None:
+            try:
+                p_val = float(agreed_p)
+                if p_val <= 0:
+                    return Response({"error": "Agreed price must be greater than zero."}, status=400)
+                supply.agreed_price = p_val
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid agreed price format."}, status=400)
+
+        # Handle master product mapping
+        if target_product_id:
+            from apps.products.models import Product
+            try:
+                master_prod = Product.objects.get(id=target_product_id)
+                supply.product = master_prod
+            except Product.DoesNotExist:
+                return Response({"error": "Target master product not found."}, status=404)
+        elif (supply.is_suggested_product or not supply.product) and approve_suggested:
+            from apps.products.models import Product
+            p_name = supply.suggested_product_name or supply.custom_product_name or "New Product"
+            p_cat = supply.custom_category or "Vegetables"
+            p_unit = supply.custom_unit or "kg"
+            p_price = supply.agreed_price or supply.price
+            
+            existing = Product.objects.filter(name__iexact=p_name).first()
+            if existing:
+                master_prod = existing
+            else:
+                master_prod = Product.objects.create(
+                    name=p_name,
+                    category=p_cat,
+                    unit=p_unit,
+                    base_price=p_price,
+                    image=supply.photo if supply.photo else None
+                )
+            supply.product = master_prod
+
+        if not supply.product:
+            return Response({"error": "A master product template must be selected or approved to accept this supply into system inventory."}, status=400)
+
+        supply.status = 'accepted'
+        supply.save()
+
+        # Send notification to farmer
+        from apps.notifications.models import Notification
+        prod_name = supply.product.name
+        Notification.objects.create(
+            user=supply.farmer.user,
+            title="Harvest Agreed & Accepted",
+            message=f"Harvest Hill Delivery has agreed and accepted {supply.effective_quantity:g} {supply.product.unit} of your {prod_name} harvest submission."
+        )
+
+        serializer = self.get_serializer(supply)
+        return Response(serializer.data)
 

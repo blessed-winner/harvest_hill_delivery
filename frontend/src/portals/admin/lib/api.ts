@@ -249,6 +249,8 @@ export const api = {
       }
       return apiRequest(`/api/supplies/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) });
     },
+    agreeSupply: (id: string | number, payload: any) => 
+      apiRequest(`/api/supplies/${id}/agree-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
     delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),
   },
 
