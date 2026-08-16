@@ -10,7 +10,7 @@ class Product(models.Model):
     urgency = models.CharField(max_length=20, default='low') # low, medium, high
     unit = models.CharField(max_length=10, default='kg')
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    image = models.ImageField(upload_to='products/', null=True, blank=True)
+    image = models.ImageField(upload_to='products/', max_length=500, null=True, blank=True)
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 

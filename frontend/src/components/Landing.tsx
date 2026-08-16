@@ -13,356 +13,7 @@ interface LandingProps {
   addToCart: (product?: any) => void;
 }
 
-// Curated farm items to ensure full category rails even when API products are few
-const DEFAULT_POPULAR_ITEMS = [
-  {
-    id: 101,
-    name: "Organic Red Hass Avocados",
-    farm: "GIKONGORO FARM CO-OP",
-    price: 1800,
-    unit: "kg",
-    size: "approx. 1 kg (4-5 pcs)",
-    category: "Fruits",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 102,
-    name: "Musanze Sweet Irish Potatoes",
-    farm: "VIRUNGA HIGHLAND FARMS",
-    price: 950,
-    unit: "kg",
-    size: "approx. 2.5 kg bag",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 103,
-    name: "Fresh Nyagatare Whole Milk",
-    farm: "EASTERN DAIRY COLLECTIVE",
-    price: 1200,
-    unit: "L",
-    size: "1 Liter bottle",
-    category: "Dairy",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 104,
-    name: "Handpicked Crisp Bell Peppers",
-    farm: "RUBAVU GREENHOUSE ORGANICS",
-    price: 2400,
-    unit: "kg",
-    size: "pack of 3 mixed",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 105,
-    name: "Gisenyi Golden Passion Fruit",
-    farm: "LAKE KIVU ORCHARDS",
-    price: 3100,
-    unit: "kg",
-    size: "approx. 1 kg (10-12 pcs)",
-    category: "Fruits",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 106,
-    name: "Rwamagana Sweet Yellow Bananas",
-    farm: "SUNRISE FRUIT VALLEY",
-    price: 1400,
-    unit: "bunch",
-    size: "bunch of 8-10",
-    category: "Fruits",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 107,
-    name: "Fresh Cut Curly Kale & Spinach",
-    farm: "HUYE COMMUNITY GARDENS",
-    price: 800,
-    unit: "bunch",
-    size: "approx. 350g bunch",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 108,
-    name: "Kayonza Organic Wildflower Honey",
-    farm: "AKAGERA APICULTURE",
-    price: 4500,
-    unit: "jar",
-    size: "500g glass jar",
-    category: "Grains",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 109,
-    name: "Artisan Free-Range Country Eggs",
-    farm: "KICUKIRO ECO POULTRY",
-    price: 3600,
-    unit: "tray",
-    size: "tray of 15 eggs",
-    category: "Dairy",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 110,
-    name: "Fresh Garden Rosemary & Thyme",
-    farm: "GASABO HERB ESTATE",
-    price: 900,
-    unit: "pack",
-    size: "approx. 100g fresh cut",
-    category: "Herbs",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1608686207856-001b95cf60ca?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 111,
-    name: "Highland Organic Carrots",
-    farm: "NORTHERN RIDGE FARMS",
-    price: 1100,
-    unit: "kg",
-    size: "1 kg bundle",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1598170845058-12ef4a45753b?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 112,
-    name: "Crisp Green Lettuce Heads",
-    farm: "HUYE HYDROPONICS",
-    price: 850,
-    unit: "head",
-    size: "pack of 2 twin heads",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 113,
-    name: "Fresh Red Onions Mesh Sack",
-    farm: "NORTHERN VALLEY FARMS",
-    price: 1400,
-    unit: "kg",
-    size: "2 kg mesh sack",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 114,
-    name: "Juicy Red Vine Tomatoes",
-    farm: "NYARUGENGE GROWERS",
-    price: 1500,
-    unit: "kg",
-    size: "approx. 1 kg crate",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 115,
-    name: "Fresh Farm Cucumbers",
-    farm: "GASABO VEGGIE HUB",
-    price: 990,
-    unit: "kg",
-    size: "pack of 4 whole",
-    category: "Vegetables",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 116,
-    name: "Sweet Local Strawberries Punnet",
-    farm: "KIGALI BERRY VALLEY",
-    price: 3600,
-    unit: "box",
-    size: "400g punnet",
-    category: "Fruits",
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=500&auto=format&fit=crop&q=80"
-  }
-];
 
-const DEFAULT_DEAL_ITEMS = [
-  {
-    id: 201,
-    name: "Juicy Red Tomatoes Batch",
-    farm: "NYARUGENGE GROWERS",
-    originalPrice: 2200,
-    discountPrice: 1500,
-    unit: "kg",
-    size: "approx. 1 kg crate",
-    category: "Vegetables",
-    savingsPct: 32,
-    sponsored: true,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 202,
-    name: "Sweet Local Strawberries Crate",
-    farm: "KIGALI BERRY VALLEY",
-    originalPrice: 4800,
-    discountPrice: 3600,
-    unit: "box",
-    size: "400g punnet",
-    category: "Fruits",
-    savingsPct: 25,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 203,
-    name: "Organic Whole Wheat Grains",
-    farm: "EASTERN PLAINS MILLING",
-    originalPrice: 3000,
-    discountPrice: 2100,
-    unit: "kg",
-    size: "2 kg flour bag",
-    category: "Grains",
-    savingsPct: 30,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 204,
-    name: "Fresh Farm Cucumbers",
-    farm: "GASABO VEGGIE HUB",
-    originalPrice: 1500,
-    discountPrice: 990,
-    unit: "kg",
-    size: "pack of 4 whole",
-    category: "Vegetables",
-    savingsPct: 34,
-    sponsored: true,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 205,
-    name: "Tree-Ripe Sweet Oranges",
-    farm: "AKAGERA CITRUS ORCHARDS",
-    originalPrice: 3200,
-    discountPrice: 2400,
-    unit: "kg",
-    size: "approx. 1.5 kg net",
-    category: "Fruits",
-    savingsPct: 25,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 206,
-    name: "Artisan Whole Milk Cheese",
-    farm: "VIRUNGA CREAMERY",
-    originalPrice: 6500,
-    discountPrice: 4900,
-    unit: "block",
-    size: "350g artisan block",
-    category: "Dairy",
-    savingsPct: 24,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 207,
-    name: "Crisp Green Lettuce Heads",
-    farm: "HUYE HYDROPONICS",
-    originalPrice: 1200,
-    discountPrice: 850,
-    unit: "head",
-    size: "pack of 2 twin heads",
-    category: "Vegetables",
-    savingsPct: 29,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 208,
-    name: "Fresh Red Onions Crate",
-    farm: "NORTHERN VALLEY FARMS",
-    originalPrice: 2000,
-    discountPrice: 1400,
-    unit: "kg",
-    size: "2 kg mesh sack",
-    category: "Vegetables",
-    savingsPct: 30,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 209,
-    name: "Ripe Sugar Mangoes",
-    farm: "RUBAVU SUNSET ORCHARDS",
-    originalPrice: 3800,
-    discountPrice: 2800,
-    unit: "kg",
-    size: "approx. 1 kg (3-4 pcs)",
-    category: "Fruits",
-    savingsPct: 26,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 210,
-    name: "Fresh Mint & Basil Leaves",
-    farm: "GASABO HERB ESTATE",
-    originalPrice: 1100,
-    discountPrice: 750,
-    unit: "pack",
-    size: "approx. 150g bundle",
-    category: "Herbs",
-    savingsPct: 31,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1608686207856-001b95cf60ca?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 211,
-    name: "Gisenyi Golden Passion Fruit",
-    farm: "LAKE KIVU ORCHARDS",
-    originalPrice: 4200,
-    discountPrice: 3100,
-    unit: "kg",
-    size: "approx. 1 kg (10-12 pcs)",
-    category: "Fruits",
-    savingsPct: 26,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=500&auto=format&fit=crop&q=80"
-  },
-  {
-    id: 212,
-    name: "Highland Organic Carrots",
-    farm: "NORTHERN RIDGE FARMS",
-    originalPrice: 1600,
-    discountPrice: 1100,
-    unit: "kg",
-    size: "1 kg bundle",
-    category: "Vegetables",
-    savingsPct: 31,
-    sponsored: false,
-    verified: true,
-    photo: "https://images.unsplash.com/photo-1598170845058-12ef4a45753b?w=500&auto=format&fit=crop&q=80"
-  }
-];
 
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
@@ -450,51 +101,64 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchData();
   }, []);
 
-  // Active supplies & products
+  // Active supplies & products from backend database
   const activeSupplies = supplies.filter((s: any) => s.status === 'accepted');
 
   // Helper to resolve items for a category
   const getSectionItems = (categoryTarget: string) => {
     const targetLower = categoryTarget.toLowerCase();
     
+    // Default fallback pool when category is broad: master catalog products
+    const masterItems = products.length > 0 ? products : activeSupplies;
+
     if (targetLower === 'deals') {
       const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
-      return matchedDeals.length > 0 ? [...matchedDeals, ...DEFAULT_DEAL_ITEMS] : DEFAULT_DEAL_ITEMS;
+      if (matchedDeals.length > 0) return matchedDeals;
+      // Return first 6 products as featured seasonal deals
+      return products.slice(0, 6);
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
-      return activeSupplies.length > 0 ? [...activeSupplies, ...DEFAULT_POPULAR_ITEMS] : DEFAULT_POPULAR_ITEMS;
+      return products.length > 0 ? products : activeSupplies;
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
-      const matchedSupplies = activeSupplies.filter((s: any) => {
-        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
-        return cat.includes('vegetable') || cat.includes('herb');
-      });
       const matchedProducts = products.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
         return cat.includes('vegetable') || cat.includes('herb');
       });
-      const defaultFiltered = DEFAULT_POPULAR_ITEMS.filter(item => {
-        const c = item.category?.toLowerCase() || '';
-        return c.includes('vegetable') || c.includes('herb');
+      const matchedSupplies = activeSupplies.filter((s: any) => {
+        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+        return cat.includes('vegetable') || cat.includes('herb');
       });
-      const combined = [...matchedSupplies, ...matchedProducts];
-      return combined.length > 0 ? [...combined, ...defaultFiltered, ...DEFAULT_POPULAR_ITEMS] : (defaultFiltered.length > 0 ? defaultFiltered : DEFAULT_POPULAR_ITEMS);
+      const combined = [...matchedProducts, ...matchedSupplies];
+      return combined.length > 0 ? combined : masterItems;
     }
 
-    const matchedSupplies = activeSupplies.filter((s: any) => {
-      const cat = (s.product_detail?.category || s.category || '').toLowerCase();
-      return cat.includes(targetLower);
-    });
+    if (targetLower.includes('dairy') || targetLower.includes('animal')) {
+      const matchedProducts = products.filter((p: any) => {
+        const cat = (p.category || '').toLowerCase();
+        return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
+      });
+      const matchedSupplies = activeSupplies.filter((s: any) => {
+        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+        return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
+      });
+      const combined = [...matchedProducts, ...matchedSupplies];
+      return combined.length > 0 ? combined : masterItems;
+    }
+
     const matchedProducts = products.filter((p: any) => {
       const cat = (p.category || '').toLowerCase();
       return cat.includes(targetLower);
     });
-    const defaultFiltered = DEFAULT_POPULAR_ITEMS.filter(item => item.category?.toLowerCase().includes(targetLower));
+    const matchedSupplies = activeSupplies.filter((s: any) => {
+      const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+      return cat.includes(targetLower);
+    });
 
-    const combined = [...matchedSupplies, ...matchedProducts];
-    return combined.length > 0 ? [...combined, ...defaultFiltered, ...DEFAULT_POPULAR_ITEMS] : (defaultFiltered.length > 0 ? defaultFiltered : DEFAULT_POPULAR_ITEMS);
+    const combined = [...matchedProducts, ...matchedSupplies];
+    return combined.length > 0 ? combined : masterItems;
   };
 
   if (loading) {
@@ -508,21 +172,24 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     );
   }
 
-  // Reusable Product Card Renderer
+  // Reusable Product Card Renderer for real database products
   const renderProductCard = (item: any, isDeal = false, idx = 0, secId = '') => {
     const isSupply = !!item.product_detail;
     const name = isSupply ? item.product_detail?.name : item.name;
-    const farm = isSupply ? (item.farmer_name || 'Harvest Hill Farm') : (item.farm || 'Local Certified Farm');
-    const origPrice = isSupply ? Number(item.price) : Number(item.originalPrice || item.price * 1.3 || 2500);
-    const discPrice = isSupply ? Number(item.discount_price || item.price) : Number(item.discountPrice || item.price || item.base_price || 0);
-    const priceVal = isSupply ? Number(item.price) : Number(item.price || item.base_price || 0);
-    const pct = item.savingsPct || (origPrice > 0 ? Math.round(((origPrice - discPrice) / origPrice) * 100) : 20);
-    const imgUrl = isSupply ? (item.photo || item.product_detail?.image_url) : (item.photo || item.image_url || item.image);
+    const farm = isSupply ? (item.farmer_name || 'Harvest Hill Partner Farm') : 'Harvest Hill Certified Partner Farm';
+    const discPrice = isSupply ? Number(item.discount_price || item.price) : Number(item.base_price || item.price || 0);
+    const origPrice = isSupply ? Number(item.price) : Math.round(discPrice * 1.25);
+    const priceVal = isSupply ? Number(item.price) : Number(item.base_price || item.price || 0);
+    const pct = item.savingsPct || 20;
+    const rawImg = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.photo || item.image);
+    const imgUrl = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
+      ? 'https://' + rawImg.split('http')[1]
+      : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);
     const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-    const sizeText = item.size || `approx. 1 ${unit}`;
+    const sizeText = item.total_available_quantity != null ? `${item.total_available_quantity} ${unit} live stock` : (item.description ? (item.description.length > 40 ? item.description.slice(0, 40) + '...' : item.description) : `approx. 1 ${unit}`);
     const isSponsored = item.sponsored || (isDeal && (idx === 0 || idx === 3));
     const targetProdId = item.id;
-    const cardKey = `${secId || 'sec'}-${item.id || item.product_id || idx}-${idx}`;
+    const cardKey = `${secId || 'sec'}-${item.id || idx}-${idx}`;
 
     return (
       <div 

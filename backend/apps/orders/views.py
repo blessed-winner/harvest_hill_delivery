@@ -11,6 +11,15 @@ class OrderViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if self.request.user.role == 'client':
-            serializer.save(client=self.request.user.client_profile)
+            order = serializer.save(client=self.request.user.client_profile)
         else:
-            serializer.save()
+            order = serializer.save()
+        from apps.common.utils import log_action
+        log_action(self.request, actor=self.request.user, action="order_placed", target_model="Order", target_id=order.id, target_name=f"Order #{order.order_number}")
+
+    def perform_update(self, serializer):
+        old_status = self.get_object().status
+        order = serializer.save()
+        if order.status == 'delivered' and old_status != 'delivered':
+            from apps.common.utils import log_action
+            log_action(self.request, actor=self.request.user, action="order_delivered", target_model="Order", target_id=order.id, target_name=f"Order #{order.order_number}")

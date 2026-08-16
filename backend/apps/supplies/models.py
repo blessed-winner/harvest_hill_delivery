@@ -41,7 +41,7 @@ class Supply(models.Model):
     available_date = models.DateField(null=True, blank=True)
     quality_grade = models.CharField(max_length=20, choices=QUALITY_CHOICES, default='standard')
     notes = models.TextField(blank=True, default='')
-    photo = models.ImageField(upload_to='supplies/', null=True, blank=True)
+    photo = models.ImageField(upload_to='supplies/', max_length=500, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_discounted = models.BooleanField(default=False)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

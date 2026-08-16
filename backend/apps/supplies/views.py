@@ -26,6 +26,21 @@ class SupplySerializer(serializers.ModelSerializer):
     unit = serializers.SerializerMethodField()
     images = SupplyImageSerializer(many=True, read_only=True)
     effective_quantity = serializers.FloatField(read_only=True)
+    photo = serializers.SerializerMethodField()
+
+    def get_photo(self, obj):
+        if not obj.photo:
+            return None
+        try:
+            name = obj.photo.name if hasattr(obj.photo, 'name') else str(obj.photo)
+            if name.startswith('http://') or name.startswith('https://'):
+                return name
+            url = obj.photo.url
+            if 'localhost' in url or '127.0.0.1' in url:
+                return None
+            return url
+        except Exception:
+            return None
 
     class Meta:
         model = Supply
@@ -151,7 +166,7 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         from apps.common.utils import log_action
         status_val = instance.status
         action_name = "supply_draft_saved" if status_val == 'draft' else "supply_submitted"
-        log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=instance.id)
+        log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=instance.id, target_name=instance.product.name if instance.product else (instance.suggested_product_name or "Harvest Supply"))
 
     def perform_update(self, serializer):
         old_status = self.get_object().status

@@ -30,7 +30,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         product = serializer.save()
         from apps.common.utils import log_action
-        log_action(self.request, actor=self.request.user, action="product_added", target_model="Product", target_id=product.id)
+        log_action(self.request, actor=self.request.user, action="product_added", target_model="Product", target_id=product.id, target_name=product.name)
 
     def perform_update(self, serializer):
         # If a new image is being uploaded, delete the old one from Cloudinary
@@ -44,9 +44,10 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         prod_id = instance.id
+        prod_name = instance.name
         from apps.common.utils import log_action
         instance.delete()
-        log_action(self.request, actor=self.request.user, action="product_removed", target_model="Product", target_id=prod_id)
+        log_action(self.request, actor=self.request.user, action="product_removed", target_model="Product", target_id=prod_id, target_name=prod_name)
 
 
 class ProductRequestViewSet(viewsets.ModelViewSet):

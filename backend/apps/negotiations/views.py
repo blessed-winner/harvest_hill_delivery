@@ -154,7 +154,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
 
         # Log action to AuditLog
         from apps.common.utils import log_action
-        log_action(request, actor=request.user, action="negotiation_finalized", target_model="Supply", target_id=thread.supply.id)
+        log_action(request, actor=request.user, action="negotiation_finalized", target_model="Supply", target_id=thread.supply.id, target_name=prod_name)
 
         return Response(NegotiationThreadSerializer(thread).data)
 

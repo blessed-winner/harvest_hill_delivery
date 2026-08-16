@@ -101,6 +101,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             addImage(fetchedSupply.photo);
           }
 
+          if (fetchedSupply.product_detail?.image_url) {
+            addImage(fetchedSupply.product_detail.image_url);
+          }
+
           if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
               const url = imgObj.image_url || imgObj.image;
@@ -108,11 +112,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             });
           }
 
-          // Only include catalog template image if no custom batch photos exist OR if it's an admin/Harvest Hill supply
-          const isAdminSupply = !fetchedSupply.farmer_name || fetchedSupply.farmer_name.toLowerCase().includes('harvest hill');
-          if ((imagesList.length === 0 || isAdminSupply) && fetchedSupply.product_detail?.image_url) {
-            addImage(fetchedSupply.product_detail.image_url);
-          }
+          const mainImageUrl = fetchedSupply.photo 
+            ? getFullImageUrl(fetchedSupply.photo) 
+            : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : '');
 
           const mappedProduct = {
             id: fetchedSupply.id,
@@ -123,10 +125,8 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             unit: fetchedSupply.unit,
             price: fetchedSupply.price,
             status: fetchedSupply.status,
-            image_url: fetchedSupply.photo 
-              ? getFullImageUrl(fetchedSupply.photo) 
-              : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : ''),
-            images: imagesList.length > 0 ? imagesList : undefined,
+            image_url: mainImageUrl,
+            images: imagesList.length > 0 ? imagesList : (mainImageUrl ? [mainImageUrl] : []),
             farmer_name: fetchedSupply.farmer_name,
             farmer_location: fetchedSupply.farmer_location,
             quantity: fetchedSupply.quantity,
@@ -360,7 +360,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           </div>
 
           {/* Gallery Thumbnails */}
-          {product.images && product.images.length > 1 && (
+          {product.images && product.images.length > 0 && (
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
               {product.images.map((img: string, idx: number) => (
                 <button

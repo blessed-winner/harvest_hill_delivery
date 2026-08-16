@@ -43,7 +43,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        log_action(request, actor=user, action="user_registration")
+        log_action(request, actor=user, action="user_registration", target_model="User", target_id=user.id, target_name=user.username or user.email)
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 class CustomTokenRefreshView(TokenRefreshView):
@@ -371,16 +371,17 @@ class AdminUserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        log_action(self.request, actor=self.request.user, action="user_created", target_model="User", target_id=user.id)
+        log_action(self.request, actor=self.request.user, action="user_created", target_model="User", target_id=user.id, target_name=user.get_full_name() or user.username)
 
     def perform_update(self, serializer):
         user = serializer.save()
-        log_action(self.request, actor=self.request.user, action="user_updated", target_model="User", target_id=user.id)
+        log_action(self.request, actor=self.request.user, action="user_updated", target_model="User", target_id=user.id, target_name=user.get_full_name() or user.username)
 
     def perform_destroy(self, instance):
         user_id = instance.id
+        user_name = instance.get_full_name() or instance.username
         instance.delete()
-        log_action(self.request, actor=self.request.user, action="user_removed", target_model="User", target_id=user_id)
+        log_action(self.request, actor=self.request.user, action="user_removed", target_model="User", target_id=user_id, target_name=user_name)
 
 
 class GoogleOAuthView(APIView):
@@ -417,6 +418,7 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
+        User = get_user_model()
         # Clean up scheduled deletions older than 10 days
         User.objects.filter(scheduled_deletion_date__lte=timezone.now()).delete()
 
@@ -583,9 +585,41 @@ class AdminDashboardView(APIView):
             "invoice_paid": "Invoice payment settled",
         }
         for log in db_activities:
-            title = action_map.get(log.action, log.action.replace('_', ' ').capitalize())
-            if log.target_model and log.target_id:
-                title += f" ({log.target_model} #{log.target_id})"
+            base_title = action_map.get(log.action, log.action.replace('_', ' ').capitalize())
+            
+            target_display = log.target_name
+            if not target_display and log.target_model and log.target_id:
+                try:
+                    if log.target_model == "Product":
+                        from apps.products.models import Product
+                        p = Product.objects.filter(id=log.target_id).first()
+                        if p: target_display = p.name
+                    elif log.target_model in ["User", "UserAccount"]:
+                        u = User.objects.filter(id=log.target_id).first()
+                        if u: target_display = u.username or u.get_full_name() or u.email
+                    elif log.target_model == "Supply":
+                        from apps.supplies.models import Supply
+                        s = Supply.objects.filter(id=log.target_id).first()
+                        if s and s.product: target_display = s.product.name
+                    elif log.target_model == "Order":
+                        from apps.orders.models import Order
+                        o = Order.objects.filter(id=log.target_id).first()
+                        if o: target_display = f"Order #{o.order_number}"
+                    elif log.target_model == "FarmerApplication":
+                        fa = FarmerApplication.objects.filter(id=log.target_id).first()
+                        if fa: target_display = fa.full_name or fa.farm_name
+                except Exception:
+                    pass
+
+            if not target_display and log.actor:
+                target_display = log.actor.username or log.actor.get_full_name() or log.actor_email
+            elif not target_display and log.actor_email:
+                target_display = log.actor_email.split('@')[0]
+
+            if target_display:
+                title = f'{base_title} : "{target_display}"'
+            else:
+                title = base_title
                 
             color = "bg-primary"
             if "remove" in log.action or "delete" in log.action or "reject" in log.action:
@@ -763,7 +797,7 @@ class FarmerApplicationSubmitView(APIView):
                     user=admin,
                     message=f"New Farmer Application from {app.full_name} ({app.farm_name}). Please review."
                 )
-            log_action(request, actor=None, action="farmer_application_submitted", target_model="FarmerApplication", target_id=app.id)
+            log_action(request, actor=None, action="farmer_application_submitted", target_model="FarmerApplication", target_id=app.id, target_name=app.full_name or app.farm_name)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -820,7 +854,7 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
         app.status = 'approved'
         app.save()
 
-        log_action(request, actor=request.user, action="farmer_application_approved", target_model="FarmerApplication", target_id=app.id)
+        log_action(request, actor=request.user, action="farmer_application_approved", target_model="FarmerApplication", target_id=app.id, target_name=app.full_name or app.farm_name)
 
         return Response({
             "detail": "Application approved. Farmer user created successfully.",
@@ -837,7 +871,7 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
         app.status = 'rejected'
         app.save()
 
-        log_action(request, actor=request.user, action="farmer_application_rejected", target_model="FarmerApplication", target_id=app.id)
+        log_action(request, actor=request.user, action="farmer_application_rejected", target_model="FarmerApplication", target_id=app.id, target_name=app.full_name or app.farm_name)
 
         return Response({"detail": "Application has been rejected. You can re-approve it later if needed."}, status=status.HTTP_200_OK)
 
@@ -847,9 +881,10 @@ class AdminFarmerApplicationViewSet(viewsets.ModelViewSet):
         """
         app = self.get_object()
         app_id = app.id
+        app_name = app.full_name or app.farm_name
         app.delete()
         
-        log_action(request, actor=request.user, action="farmer_application_deleted", target_model="FarmerApplication", target_id=app_id)
+        log_action(request, actor=request.user, action="farmer_application_deleted", target_model="FarmerApplication", target_id=app_id, target_name=app_name)
         
         return Response({"detail": "Application deleted successfully."}, status=status.HTTP_200_OK)
 

@@ -1,6 +1,6 @@
 from .models import AuditLog
 
-def log_action(request=None, actor=None, action="", target_model="", target_id="", ip_address=None):
+def log_action(request=None, actor=None, action="", target_model="", target_id="", target_name="", ip_address=None):
     if request:
         if not actor and request.user and request.user.is_authenticated:
             actor = request.user
@@ -19,6 +19,7 @@ def log_action(request=None, actor=None, action="", target_model="", target_id="
         actor_email=actor_email,
         action=action,
         target_model=target_model,
-        target_id=str(target_id),
+        target_id=str(target_id) if target_id else "",
+        target_name=str(target_name) if target_name else "",
         ip_address=ip_address
     )

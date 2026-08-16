@@ -7,6 +7,7 @@ class AuditLog(models.Model):
     action = models.CharField(max_length=255)
     target_model = models.CharField(max_length=255, blank=True)
     target_id = models.CharField(max_length=255, blank=True)
+    target_name = models.CharField(max_length=255, blank=True, null=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
