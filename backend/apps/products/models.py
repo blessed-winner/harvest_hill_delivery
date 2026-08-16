@@ -12,6 +12,8 @@ class Product(models.Model):
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     image = models.ImageField(upload_to='products/', max_length=500, null=True, blank=True)
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_discounted = models.BooleanField(default=False)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     @property

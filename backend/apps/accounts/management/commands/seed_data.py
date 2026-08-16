@@ -7,7 +7,7 @@ from apps.orders.models import Order
 from apps.common.models import AuditLog
 
 class Command(BaseCommand):
-    help = 'Seeds master admin, partner farmers, product catalog templates, and accepted harvest supplies with hosted Cloudinary image URLs.'
+    help = 'Seeds master admin, partner farmers, product catalog templates with discounts, and accepted harvest supplies.'
 
     def handle(self, *args, **options):
         self.stdout.write("Wiping existing database records...")
@@ -85,13 +85,15 @@ class Command(BaseCommand):
             farmer_profiles.append(fprof)
             self.stdout.write(self.style.SUCCESS(f"Seeded farmer: {fdata['farm_name']} ({fdata['email']})"))
 
-        # 3. Seed Catalog Master Products with hosted Cloudinary URLs
+        # 3. Seed Catalog Master Products with hosted Cloudinary URLs & discounts
         products_data = [
             {
                 "name": "Organic Hass Avocados",
                 "category": "Fruits",
                 "unit": "kg",
                 "base_price": 1800,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 300,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901950/harvest_hill_products/y5h24za39d3bawj6oqit.jpg",
                 "description": "Rich, creamy organic Hass avocados freshly picked from volcanic highland orchards in Musanze.",
@@ -106,6 +108,8 @@ class Command(BaseCommand):
                 "category": "Vegetables",
                 "unit": "kg",
                 "base_price": 950,
+                "is_discounted": True,
+                "discount_price": 700,
                 "quantity_needed": 500,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901952/harvest_hill_products/je3ul8dazchxyryv6xz0.jpg",
                 "description": "Premium Kinigi red-skin Irish potatoes, ideal for roasting, fries, and hearty traditional stews.",
@@ -120,6 +124,8 @@ class Command(BaseCommand):
                 "category": "Animal-Based",
                 "unit": "litre",
                 "base_price": 1200,
+                "is_discounted": True,
+                "discount_price": 950,
                 "quantity_needed": 400,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901952/harvest_hill_products/evb7rx2qdrrm1w2tqdup.jpg",
                 "description": "Pure pasteurized whole cow milk produced by grass-fed cattle in pasturages of Eastern Province.",
@@ -134,6 +140,8 @@ class Command(BaseCommand):
                 "category": "Vegetables",
                 "unit": "kg",
                 "base_price": 2400,
+                "is_discounted": True,
+                "discount_price": 1900,
                 "quantity_needed": 200,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901953/harvest_hill_products/ys38mphnzkwb6mu14wgk.jpg",
                 "description": "Sweet, vibrant red, yellow, and green bell peppers cultivated in greenhouse climate controls.",
@@ -148,6 +156,8 @@ class Command(BaseCommand):
                 "category": "Fruits",
                 "unit": "kg",
                 "base_price": 3100,
+                "is_discounted": True,
+                "discount_price": 2500,
                 "quantity_needed": 250,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901954/harvest_hill_products/tjs9yo1dfrpgrucnjgll.jpg",
                 "description": "Highly aromatic golden passion fruit with tangy juice sweet pulp grown along sunny Lake Kivu shores.",
@@ -162,6 +172,8 @@ class Command(BaseCommand):
                 "category": "Fruits",
                 "unit": "bunch",
                 "base_price": 1400,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 300,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901955/harvest_hill_products/zvf1h9919o4msvwijt0c.jpg",
                 "description": "Naturally tree-ripened sweet yellow bananas harvested in generous bunches for healthy snacking.",
@@ -176,6 +188,8 @@ class Command(BaseCommand):
                 "category": "Herbs",
                 "unit": "bundle",
                 "base_price": 850,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 150,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901955/harvest_hill_products/je6zwevjlwc7clyrwywx.jpg",
                 "description": "Aromatic fresh organic rosemary sprigs harvested daily for roasting meats and gourmet culinary seasoning.",
@@ -190,6 +204,8 @@ class Command(BaseCommand):
                 "category": "Animal-Based",
                 "unit": "jar",
                 "base_price": 4500,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 100,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901956/harvest_hill_products/rmzjdruoegyitljaxmsd.jpg",
                 "description": "100% unfiltered raw wildflower honey harvested sustainably from natural forest bee hives.",
@@ -204,6 +220,8 @@ class Command(BaseCommand):
                 "category": "Vegetables",
                 "unit": "kg",
                 "base_price": 1200,
+                "is_discounted": True,
+                "discount_price": 850,
                 "quantity_needed": 400,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901957/harvest_hill_products/xzxthjsk5hdrljoaqcpf.jpg",
                 "description": "Meaty, sun-ripened Roma tomatoes ideal for flavorful tomato paste, pasta sauces, and fresh salads.",
@@ -218,6 +236,8 @@ class Command(BaseCommand):
                 "category": "Vegetables",
                 "unit": "kg",
                 "base_price": 2200,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 200,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901958/harvest_hill_products/ryml5n0hbfzmehehvgfm.jpg",
                 "description": "Tender, sweet green peas shelled fresh from high-altitude farm crops in Northern Rwanda.",
@@ -232,6 +252,8 @@ class Command(BaseCommand):
                 "category": "Animal-Based",
                 "unit": "tray",
                 "base_price": 4200,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 150,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901959/harvest_hill_products/l6av0l2i1vzzhgsvbcwu.jpg",
                 "description": "Grade A fresh brown eggs laid by free-range, grain-fed hens in mountain farms of Gicumbi.",
@@ -246,6 +268,8 @@ class Command(BaseCommand):
                 "category": "Grains",
                 "unit": "kg",
                 "base_price": 1600,
+                "is_discounted": False,
+                "discount_price": None,
                 "quantity_needed": 500,
                 "image": "https://res.cloudinary.com/dygqfwbsu/image/upload/v1786901960/harvest_hill_products/ggfecaryivdkw18aqibu.jpg",
                 "description": "Double-polished white short-grain rice cultivated in fertile river valley marshlands.",
@@ -263,6 +287,8 @@ class Command(BaseCommand):
                 category=pitem["category"],
                 unit=pitem["unit"],
                 base_price=pitem["base_price"],
+                is_discounted=pitem["is_discounted"],
+                discount_price=pitem["discount_price"],
                 quantity_needed=pitem["quantity_needed"],
                 image=pitem["image"],
                 description=pitem["description"],
@@ -270,7 +296,7 @@ class Command(BaseCommand):
                 urgency="medium"
             )
 
-            # Seed 2 accepted farmer supply batches per product
+            # Seed 2 accepted farmer supply batches per product (sums to live stock)
             Supply.objects.create(
                 farmer=pitem["farmer"],
                 product=prod,
@@ -280,6 +306,8 @@ class Command(BaseCommand):
                 agreed_price=pitem["price_farmer1"],
                 status='accepted',
                 visibility_scope='public',
+                is_discounted=pitem["is_discounted"],
+                discount_price=pitem["discount_price"],
                 photo=pitem["image"]
             )
 
@@ -292,10 +320,13 @@ class Command(BaseCommand):
                 agreed_price=pitem["price_farmer2"],
                 status='accepted',
                 visibility_scope='public',
+                is_discounted=pitem["is_discounted"],
+                discount_price=pitem["discount_price"],
                 photo=pitem["image"]
             )
 
             prod.refresh_from_db()
-            self.stdout.write(self.style.SUCCESS(f"Seeded Product: {prod.name} (Live Stock: {prod.total_available_quantity} {prod.unit})"))
+            disc_str = f" (Discounted: RWF {prod.discount_price})" if prod.is_discounted else ""
+            self.stdout.write(self.style.SUCCESS(f"Seeded Product: {prod.name} (Live Stock: {prod.total_available_quantity} {prod.unit}){disc_str}"))
 
         self.stdout.write(self.style.SUCCESS("Database seeding completed successfully! All Cloudinary products & live stock are active."))

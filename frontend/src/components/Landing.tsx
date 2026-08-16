@@ -175,10 +175,18 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     const isSupply = !!item.product_detail;
     const name = isSupply ? item.product_detail?.name : item.name;
     const farm = isSupply ? (item.farmer_name || 'Harvest Hill Partner Farm') : 'Harvest Hill Certified Partner Farm';
-    const discPrice = isSupply ? Number(item.discount_price || item.price) : Number(item.base_price || item.price || 0);
-    const origPrice = isSupply ? Number(item.price) : Math.round(discPrice * 1.25);
-    const priceVal = isSupply ? Number(item.price) : Number(item.base_price || item.price || 0);
-    const pct = item.savingsPct || 20;
+    
+    const isDiscountedItem = item.is_discounted || isDeal;
+    const discPrice = isDiscountedItem
+      ? Number(item.discount_price || item.discountPrice || item.base_price || item.price || 0)
+      : Number(item.base_price || item.price || 0);
+    const origPrice = isDiscountedItem
+      ? Number(item.base_price || item.originalPrice || Math.round(discPrice * 1.25))
+      : Number(item.base_price || item.price || 0);
+    const pct = isDiscountedItem && origPrice > discPrice
+      ? Math.round(((origPrice - discPrice) / origPrice) * 100)
+      : 20;
+
     const rawImg = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.photo || item.image);
     const imgUrl = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
       ? 'https://' + rawImg.split('http')[1]
@@ -209,7 +217,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               alt={name} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            {isDeal ? (
+            {isDiscountedItem ? (
               <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
                 Save {pct}%
               </span>
@@ -237,7 +245,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         {/* Pricing */}
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F0ECE1]">
           <div>
-            {isDeal ? (
+            {isDiscountedItem ? (
               <>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-extrabold text-[#D9381E]">
@@ -254,7 +262,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             ) : (
               <div>
                 <span className="text-sm font-extrabold text-[#1C2A1E]">
-                  RWF {priceVal.toLocaleString()}
+                  RWF {discPrice.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-[#717971] font-normal">/{unit}</span>
               </div>

@@ -347,27 +347,17 @@ class ClientOrderViewSet(viewsets.ModelViewSet):
 class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Client Product Browsing API
-    Browse and search available products from farmer supplies
+    Browse and search available master products
     """
-    serializer_class = SupplySerializer
+    serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        # Show only accepted supplies
-        qs = Supply.objects.filter(
-            is_archived=False,
-            status='accepted'
-        ).select_related('product', 'farmer')
-        
-        # Fallback: if no accepted supplies exist, return empty list
-        if not qs.exists():
-            return Supply.objects.none()
-            
-        return qs.order_by('-created_at')
+        return Product.objects.all().order_by('-created_at')
 
     @extend_schema(
         summary="Browse available products",
-        description="Get list of products currently available for ordering from farmer supplies",
+        description="Get list of master products currently available for ordering",
         parameters=[
             OpenApiParameter(
                 name='category',
@@ -387,12 +377,6 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
                 location=OpenApiParameter.QUERY,
                 description='Filter by urgency level',
                 enum=['low', 'medium', 'high', 'steady']
-            ),
-            OpenApiParameter(
-                name='farmer',
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description='Filter by farmer name or farm name'
             )
         ],
         tags=['Client Portal']
@@ -400,28 +384,22 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         
-        # Apply filters
         category = request.query_params.get('category')
         search = request.query_params.get('search')
         urgency = request.query_params.get('urgency')
-        farmer = request.query_params.get('farmer')
+        is_discounted = request.query_params.get('is_discounted')
         
-        if category:
-            queryset = queryset.filter(product__category__iexact=category)
+        if category and category.lower() != 'all':
+            queryset = queryset.filter(category__icontains=category)
         if search:
-            queryset = queryset.filter(product__name__icontains=search)
+            queryset = queryset.filter(name__icontains=search)
         if urgency:
-            queryset = queryset.filter(product__urgency__iexact=urgency)
-        if farmer:
-            # Filter by farmer's farm name or username
-            queryset = queryset.filter(
-                Q(farmer__farm_name__icontains=farmer) | 
-                Q(farmer__user__username__icontains=farmer) |
-                Q(farmer__user__email__icontains=farmer)
-            )
+            queryset = queryset.filter(urgency__iexact=urgency)
+        if is_discounted is not None:
+            val = is_discounted.lower() in ['true', '1']
+            queryset = queryset.filter(is_discounted=val)
         
         serializer = self.get_serializer(queryset, many=True)
-        # Return data in paginated format for frontend compatibility
         return Response({
             'results': serializer.data,
             'count': len(serializer.data)

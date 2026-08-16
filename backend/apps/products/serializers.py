@@ -16,7 +16,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
-            'base_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'base_price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
             'sourcing_history_count', 'sourcing_supplies', 'created_at'
         ]
         extra_kwargs = {
