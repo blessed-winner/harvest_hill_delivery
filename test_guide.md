@@ -1,6 +1,6 @@
 # 🌾 Harvest Hill Delivery — Complete End-to-End Test Guide
 
-> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, client product requests, custom crop proposals, multi-image galleries, and session locks starting from a clean database.**
+> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, available stock limits, B2B harvest submissions, privacy scoping, Harvest Hill negotiation & master stock aggregation (e.g. 30kg + 60kg = 90kg), mandatory transport fee & tax assessment before order approval, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, client product requests, custom crop proposals, multi-image galleries, and session locks starting from a clean database.**
 
 ---
 
@@ -12,18 +12,22 @@
 - [4. Test Suite 1: Admin Initial Login & Clean State](#4-test-suite-1-admin-initial-login--clean-state)
 - [5. Test Suite 2: Unified Registration (Supplier vs Client Role Toggle)](#5-test-suite-2-unified-registration-supplier-vs-client-role-toggle)
 - [6. Test Suite 3: Admin Direct Harvest Submission (Auto-Accepted)](#6-test-suite-3-admin-direct-harvest-submission-auto-accepted)
-- [7. Test Suite 4: Farmer Harvest Submission & Admin Approval Workflow](#7-test-suite-4-farmer-harvest-submission--admin-approval-workflow)
-- [8. Test Suite 5: Guest User Redirections (Add to Cart & Negotiation)](#8-test-suite-5-guest-user-redirections-add-to-cart--negotiation)
-- [9. Test Suite 6: Sourcing Unlisted Products (Client Product Requests)](#9-test-suite-6-sourcing-unlisted-products-client-product-requests)
-- [10. Test Suite 7: Free-Form Harvest Submissions (Custom Crop Proposals)](#10-test-suite-7-free-form-harvest-submissions-custom-crop-proposals)
-- [11. Test Suite 8: Price Counter-Proposals & Negotiation Threads](#11-test-suite-8-price-counter-proposals--negotiation-threads)
-- [12. Test Suite 9: Client Cart, Checkout & User-Scoped Privacy Isolation](#12-test-suite-9-client-cart-checkout--user-scoped-privacy-isolation)
-- [13. Test Suite 10: Multi-Image Uploads & Gallery Selector View](#13-test-suite-10-multi-image-uploads--gallery-selector-view)
-- [14. Test Suite 11: Dynamic Transport Fee & Tax Assessment by Admin](#14-test-suite-11-dynamic-transport-fee--tax-assessment-by-admin)
-- [15. Test Suite 12: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#15-test-suite-12-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
-- [16. Test Suite 13: Portal Security, Session Lock & Logout Redirection](#16-test-suite-13-portal-security-session-lock--logout-redirection)
-- [17. Test Suite 14: Settings, Avatars & Real-Time Profile Sync](#17-test-suite-14-settings-avatars--real-time-profile-sync)
-- [18. Quick Sanity Verification Checklist](#18-quick-sanity-verification-checklist)
+- [7. Test Suite 4: B2B Farmer Harvest Submission & Privacy Scoping](#7-test-suite-4-b2b-farmer-harvest-submission--privacy-scoping)
+- [8. Test Suite 5: Harvest Hill Negotiation & Automated Master Stock Aggregation (30kg + 60kg = 90kg)](#8-test-suite-5-harvest-hill-negotiation--automated-master-stock-aggregation-30kg--60kg--90kg)
+- [9. Test Suite 6: Master Product Sourcing & Negotiation History Audit Log](#9-test-suite-6-master-product-sourcing--negotiation-history-audit-log)
+- [10. Test Suite 7: Available Stock Limits & Cart Quantity Enforcement](#10-test-suite-7-available-stock-limits--cart-quantity-enforcement)
+- [11. Test Suite 8: Mandatory Transport Fee & Tax Assessment Before Order Approval](#11-test-suite-8-mandatory-transport-fee--tax-assessment-before-order-approval)
+- [12. Test Suite 9: Client Itemized Payment Breakdown & Order History](#12-test-suite-9-client-itemized-payment-breakdown--order-history)
+- [13. Test Suite 10: Guest User Redirections (Add to Cart & Negotiation)](#13-test-suite-10-guest-user-redirections-add-to-cart--negotiation)
+- [14. Test Suite 11: Sourcing Unlisted Products (Client Product Requests)](#14-test-suite-11-sourcing-unlisted-products-client-product-requests)
+- [15. Test Suite 12: Free-Form Harvest Submissions (Custom Crop Proposals)](#15-test-suite-12-free-form-harvest-submissions-custom-crop-proposals)
+- [16. Test Suite 13: Price Counter-Proposals & Negotiation Threads](#16-test-suite-13-price-counter-proposals--negotiation-threads)
+- [17. Test Suite 14: Client Cart, Checkout & User-Scoped Privacy Isolation](#17-test-suite-14-client-cart-checkout--user-scoped-privacy-isolation)
+- [18. Test Suite 15: Multi-Image Uploads & Gallery Selector View](#18-test-suite-15-multi-image-uploads--gallery-selector-view)
+- [19. Test Suite 16: Order Fulfillment, Delivery Note PDF & Auto Inventory Subtraction](#19-test-suite-16-order-fulfillment-delivery-note-pdf--auto-inventory-subtraction)
+- [20. Test Suite 17: Portal Security, Floating Sidebar Spacing & Session Lock](#20-test-suite-17-portal-security-floating-sidebar-spacing--session-lock)
+- [21. Test Suite 18: Settings, Avatars & Real-Time Profile Sync](#21-test-suite-18-settings-avatars--real-time-profile-sync)
+- [22. Quick Sanity Verification Checklist](#22-quick-sanity-verification-checklist)
 
 ---
 
@@ -145,35 +149,144 @@ The database has been wiped clean. Only the master administrator account exists:
 
 ---
 
-## 7. Test Suite 4: Farmer Harvest Submission & Admin Approval Workflow
+## 7. Test Suite 4: B2B Farmer Harvest Submission & Privacy Scoping
 
-*(Requirement: Ensure that when farmers add products, they are first approved by Harvest Hill before displaying them to the public.)*
+*(Requirement: Farmers submit harvest proposals with proof photos and privacy scoping. Proof photos are kept private to Harvest Hill Delivery for negotiation purposes and are not publicly displayed.)*
 
-1. Log in as Farmer (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
+1. Log in as **Farmer A** (`jeanpaul.farmer@harvesthill.test` / `SecurePass2026!`).
 2. Navigate to **Submit Harvest** (`/farmer?view=submit`).
-3. Fill Harvest Details:
-   - Select `Organic Roma Tomatoes` (`kg`).
-   - Quantity: `300 kg`.
-   - Asking Price: `950 RWF`.
+3. Fill Harvest Details for **Farmer A**:
+   - Select `Potatoes` (or select custom crop `Potatoes`).
+   - **Quantity**: `40 kg`.
+   - **Asking Price**: `800 RWF / kg`.
+   - **Visibility Scope**: Select **Harvest Hill Delivery Only (`private_admin`)**.
+   - **Proof of Harvest Photo**: Upload proof photo of harvest.
    - Click **Submit Harvest**.
-4. Check Farmer Supply Log (`/farmer?view=supplies`):
-   - Verify status is **`pending`**.
-   - Verify the ID format uses `#SUP-{id}`.
-5. **Public Visibility Check (Pending State)**:
-   - Open guest homepage (`http://localhost:3000/`).
-   - **Validation Check**: Farmer's `pending` harvest is **NOT visible** to clients or the public yet.
-6. **Admin Approval**:
-   - Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
-   - Navigate to **Supplies Management** (`/admin?tab=supplies`).
-   - Locate pending harvest for `Organic Roma Tomatoes` from `Jean-Paul Hakizimana`.
-   - Click **Approve / Accept Supply**.
-7. **Public Visibility Check (Approved State)**:
-   - Refresh client catalog or homepage.
-   - **Validation Check**: Farmer harvest is now **publicly visible to all clients**!
+4. Log in as **Farmer B** (`farmer_b@harvesthill.test`).
+5. Navigate to **Submit Harvest** (`/farmer?view=submit`).
+6. Fill Harvest Details for **Farmer B**:
+   - Select `Potatoes`.
+   - **Quantity**: `60 kg`.
+   - **Asking Price**: `850 RWF / kg`.
+   - **Visibility Scope**: Select **Harvest Hill Delivery Only (`private_admin`)**.
+   - **Proof of Harvest Photo**: Upload proof photo of harvest.
+   - Click **Submit Harvest**.
+7. **Privacy Check (Client / Public Catalog)**:
+   - Open guest homepage (`http://localhost:3000/`) or log in as Client.
+   - **Validation Check**: Raw farmer submissions and proof-of-harvest photos are **NOT visible** to clients or the public. Photos are kept strictly private to Harvest Hill Delivery for negotiation.
 
 ---
 
-## 8. Test Suite 5: Guest User Redirections (Add to Cart & Negotiation)
+## 8. Test Suite 5: Harvest Hill Negotiation & Automated Master Stock Aggregation (30kg + 60kg = 90kg)
+
+*(Requirement: Harvest Hill Delivery negotiates price & accepted quantity with each farmer. Upon confirmation, accepted quantities automatically sum into the Master Product stock: 30 kg + 60 kg = 90 kg.)*
+
+1. Log in as Admin / Harvest Hill Delivery (`admin@harvesthill.test` / `adminpass123`).
+2. Open **Supplies Management** (`/admin?tab=supplies`).
+3. **Negotiate with Farmer A**:
+   - Click on Farmer A's harvest proposal for `Potatoes` (`40 kg` submitted).
+   - In the **Negotiate Terms & Aggregate Inventory** card:
+     - **Agreed Accepted Qty**: Enter `30 kg` (Harvest Hill decides to accept 30 kg out of 40 kg).
+     - **Agreed Farmer Price**: Enter `750 RWF`.
+     - **Target Master Product**: Select `Potatoes` (or approve suggested product).
+     - Click **Confirm Terms & Accept into Master Stock**.
+   - Verify toast confirms: `Negotiated terms agreed & supply accepted into master stock!`
+4. **Negotiate with Farmer B**:
+   - Click on Farmer B's harvest proposal for `Potatoes` (`60 kg` submitted).
+   - In the **Negotiate Terms & Aggregate Inventory** card:
+     - **Agreed Accepted Qty**: Enter `60 kg`.
+     - **Agreed Farmer Price**: Enter `800 RWF`.
+     - **Target Master Product**: Select `Potatoes`.
+     - Click **Confirm Terms & Accept into Master Stock**.
+5. **Automated Stock Aggregation Verification**:
+   - Open **Product Catalog** (`/admin?tab=products`) or Client Catalog (`/client?screen=catalog`).
+   - Locate the Master Product card for `Potatoes`.
+   - **Validation Check**: **Aggregated Stock** automatically displays **`90 kg`** (`30 kg + 60 kg = 90 kg`)!
+   - The master image rendered is the official Harvest Hill product image, and master price is set dynamically by Harvest Hill Delivery alone.
+
+---
+
+## 9. Test Suite 6: Master Product Sourcing & Negotiation History Audit Log
+
+*(Requirement: Admin can view complete history of all farmer negotiations, agreed prices, quantities, dates, and private proof photos for each Master Product.)*
+
+1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+2. Open **Product Catalog** (`/admin?tab=products`).
+3. Locate the Master Product card for `Potatoes` (displaying `90 kg` aggregated stock).
+4. Click **🤝 Sourcing History** on the card.
+5. **Sourcing & Negotiation Audit Drawer Validation**:
+   - **Master Overview**: Displays `Potatoes`, Master Price, and **Aggregated Live Stock: 90 kg**.
+   - **Farmer Negotiation Log**:
+     - **Farmer A Entry**: Displays `Farmer A`, `30 kg agreed` (`40 kg submitted`), Agreed Price `750 RWF`, Status `accepted`, Scope `private admin`, and private proof-of-harvest photo thumbnail.
+     - **Farmer B Entry**: Displays `Farmer B`, `60 kg agreed`, Agreed Price `800 RWF`, Status `accepted`, Scope `private admin`, and private proof-of-harvest photo thumbnail.
+   - Test search filter by farmer name and status filter tabs (`Accepted`, `Pending`, `Rejected`).
+
+---
+
+## 10. Test Suite 7: Available Stock Limits & Cart Quantity Enforcement
+
+*(Requirement: Clients cannot order or add to cart more than the total available supply stock.)*
+
+1. Log in as Client (`alice.client@harvesthill.test` / `ClientPass2026!`).
+2. Open Product Details for `Potatoes` (Available Stock: `90 kg`).
+3. **Quantity Input Cap Test**:
+   - In quantity selector, type `150`.
+   - **Validation Check**: System caps quantity at `90 kg` and displays toast: `Maximum available stock is 90 kg`.
+4. **Add-to-Cart Stock Cap Test**:
+   - Add `90 kg` of `Potatoes` to cart.
+   - Go back to product page or catalog and attempt to click **Add to Cart** again.
+   - **Validation Check**: System blocks addition and alerts: `Cannot add more. Maximum available stock for "Potatoes" is 90 kg.`
+5. **Cart Page Quantity Adjustment Check**:
+   - Open Cart (`/client?screen=cart`).
+   - Attempt to click `+` or type `120` in manual quantity field.
+   - **Validation Check**: Quantity is capped at `90 kg` and alerts user.
+
+---
+
+## 11. Test Suite 8: Mandatory Transport Fee & Tax Assessment Before Order Approval
+
+*(Requirement: Orders cannot be approved by Admin until both transport fee and tax amount have been determined and attached.)*
+
+1. Log in as Client (`alice.client@harvesthill.test`).
+2. Open Cart with `30 kg` of `Potatoes` → Proceed to Checkout.
+3. Enter Delivery Address (`124 KG 7 Ave, Remera, Kigali`) and click **Place Your Order**.
+4. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+5. Open Orders Management (`/admin?tab=orders`).
+6. **Unassessed Order Approval Attempt Check**:
+   - Locate the newly placed pending order (`#ORD-000001`).
+   - Attempt to change status dropdown directly to `Processing` or `Approved`.
+   - **Validation Check**: Status update is **BLOCKED**. A warning toast displays: `Order cannot be approved yet. Transport fee and tax amount must be determined first.`
+   - The Order Assessment Drawer automatically opens!
+7. **Complete Fee Assessment & Approval**:
+   - In Order Assessment Drawer:
+     - Enter **Transport / Logistics Fee**: `3,500 RWF`.
+     - Enter **Tax Amount**: `1,500 RWF`.
+     - Click **Approve Order & Attach Assessment**.
+   - **Validation Check**: Order status successfully updates to `Processing` and `is_assessed` becomes `True`!
+
+---
+
+## 12. Test Suite 9: Client Itemized Payment Breakdown & Order History
+
+*(Requirement: Once fees are applied by Admin, client sees complete itemized breakdown with exact transport fee, tax fee, and total payment amount.)*
+
+1. Log in as Client (`alice.client@harvesthill.test`).
+2. Open Order History (`/client?screen=order-history`).
+3. Click on Order `#ORD-000001` to expand details.
+4. **Itemized Payment Breakdown Check**:
+   - Verify green badge renders: `✓ Fees Assessed & Attached`.
+   - Verify itemized rows:
+     - **Items Subtotal**: `30,000 RWF` (30 kg @ 1,000 RWF)
+     - **Transport / Logistics Fee**: `3,500 RWF`
+     - **Tax Fee**: `1,500 RWF`
+     - **Total Payment Amount**: **`35,000 RWF`**
+5. Expand an unassessed pending order:
+   - Verify yellow badge renders: `Pending Admin Fee Assessment`.
+   - Verify notice explains: `Transport fee & tax will be determined by the Admin based on your delivery address upon order approval.`
+
+---
+
+## 13. Test Suite 10: Guest User Redirections (Add to Cart & Negotiation)
 
 *(Requirement: Add to cart or negotiation button redirects unauthenticated users to login page.)*
 
@@ -476,11 +589,22 @@ GUEST REDIRECTIONS & SESSION SECURITY
 [ ] Active portal sessions lock browser back button navigation to landing page
 [ ] Click Sign Out clears tokens and redirects back to / public homepage
 
-SUPPLY APPROVAL WORKFLOWS & CUSTOM PROPOSALS
+SUPPLY APPROVAL WORKFLOWS, PRIVACY SCOPING & STOCK AGGREGATION
 [ ] Harvest Hill Delivery direct harvest submissions are auto-accepted & immediate
-[ ] Farmer added products require Harvest Hill Delivery approval before public visibility
+[ ] Farmers select Visibility Scope (private_admin, specific_clients, all_clients, public)
+[ ] Farmer proof-of-harvest photos are kept private to Admin negotiation view & hidden from clients
+[ ] Harvest Hill Delivery negotiates price & accepted quantity per farmer proposal (e.g. 30kg out of 40kg)
+[ ] Master Product live stock automatically sums accepted farmer batches (e.g. 30kg + 60kg = 90kg)
+[ ] Admin can open 🤝 Sourcing History on Master Product cards to view full negotiation audit log
 [ ] Farmers can propose custom crops using "Submit Custom Crop" card (Template-free)
 [ ] Admins can view/approve Custom Crop Proposals with warnings in supplies manager
+
+AVAILABLE STOCK LIMITS & MANDATORY ORDER FEE ASSESSMENT
+[ ] Backend blocks order placement if requested items exceed total available supply stock
+[ ] Client quantity selectors, Add to Cart, and Cart quantity controls cap at available stock
+[ ] Admin CANNOT approve an order until BOTH transport fee and tax amount are provided (> 0)
+[ ] Attempting to approve an unassessed order blocks status change and opens assessment drawer
+[ ] Client Order History displays complete itemized payment breakdown (Items Subtotal + Transport Fee + Tax Fee = Total Payment)
 
 DELIVERY NOTES & PDF EXPORT
 [ ] Delivery Note lists Product Name, Quantity, Unit Price, Total Price for each item
@@ -491,5 +615,5 @@ DELIVERY NOTES & PDF EXPORT
 
 ---
 
-*Last Updated: 2026-08-11*
+*Last Updated: 2026-08-16*
 
