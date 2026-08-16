@@ -104,61 +104,59 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   // Active supplies & products from backend database
   const activeSupplies = supplies.filter((s: any) => s.status === 'accepted');
 
-  // Helper to resolve items for a category
+  // Helper to ensure each product appears exactly once (no duplicates)
+  const deduplicateByName = (itemList: any[]) => {
+    const seen = new Set<string>();
+    const result: any[] = [];
+    for (const item of itemList) {
+      const prodName = (item.product_detail?.name || item.name || '').trim().toLowerCase();
+      if (prodName && !seen.has(prodName)) {
+        seen.add(prodName);
+        result.push(item);
+      }
+    }
+    return result;
+  };
+
+  // Helper to resolve unique items for a category
   const getSectionItems = (categoryTarget: string) => {
     const targetLower = categoryTarget.toLowerCase();
     
-    // Default fallback pool when category is broad: master catalog products
-    const masterItems = products.length > 0 ? products : activeSupplies;
+    // Master catalog products pool (unique items)
+    const masterItems = deduplicateByName(products.length > 0 ? products : activeSupplies);
 
     if (targetLower === 'deals') {
       const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
-      if (matchedDeals.length > 0) return matchedDeals;
-      // Return first 6 products as featured seasonal deals
-      return products.slice(0, 6);
+      if (matchedDeals.length > 0) return deduplicateByName(matchedDeals);
+      return masterItems.slice(0, 6);
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
-      return products.length > 0 ? products : activeSupplies;
+      return masterItems;
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
-      const matchedProducts = products.filter((p: any) => {
-        const cat = (p.category || '').toLowerCase();
+      const filtered = masterItems.filter((p: any) => {
+        const cat = (p.product_detail?.category || p.category || '').toLowerCase();
         return cat.includes('vegetable') || cat.includes('herb');
       });
-      const matchedSupplies = activeSupplies.filter((s: any) => {
-        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
-        return cat.includes('vegetable') || cat.includes('herb');
-      });
-      const combined = [...matchedProducts, ...matchedSupplies];
-      return combined.length > 0 ? combined : masterItems;
+      return filtered.length > 0 ? filtered : masterItems;
     }
 
     if (targetLower.includes('dairy') || targetLower.includes('animal')) {
-      const matchedProducts = products.filter((p: any) => {
-        const cat = (p.category || '').toLowerCase();
+      const filtered = masterItems.filter((p: any) => {
+        const cat = (p.product_detail?.category || p.category || '').toLowerCase();
         return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
       });
-      const matchedSupplies = activeSupplies.filter((s: any) => {
-        const cat = (s.product_detail?.category || s.category || '').toLowerCase();
-        return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
-      });
-      const combined = [...matchedProducts, ...matchedSupplies];
-      return combined.length > 0 ? combined : masterItems;
+      return filtered.length > 0 ? filtered : masterItems;
     }
 
-    const matchedProducts = products.filter((p: any) => {
-      const cat = (p.category || '').toLowerCase();
-      return cat.includes(targetLower);
-    });
-    const matchedSupplies = activeSupplies.filter((s: any) => {
-      const cat = (s.product_detail?.category || s.category || '').toLowerCase();
+    const filtered = masterItems.filter((p: any) => {
+      const cat = (p.product_detail?.category || p.category || '').toLowerCase();
       return cat.includes(targetLower);
     });
 
-    const combined = [...matchedProducts, ...matchedSupplies];
-    return combined.length > 0 ? combined : masterItems;
+    return filtered.length > 0 ? filtered : masterItems;
   };
 
   if (loading) {
