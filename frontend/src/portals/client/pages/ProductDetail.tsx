@@ -70,74 +70,68 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           try {
             fetchedSupply = await clientApi.products.get(productId);
           } catch (err) {
-            console.warn(`Supply ID ${productId} not found directly, trying fallback search...`);
+            console.warn(`Product ID ${productId} not found directly, trying catalog search...`);
           }
         }
 
         if (!fetchedSupply) {
-          const productsRes = await clientApi.products.list({ limit: '10' });
+          const productsRes = await clientApi.products.list({ limit: '50' });
           const itemsList = productsRes?.results || productsRes || [];
           if (itemsList.length > 0) {
-            fetchedSupply = itemsList.find((p: any) => p.id === Number(productId) || p.product === Number(productId)) || itemsList[0];
+            fetchedSupply = itemsList.find((p: any) => 
+              String(p.id) === String(productId) || String(p.product) === String(productId)
+            ) || itemsList[0];
           }
         }
 
         if (fetchedSupply) {
+          const rawImg = fetchedSupply.image_url || fetchedSupply.image || fetchedSupply.photo || fetchedSupply.product_detail?.image_url;
+          const mainImageUrl = getFullImageUrl(rawImg);
+
           const imagesList: string[] = [];
-          const seenPaths = new Set<string>();
-
-          const addImage = (url: string | null | undefined) => {
-            if (!url) return;
-            const fullUrl = getFullImageUrl(url);
-            const normalized = normalizeUrlPath(fullUrl);
-
-            if (!seenPaths.has(normalized)) {
-              seenPaths.add(normalized);
-              imagesList.push(fullUrl);
-            }
-          };
-
-          if (fetchedSupply.photo) {
-            addImage(fetchedSupply.photo);
-          }
-
-          if (fetchedSupply.product_detail?.image_url) {
-            addImage(fetchedSupply.product_detail.image_url);
+          if (mainImageUrl) {
+            imagesList.push(mainImageUrl);
           }
 
           if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
-              const url = imgObj.image_url || imgObj.image;
-              if (url) addImage(url);
+              const url = getFullImageUrl(imgObj.image_url || imgObj.image);
+              if (url && !imagesList.includes(url)) imagesList.push(url);
             });
           }
 
-          const mainImageUrl = fetchedSupply.photo 
-            ? getFullImageUrl(fetchedSupply.photo) 
-            : (fetchedSupply.product_detail?.image_url ? getFullImageUrl(fetchedSupply.product_detail.image_url) : '');
+          const priceVal = fetchedSupply.is_discounted && fetchedSupply.discount_price
+            ? Number(fetchedSupply.discount_price)
+            : Number(fetchedSupply.base_price || fetchedSupply.price || 0);
+
+          const origPriceVal = fetchedSupply.is_discounted
+            ? Number(fetchedSupply.base_price || 0)
+            : null;
 
           const mappedProduct = {
             id: fetchedSupply.id,
-            product_id: fetchedSupply.product || fetchedSupply.id,
-            name: fetchedSupply.product_detail?.name || fetchedSupply.name,
-            category: fetchedSupply.product_detail?.category || fetchedSupply.category,
-            urgency: fetchedSupply.product_detail?.urgency || fetchedSupply.urgency,
-            unit: fetchedSupply.unit,
-            price: fetchedSupply.price,
-            status: fetchedSupply.status,
+            product_id: fetchedSupply.id,
+            name: fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce',
+            category: fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce',
+            urgency: fetchedSupply.urgency || fetchedSupply.product_detail?.urgency || 'medium',
+            unit: fetchedSupply.unit || fetchedSupply.product_detail?.unit || 'kg',
+            price: priceVal,
+            original_price: origPriceVal,
+            is_discounted: !!fetchedSupply.is_discounted,
+            status: fetchedSupply.status || 'available',
             image_url: mainImageUrl,
-            images: imagesList.length > 0 ? imagesList : (mainImageUrl ? [mainImageUrl] : []),
-            farmer_name: fetchedSupply.farmer_name,
-            farmer_location: fetchedSupply.farmer_location,
-            quantity: fetchedSupply.quantity,
-            quality_grade: fetchedSupply.quality_grade,
-            notes: fetchedSupply.notes,
+            images: imagesList,
+            farmer_name: fetchedSupply.farmer_name || 'Harvest Hill Partner Farms',
+            farmer_location: fetchedSupply.farmer_location || 'Local Region',
+            quantity: fetchedSupply.total_available_quantity ?? fetchedSupply.quantity ?? 0,
+            quality_grade: fetchedSupply.quality_grade || 'Grade A',
+            notes: fetchedSupply.description || fetchedSupply.notes || 'Fresh wholesale produce sustainably sourced from verified local partner farms.',
             available_date: fetchedSupply.available_date,
-            rating: fetchedSupply.rating,
-            rating_count: fetchedSupply.rating_count
+            rating: fetchedSupply.rating || 5.0,
+            rating_count: fetchedSupply.rating_count || 1
           };
           setProduct(mappedProduct);
-          setProposedPrice(fetchedSupply.price ? String(fetchedSupply.price) : '');
+          setProposedPrice(priceVal ? String(priceVal) : '');
         } else {
           setError('Product details currently unavailable.');
         }
@@ -353,7 +347,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         <div className="space-y-4">
           <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
             <img 
-              src={product.images?.[activeImgIndex] || product.image_url || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&q=80'} 
+              src={product.images?.[activeImgIndex] || product.image_url || ''} 
               alt={product.name} 
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -384,6 +378,11 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           {/* Product header */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
+              {product.is_discounted && (
+                <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm">
+                  SPECIAL OFFER
+                </span>
+              )}
               {product.urgency === 'HIGH' && (
                 <span className="bg-[#bceec8] text-[#00210f] text-[10px] font-extrabold px-3 py-1 rounded-full">
                   SEASONAL
@@ -412,7 +411,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                     <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()}</span>
                   </>
                 ) : (
-                  <span>RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                  product.is_discounted && product.original_price ? (
+                    <>
+                      <span className="line-through text-red-600 text-sm font-semibold opacity-75">RWF {parseFloat(product.original_price).toLocaleString()}</span>
+                      <span className="text-[#D9381E] font-black text-2xl">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                    </>
+                  ) : (
+                    <span>RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                  )
                 )}
                 <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'kg'}</span>
               </div>
