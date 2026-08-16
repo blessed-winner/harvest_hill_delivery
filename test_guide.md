@@ -573,10 +573,10 @@ UNIFIED SIGNUP & PRIVACY
 [ ] Farmer names hidden by default on client portal (Harvest Hill Delivery brand)
 [ ] Admin privacy toggle switches farmer identity visibility for clients
 
-BULK DEALS & TIERED PRICING
-[ ] Farmers & Admin can include optional Bulk Deal (min qty & bulk price per unit)
-[ ] Product Detail displays Bulk Offer banner and auto-applies bulk price when qty threshold met
-[ ] Cart & Checkout calculate subtotals using dynamic bulk deal unit pricing
+SPECIAL FRESH DISCOUNTS & ADMIN DELEGATION
+[ ] Only Harvest Hill Delivery Admin can delegate or apply special Fresh Discount prices (removed from Farmers)
+[ ] Admin Product Catalog renders 🏷️ Delegate Discount button and modal to enable/disable discounts per product
+[ ] Product Detail & Landing Page render Fresh Deals discount badges ("Save %") and strikethrough original prices
 
 SINGLE-PRODUCT CATALOG GROUPING & CATEGORIES
 [ ] Client catalog lists only ONE card per product type (e.g. Eggs/Tomatoes), aggregating total stock

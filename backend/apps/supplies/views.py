@@ -123,6 +123,12 @@ class SupplySerializer(serializers.ModelSerializer):
         if bulk_p is not None and float(bulk_p) <= 0:
             raise serializers.ValidationError({"bulk_price": "Bulk special price must be greater than zero."})
 
+        # Farmers cannot delegate or set discount fields; only Harvest Hill Delivery Admin can
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and getattr(request.user, 'role', '') == 'farmer':
+            attrs.pop('is_discounted', None)
+            attrs.pop('discount_price', None)
+
         return attrs
 
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):

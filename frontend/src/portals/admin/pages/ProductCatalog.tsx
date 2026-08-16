@@ -39,6 +39,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [activeCategory, setActiveCategory] = useState('All Products');
   const categories = ['All Products', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
 
+  // Delegate Discount Modal state
+  const [discountProduct, setDiscountProduct] = useState<any | null>(null);
+  const [discountIsActive, setDiscountIsActive] = useState(false);
+  const [discountPriceInput, setDiscountPriceInput] = useState('');
+  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+
+  const [formIsDiscounted, setFormIsDiscounted] = useState(false);
+  const [formDiscountPrice, setFormDiscountPrice] = useState("");
+
   // Product Requests states
   const [requests, setRequests] = useState<any[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
@@ -181,6 +190,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormIsCurrentlyNeeded(false);
     setFormUrgency("medium");
     setFormQuantityNeeded("");
+    setFormIsDiscounted(false);
+    setFormDiscountPrice("");
     setImageFile(null);
     setImagePreviewUrl("");
     setErrorMessage("");
@@ -197,9 +208,37 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormIsCurrentlyNeeded(product.is_currently_needed || false);
     setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
+    setFormIsDiscounted(!!product.is_discounted);
+    setFormDiscountPrice(product.discount_price ? String(product.discount_price) : "");
     setImageFile(null);
     setImagePreviewUrl(product.image_url || "");
     setErrorMessage("");
+  };
+
+  const handleOpenDiscountModal = (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDiscountProduct(product);
+    setDiscountIsActive(!!product.is_discounted);
+    setDiscountPriceInput(product.discount_price ? String(product.discount_price) : (product.base_price ? String(Math.round(Number(product.base_price) * 0.8)) : ''));
+  };
+
+  const handleSaveDiscount = async () => {
+    if (!discountProduct) return;
+    try {
+      setIsSavingDiscount(true);
+      const payload: any = {
+        is_discounted: discountIsActive,
+        discount_price: discountIsActive && discountPriceInput ? parseFloat(discountPriceInput) : null,
+      };
+      await api.products.update(discountProduct.id, payload);
+      toast(`Special fresh discount updated for ${discountProduct.name}!`, "success");
+      setDiscountProduct(null);
+      loadProducts();
+    } catch (err: any) {
+      toast(err.message || "Failed to update discount.", "error");
+    } finally {
+      setIsSavingDiscount(false);
+    }
   };
 
   const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
@@ -322,6 +361,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formData.append('is_currently_needed', String(formIsCurrentlyNeeded));
     formData.append('urgency', formUrgency);
     formData.append('quantity_needed', String(qtyVal));
+    formData.append('is_discounted', String(formIsDiscounted));
+    if (formIsDiscounted && formDiscountPrice) {
+      formData.append('discount_price', formDiscountPrice);
+    }
     
     if (imageFile) {
       formData.append('image', imageFile);
@@ -604,23 +647,38 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div className="grid grid-cols-3 gap-1.5 pt-1">
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setHistoryProduct(product);
                               }}
-                              className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              title="Sourcing & Negotiation Audit History"
                             >
-                              <Handshake size={12} /> Sourcing History
+                              <Handshake size={11} /> History
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenDiscountModal(product, e)}
+                              className={cn(
+                                "w-full py-1.5 rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer border",
+                                product.is_discounted 
+                                  ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-700 shadow-sm" 
+                                  : "bg-orange-50 hover:bg-orange-100 text-orange-950 border-orange-200"
+                              )}
+                              title="Delegate Fresh Discount Price"
+                            >
+                              🏷️ {product.is_discounted ? 'Discounted' : 'Discount'}
                             </button>
                             <button
                               type="button"
                               onClick={(e) => handleOpenHarvestModal(product, e)}
-                              className="w-full py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                              className="w-full py-1.5 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                              title="Record Admin Harvest Batch"
                             >
-                              <Sprout size={12} /> Add Harvest
+                              <Sprout size={11} /> Harvest
                             </button>
                           </div>
                         </div>
@@ -1259,6 +1317,103 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Delegate Fresh Discount Modal */}
+      {discountProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 relative space-y-5"
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">
+                  🏷️
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-on-surface">Delegate Fresh Discount</h3>
+                  <p className="text-xs text-on-surface-variant font-medium">{discountProduct.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDiscountProduct(null)}
+                className="p-1 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/40">
+                <div>
+                  <p className="text-xs font-bold text-on-surface">Standard Base Price</p>
+                  <p className="text-xs text-on-surface-variant font-mono font-semibold">
+                    RWF {parseFloat(discountProduct.base_price || 0).toLocaleString()} per {discountProduct.unit}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase">Available Live Stock</p>
+                  <p className="text-xs font-black text-emerald-700">{discountProduct.total_available_quantity || 0} {discountProduct.unit}</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-orange-50/80 border border-orange-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-extrabold text-orange-950">Enable Fresh Deals Discount</p>
+                    <p className="text-[10px] text-orange-800">Features product under Seasonal Discounts on client landing page</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={discountIsActive}
+                    onChange={(e) => setDiscountIsActive(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 rounded cursor-pointer accent-orange-600"
+                  />
+                </div>
+
+                {discountIsActive && (
+                  <div className="space-y-1.5 pt-2 border-t border-orange-200">
+                    <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
+                      Discounted Offer Price (RWF per {discountProduct.unit})
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 750"
+                      value={discountPriceInput}
+                      onChange={(e) => setDiscountPriceInput(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-orange-300 text-sm font-bold bg-white text-on-surface outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    {discountPriceInput && Number(discountPriceInput) < Number(discountProduct.base_price) && (
+                      <p className="text-[10px] text-emerald-700 font-extrabold flex items-center gap-1">
+                        ✓ Save {Math.round(((Number(discountProduct.base_price) - Number(discountPriceInput)) / Number(discountProduct.base_price)) * 100)}% off standard base price!
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDiscountProduct(null)}
+                className="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface-variant rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDiscount}
+                disabled={isSavingDiscount}
+                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                {isSavingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Discount Offer'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
