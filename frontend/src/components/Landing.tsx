@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Plus, ChevronRight, ChevronLeft,
-  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle
+  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle, Store
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
 import { DEFAULT_HOMEPAGE_CONFIG, HomepageSectionConfig } from '../portals/admin/pages/HomepageCustomizer';
@@ -439,7 +439,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white border border-[#E8E4DA] rounded-[16px] p-8 sm:p-14 text-center max-w-2xl mx-auto shadow-sm space-y-5 my-4">
             <div className="w-16 h-16 rounded-2xl bg-[#FAF7F0] border border-[#E8E4DA] flex items-center justify-center mx-auto text-[#2D5A3D]">
-              <Sprout size={32} />
+              <Store size={30} />
             </div>
             
             <div className="space-y-2">
