@@ -48,7 +48,7 @@ export function ContextualNegotiationPane({
   const availableQty = supply?.quantity || 0;
   const unit = supply?.unit || 'kg';
   const askingPrice = supply?.proposed_price || supply?.price || supply?.base_price || 0;
-  const harvestNumber = supply?.supply_number || supply?.supplyNumber || (supplyId ? `SUP-${String(supplyId).slice(0, 6)}` : 'HH-HARVEST');
+  const harvestNumber = supply?.supply_number || supply?.supplyNumber || (supplyId ? (isNaN(Number(supplyId)) ? 'SUP-000001' : `SUP-${String(supplyId).padStart(6, '0')}`) : 'SUP-000001');
   const farmerName = supply?.farmer_name || 'Harvest Hill Supplier';
 
   const loadThread = async () => {

@@ -252,48 +252,69 @@ export default function Negotiations() {
                 <p className="font-sans text-xs font-bold text-on-surface-variant">No negotiations yet</p>
                 <p className="font-mono text-[9px] text-on-surface-variant/70 mt-1">Submit a harvest to start one</p>
               </div>
-            ) : filteredThreads.map((neg) => (
-              <div 
-                key={neg.id}
-                onClick={() => {
-                  setActiveNegId(neg.id.toString());
-                  setShowListMobile(false);
-                }}
-                className={cn(
-                  "p-4 rounded-xl border cursor-pointer transition-all duration-300",
-                  neg.id.toString() === activeNegId
-                    ? "bg-surface-container-lowest border-primary custom-shadow" 
-                    : "bg-transparent border-transparent hover:bg-surface-container-high"
-                )}
-              >
-                <div className="flex gap-4 mb-3">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-outline-variant">
-                    <img
-                      src={neg.supply_detail?.product_detail?.image_url || neg.supply_detail?.product_detail?.image || ''}
-                      alt={neg.supply_detail?.product_detail?.name}
-                      className="w-full h-full object-cover"
-                    />
+            ) : filteredThreads.map((neg) => {
+              const displaySupplyId = neg.supply_detail?.supply_number || neg.supply_detail?.supplyNumber || (neg.supply_detail?.id ? (isNaN(Number(neg.supply_detail.id)) ? 'SUP-000001' : `SUP-${String(neg.supply_detail.id).padStart(6, '0')}`) : 'SUP-000001');
+
+              return (
+                <div 
+                  key={neg.id}
+                  onClick={() => {
+                    setActiveNegId(neg.id.toString());
+                    setShowListMobile(false);
+                  }}
+                  className={cn(
+                    "p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 group relative font-sans space-y-2.5",
+                    neg.id.toString() === activeNegId
+                      ? "bg-white border-[#2D5A3D] ring-2 ring-[#2D5A3D]/15 shadow-sm" 
+                      : "bg-white/80 border-[#E8E4DA] hover:border-[#2D5A3D]/40 hover:bg-white"
+                  )}
+                >
+                  {/* Top Row: Sequential Supply ID & Status Pill */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[9.5px] font-black text-[#2D5A3D] bg-[#FAF7F0] px-2 py-0.5 rounded-md border border-[#E8E4DA] tracking-wider uppercase">
+                      {displaySupplyId}
+                    </span>
+                    <span className={cn(
+                      "px-2.5 py-0.5 rounded-full font-mono text-[8.5px] uppercase font-black tracking-wider border shadow-2xs",
+                      neg.status === 'open' || neg.status === 'pending'
+                        ? "bg-amber-100 text-amber-900 border-amber-300"
+                        : "bg-emerald-100 text-emerald-900 border-emerald-300"
+                    )}>
+                      {neg.status || 'Active'}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className={cn("font-sans text-sm font-bold truncate", neg.id.toString() === activeNegId ? "text-primary" : "text-on-surface")}>
-                      {neg.supply_detail?.product_detail?.name}
+
+                  {/* Crop Name & Category */}
+                  <div>
+                    <h3 className={cn(
+                      "font-extrabold text-sm leading-snug group-hover:text-[#2D5A3D] transition-colors break-words",
+                      neg.id.toString() === activeNegId ? "text-[#1C2A1E]" : "text-[#2C3E30]"
+                    )}>
+                      {neg.supply_detail?.product_detail?.name || neg.supply_detail?.custom_product_name || 'Harvest Supply'}
                     </h3>
-                    <p className="font-mono text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
-                      {neg.supply_detail?.supply_number || neg.supply_detail?.supplyNumber || `SUP-${String(neg.supply_detail?.id).slice(0, 6).toUpperCase()}`} • {neg.supply_detail?.quantity} {neg.supply_detail?.unit}
+                    <p className="text-[10.5px] font-bold text-[#717971] mt-0.5">
+                      Category: <span className="text-[#1C2A1E] font-extrabold">{neg.supply_detail?.product_detail?.category || neg.supply_detail?.custom_category || 'Vegetables'}</span>
                     </p>
                   </div>
+
+                  {/* Quantity & Proposed Price Specs */}
+                  <div className="flex justify-between items-center pt-2 border-t border-[#F0ECE1] text-xs">
+                    <div>
+                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Quantity</span>
+                      <span className="font-extrabold text-[#1C2A1E]">
+                        {neg.supply_detail?.quantity} {neg.supply_detail?.unit || 'kg'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Proposed Price</span>
+                      <span className="font-extrabold text-[#2D5A3D]">
+                        {formatRwf(getThreadPrice(neg))}/{neg.supply_detail?.unit || 'kg'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-primary">{formatRwf(getThreadPrice(neg))}/{neg.supply_detail?.unit || 'kg'}</span>
-                  <span className={cn(
-                    "px-2 py-1 rounded-full font-mono text-[8px] uppercase font-bold tracking-wider",
-                    neg.status === 'open' ? "bg-tertiary-fixed text-on-tertiary-fixed-variant" : "bg-surface-container-highest text-on-surface-variant"
-                  )}>
-                    {neg.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </aside>
