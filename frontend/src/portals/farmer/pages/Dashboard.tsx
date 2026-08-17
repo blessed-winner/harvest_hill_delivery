@@ -475,49 +475,58 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
             {demands.slice(0, 4).map(demand => (
               <motion.div
                 key={demand.id}
-                whileHover={{ y: -4 }}
+                whileHover={{ y: -2 }}
                 onClick={() => onViewChange?.('submit')}
-                className="min-w-[230px] bg-surface-container-lowest custom-shadow rounded-xl overflow-hidden border border-outline-variant group cursor-pointer shrink-0"
+                className="min-w-[240px] max-w-[280px] bg-white custom-shadow rounded-2xl border border-[#E8E4DA] p-4 group cursor-pointer shrink-0 flex flex-col justify-between hover:shadow-md hover:border-[#2D5A3D] transition-all duration-300"
               >
-                <div className="h-32 overflow-hidden relative">
-                  <img
-                    src={demand.image_url || demand.image || referenceProductImages[demand.name] || ''}
-                    alt={demand.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 right-2.5">
-                    <span className={cn(
-                      'px-2 py-1 rounded-lg font-mono text-[9px] uppercase tracking-wider shadow-sm',
-                      demand.urgency === 'high'
-                        ? 'bg-error-container text-on-error-container'
-                        : 'bg-secondary-container text-on-secondary-container'
-                    )}>
-                      {demand.urgency === 'high' ? 'High Demand' : 'Steady Demand'}
+                <div>
+                  <div className="flex justify-between items-start mb-2 gap-1">
+                    <h4 className="font-extrabold text-sm text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors leading-tight">
+                      {demand.name}
+                    </h4>
+                    <span className="bg-[#FAF7F0] text-[#2D5A3D] px-2.5 py-0.5 rounded-md font-mono text-[9px] uppercase tracking-wider font-extrabold border border-[#E8E4DA] shrink-0">
+                      {demand.category || 'Vegetables'}
                     </span>
                   </div>
+
+                  {/* Requirement Specifications Box */}
+                  <div className="space-y-2 bg-[#FAF7F0] p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Quantity Needed:</span>
+                      <span className="font-extrabold text-[#1C2A1E]">
+                        {parseFloat(demand.quantity_needed || 0).toLocaleString()} {demand.unit || 'kg'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Reference Price:</span>
+                      <span className="font-extrabold text-[#2D5A3D]">
+                        RWF {parseFloat(demand.base_price || 0).toLocaleString()}/{demand.unit || 'kg'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1 border-t border-[#E8E4DA]">
+                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Submit By:</span>
+                      <span className="font-bold text-[#D9381E]">
+                        {demand.submission_deadline ? demand.submission_deadline : 'Open'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3">
-                  <h4 className="font-sans text-sm font-bold text-on-surface">{demand.name}</h4>
-                  <p className="font-sans text-xs text-on-surface-variant mt-0.5">
-                    Need: {demand.quantity_needed} {demand.unit}
-                  </p>
-                  <button
-                    onClick={e => { e.stopPropagation(); onViewChange?.('submit'); }}
-                    className="w-full mt-3 py-1.5 bg-surface-container text-primary font-mono text-[10px] font-bold rounded-xl hover:bg-primary hover:text-on-primary transition-all active:scale-95 cursor-pointer"
-                  >
-                    Submit Harvest
-                  </button>
+
+                <div className="mt-2 pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
+                    Submit Harvest <ChevronRight size={13} />
+                  </span>
                 </div>
               </motion.div>
             ))}
             <div
               onClick={() => onViewChange?.('submit')}
-              className="min-w-[110px] shrink-0 flex items-center justify-center border-2 border-dashed border-outline-variant rounded-xl group hover:border-primary transition-colors cursor-pointer"
+              className="min-w-[140px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#E8E4DA] rounded-2xl group hover:border-[#2D5A3D] bg-[#FAF7F0]/60 transition-colors cursor-pointer p-4 text-center"
             >
-              <div className="text-center">
-                <PlusCircle size={26} className="mx-auto text-on-surface-variant group-hover:text-primary transition-colors" />
-                <p className="font-mono text-[10px] mt-2 text-on-surface-variant uppercase tracking-wider group-hover:text-primary">See all</p>
-              </div>
+              <PlusCircle size={24} className="mx-auto text-[#717971] group-hover:text-[#2D5A3D] transition-colors mb-1.5" />
+              <p className="font-mono text-[10px] text-[#717971] font-extrabold uppercase tracking-wider group-hover:text-[#2D5A3D]">See All Requirements</p>
             </div>
           </div>
         )}
