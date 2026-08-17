@@ -210,7 +210,11 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       ? 'https://' + rawImg.split('http')[1]
       : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);
     const unit = isSupply ? (item.unit || item.product_detail?.unit || 'kg') : (item.unit || 'kg');
-    const sizeText = item.total_available_quantity != null ? `${item.total_available_quantity} ${unit} live stock` : (item.description ? (item.description.length > 40 ? item.description.slice(0, 40) + '...' : item.description) : `approx. 1 ${unit}`);
+    const liveQuantity = isSupply 
+      ? (item.quantity != null ? item.quantity : item.total_available_quantity) 
+      : (item.total_available_quantity != null ? item.total_available_quantity : item.quantity);
+    const displayQuantity = liveQuantity != null && !isNaN(Number(liveQuantity)) ? parseFloat(String(liveQuantity)).toLocaleString() : '0';
+    const sizeText = `${displayQuantity} ${unit} live stock`;
     const isSponsored = item.sponsored || (isDeal && (idx === 0 || idx === 3));
     const targetProdId = item.id;
     const cardKey = `${secId || 'sec'}-${item.id || idx}-${idx}`;
