@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -744,160 +744,254 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         footer={
           <div className="w-full space-y-3">
             {errorMessage && (
-              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600 font-semibold">{errorMessage}</p>
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 shadow-2xs">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <p className="text-xs text-red-700 font-semibold">{errorMessage}</p>
               </div>
             )}
             <div className="flex gap-3 w-full">
               <button 
+                type="button"
                 onClick={() => {
                   setSelectedProduct(null);
                   setErrorMessage("");
                 }}
                 disabled={isSaving}
-                className="flex-1 px-6 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 px-5 py-3 border border-outline-variant/70 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer disabled:opacity-50 text-xs"
               >
                 Cancel
               </button>
               <button 
+                type="button"
                 onClick={handleSaveProduct}
                 disabled={isSaving}
-                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-[2] px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-[#376847] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2 text-xs"
               >
-                {isSaving ? 'Saving...' : selectedProduct === 'new' ? 'Create Requirement' : 'Update Requirement'}
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>{selectedProduct === 'new' ? 'Create Requirement' : 'Update Requirement'}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         }
       >
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Name</label>
+        <div className="space-y-5 font-sans">
+          {/* Context Banner */}
+          <div className="p-3.5 bg-[#FAF7F0] border border-[#E8E4DA] rounded-2xl flex items-start gap-3 shadow-2xs">
+            <Sprout className="text-[#2D5A3D] shrink-0 mt-0.5" size={18} />
+            <div className="space-y-0.5">
+              <h4 className="text-xs font-extrabold text-[#1C2A1E]">Requirement Specification</h4>
+              <p className="text-[11px] text-[#717971] leading-relaxed">
+                Define what Harvest Hill is seeking from local farmers. This will be visible in the farmer "Submit Harvest" portal.
+              </p>
+            </div>
+          </div>
+
+          {/* Section 1: Basic Specifications Card */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <Tag size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                1. Basic Specifications
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Requirement Name <span className="text-red-500">*</span>
+              </label>
               <input 
                 type="text" 
-                placeholder="e.g. Tomatoes"
+                placeholder="e.g. Roma Tomatoes, French Beans"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-semibold outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Category</label>
-              <select 
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
-              >
-                <option value="Vegetables">Vegetables</option>
-                <option value="Fruits">Fruits</option>
-                <option value="Herbs">Herbs</option>
-                <option value="Animal-Based">Animal-Based</option>
-                <option value="Grains">Grains</option>
-              </select>
-            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Category
+                </label>
+                <select 
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                >
+                  <option value="Vegetables">Vegetables</option>
+                  <option value="Fruits">Fruits</option>
+                  <option value="Herbs">Herbs</option>
+                  <option value="Animal-Based">Animal-Based</option>
+                  <option value="Grains">Grains</option>
+                </select>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit of Measurement</label>
-              <select 
-                value={formUnit}
-                onChange={(e) => setFormUnit(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
-              >
-                <option value="kg">kg</option>
-                <option value="litre">litre</option>
-                <option value="crate">crate</option>
-                <option value="bag">bag</option>
-                <option value="ton">ton</option>
-                <option value="piece">piece</option>
-                <option value="bundle">bundle</option>
-                <option value="box">box</option>
-              </select>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Unit of Measurement
+                </label>
+                <select 
+                  value={formUnit}
+                  onChange={(e) => setFormUnit(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                >
+                  <option value="kg">kg</option>
+                  <option value="litre">litre</option>
+                  <option value="crate">crate</option>
+                  <option value="bag">bag</option>
+                  <option value="ton">ton</option>
+                  <option value="piece">piece</option>
+                  <option value="bundle">bundle</option>
+                  <option value="box">box</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Section 2: Volume & Target Pricing Card */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <Package size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                2. Volume & Target Reference Price
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Quantity Needed <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 1000"
+                    value={formQuantityNeeded}
+                    onChange={(e) => setFormQuantityNeeded(e.target.value)}
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold font-mono text-on-surface-variant/70 uppercase">
+                    {formUnit}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Target Price (RWF) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">
+                    RWF
+                  </span>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 800"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold text-primary outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Status & Deadline Card */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <Clock size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                3. Lifecycle & Timeline
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Status
+                </label>
+                <select 
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-extrabold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer uppercase tracking-wider"
+                >
+                  <option value="open">🟢 OPEN (Active)</option>
+                  <option value="draft">🟡 DRAFT (Private)</option>
+                  <option value="closed">🔴 CLOSED (Ended)</option>
+                  <option value="archived">⚪ ARCHIVED</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Submission Deadline
+                </label>
+                <input 
+                  type="date" 
+                  value={formSubmissionDeadline}
+                  onChange={(e) => setFormSubmissionDeadline(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Preferred Harvest / Delivery Window
+              </label>
               <input 
-                type="number" 
-                placeholder="e.g. 1000"
-                value={formQuantityNeeded}
-                onChange={(e) => setFormQuantityNeeded(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Reference Price (RWF)</label>
-              <input 
-                type="number" 
-                placeholder="e.g. 800"
-                value={formPrice}
-                onChange={(e) => setFormPrice(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+                type="text" 
+                placeholder="e.g. Late August 2026 harvest cycle"
+                value={formPreferredPeriod}
+                onChange={(e) => setFormPreferredPeriod(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Status</label>
-              <select 
-                value={formStatus}
-                onChange={(e) => setFormStatus(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white font-bold"
-              >
-                <option value="open">OPEN (Active for farmer submissions)</option>
-                <option value="draft">DRAFT (Admin workspace only)</option>
-                <option value="closed">CLOSED (Submissions ended)</option>
-                <option value="archived">ARCHIVED (Historical record)</option>
-              </select>
+          {/* Section 4: Quality & Description Card */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <ShieldCheck size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                4. Quality Standards & Details
+              </span>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Submission Deadline</label>
-              <input 
-                type="date" 
-                value={formSubmissionDeadline}
-                onChange={(e) => setFormSubmissionDeadline(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Quality Requirements
+              </label>
+              <textarea 
+                rows={3}
+                placeholder="• Grade A produce&#10;• Freshly harvested&#10;• No visible damage"
+                value={formQualityRequirements}
+                onChange={(e) => setFormQualityRequirements(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-mono outline-none bg-[#fafafa] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Preferred Harvest / Delivery Period</label>
-            <input 
-              type="text" 
-              placeholder="e.g. Late August 2026 harvest cycle"
-              value={formPreferredPeriod}
-              onChange={(e) => setFormPreferredPeriod(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quality Requirements</label>
-            <textarea 
-              rows={3}
-              placeholder="• Grade A produce&#10;• Freshly harvested&#10;• No visible damage"
-              value={formQualityRequirements}
-              onChange={(e) => setFormQualityRequirements(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-xs font-mono outline-none"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Description</label>
-            <textarea 
-              rows={2}
-              placeholder="Describe what Harvest Hill is looking for in this supply cycle..."
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-xs font-medium outline-none"
-            />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Requirement Description
+              </label>
+              <textarea 
+                rows={2}
+                placeholder="Describe what Harvest Hill is looking for in this supply cycle..."
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+              />
+            </div>
           </div>
         </div>
       </DetailDrawer>
