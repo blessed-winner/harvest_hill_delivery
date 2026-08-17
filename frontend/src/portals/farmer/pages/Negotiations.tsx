@@ -288,14 +288,9 @@ export default function Negotiations() {
               <span className="font-sans text-xl font-extrabold text-primary">
                 {activeThread?.supply_detail?.base_price ? formatRwf(activeThread.supply_detail.base_price) : '—'}
               </span>
-              {activeThread?.supply_detail?.base_price ? (
-                <span className="flex items-center text-secondary font-bold font-mono text-[10px] uppercase">
-                  <TrendingUp size={14} className="mr-1" />
-                  +1.5% vs last week
-                </span>
-              ) : (
-                <span className="text-on-surface-variant font-mono text-[10px] uppercase">
-                  No active negotiation
+              {activeThread?.supply_detail?.base_price && (
+                <span className="text-on-surface-variant font-mono text-[10px] uppercase font-bold bg-surface-container-high px-2 py-0.5 rounded-full">
+                  Base Catalog Price
                 </span>
               )}
             </div>
@@ -445,9 +440,15 @@ export default function Negotiations() {
                       msg.sender === 'BUYER' ? "border-outline-variant" : "border-white/20"
                     )}>
                       <div>
-                        <p className={cn("font-mono text-[8px] sm:text-[9px] uppercase tracking-widest mb-0.5 opacity-70")}>Price</p>
-                        <p className="font-sans text-base sm:text-lg font-bold">{msg.price}</p>
+                        <p className={cn("font-mono text-[8px] sm:text-[9px] uppercase tracking-widest mb-0.5 opacity-70")}>Proposed Price</p>
+                        <p className="font-sans text-sm sm:text-base font-bold">{msg.price}</p>
                       </div>
+                      {msg.quantity && (
+                        <div>
+                          <p className={cn("font-mono text-[8px] sm:text-[9px] uppercase tracking-widest mb-0.5 opacity-70")}>Accepted / Counter Qty</p>
+                          <p className="font-sans text-sm sm:text-base font-bold">{msg.quantity} {activeThread?.supply_detail?.unit || 'kg'}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   {isMe && activeThread.status !== 'accepted' && (

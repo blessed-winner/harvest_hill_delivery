@@ -44,6 +44,7 @@ class SupplySerializer(serializers.ModelSerializer):
 
     supply_number = serializers.CharField(read_only=True)
     supplyNumber = serializers.CharField(source='supply_number', read_only=True)
+    latest_offer = serializers.SerializerMethodField()
 
     class Meta:
         model = Supply
@@ -54,9 +55,25 @@ class SupplySerializer(serializers.ModelSerializer):
             'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
             'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
             'bulk_min_qty', 'bulk_price', 'rating', 'rating_count',
-            'custom_product_name', 'custom_category', 'custom_unit'
+            'custom_product_name', 'custom_category', 'custom_unit', 'latest_offer'
         ]
         read_only_fields = ['created_at']
+
+    def get_latest_offer(self, obj):
+        thread = obj.negotiation_threads.all().order_by('created_at').last()
+        if not thread:
+            return None
+        last_offer = thread.offers.all().order_by('timestamp').last()
+        if not last_offer:
+            return None
+        return {
+            'id': str(last_offer.id),
+            'sender_role': getattr(last_offer.sender, 'role', 'user'),
+            'price': float(last_offer.price),
+            'quantity': float(last_offer.quantity),
+            'message': last_offer.message,
+            'created_at': last_offer.timestamp
+        }
 
     def get_farmer_name(self, obj):
         request = self.context.get('request')
