@@ -341,8 +341,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-bold">{s.product_detail?.name || s.custom_product_name || 'Crop'}</p>
-                        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">
-                          Category: {s.product_detail?.category || s.custom_category || 'General'}
+                        <p className="text-[10px] font-bold text-on-surface-variant font-mono uppercase tracking-widest">
+                          {s.supply_number || s.supplyNumber || `SUP-${String(s.id).slice(0, 6).toUpperCase()}`} • {s.product_detail?.category || s.custom_category || 'General'}
                         </p>
                       </div>
                     </td>

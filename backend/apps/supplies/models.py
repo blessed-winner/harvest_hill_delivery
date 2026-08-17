@@ -49,7 +49,19 @@ class Supply(models.Model):
     bulk_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.00)
     rating_count = models.IntegerField(default=1)
+    supply_number = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
     is_archived = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.supply_number:
+            existing_count = Supply.objects.count() + 1
+            num_str = f"{existing_count:06d}"
+            self.supply_number = f"SUP-{num_str}"
+            while Supply.objects.filter(supply_number=self.supply_number).exclude(pk=self.pk).exists():
+                existing_count += 1
+                num_str = f"{existing_count:06d}"
+                self.supply_number = f"SUP-{num_str}"
+        super().save(*args, **kwargs)
 
     @property
     def effective_quantity(self):
@@ -60,7 +72,7 @@ class Supply(models.Model):
 
     def __str__(self):
         name = self.product.name if self.product else (self.suggested_product_name or self.custom_product_name)
-        return f"{name} - {self.effective_quantity} ({self.status})"
+        return f"{self.supply_number or self.id} - {name} - {self.effective_quantity} ({self.status})"
 
 
 class SupplyImage(models.Model):

@@ -42,10 +42,13 @@ class SupplySerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
+    supply_number = serializers.CharField(read_only=True)
+    supplyNumber = serializers.CharField(source='supply_number', read_only=True)
+
     class Meta:
         model = Supply
         fields = [
-            'id', 'product', 'product_detail', 'quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
+            'id', 'supply_number', 'supplyNumber', 'product', 'product_detail', 'quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
             'price', 'proposed_price', 'agreed_price', 'base_price', 
             'status', 'visibility_scope', 'is_suggested_product', 'suggested_product_name', 'disclose_farmer_name',
             'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',

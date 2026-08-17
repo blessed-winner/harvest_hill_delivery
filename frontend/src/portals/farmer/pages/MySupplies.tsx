@@ -272,7 +272,9 @@ export default function MySupplies() {
   // Filter supply array
   const filteredSupplies = supplies.filter(item => {
     const name = item.product_detail?.name || '';
+    const sNum = item.supply_number || item.supplyNumber || '';
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          sNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           String(item.id).toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'All Statuses' || item.status.toLowerCase() === statusFilter.toLowerCase();
@@ -396,8 +398,8 @@ export default function MySupplies() {
                         <p className="font-sans font-bold text-primary">
                           {supply.product_detail?.name}
                         </p>
-                        <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest">
-                          #{supply.id}
+                        <p className="font-mono text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">
+                          {supply.supply_number || supply.supplyNumber || `SUP-${String(supply.id).slice(0, 6).toUpperCase()}`}
                         </p>
                       </div>
                     </div>
