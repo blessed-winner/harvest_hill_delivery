@@ -180,6 +180,10 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     def perform_update(self, serializer):
         old_status = self.get_object().status
         
+        # Farmers can only update pending harvest submissions
+        if self.request.user.role == 'farmer' and old_status != 'pending':
+            raise serializers.ValidationError("Farmers can only update pending harvest submissions. Accepted or negotiated harvests cannot be edited.")
+
         # If a farmer updates their harvest, reset the status to pending
         if self.request.user.role == 'farmer':
             serializer.validated_data['status'] = 'pending'

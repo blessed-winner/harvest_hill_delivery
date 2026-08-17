@@ -151,6 +151,11 @@ export default function MySupplies() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleEditClick = (supply: any) => {
+    if (supply.status !== 'pending') {
+      toast("Farmers can only update pending harvest submissions.", "warning");
+      return;
+    }
+
     setEditSupply(supply);
     setEditQuantity(supply.quantity || '');
     setEditPrice(supply.proposed_price || supply.price || '');
@@ -158,8 +163,25 @@ export default function MySupplies() {
     setEditQuality(supply.quality_grade || 'standard');
     setEditNotes(supply.notes || '');
     setEditPhoto(null);
-    setEditPhotoPreview(supply.photo || null);
-    setEditImages(supply.images || []);
+
+    const mainPhotoUrl = supply.photo || supply.product_detail?.image || supply.product_detail?.image_url;
+    setEditPhotoPreview(mainPhotoUrl || null);
+
+    let initialImgs = Array.isArray(supply.images) ? [...supply.images] : [];
+    
+    // If supply has a main photo and it's not already in initialImgs, prepend it!
+    if (mainPhotoUrl) {
+      const exists = initialImgs.some(img => (img.image_url === mainPhotoUrl || img.image === mainPhotoUrl));
+      if (!exists) {
+        initialImgs.unshift({
+          id: 'main',
+          image: mainPhotoUrl,
+          image_url: mainPhotoUrl
+        });
+      }
+    }
+
+    setEditImages(initialImgs);
     setValidationErrors({});
   };
 
@@ -463,8 +485,14 @@ export default function MySupplies() {
                       </button>
                       <button 
                         onClick={() => handleEditClick(supply)}
-                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                        title="Edit supply/product details"
+                        disabled={supply.status !== 'pending'}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors cursor-pointer",
+                          supply.status === 'pending'
+                            ? "text-primary hover:bg-primary/10"
+                            : "text-on-surface-variant/30 cursor-not-allowed opacity-40"
+                        )}
+                        title={supply.status === 'pending' ? "Edit supply/product details" : "Only pending harvest submissions can be edited"}
                       >
                         <Edit3 size={18} />
                       </button>
