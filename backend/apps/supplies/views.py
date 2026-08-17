@@ -240,15 +240,17 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         new_status = instance.status
         
-        # Send notification to farmer when admin updates their harvest
-        if self.request.user.role == 'admin':
-            from apps.notifications.models import Notification
-            prod_name = instance.product.name if instance.product else instance.custom_product_name
-            Notification.objects.create(
-                user=instance.farmer.user,
-                title="Harvest Updated",
-                message=f"Your harvest submission for {prod_name} has been updated by admin."
-            )
+        # Send notification to farmer when admin updates their harvest (only if farmer is not an admin and not the acting user)
+        if self.request.user.role == 'admin' and instance.farmer and instance.farmer.user:
+            target_user = instance.farmer.user
+            if target_user != self.request.user and target_user.role != 'admin':
+                from apps.notifications.models import Notification
+                prod_name = instance.product.name if instance.product else (instance.custom_product_name or "Harvest Produce")
+                Notification.objects.create(
+                    user=target_user,
+                    title="Harvest Updated",
+                    message=f"Your harvest submission for {prod_name} has been updated by admin."
+                )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
         if old_status != 'accepted' and new_status == 'accepted':
