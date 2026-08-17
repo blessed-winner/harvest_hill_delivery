@@ -40,10 +40,16 @@ class SupplyDetailSerializer(serializers.ModelSerializer):
     proposed_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2)
     unit = serializers.CharField(source='product.unit', read_only=True)
     base_price = serializers.DecimalField(source='product.base_price', max_digits=10, decimal_places=2, read_only=True)
+    supply_number = serializers.CharField(read_only=True)
+    supplyNumber = serializers.CharField(source='supply_number', read_only=True)
 
     class Meta:
         model = Supply
-        fields = ['id', 'quantity', 'unit', 'proposed_price', 'status', 'product_detail', 'base_price']
+        fields = [
+            'id', 'supply_number', 'supplyNumber', 'quantity', 'accepted_quantity', 
+            'agreed_price', 'unit', 'proposed_price', 'status', 'product_detail', 
+            'base_price', 'custom_product_name', 'custom_category'
+        ]
 
 
 class NegotiationThreadSerializer(serializers.ModelSerializer):
