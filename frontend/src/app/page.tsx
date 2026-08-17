@@ -64,12 +64,15 @@ export default function HomePage() {
   }, []);
 
   const handleNavigate = (screen: string, category?: string, productId?: number, querySearch?: string) => {
-    if ((screen === 'checkout' || screen === 'cart') && !isLoggedIn) {
+    if ((screen === 'checkout' || screen === 'cart' || screen === 'catalog') && !isLoggedIn) {
       if (productId) {
         localStorage.setItem('guest_intent_product_id', String(productId));
         localStorage.setItem('guest_intent_timestamp', String(Date.now()));
       }
-      router.push('/login');
+      if (category) {
+        localStorage.setItem('guest_intent_category', category);
+      }
+      router.push('/login?redirect=catalog');
       return;
     }
     setActiveScreen(screen);

@@ -218,13 +218,22 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     fetchProducts();
   }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, bulkAvailable, farmerFilter]);
 
-  // Get unique categories from all products for filter
-  const categories = ['all', ...Array.from(new Set(allProducts.map((p: any) => p.product_detail?.category).filter(Boolean)))];
+  // Pre-defined core categories + dynamic categories from products
+  const defaultCategories = ['all', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based'];
+  const rawDynamicCats = allProducts.map((p: any) => p.product_detail?.category || p.category).filter(Boolean);
+  const categories = Array.from(new Set([...defaultCategories, ...rawDynamicCats]));
   
   // Count products per category from allProducts
   const getCategoryCount = (categoryId: string) => {
     if (categoryId === 'all') return allProducts.length;
-    return allProducts.filter((p: any) => p.product_detail?.category === categoryId).length;
+    return allProducts.filter((p: any) => {
+      const cat = (p.product_detail?.category || p.category || '').toLowerCase();
+      const target = categoryId.toLowerCase();
+      if (target === 'dairy' || target === 'animal-based') {
+        return cat.includes('animal') || cat.includes('dairy');
+      }
+      return cat.includes(target);
+    }).length;
   };
 
   return (
@@ -278,33 +287,48 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
           <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-[#1c1c18] uppercase tracking-wider">Categories</h3>
             
-            <div className="space-y-3">
-              {categories.map((cat) => (
-                <label key={cat} className="flex items-center justify-between cursor-pointer group">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="category"
-                      checked={selectedCategory === cat}
-                      onChange={() => setSelectedCategory(cat)}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                      selectedCategory === cat
-                        ? 'bg-[#144227] border-[#144227] text-white'
-                        : 'border-[#c1c9c0] bg-white group-hover:border-[#144227]'
-                    }`}>
-                      {selectedCategory === cat && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+            <div className="space-y-2">
+              {categories.map((cat) => {
+                const isSelected = (selectedCategory || '').toLowerCase() === cat.toLowerCase() || (selectedCategory === 'all' && cat === 'all');
+                return (
+                  <label 
+                    key={cat} 
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'bg-[#144227]/10 border border-[#144227]/30 shadow-xs' 
+                        : 'hover:bg-[#FAF7F0] border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={isSelected}
+                        onChange={() => setSelectedCategory(cat)}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'bg-[#144227] border-[#144227] text-white shadow-xs'
+                          : 'border-[#c1c9c0] bg-white group-hover:border-[#144227]'
+                      }`}>
+                        {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                      </div>
+                      <span className={`text-xs font-semibold ${isSelected ? 'text-[#144227] font-extrabold' : 'text-[#414942]'}`}>
+                        {cat === 'all' ? 'All Products' : cat}
+                      </span>
                     </div>
-                    <span className="text-xs text-[#414942] font-semibold group-hover:text-[#144227]">
-                      {cat === 'all' ? 'All Products' : cat}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors ${
+                      isSelected 
+                        ? 'bg-[#144227] text-white shadow-xs' 
+                        : 'text-[#717971] bg-[#f0eee7]'
+                    }`}>
+                      {getCategoryCount(cat)}
                     </span>
-                  </div>
-                  <span className="text-[10px] text-[#717971] bg-[#f0eee7] px-1.5 py-0.5 rounded-full font-bold">
-                    {getCategoryCount(cat)}
-                  </span>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
           </div>
 

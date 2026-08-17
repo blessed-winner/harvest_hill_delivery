@@ -80,7 +80,18 @@ export default function LoginPage() {
       } else if (data.user.role === 'farmer') {
         router.replace('/farmer');
       } else if (data.user.role === 'client') {
-        if (isValidWindow && intentProdId) {
+        const savedCategory = localStorage.getItem('guest_intent_category');
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = urlParams?.get('redirect');
+
+        if (savedCategory) {
+          localStorage.removeItem('guest_intent_category');
+          localStorage.setItem('client_active_screen', 'catalog');
+          router.push(`/?screen=catalog&category=${encodeURIComponent(savedCategory)}`);
+        } else if (redirectParam === 'catalog') {
+          localStorage.setItem('client_active_screen', 'catalog');
+          router.push('/?screen=catalog');
+        } else if (isValidWindow && intentProdId) {
           // Within 5-min threshold -> Go to Product Detail page for that product
           localStorage.setItem('client_active_screen', 'product-detail');
           router.push(`/client?screen=product-detail&productId=${intentProdId}`);

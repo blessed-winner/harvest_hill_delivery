@@ -390,7 +390,14 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
         is_discounted = request.query_params.get('is_discounted')
         
         if category and category.lower() != 'all':
-            queryset = queryset.filter(category__icontains=category)
+            cat_lower = category.lower()
+            if cat_lower in ['dairy', 'animal', 'animal-based']:
+                from django.db.models import Q
+                queryset = queryset.filter(Q(category__icontains='dairy') | Q(category__icontains='animal'))
+            elif cat_lower in ['deals', 'flash deals']:
+                queryset = queryset.filter(is_discounted=True)
+            else:
+                queryset = queryset.filter(category__icontains=category)
         if search:
             queryset = queryset.filter(name__icontains=search)
         if urgency:
