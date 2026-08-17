@@ -193,12 +193,23 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         offer_id = request.data.get('offer_id')
         
         try:
-            if request.user.role == 'admin':
-                offer = thread.offers.get(id=offer_id)
-            else:
-                offer = thread.offers.get(id=offer_id, sender=request.user)
+            offer = thread.offers.get(id=offer_id)
         except NegotiationOffer.DoesNotExist:
-            return Response({"error": "Offer not found or permission denied"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Offer term not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        offer.delete()
-        return Response(NegotiationThreadSerializer(thread).data)
+        # Check if the requesting user IS the sender of this offer term
+        if offer.sender == request.user:
+            # Own term: Delete for EVERYONE permanently
+            offer.delete()
+        else:
+            # Other party's term: Delete ONLY for the requesting user's pane
+            if request.user.role == 'farmer':
+                offer.deleted_by_farmer = True
+            elif request.user.role == 'admin':
+                offer.deleted_by_admin = True
+            elif request.user.role == 'client':
+                offer.deleted_by_client = True
+            offer.save()
+
+        serializer = self.get_serializer(thread, context={'request': request})
+        return Response(serializer.data)

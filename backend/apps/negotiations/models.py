@@ -24,6 +24,9 @@ class NegotiationOffer(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     message = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    deleted_by_farmer = models.BooleanField(default=False)
+    deleted_by_admin = models.BooleanField(default=False)
+    deleted_by_client = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Offer by {self.sender.email} - ${self.price}"

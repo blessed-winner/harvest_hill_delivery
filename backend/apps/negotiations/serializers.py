@@ -35,7 +35,7 @@ class SupplyDetailSerializer(serializers.ModelSerializer):
 
 class NegotiationThreadSerializer(serializers.ModelSerializer):
     supply_detail = SupplyDetailSerializer(source='supply', read_only=True)
-    offers = NegotiationOfferSerializer(many=True, read_only=True)
+    offers = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
 
@@ -43,11 +43,32 @@ class NegotiationThreadSerializer(serializers.ModelSerializer):
         model = NegotiationThread
         fields = ['id', 'status', 'price', 'supply_detail', 'offers', 'supply']
 
+    def get_offers(self, obj):
+        request = self.context.get('request')
+        qs = obj.offers.all().order_by('timestamp')
+        if request and request.user and request.user.is_authenticated:
+            if request.user.role == 'farmer':
+                qs = qs.filter(deleted_by_farmer=False)
+            elif request.user.role == 'admin':
+                qs = qs.filter(deleted_by_admin=False)
+            elif request.user.role == 'client':
+                qs = qs.filter(deleted_by_client=False)
+        return NegotiationOfferSerializer(qs, many=True, context=self.context).data
+
     def get_status(self, obj):
         return obj.status
 
     def get_price(self, obj):
-        last_offer = obj.offers.all().order_by('timestamp').last()
+        request = self.context.get('request')
+        qs = obj.offers.all().order_by('timestamp')
+        if request and request.user and request.user.is_authenticated:
+            if request.user.role == 'farmer':
+                qs = qs.filter(deleted_by_farmer=False)
+            elif request.user.role == 'admin':
+                qs = qs.filter(deleted_by_admin=False)
+            elif request.user.role == 'client':
+                qs = qs.filter(deleted_by_client=False)
+        last_offer = qs.last()
         if last_offer:
             return last_offer.price
         return obj.supply.price
