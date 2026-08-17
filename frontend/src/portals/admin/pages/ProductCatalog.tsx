@@ -739,8 +739,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       <DetailDrawer
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
-        title={selectedProduct === 'new' ? "Create Product Requirement" : "Edit Product Requirement"}
-        subtitle="Configure Harvest Hill crop requirements, target reference price, and submission deadline"
+        title={selectedProduct === 'new' ? "New Product Requirement" : "Edit Product Requirement"}
+        subtitle="Specify crop demand specs, target reference price, and submission deadline for local farmers."
         footer={
           <div className="w-full space-y-3">
             {errorMessage && (
@@ -784,17 +784,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         }
       >
         <div className="space-y-5 font-sans">
-          {/* Context Banner */}
-          <div className="p-3.5 bg-[#FAF7F0] border border-[#E8E4DA] rounded-2xl flex items-start gap-3 shadow-2xs">
-            <Sprout className="text-[#2D5A3D] shrink-0 mt-0.5" size={18} />
-            <div className="space-y-0.5">
-              <h4 className="text-xs font-extrabold text-[#1C2A1E]">Requirement Specification</h4>
-              <p className="text-[11px] text-[#717971] leading-relaxed">
-                Define what Harvest Hill is seeking from local farmers. This will be visible in the farmer "Submit Harvest" portal.
-              </p>
-            </div>
-          </div>
-
           {/* Section 1: Basic Specifications Card */}
           <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
             <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
