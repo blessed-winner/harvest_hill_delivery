@@ -41,6 +41,21 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [hasProducts, setHasProducts] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function checkInventory() {
+      try {
+        const { clientApi } = await import('../portals/client/lib/api');
+        const res = await clientApi.products.list();
+        const list = res?.results || (Array.isArray(res) ? res : []);
+        setHasProducts(list.length > 0);
+      } catch {
+        setHasProducts(false);
+      }
+    }
+    checkInventory();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -64,17 +79,27 @@ export default function HomePage() {
   }, []);
 
   const handleNavigate = (screen: string, category?: string, productId?: number, querySearch?: string) => {
-    if ((screen === 'checkout' || screen === 'cart' || screen === 'catalog') && !isLoggedIn) {
+    // Checkout & Cart always require login for unauthenticated users
+    if ((screen === 'checkout' || screen === 'cart') && !isLoggedIn) {
       if (productId) {
         localStorage.setItem('guest_intent_product_id', String(productId));
         localStorage.setItem('guest_intent_timestamp', String(Date.now()));
       }
+      router.push('/login');
+      return;
+    }
+
+    // Catalog navigation behavior depends on inventory state:
+    // State 1 (No products in inventory) & unauthenticated -> redirect to login
+    // State 2 / 3 (Products exist in inventory) -> allow catalog browsing with selected category
+    if (screen === 'catalog' && !isLoggedIn && !hasProducts) {
       if (category) {
         localStorage.setItem('guest_intent_category', category);
       }
       router.push('/login?redirect=catalog');
       return;
     }
+
     setActiveScreen(screen);
     if (category) setSelectedCategory(category);
     if (productId !== undefined) setSelectedProductId(productId);

@@ -92,9 +92,23 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     fetchTopFarmer();
   }, []);
 
+  // Fetch all products pool once for complete category counts and sidebar filters
+  useEffect(() => {
+    async function loadAllPool() {
+      try {
+        const resp = await clientApi.products.list();
+        const fullList = resp?.results || (Array.isArray(resp) ? resp : []);
+        setAllProducts(fullList);
+      } catch {}
+    }
+    loadAllPool();
+  }, []);
+
   // Update category and search query when initial props change
   useEffect(() => {
-    setSelectedCategory(initialCategory || 'all');
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    }
     if (initialSearch !== undefined) {
       setSearchQuery(initialSearch);
     }
