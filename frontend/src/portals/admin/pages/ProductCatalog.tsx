@@ -962,9 +962,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               </label>
               <textarea 
                 rows={3}
+                placeholder="Describe specific quality standards, grading criteria, or packaging requirements for this crop..."
                 value={formQualityRequirements}
                 onChange={(e) => setFormQualityRequirements(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-mono outline-none bg-[#fafafa] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
 
