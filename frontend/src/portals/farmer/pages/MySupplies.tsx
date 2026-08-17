@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Tag, Plus } from 'lucide-react';
+import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Tag, Plus, Handshake } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
+import { ContextualNegotiationPane } from '../../common/components/ContextualNegotiationPane';
 
 const romaTomatoesImage =
   'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80';
@@ -25,6 +26,7 @@ export default function MySupplies() {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editSupply, setEditSupply] = useState<any | null>(null);
+  const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
 
   // Discount modal state
   const [discountSupply, setDiscountSupply] = useState<any | null>(null);
@@ -480,6 +482,13 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setActiveNegotiationSupply(supply)}
+                        className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                        title="Negotiate terms with Harvest Hill"
+                      >
+                        <Handshake size={16} /> Negotiate
+                      </button>
                       <button
                         onClick={() => handleDiscountClick(supply)}
                         className="p-2 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
@@ -945,6 +954,21 @@ export default function MySupplies() {
           </>
         )}
       </AnimatePresence>
+
+      <ContextualNegotiationPane
+        isOpen={!!activeNegotiationSupply}
+        onClose={() => setActiveNegotiationSupply(null)}
+        contextType="FARMER"
+        supply={activeNegotiationSupply}
+        currentUserRole="farmer"
+        onNegotiationUpdated={() => {
+          // Re-fetch supplies to sync accepted quantities/prices
+          fetch('/api/supplies/').then(r => r.json()).then(d => {
+            if (Array.isArray(d)) setSupplies(d);
+            else if (d.results) setSupplies(d.results);
+          }).catch(() => {});
+        }}
+      />
     </motion.div>
   );
 }

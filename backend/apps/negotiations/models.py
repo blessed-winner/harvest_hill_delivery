@@ -17,12 +17,24 @@ class NegotiationThread(models.Model):
 
 
 class NegotiationOffer(models.Model):
+    OFFER_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('DECLINED', 'Declined'),
+        ('COUNTERED', 'Countered'),
+        ('WITHDRAWN', 'Withdrawn'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     thread = models.ForeignKey(NegotiationThread, on_delete=models.CASCADE, related_name='offers')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     message = models.TextField(blank=True)
+    terms = models.TextField(blank=True)
+    is_offer = models.BooleanField(default=True)
+    offer_status = models.CharField(max_length=20, choices=OFFER_STATUS_CHOICES, default='PENDING')
+    parent_offer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='child_counter_offers')
     timestamp = models.DateTimeField(auto_now_add=True)
     deleted_by_farmer = models.BooleanField(default=False)
     deleted_by_admin = models.BooleanField(default=False)

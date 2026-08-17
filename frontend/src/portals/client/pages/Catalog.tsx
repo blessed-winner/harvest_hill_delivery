@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart, Loader2, Package } from 'lucide-react';
+import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart, Loader2, Package, Handshake } from 'lucide-react';
 import { clientApi } from '../lib/api';
+import { ContextualNegotiationPane } from '../../common/components/ContextualNegotiationPane';
 
 interface CatalogProps {
   onNavigate: (screen: string, category?: string, productId?: number) => void;
@@ -31,6 +32,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
   const [topFarmer, setTopFarmer] = useState<any>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]); // Store all products for category list
+  const [activeNegotiationProduct, setActiveNegotiationProduct] = useState<any | null>(null);
 
   // Product Request Modal State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -608,25 +610,37 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                           </span>
                         </div>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-                            if (!token) {
-                              const prodId = product.id || product.product_id;
-                              if (prodId) {
-                                localStorage.setItem('guest_intent_product_id', String(prodId));
-                                localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveNegotiationProduct(product);
+                            }}
+                            className="bg-[#e5e2db] hover:bg-[#d5d2cb] text-[#144227] text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer border border-[#c1c9c0]"
+                            title="Negotiate quantity, price or terms with Harvest Hill"
+                          >
+                            <Handshake size={11} /> Negotiate
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                              if (!token) {
+                                const prodId = product.id || product.product_id;
+                                if (prodId) {
+                                  localStorage.setItem('guest_intent_product_id', String(prodId));
+                                  localStorage.setItem('guest_intent_timestamp', String(Date.now()));
+                                }
+                                window.location.href = '/login';
+                                return;
                               }
-                              window.location.href = '/login';
-                              return;
-                            }
-                            addToCart(product);
-                          }}
-                          className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
-                        >
-                          <ShoppingCart size={11} /> Add
-                        </button>
+                              addToCart(product);
+                            }}
+                            className="bg-[#144227] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-[#376847] transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                          >
+                            <ShoppingCart size={11} /> Add
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -860,6 +874,13 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         </div>
       )}
 
+      <ContextualNegotiationPane
+        isOpen={!!activeNegotiationProduct}
+        onClose={() => setActiveNegotiationProduct(null)}
+        contextType="CLIENT"
+        supply={activeNegotiationProduct}
+        currentUserRole="client"
+      />
     </div>
   );
 }

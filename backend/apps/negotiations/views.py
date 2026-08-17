@@ -74,39 +74,56 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         if thread.status == 'accepted':
             return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
         
+        is_offer = request.data.get('is_offer', True)
         price = request.data.get('price')
         quantity = request.data.get('quantity')
         message = request.data.get('message', '')
+        terms = request.data.get('terms', '')
+        parent_offer_id = request.data.get('parent_offer_id')
+
+        parent_offer = None
+        if parent_offer_id:
+            parent_offer = thread.offers.filter(id=parent_offer_id).first()
+            if parent_offer and parent_offer.offer_status == 'PENDING':
+                parent_offer.offer_status = 'COUNTERED'
+                parent_offer.save()
+        else:
+            # Mark previous pending offers in thread as COUNTERED if submitting a new structured offer
+            if is_offer:
+                thread.offers.filter(offer_status='PENDING').update(offer_status='COUNTERED')
         
-        # If price/quantity are omitted, use current/last offer values
+        # If price/quantity are omitted, use current/last offer values or supply defaults
+        last_offer = thread.offers.filter(is_offer=True).order_by('timestamp').last()
         if price is None:
-            last_offer = thread.offers.all().order_by('timestamp').last()
             price = last_offer.price if last_offer else thread.supply.price
         if quantity is None:
-            last_offer = thread.offers.all().order_by('timestamp').last()
             quantity = last_offer.quantity if last_offer else thread.supply.quantity
 
-        # Create counter offer
         offer = NegotiationOffer.objects.create(
             thread=thread,
             sender=request.user,
             price=price,
             quantity=quantity,
-            message=message
+            message=message,
+            terms=terms,
+            is_offer=is_offer,
+            offer_status='PENDING' if is_offer else 'PENDING',
+            parent_offer=parent_offer
         )
 
         # Send live notification to counter-party
         from apps.notifications.utils import send_live_notification
-        recipient = thread.supply.farmer.user if request.user == thread.buyer else thread.buyer
-        if recipient:
-            prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
+        recipient = thread.supply.farmer.user if (thread.supply.farmer and request.user == thread.buyer) else (thread.buyer or (thread.supply.farmer.user if thread.supply.farmer else None))
+        if recipient and recipient != request.user:
+            prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.custom_product_name or "Harvest Batch")
+            title_text = "New Structured Offer" if is_offer else "New Negotiation Message"
             send_live_notification(
                 user=recipient,
-                title="Negotiation Update",
-                message=f"New message/offer sent for {prod_name}."
+                title=title_text,
+                message=f"New {title_text.lower()} received for {prod_name}."
             )
 
-        return Response(NegotiationThreadSerializer(thread).data)
+        return Response(NegotiationThreadSerializer(thread, context={'request': request}).data)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
@@ -114,9 +131,21 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         if thread.status == 'accepted':
             return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
 
-        last_offer = thread.offers.all().order_by('timestamp').last()
-        price = last_offer.price if last_offer else thread.supply.price
-        quantity = last_offer.quantity if last_offer else thread.supply.quantity
+        offer_id = request.data.get('offer_id')
+        target_offer = None
+        if offer_id:
+            target_offer = thread.offers.filter(id=offer_id).first()
+        if not target_offer:
+            target_offer = thread.offers.filter(is_offer=True).order_by('timestamp').last()
+
+        price = target_offer.price if target_offer else thread.supply.price
+        quantity = target_offer.quantity if target_offer else thread.supply.quantity
+
+        if target_offer:
+            target_offer.offer_status = 'ACCEPTED'
+            target_offer.save()
+            # Mark other pending offers in thread as COUNTERED/WITHDRAWN
+            thread.offers.exclude(id=target_offer.id).filter(offer_status='PENDING').update(offer_status='WITHDRAWN')
 
         thread.status = 'accepted'
         thread.save()
@@ -125,6 +154,12 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.supply.status = 'accepted'
         thread.supply.accepted_quantity = quantity
         thread.supply.agreed_price = price
+        if target_offer and target_offer.terms:
+            clean_terms = str(target_offer.terms).strip()
+            if thread.supply.notes and '[Agreed Terms]:' not in thread.supply.notes:
+                thread.supply.notes = f"{thread.supply.notes}\n\n[Agreed Terms]: {clean_terms}"
+            else:
+                thread.supply.notes = f"[Agreed Terms]: {clean_terms}"
         thread.supply.save()
 
         # Automatically generate a pending invoice upon acceptance for this buyer
@@ -138,29 +173,36 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             }
         )
 
-        # Send live notification to the farmer
+        # Send live notification to the farmer if farmer exists
         from apps.notifications.utils import send_live_notification
-        prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
-        send_live_notification(
-            user=thread.supply.farmer.user,
-            title="Agreement Reached",
-            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply {thread.supply.supply_number or thread.supply.id} ({prod_name})."
-        )
-
-        # Send live notification to all admins
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        admins = User.objects.filter(role='admin')
-        for admin in admins:
+        prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.custom_product_name or "Harvest Batch")
+        if thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
             send_live_notification(
-                user=admin,
-                title="Negotiation Finalized",
-                message=f"Negotiation for supply {thread.supply.supply_number or thread.supply.id} ({prod_name}) has been finalized."
+                user=thread.supply.farmer.user,
+                title="Agreement Reached",
+                message=f"Negotiation finalized for supply {thread.supply.supply_number or thread.supply.id} ({prod_name})."
             )
 
-        # Log action to AuditLog
-        from apps.common.utils import log_action
-        log_action(request, actor=request.user, action="negotiation_finalized", target_model="Supply", target_id=thread.supply.id, target_name=prod_name)
+        return Response(NegotiationThreadSerializer(thread, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'])
+    def decline(self, request, pk=None):
+        thread = self.get_object()
+        offer_id = request.data.get('offer_id')
+        target_offer = None
+        if offer_id:
+            target_offer = thread.offers.filter(id=offer_id).first()
+        if not target_offer:
+            target_offer = thread.offers.filter(is_offer=True, offer_status='PENDING').order_by('timestamp').last()
+
+        if target_offer:
+            target_offer.offer_status = 'DECLINED'
+            target_offer.save()
+
+        thread.status = 'DECLINED'
+        thread.save()
+
+        return Response(NegotiationThreadSerializer(thread, context={'request': request}).data)
 
         return Response(NegotiationThreadSerializer(thread).data)
 

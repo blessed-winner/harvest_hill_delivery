@@ -191,29 +191,34 @@ The database has been wiped completely clean. Only the master administrator acco
 
 ---
 
-## 9. Test Suite 6: Mutual B2B Negotiation (`Counter` vs `Accept`) & Stock Aggregation (30kg + 60kg = 90kg)
+## 9. Test Suite 6: Contextual Negotiation System (Farmer & Client Modes)
 
-1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
-2. Open **Supplies Management** (`/admin?tab=supplies`).
-3. **Zero Quantity & Zero Price Guard Check**:
-   - Select Farmer A's proposal `SUP-000001`.
-   - Enter `0` for Accepted Quantity or Agreed Price.
-   - **Validation Check**: Red warning banner displays (*Accepted quantity and agreed farmer price must both be greater than 0*), and both action buttons are **disabled**.
-4. **Send Counter-Terms to Farmer A (`Counter`)**:
-   - Set **Accepted Quantity**: `30 kg` (out of 40 kg).
-   - Set **Agreed Price**: `700 RWF`.
-   - Enter **Optional Terms / Notes**: `"Payment on 14-day cycle, grade A inspection required."`
-   - Click **Counter** (Dark Forest Green button).
-   - **Validation Check**: Proposal updates, and a **live real-time notification** is dispatched to Farmer A.
-5. **Accept & Finalize Stock for Farmer B (`Accept`)**:
-   - Select Farmer B's proposal `SUP-000002` (`60 kg`).
-   - Set **Agreed Price**: `720 RWF`.
-   - Click **Accept** (Dark Forest Green button).
-   - **Validation Check**: Deal closes, `SUP-000002` status transitions to `accepted`, and stock aggregates into master catalog.
-6. **Automated Stock Aggregation Check**:
-   - Open Admin Product Catalog (`/admin?tab=products`) or Client Catalog (`/client?screen=catalog`).
-   - Locate `Musanze Sweet Irish Potatoes`.
-   - **Validation Check**: **Live Stock** automatically displays **`190 kg`** (`100 kg admin + 30 kg Farmer A + 60 kg Farmer B = 190 kg`)!
+1. **Contextual Entry Point (Farmer Procurement Mode)**:
+   - Log in as **Farmer A** (`farmer_a@harvesthill.test`).
+   - Navigate to **My Supplies** (`/farmer?view=supplies`).
+   - Click **[Negotiate]** on proposal `SUP-000001`.
+   - **Validation Check**: Contextual Negotiation Pane slides open from right. Header displays Product Name (`Musanze Sweet Irish Potatoes`), `SUP-000001`, Available Qty (`40 kg`), Asking Price (`700 RWF / kg`), and participant banner (*Harvest Hill Procurement ↔ Farmer*).
+2. **Lightweight Messages vs. Structured Offer Cards**:
+   - Type `"Can we schedule collection on Friday morning?"` $\rightarrow$ click **Send message**.
+   - **Validation Check**: Message renders as a lightweight chat bubble (does not force structured offer format).
+   - Click **`+ Make offer`** $\rightarrow$ expand Structured Offer form.
+   - Enter **Qty**: `30 kg`, **Price**: `700 RWF/kg`, **Terms**: `"Collection Friday morning"`.
+   - **Validation Check**: Live calculated total displays **`RWF 21,000`**.
+   - Click **Send offer** $\rightarrow$ renders as a distinct **Structured Offer Card** with itemized breakdown and action buttons (`Accept`, `Counter offer`, `Decline`).
+3. **Pre-filled Counter Offer Flow**:
+   - Log in as Admin (`admin@harvesthill.test`).
+   - Open **Supplies Management** $\rightarrow$ click **[Negotiate]**.
+   - Click **`Counter offer`** on Farmer A's structured offer card.
+   - **Validation Check**: Counter form automatically pre-fills with `30 kg`, `700 RWF`, and `"Collection Friday morning"`.
+   - Modify price to `720 RWF/kg` $\rightarrow$ click **Send Counter Offer**.
+4. **Acceptance & Agreement Summary Lock**:
+   - On the pending counter-offer card, click **Accept**.
+   - **Validation Check**: Confirmation dialog pops up. Confirm agreement $\rightarrow$ pane displays green **`✓ AGREEMENT REACHED`** summary banner (Qty `30 kg`, Price `RWF 720/kg`, Total `RWF 21,600`, Terms `"Collection Friday morning"`), locks further price edits, and aggregates `30 kg` into master catalog stock!
+5. **Contextual Entry Point (Client Sales Mode)**:
+   - Log in as Client (`alice.client@harvesthill.test`).
+   - Open **Catalog** (`/client?screen=catalog`).
+   - Click **[Negotiate]** on `Musanze Sweet Irish Potatoes`.
+   - **Validation Check**: Header explicitly displays *"Sales Negotiation: Client ↔ Harvest Hill Delivery"*, with full structured offer and message timeline support!
 
 ---
 

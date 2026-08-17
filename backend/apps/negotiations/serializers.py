@@ -5,11 +5,16 @@ from apps.products.serializers import ProductShortSerializer
 
 class NegotiationOfferSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
+    sender_name = serializers.SerializerMethodField()
     created_at = serializers.SerializerMethodField()
+    total = serializers.SerializerMethodField()
 
     class Meta:
         model = NegotiationOffer
-        fields = ['id', 'sender', 'price', 'quantity', 'message', 'created_at']
+        fields = [
+            'id', 'sender', 'sender_name', 'price', 'quantity', 'total', 
+            'message', 'terms', 'is_offer', 'offer_status', 'parent_offer', 'created_at'
+        ]
 
     def get_sender(self, obj):
         if obj.sender.role == 'farmer':
@@ -17,6 +22,14 @@ class NegotiationOfferSerializer(serializers.ModelSerializer):
         elif obj.sender.role == 'client':
             return 'client'
         return 'admin'
+
+    def get_sender_name(self, obj):
+        if hasattr(obj.sender, 'farmer_profile') and obj.sender.farmer_profile and obj.sender.farmer_profile.farm_name:
+            return obj.sender.farmer_profile.farm_name
+        return obj.sender.get_full_name() or obj.sender.username or obj.sender.email
+
+    def get_total(self, obj):
+        return float(obj.price * obj.quantity)
 
     def get_created_at(self, obj):
         return obj.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
