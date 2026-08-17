@@ -384,14 +384,15 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             message=str(admin_notes).strip() if admin_notes else f"Harvest Hill counter-offered: {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}"
         )
 
-        # Send live real-time notification to the Farmer
-        from apps.notifications.utils import send_live_notification
-        prod_name = supply.product.name if supply.product else (supply.suggested_product_name or supply.custom_product_name or "Harvest Batch")
-        send_live_notification(
-            user=supply.farmer.user,
-            title="Harvest Hill Proposed Counter-Terms",
-            message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}. Terms: {admin_notes if admin_notes else 'None'}"
-        )
+        # Send live real-time notification to the Farmer if farmer exists
+        if supply.farmer and getattr(supply.farmer, 'user', None):
+            from apps.notifications.utils import send_live_notification
+            prod_name = supply.product.name if supply.product else (supply.suggested_product_name or supply.custom_product_name or "Harvest Batch")
+            send_live_notification(
+                user=supply.farmer.user,
+                title="Harvest Hill Proposed Counter-Terms",
+                message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}. Terms: {admin_notes if admin_notes else 'None'}"
+            )
 
         serializer = self.get_serializer(supply)
         return Response(serializer.data)
@@ -476,14 +477,15 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         supply.status = 'accepted'
         supply.save()
 
-        # Send notification to farmer
-        from apps.notifications.models import Notification
-        prod_name = supply.product.name
-        Notification.objects.create(
-            user=supply.farmer.user,
-            title="Harvest Agreed & Accepted",
-            message=f"Harvest Hill Delivery has agreed and accepted {supply.effective_quantity:g} {supply.product.unit} of your {prod_name} harvest submission."
-        )
+        # Send notification to farmer if farmer exists
+        if supply.farmer and getattr(supply.farmer, 'user', None):
+            from apps.notifications.models import Notification
+            prod_name = supply.product.name
+            Notification.objects.create(
+                user=supply.farmer.user,
+                title="Harvest Agreed & Accepted",
+                message=f"Harvest Hill Delivery has agreed and accepted {supply.effective_quantity:g} {supply.product.unit} of your {prod_name} harvest submission."
+            )
 
         serializer = self.get_serializer(supply)
         return Response(serializer.data)
