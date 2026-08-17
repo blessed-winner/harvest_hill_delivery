@@ -735,13 +735,13 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               {/* Optional Custom Terms / Admin Notes Text Field */}
               <div className="space-y-1 pt-1">
                 <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                  Optional Custom Negotiation Terms / Seller Notes
+                  Optional Custom Terms / Notes
                 </label>
                 <textarea
                   rows={2}
                   value={adminNotesInput}
                   onChange={(e) => setAdminNotesInput(e.target.value)}
-                  placeholder="e.g. Include payment on 14-day cycle, cold chain transport required, or grade A inspection terms..."
+                  placeholder="Add optional delivery or payment terms..."
                   className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
                 />
               </div>
@@ -773,19 +773,19 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       type="button"
                       disabled={isSubmittingAgreement || isInvalid}
                       onClick={handleCounterSupply}
-                      className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Send counter-proposal terms to farmer"}
                     >
-                      <Send size={15} /> Send Counter-Terms to Farmer
+                      <Send size={15} /> Counter
                     </button>
                     <button
                       type="button"
                       disabled={isSubmittingAgreement || isInvalid}
                       onClick={handleAgreeSupply}
-                      className="flex-1 py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Accept terms and finalize harvest into master stock"}
                     >
-                      <CheckCircle2 size={15} /> Accept & Finalize Stock
+                      <CheckCircle2 size={15} /> Accept
                     </button>
                   </div>
                 );
