@@ -141,7 +141,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     
     // ONLY show actual accepted harvest submissions on the landing page.
     // Product templates must NEVER be displayed on the landing page.
-    const masterItems = deduplicateByName(activeSupplies);
+    const masterItems = activeSupplies;
 
     if (masterItems.length === 0) {
       return [];
@@ -149,7 +149,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
     if (targetLower === 'deals') {
       const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
-      if (matchedDeals.length > 0) return deduplicateByName(matchedDeals);
+      if (matchedDeals.length > 0) return matchedDeals;
       return [];
     }
     

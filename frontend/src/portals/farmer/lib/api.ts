@@ -139,7 +139,7 @@ export const api = {
   clientRequests: () => apiRequest('/api/products/requests/'),
 
   // ── Supplies ───────────────────────────────────────────────────────────────
-  supplies: () => apiRequest('/api/supplies/'),
+  supplies: () => apiRequest('/api/supplies/?my_supplies=true'),
 
   submitSupply: (payload: Record<string, any>) => {
     if ((payload.photo && typeof payload.photo !== 'string') || payload.images) {
