@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Send, CheckCircle2, TrendingUp, Handshake } from 'lucide-react';
+import { Search, Send, CheckCircle2, TrendingUp, Handshake, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { apiRequest } from '../lib/api';
+import { apiRequest, api } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
 
 export default function Negotiations() {
@@ -94,17 +94,39 @@ export default function Negotiations() {
 
   useEffect(() => {
     if (activeThread?.supply_detail) {
-      let origPrice = Number(activeThread.supply_detail.proposed_price || activeThread.supply_detail.price || 0);
-      if (origPrice > 0 && origPrice < 100) {
-        origPrice = Math.round(origPrice * 1473.97);
+      const supply = activeThread.supply_detail;
+      const targetQty = supply.accepted_quantity !== null && supply.accepted_quantity !== undefined 
+        ? supply.accepted_quantity 
+        : supply.quantity;
+      const targetPrice = supply.agreed_price !== null && supply.agreed_price !== undefined
+        ? supply.agreed_price
+        : (supply.proposed_price || supply.price || 0);
+
+      let normPrice = Number(targetPrice);
+      if (normPrice > 0 && normPrice < 100) {
+        normPrice = Math.round(normPrice * 1473.97);
       }
-      setCounterPrice(origPrice ? String(origPrice) : '');
-      setCounterQty(activeThread.supply_detail.quantity ? String(activeThread.supply_detail.quantity) : '');
+      setCounterPrice(normPrice ? String(normPrice) : '');
+      setCounterQty(targetQty ? String(targetQty) : '');
     }
-  }, [activeNegId, threads]);
+  }, [activeNegId, activeThread?.supply_detail?.accepted_quantity, activeThread?.supply_detail?.agreed_price]);
+
   const getThreadPrice = (thread: any) => {
     const lastOffer = thread?.offers?.[thread.offers.length - 1];
     return lastOffer?.price ?? thread?.supply_detail?.proposed_price ?? 0;
+  };
+
+  const handleDeleteOffer = async (offerId: string | number) => {
+    if (!activeThread) return;
+    const confirmed = await showConfirm("Delete Negotiation Term", "Are you sure you want to delete this negotiation term?");
+    if (!confirmed) return;
+    try {
+      await api.negotiations.deleteOffer(activeThread.id, offerId);
+      toast("Negotiation term deleted.", "success");
+      loadNegotiations();
+    } catch (err: any) {
+      toast(err.message || "Failed to delete term.", "error");
+    }
   };
 
   const handleSendOffer = async () => {
@@ -428,11 +450,27 @@ export default function Negotiations() {
                   {msg.initials}
                 </div>
                 <div className={cn(
-                  "relative p-3 sm:p-4 rounded-2xl custom-shadow border",
+                  "relative group p-3 sm:p-4 rounded-2xl custom-shadow border",
                   msg.sender === 'BUYER' 
-                    ? "bg-white border-outline-variant rounded-tl-none" 
+                    ? "bg-white border-outline-variant rounded-tl-none text-on-surface" 
                     : "bg-primary-container border-primary text-white rounded-tr-none"
                 )}>
+                  {/* Hover Trash Delete Option for Negotiation Terms */}
+                  {activeThread.status !== 'accepted' && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOffer(msg.id)}
+                      className={cn(
+                        "opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1.5 rounded-full shadow-md cursor-pointer border",
+                        msg.sender === 'BUYER' 
+                          ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
+                          : "bg-red-900/90 text-red-100 border-red-700 hover:bg-red-950"
+                      )}
+                      title="Delete negotiation term"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                   <p className="font-sans text-xs sm:text-sm leading-relaxed">{msg.text}</p>
                   {msg.price && (
                     <div className={cn(

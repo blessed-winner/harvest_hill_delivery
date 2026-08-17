@@ -278,6 +278,15 @@ export const api = {
     update: (id: string | number, payload: any) => apiRequest(`/api/invoices/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
   },
 
+  // Negotiations
+  negotiations: {
+    deleteOffer: (threadId: string | number, offerId: string | number) =>
+      apiRequest(`/api/negotiations/${threadId}/delete-offer/`, {
+        method: 'POST',
+        body: JSON.stringify({ offer_id: offerId })
+      }),
+  },
+
   // Reports Management
   reports: {
     get: () => apiRequest('/api/accounts/admin/reports/'),

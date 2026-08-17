@@ -183,6 +183,13 @@ export const api = {
     apiRequest(`/api/supplies/${supplyId}/`, { method: 'DELETE' }),
 
   // ── Negotiations ───────────────────────────────────────────────────────────
+  negotiations: {
+    deleteOffer: (threadId: string | number, offerId: string | number) =>
+      apiRequest(`/api/negotiations/threads/${threadId}/delete-offer/`, {
+        method: 'POST',
+        body: JSON.stringify({ offer_id: offerId })
+      }),
+  },
   negotiationThreads: () => apiRequest('/api/negotiations/threads/'),
 
   sendNegotiationOffer: (threadId: number | string, payload: Record<string, unknown>) =>

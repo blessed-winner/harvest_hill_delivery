@@ -186,3 +186,19 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         offer.save()
             
         return Response(NegotiationThreadSerializer(thread).data)
+
+    @action(detail=True, methods=['post'], url_path='delete-offer')
+    def delete_offer(self, request, pk=None):
+        thread = self.get_object()
+        offer_id = request.data.get('offer_id')
+        
+        try:
+            if request.user.role == 'admin':
+                offer = thread.offers.get(id=offer_id)
+            else:
+                offer = thread.offers.get(id=offer_id, sender=request.user)
+        except NegotiationOffer.DoesNotExist:
+            return Response({"error": "Offer not found or permission denied"}, status=status.HTTP_404_NOT_FOUND)
+        
+        offer.delete()
+        return Response(NegotiationThreadSerializer(thread).data)

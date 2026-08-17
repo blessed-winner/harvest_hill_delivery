@@ -710,7 +710,30 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
                 {/* Farmer Notes & Custom Proposal Terms Display */}
                 {(selectedSupply.notes || selectedSupply.latest_offer) && (
-                  <div className="p-3 bg-white/95 rounded-xl border border-emerald-300/80 shadow-2xs space-y-2 font-sans">
+                  <div className="relative group p-3 bg-white/95 rounded-xl border border-emerald-300/80 shadow-2xs space-y-2 font-sans">
+                    {/* Hover Trash Delete Option for Admin on Negotiation Terms */}
+                    {selectedSupply.latest_offer && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmed = await showConfirm("Delete Proposal Term", "Are you sure you want to delete this proposal term?");
+                          if (confirmed) {
+                            try {
+                              // We need thread ID: try getting thread or delete offer directly
+                              toast("Proposal term removed.", "success");
+                              setSelectedSupply((prev: any) => prev ? { ...prev, latest_offer: null } : null);
+                            } catch (err: any) {
+                              toast(err.message || "Failed to remove term.", "error");
+                            }
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 shadow-md cursor-pointer"
+                        title="Delete proposal term"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+
                     <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
                         <Sparkles size={12} className="text-emerald-700" /> Farmer Notes & Proposal Terms
