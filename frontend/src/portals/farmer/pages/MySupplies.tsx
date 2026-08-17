@@ -149,6 +149,7 @@ export default function MySupplies() {
 
   const [editImages, setEditImages] = useState<any[]>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [hasImageChanges, setHasImageChanges] = useState(false);
 
   const handleEditClick = (supply: any) => {
     if (supply.status !== 'pending') {
@@ -163,6 +164,7 @@ export default function MySupplies() {
     setEditQuality(supply.quality_grade || 'standard');
     setEditNotes(supply.notes || '');
     setEditPhoto(null);
+    setHasImageChanges(false);
 
     const mainPhotoUrl = supply.photo || supply.product_detail?.image || supply.product_detail?.image_url;
     setEditPhotoPreview(mainPhotoUrl || null);
@@ -201,6 +203,7 @@ export default function MySupplies() {
         body: formData
       });
       setEditImages(prev => [...prev, res]);
+      setHasImageChanges(true);
       if (!editPhotoPreview) {
         setEditPhotoPreview(res.image_url || res.image);
       }
@@ -222,6 +225,7 @@ export default function MySupplies() {
       });
       const remaining = editImages.filter(img => img.id !== imageId);
       setEditImages(remaining);
+      setHasImageChanges(true);
       const deletedImg = editImages.find(img => img.id === imageId);
       if (deletedImg && (editPhotoPreview === deletedImg.image || editPhotoPreview === deletedImg.image_url)) {
         setEditPhotoPreview(remaining[0]?.image_url || remaining[0]?.image || null);
@@ -830,7 +834,8 @@ export default function MySupplies() {
                     String(editDate) !== String(editSupply.available_date || '') ||
                     String(editQuality) !== String(editSupply.quality_grade || 'standard') ||
                     String(editNotes) !== String(editSupply.notes || '') ||
-                    editPhoto !== null
+                    editPhoto !== null ||
+                    hasImageChanges
                   ) : false;
 
                   return (
