@@ -223,15 +223,20 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         # Synchronize linked Product base_price with updated supply price
         price_to_sync = instance.agreed_price if (instance.agreed_price and float(instance.agreed_price) > 0) else instance.price
-        if instance.product and price_to_sync and float(price_to_sync) > 0:
-            instance.product.base_price = price_to_sync
-            instance.product.save()
-        elif instance.custom_product_name:
-            from apps.products.models import Product
-            matched_prod = Product.objects.filter(name__iexact=instance.custom_product_name).first()
-            if matched_prod and price_to_sync and float(price_to_sync) > 0:
-                matched_prod.base_price = price_to_sync
-                matched_prod.save()
+        if price_to_sync and float(price_to_sync) > 0:
+            if instance.product:
+                instance.product.base_price = price_to_sync
+                instance.product.save()
+                # Also synchronize all active supplies under this product
+                instance.product.supplies.filter(is_archived=False).update(price=price_to_sync)
+            prod_search_name = instance.product.name if instance.product else (instance.custom_product_name or instance.suggested_product_name)
+            if prod_search_name:
+                from apps.products.models import Product
+                matched_prods = Product.objects.filter(name__iexact=prod_search_name)
+                for p in matched_prods:
+                    p.base_price = price_to_sync
+                    p.save()
+                    p.supplies.filter(is_archived=False).update(price=price_to_sync)
 
         # Create additional SupplyImage objects if multiple images are uploaded
         if len(images) > 1:

@@ -30,14 +30,16 @@ class Product(models.Model):
 
     @property
     def price(self):
-        """Returns active selling price per unit from latest accepted supply or base_price."""
+        """Returns active master base_price if > 0, or falls back to latest accepted supply price."""
+        if self.base_price and float(self.base_price) > 0:
+            return float(self.base_price)
         latest_supply = self.supplies.filter(is_archived=False, status='accepted').order_by('-created_at').first()
         if latest_supply:
             if latest_supply.agreed_price and float(latest_supply.agreed_price) > 0:
                 return float(latest_supply.agreed_price)
             if latest_supply.price and float(latest_supply.price) > 0:
                 return float(latest_supply.price)
-        return float(self.base_price)
+        return 0.0
 
     @property
     def sourcing_history_count(self):

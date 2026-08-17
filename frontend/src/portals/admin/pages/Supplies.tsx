@@ -765,21 +765,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
             </div>
 
             {/* B2B Term Agreement Form vs Finalized Stats Display */}
-            {isHarvestHillSubmission ? (
-              <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-2 font-sans shadow-2xs">
-                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                    <CheckCircle2 size={15} className="text-emerald-700" /> Harvest Hill Direct Stock
-                  </span>
-                  <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase">
-                    Self-Managed Batch
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-950 font-medium leading-relaxed">
-                  This harvest was submitted directly by Harvest Hill. Internal farmer procurement negotiations are omitted as Harvest Hill manages its own stock and pricing directly. Use <strong>Edit Supply</strong> above to modify quantity or price.
-                </p>
-              </div>
-            ) : selectedSupply.status === 'accepted' ? (
+            {isHarvestHillSubmission ? null : selectedSupply.status === 'accepted' ? (
               <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-3 font-sans shadow-xs">
                 <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
