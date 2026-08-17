@@ -457,9 +457,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => onNavigate('catalog')}
-                className="bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-2 active:scale-95"
+                className="bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
               >
-                <Grid size={14} />
                 <span>Browse Categories</span>
               </button>
               <button
@@ -468,9 +467,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                     window.location.href = '/signup?role=supplier';
                   }
                 }}
-                className="bg-white text-[#2D5A3D] border border-[#E8E4DA] hover:border-[#2D5A3D] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-2 active:scale-95"
+                className="bg-white text-[#2D5A3D] border border-[#E8E4DA] hover:border-[#2D5A3D] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
               >
-                <Leaf size={14} />
                 <span>Become a Seller</span>
               </button>
             </div>
