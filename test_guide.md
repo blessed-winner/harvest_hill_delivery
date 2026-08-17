@@ -207,19 +207,23 @@ The database baseline contains the master administrator account:
 
 ---
 
-## 10. Test Suite 7: Contextual Negotiation System (Farmer & Admin Modes)
+## 10. Test Suite 7: Contextual Negotiation System (Admin Initiation & Farmer Response)
 
-1. **Contextual Entry Point (Farmer Procurement Mode)**:
-   - Log in as **Farmer A** (`farmer_a@harvesthill.test`) $\rightarrow$ Open **My Supplies** $\rightarrow$ Click **[Negotiate]** on `SUP-000001`.
-   - **Validation Check**: Contextual Negotiation Pane opens displaying `Musanze Sweet Irish Potatoes`, `SUP-000001`, Available Qty (`40 kg`), and Asking Price (`700 RWF / kg`).
-2. **Lightweight Messages vs. Structured Offer Cards**:
-   - Type `"Can we arrange pickup in Musanze on Friday?"` $\rightarrow$ Click **Send message** (renders as bubble).
-   - Click **`+ Make offer`** $\rightarrow$ Enter Qty `40 kg`, Price `720 RWF/kg` $\rightarrow$ Renders structured offer card with `Accept`, `Counter offer`, and `Decline` action buttons.
-3. **Pre-filled Counter Offer & Agreement Lock**:
-   - Log in as Admin (`admin@harvesthill.test`) $\rightarrow$ Open **Supplies Management** $\rightarrow$ Click **Counter offer**.
-   - **Validation Check**: Counter form pre-fills with `40 kg` and `720 RWF`.
-   - Adjust price to `710 RWF` and click **Send Counter Offer**.
-   - Farmer logs in and clicks **Accept** $\rightarrow$ Confirmation modal triggers $\rightarrow$ Pane displays green **`✓ AGREEMENT REACHED`** banner and locks further price edits.
+1. **Admin Initiates Negotiation & Sends Terms**:
+   - Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
+   - Open **Supplies Management** (`/admin?tab=supplies`).
+   - Click **[Negotiate]** on Farmer A's pending submission `SUP-000001` (`40 kg` @ `700 RWF / kg`).
+   - Click **`+ Make offer`** $\rightarrow$ Enter proposed terms: **Qty**: `35 kg`, **Price**: `720 RWF/kg`, **Terms**: `"Pickup at Musanze collection center on Friday"`.
+   - Click **Send Offer**.
+2. **Real-Time Notification & Farmer Drawer Activation**:
+   - **Validation Check**: System dispatches a real-time notification to Farmer A (`"Negotiation Started for SUP-000001: Harvest Hill admin sent negotiation terms"`).
+   - Log in as **Farmer A** (`farmer_a@harvesthill.test` / `FarmerPass2026!`).
+   - Open **My Supplies** (`/farmer?view=supplies`) or click the negotiation notification bell.
+   - **Validation Check**: `SUP-000001` displays active negotiation badge (`has_admin_negotiation`). Click **[Negotiate]** to open contextual negotiation pane.
+3. **Farmer Counter Offer or Acceptance Flow**:
+   - Farmer A inspects Admin's proposed terms (`35 kg` @ `720 RWF / kg` + `"Pickup at Musanze collection center on Friday"`).
+   - **Option A (Accept)**: Farmer clicks **Accept Offer** $\rightarrow$ Confirmation dialog triggers $\rightarrow$ Pane displays green **`✓ AGREEMENT REACHED`** summary banner (Qty `35 kg`, Price `RWF 720/kg`, Total `RWF 25,200`), locks further price edits, and aggregates accepted stock!
+   - **Option B (Counter Offer)**: Farmer clicks **Counter Offer** $\rightarrow$ Form pre-fills with Admin's previous terms (`35 kg`, `720 RWF`) $\rightarrow$ Farmer adjusts price to `715 RWF` and sends counter-proposal.
 
 ---
 
