@@ -569,119 +569,126 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {currentProducts.map((product, i) => (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
                       key={product.id}
                       onClick={() => handleOpenEditProduct(product)}
-                      className="group bg-white rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer"
+                      className="group bg-white rounded-2xl p-3 border border-[#E8E4DA] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer relative hover:-translate-y-0.5"
                     >
-                      <div className="relative h-48 overflow-hidden bg-surface-container-low flex items-center justify-center">
-                        {product.image_url ? (
-                          <img 
-                            src={product.image_url} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            alt={product.name} 
-                          />
-                        ) : (
-                          <Package className="w-12 h-12 text-outline-variant" />
-                        )}
-                        
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center shadow-sm">
-                          <div className={cn(
-                            "w-2 h-2 rounded-full mr-2",
-                            product.is_currently_needed ? "bg-green-600 animate-pulse" : "bg-outline"
-                          )} />
-                          <span className="text-[10px] font-bold text-on-surface uppercase tracking-tighter">
-                            {product.is_currently_needed ? 'Needed' : 'Normal'}
-                          </span>
-                        </div>
-    
-                        {product.is_currently_needed && (
-                          <div className="absolute top-3 right-3">
-                            <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm", getUrgencyBadgeClass(product.urgency))}>
-                              {product.urgency || 'Medium'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-    
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-bold text-sm truncate pr-2">{product.name}</h3>
-                          <button 
-                            onClick={(e) => handleDeleteProduct(product, e)}
-                            className="p-1 text-on-surface-variant hover:text-red-600 rounded-full hover:bg-surface-container transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        
-                        <div className="flex justify-between items-center mt-3">
-                          <div>
-                            <p className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Base Price</p>
-                            <p className="font-mono text-sm font-bold text-primary">{formatPrice(product.base_price)} / {product.unit}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] uppercase tracking-wider text-emerald-800 font-extrabold">Aggregated Stock</p>
-                            <p className="font-mono text-sm font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-                              {(product.total_available_quantity || 0).toLocaleString()} {product.unit}
-                            </p>
-                          </div>
-                        </div>
+                      <div>
+                        {/* Minimal Image Container */}
+                        <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#FAF7F0] mb-3 flex items-center justify-center border border-[#F0ECE1]">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                              alt={product.name} 
+                            />
+                          ) : (
+                            <Package className="w-10 h-10 text-[#C4BFAF]" />
+                          )}
 
-                        <div className="mt-4 pt-3 border-t border-outline-variant/30 space-y-2">
-                          <div className="flex justify-between items-center text-xs">
-                            <p className="text-on-surface-variant/80 font-medium">Toggle Requirement</p>
-                            <div 
+                          {/* Category Pill Top Left */}
+                          <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-md text-[9px] font-extrabold text-[#2D5A3D] px-2 py-0.5 rounded-full border border-[#E8E4DA] shadow-xs">
+                            {product.category || 'Produce'}
+                          </span>
+
+                          {/* Top Right Action & Badges */}
+                          <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                            {product.is_discounted && (
+                              <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                                🏷️ RWF {product.discount_price ? Number(product.discount_price).toLocaleString() : product.base_price}
+                              </span>
+                            )}
+                            <button 
+                              onClick={(e) => handleDeleteProduct(product, e)}
+                              className="w-6 h-6 bg-white/90 backdrop-blur-sm text-[#777777] hover:text-red-600 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors border border-[#E8E4DA] shadow-xs cursor-pointer"
+                              title="Delete Crop"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {/* Bottom Needed Status Pill */}
+                          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
+                            <button
+                              type="button"
                               onClick={(e) => handleToggleNeeded(product, e)}
                               className={cn(
-                                "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
-                                product.is_currently_needed ? "bg-primary" : "bg-outline-variant"
+                                "px-2 py-0.5 rounded-full text-[9px] font-bold tracking-tight backdrop-blur-sm flex items-center gap-1 border shadow-xs transition-all cursor-pointer",
+                                product.is_currently_needed
+                                  ? "bg-[#2D5A3D]/95 text-white border-transparent"
+                                  : "bg-white/90 text-[#666666] border-[#E8E4DA]"
                               )}
+                              title="Toggle Market Need"
                             >
-                              <div className={cn(
-                                "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                                product.is_currently_needed ? "translate-x-5" : "translate-x-0"
-                              )} />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-1.5 pt-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setHistoryProduct(product);
-                              }}
-                              className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
-                              title="Sourcing & Negotiation Audit History"
-                            >
-                              <Handshake size={11} /> History
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleOpenDiscountModal(product, e)}
-                              className={cn(
-                                "w-full py-1.5 rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer border",
-                                product.is_discounted 
-                                  ? "bg-orange-600 hover:bg-orange-700 text-white border-orange-700 shadow-sm" 
-                                  : "bg-orange-50 hover:bg-orange-100 text-orange-950 border-orange-200"
-                              )}
-                              title="Delegate Fresh Discount Price"
-                            >
-                              🏷️ {product.is_discounted ? 'Discounted' : 'Discount'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleOpenHarvestModal(product, e)}
-                              className="w-full py-1.5 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-[9px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer"
-                              title="Record Admin Harvest Batch"
-                            >
-                              <Sprout size={11} /> Harvest
+                              <span className={cn("w-1.5 h-1.5 rounded-full", product.is_currently_needed ? "bg-emerald-300 animate-pulse" : "bg-gray-400")} />
+                              {product.is_currently_needed ? 'Needed' : 'Normal'}
                             </button>
                           </div>
                         </div>
+
+                        {/* Title & Metadata */}
+                        <div className="px-1 mb-2">
+                          <h3 className="font-bold text-sm text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors truncate">
+                            {product.name}
+                          </h3>
+                        </div>
+
+                        {/* Price & Stock Row */}
+                        <div className="px-1 flex items-center justify-between py-2 border-t border-b border-[#F4F1E8] my-2">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-[#888888] font-bold block">Base Price</span>
+                            <span className="text-xs font-black text-[#1C2A1E]">
+                              {formatPrice(product.base_price)} <span className="text-[10px] font-bold text-[#777777]">/{product.unit}</span>
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[9px] uppercase tracking-wider text-[#2D5A3D] font-bold block">Live Stock</span>
+                            <span className="text-xs font-black text-[#2D5A3D] bg-[#F0F5F1] px-2 py-0.5 rounded-md border border-[#D3E2D6] inline-block">
+                              {(product.total_available_quantity || 0).toLocaleString()} {product.unit}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Minimal Clean Actions Bar */}
+                      <div className="grid grid-cols-3 gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHistoryProduct(product);
+                          }}
+                          className="py-1.5 bg-[#F5F3ED] hover:bg-[#EBE7DC] text-[#4A473D] border border-[#E3DFC2] rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          title="Sourcing & Negotiation History"
+                        >
+                          <Handshake size={11} /> Audit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenDiscountModal(product, e)}
+                          className={cn(
+                            "py-1.5 rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer border",
+                            product.is_discounted 
+                              ? "bg-[#D9381E] hover:bg-[#B82B14] text-white border-[#B82B14] shadow-xs" 
+                              : "bg-[#FFF5F0] hover:bg-[#FFEAE0] text-[#D9381E] border-[#FFD0C7]"
+                          )}
+                          title="Delegate Special Fresh Discount"
+                        >
+                          🏷️ {product.is_discounted ? 'Discounted' : 'Discount'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenHarvestModal(product, e)}
+                          className="py-1.5 bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                          title="Record Admin Harvest Batch"
+                        >
+                          <Sprout size={11} /> Harvest
+                        </button>
                       </div>
                     </motion.div>
                   ))}
