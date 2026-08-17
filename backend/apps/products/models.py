@@ -18,13 +18,13 @@ class Product(models.Model):
 
     @property
     def total_available_quantity(self):
-        """Calculates total aggregated quantity from all accepted active farmer supplies."""
-        supplies = self.supplies.filter(is_archived=False).exclude(status='rejected')
+        """Calculates total aggregated quantity ONLY from accepted active farmer supplies."""
+        accepted_supplies = self.supplies.filter(is_archived=False, status='accepted')
         total = 0.0
-        for s in supplies:
+        for s in accepted_supplies:
             if s.accepted_quantity is not None:
                 total += float(s.accepted_quantity)
-            elif s.status == 'accepted':
+            else:
                 total += float(s.quantity)
         return total
 

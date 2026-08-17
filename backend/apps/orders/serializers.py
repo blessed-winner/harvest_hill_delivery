@@ -24,9 +24,10 @@ def deduct_inventory_for_order(order):
         if not product or purchased_qty <= 0:
             continue
 
-        # Look up matching active farmer supplies for this product
+        # Look up matching active accepted farmer supplies for this product
         supplies = Supply.objects.filter(
             product=product,
+            status='accepted',
             is_archived=False,
             quantity__gt=0
         ).order_by('created_at')
@@ -34,6 +35,7 @@ def deduct_inventory_for_order(order):
         if not supplies.exists():
             supplies = Supply.objects.filter(
                 product=product,
+                status='accepted',
                 is_archived=False
             ).order_by('created_at')
 
@@ -104,9 +106,9 @@ class OrderSerializer(serializers.ModelSerializer):
             if not product or qty <= 0:
                 continue
 
-            # Calculate total available stock across active non-archived supplies for this product
+            # Calculate total available stock across active accepted supplies for this product
             total_available = float(
-                Supply.objects.filter(product=product, is_archived=False)
+                Supply.objects.filter(product=product, status='accepted', is_archived=False)
                 .aggregate(total=Sum('quantity'))['total'] or 0
             )
 
