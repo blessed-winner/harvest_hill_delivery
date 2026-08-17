@@ -170,20 +170,26 @@ export default function Negotiations() {
   };
 
   // Map thread offers to chat format
-  const chatHistory = activeThread?.offers?.map((offer: any) => ({
-    id: offer.id,
-    sender: offer.sender === 'farmer' ? 'SELLER' : 'BUYER',
-    initials: offer.sender === 'farmer' ? 'HH' : 'WF',
-    text: offer.message || (offer.sender === 'farmer' 
-      ? `Farmer counter-offered price: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`
-      : `Industry proposed price: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`),
-    price: `${formatRwf(offer.price)} / ${activeThread?.supply_detail?.unit || 'kg'}`,
-    raw_price: offer.price,
-    quantity: offer.quantity,
-    message: offer.message,
-    change: offer.sender === 'admin' ? '-1.7% from last' : undefined,
-    time: new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  })) || [];
+  const chatHistory = activeThread?.offers?.map((offer: any) => {
+    const isFarmerSender = offer.sender === 'farmer' || offer.sender_role === 'farmer';
+    const isClientSender = offer.sender === 'client' || offer.sender_role === 'client';
+    const initials = isFarmerSender ? 'FM' : (isClientSender ? 'CL' : 'HH');
+    const senderRoleLabel = isFarmerSender ? 'Farmer' : (isClientSender ? 'Client' : 'Harvest Hill Delivery');
+
+    return {
+      id: offer.id,
+      sender: isFarmerSender ? 'SELLER' : 'BUYER',
+      initials,
+      text: offer.message || (isFarmerSender 
+        ? `Farmer proposed terms: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`
+        : `${senderRoleLabel} proposed terms: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`),
+      price: `${formatRwf(offer.price)} / ${activeThread?.supply_detail?.unit || 'kg'}`,
+      raw_price: offer.price,
+      quantity: offer.quantity,
+      message: offer.message,
+      time: offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
+    };
+  }) || [];
 
   const filteredThreads = threads.filter((neg: any) => {
     const name = String(neg.supply_detail?.product_detail?.name || '').toLowerCase();
