@@ -195,11 +195,11 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     
     const isDiscountedItem = item.is_discounted || isDeal;
     const discPrice = isDiscountedItem
-      ? Number(item.discount_price || item.discountPrice || item.base_price || item.price || 0)
-      : Number(item.base_price || item.price || 0);
+      ? Number(item.discount_price || item.discountPrice || item.price || item.base_price || 0)
+      : Number(item.price || item.base_price || 0);
     const origPrice = isDiscountedItem
-      ? Number(item.base_price || item.originalPrice || Math.round(discPrice * 1.25))
-      : Number(item.base_price || item.price || 0);
+      ? Number(item.price || item.base_price || item.originalPrice || Math.round(discPrice * 1.25))
+      : Number(item.price || item.base_price || 0);
     const pct = isDiscountedItem && origPrice > discPrice
       ? Math.round(((origPrice - discPrice) / origPrice) * 100)
       : 20;
