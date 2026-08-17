@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2 } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -65,6 +65,42 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   useEffect(() => {
     api.products.list().then(res => setMasterProducts(res || [])).catch(() => {});
   }, []);
+
+  const handleCounterSupply = async () => {
+    if (!selectedSupply) return;
+    const parsedQty = parseFloat(agreedQtyInput || '0');
+    const parsedPrice = parseFloat(agreedPriceInput || '0');
+
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      toast("Accepted quantity must be greater than zero.", "warning");
+      return;
+    }
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toast("Agreed farmer price must be greater than zero.", "warning");
+      return;
+    }
+
+    try {
+      setIsSubmittingAgreement(true);
+      const payload: any = {
+        accepted_quantity: parsedQty,
+        agreed_price: parsedPrice,
+        admin_notes: adminNotesInput.trim(),
+      };
+      if (targetProductId) {
+        payload.product_id = targetProductId;
+      }
+
+      await api.supplies.counterSupply(selectedSupply.id, payload);
+      toast(`Counter-proposal (${parsedQty} ${selectedSupply.unit} @ RWF ${parsedPrice}) sent to farmer! Live notification dispatched.`, "success");
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to send counter-proposal.", "error");
+    } finally {
+      setIsSubmittingAgreement(false);
+    }
+  };
 
   const handleAgreeSupply = async () => {
     if (!selectedSupply) return;
@@ -732,15 +768,26 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
 
                 return (
-                  <button
-                    type="button"
-                    disabled={isSubmittingAgreement || isInvalid}
-                    onClick={handleAgreeSupply}
-                    className="w-full py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-1"
-                    title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Confirm terms & accept harvest"}
-                  >
-                    <CheckCircle2 size={16} /> Confirm Terms & Accept into Master Stock
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={isSubmittingAgreement || isInvalid}
+                      onClick={handleCounterSupply}
+                      className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Send counter-proposal terms to farmer"}
+                    >
+                      <Send size={15} /> Send Counter-Terms to Farmer
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingAgreement || isInvalid}
+                      onClick={handleAgreeSupply}
+                      className="flex-1 py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Accept terms and finalize harvest into master stock"}
+                    >
+                      <CheckCircle2 size={15} /> Accept & Finalize Stock
+                    </button>
+                  </div>
                 );
               })()}
             </div>

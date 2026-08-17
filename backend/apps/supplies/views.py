@@ -317,6 +317,85 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             "rating_count": supply.rating_count
         })
 
+    @action(detail=True, methods=['post'], url_path='counter-supply')
+    def counter_supply(self, request, pk=None):
+        if not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return Response({"error": "Only Harvest Hill Delivery (admin) can send counter-terms to farmers."}, status=403)
+        
+        supply = self.get_object()
+        accepted_qty = request.data.get('accepted_quantity')
+        agreed_p = request.data.get('agreed_price')
+        target_product_id = request.data.get('product_id')
+        admin_notes = request.data.get('admin_notes') or request.data.get('notes') or ''
+
+        if accepted_qty is not None:
+            try:
+                acc_val = float(accepted_qty)
+                if acc_val <= 0:
+                    return Response({"error": "Accepted quantity must be greater than zero."}, status=400)
+                if acc_val > float(supply.quantity):
+                    return Response({"error": f"Accepted quantity cannot exceed submitted quantity ({supply.quantity:g})."}, status=400)
+                supply.accepted_quantity = acc_val
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid accepted quantity format."}, status=400)
+        else:
+            return Response({"error": "Accepted quantity is required and must be greater than zero."}, status=400)
+
+        if agreed_p is not None:
+            try:
+                p_val = float(agreed_p)
+                if p_val <= 0:
+                    return Response({"error": "Agreed farmer price must be greater than zero."}, status=400)
+                supply.agreed_price = p_val
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid agreed price format."}, status=400)
+        else:
+            return Response({"error": "Agreed farmer price is required and must be greater than zero."}, status=400)
+
+        if admin_notes and str(admin_notes).strip():
+            clean_terms = str(admin_notes).strip()
+            if supply.notes and '[Admin Terms]:' not in supply.notes:
+                supply.notes = f"{supply.notes}\n\n[Admin Terms]: {clean_terms}"
+            elif supply.notes and '[Admin Terms]:' in supply.notes:
+                base_notes = supply.notes.split('[Admin Terms]:')[0].strip()
+                supply.notes = f"{base_notes}\n\n[Admin Terms]: {clean_terms}" if base_notes else f"[Admin Terms]: {clean_terms}"
+            else:
+                supply.notes = f"[Admin Terms]: {clean_terms}"
+
+        # Handle master product mapping if provided
+        if target_product_id:
+            from apps.products.models import Product
+            try:
+                master_prod = Product.objects.get(id=target_product_id)
+                supply.product = master_prod
+            except Product.DoesNotExist:
+                pass
+
+        supply.save()
+
+        # Create or update NegotiationThread and record NegotiationOffer
+        from apps.negotiations.models import NegotiationThread, NegotiationOffer
+        thread, _ = NegotiationThread.objects.get_or_create(supply=supply, buyer=None)
+        NegotiationOffer.objects.create(
+            thread=thread,
+            sender=request.user,
+            price=supply.agreed_price,
+            quantity=supply.accepted_quantity,
+            message=str(admin_notes).strip() if admin_notes else f"Harvest Hill counter-offered: {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}"
+        )
+
+        # Send live real-time notification to the Farmer
+        from apps.notifications.utils import send_live_notification
+        prod_name = supply.product.name if supply.product else (supply.suggested_product_name or supply.custom_product_name or "Harvest Batch")
+        send_live_notification(
+            user=supply.farmer.user,
+            title="Harvest Hill Proposed Counter-Terms",
+            message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}. Terms: {admin_notes if admin_notes else 'None'}"
+        )
+
+        serializer = self.get_serializer(supply)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'], url_path='agree-supply')
     def agree_supply(self, request, pk=None):
         if not request.user or not request.user.is_authenticated or request.user.role != 'admin':

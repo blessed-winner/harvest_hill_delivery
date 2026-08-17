@@ -251,6 +251,8 @@ export const api = {
     },
     agreeSupply: (id: string | number, payload: any) => 
       apiRequest(`/api/supplies/${id}/agree-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
+    counterSupply: (id: string | number, payload: any) => 
+      apiRequest(`/api/supplies/${id}/counter-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
     delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),
   },
 

@@ -121,6 +121,12 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.status = 'accepted'
         thread.save()
 
+        # Update Supply model status and finalized accepted terms
+        thread.supply.status = 'accepted'
+        thread.supply.accepted_quantity = quantity
+        thread.supply.agreed_price = price
+        thread.supply.save()
+
         # Automatically generate a pending invoice upon acceptance for this buyer
         from apps.invoices.models import Invoice
         Invoice.objects.get_or_create(
