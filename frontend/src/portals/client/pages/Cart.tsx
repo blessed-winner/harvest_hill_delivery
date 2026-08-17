@@ -188,12 +188,16 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
                 className="bg-white border border-[#e5e2db] rounded-2xl p-4 flex gap-4 shadow-sm hover:shadow-md transition-shadow"
               >
                 {/* Image */}
-                <div className="w-20 h-20 bg-[#f6f3ec] rounded-xl overflow-hidden flex-shrink-0 border border-[#e5e2db]">
-                  <img 
-                    src={item.image_url || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=200&q=80'} 
-                    alt={item.name} 
-                    className="w-full h-full object-cover" 
-                  />
+                <div className="w-20 h-20 bg-[#f6f3ec] rounded-xl overflow-hidden flex-shrink-0 border border-[#e5e2db] flex items-center justify-center">
+                  {item.image_url ? (
+                    <img 
+                      src={item.image_url} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <Package className="w-8 h-8 text-[#717971] opacity-40" />
+                  )}
                 </div>
 
                 {/* Details Panel */}

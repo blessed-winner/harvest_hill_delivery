@@ -502,18 +502,34 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
               {products
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((prod: any) => {
-                // Map supply fields to product fields for display
+                const isSupply = !!prod.product_detail;
+                const name = isSupply ? prod.product_detail?.name : (prod.name || 'Harvest Produce');
+                const category = isSupply ? prod.product_detail?.category : (prod.category || 'Vegetables');
+                const urgency = isSupply ? prod.product_detail?.urgency : (prod.urgency || 'medium');
+                const unit = prod.unit || (isSupply ? prod.product_detail?.unit : 'kg') || 'kg';
+                const isDiscounted = prod.is_discounted;
+                const price = isDiscounted 
+                  ? (prod.discount_price || prod.base_price || prod.price || 0)
+                  : (prod.base_price || prod.price || 0);
+                
+                const rawImg = prod.image_url || prod.photo || prod.product_detail?.image_url;
+                const image_url = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
+                  ? 'https://' + rawImg.split('http')[1]
+                  : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);
+
+                const quantity = prod.total_available_quantity != null ? prod.total_available_quantity : (prod.quantity != null ? prod.quantity : 0);
+
                 const product = {
                   id: prod.id,
-                  product_id: prod.product, // Store the actual product ID for orders
-                  name: prod.product_detail?.name || prod.name,
-                  category: prod.product_detail?.category || prod.category,
-                  urgency: prod.product_detail?.urgency || prod.urgency,
-                  unit: prod.unit,
-                  price: prod.price,
-                  image_url: prod.photo || prod.product_detail?.image_url,
-                  farmer_name: prod.farmer_name,
-                  quantity: prod.quantity
+                  product_id: prod.product || prod.id,
+                  name,
+                  category,
+                  urgency,
+                  unit,
+                  price,
+                  image_url,
+                  farmer_name: prod.farmer_name || 'Harvest Hill Certified Farm',
+                  quantity
                 };
                 
                 const urgencyBadge = product.urgency === 'high' ? 'SEASONAL' : product.urgency === 'medium' ? 'LIMITED' : null;
@@ -534,11 +550,17 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                       }`}
                       style={layoutMode === 'grid' ? { aspectRatio: '26 / 24' } : undefined}
                     >
-                      <img
-                        src={product.image_url || 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&q=80'}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                      />
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#FAF7F0] text-[#717971]">
+                          <Package className="w-10 h-10 opacity-40" />
+                        </div>
+                      )}
                       {urgencyBadge && (
                         <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${badgeColor}`}>
                           {urgencyBadge}
