@@ -70,6 +70,13 @@ class Supply(models.Model):
             return float(self.accepted_quantity)
         return float(self.quantity)
 
+    @property
+    def unit(self):
+        """Returns the master product unit or custom unit."""
+        if self.product and hasattr(self.product, 'unit'):
+            return self.product.unit
+        return self.custom_unit or "kg"
+
     def __str__(self):
         name = self.product.name if self.product else (self.suggested_product_name or self.custom_product_name)
         return f"{self.supply_number or self.id} - {name} - {self.effective_quantity} ({self.status})"

@@ -376,12 +376,13 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         # Create or update NegotiationThread and record NegotiationOffer
         from apps.negotiations.models import NegotiationThread, NegotiationOffer
         thread, _ = NegotiationThread.objects.get_or_create(supply=supply, buyer=None)
+        unit_str = supply.unit
         NegotiationOffer.objects.create(
             thread=thread,
             sender=request.user,
             price=supply.agreed_price,
             quantity=supply.accepted_quantity,
-            message=str(admin_notes).strip() if admin_notes else f"Harvest Hill counter-offered: {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}"
+            message=str(admin_notes).strip() if admin_notes else f"Harvest Hill counter-offered: {supply.accepted_quantity:g} {unit_str} @ RWF {supply.agreed_price:g}/{unit_str}"
         )
 
         # Send live real-time notification to the Farmer if farmer exists
@@ -391,7 +392,7 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             send_live_notification(
                 user=supply.farmer.user,
                 title="Harvest Hill Proposed Counter-Terms",
-                message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {supply.unit} @ RWF {supply.agreed_price:g}/{supply.unit}. Terms: {admin_notes if admin_notes else 'None'}"
+                message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {unit_str} @ RWF {supply.agreed_price:g}/{unit_str}. Terms: {admin_notes if admin_notes else 'None'}"
             )
 
         serializer = self.get_serializer(supply)
