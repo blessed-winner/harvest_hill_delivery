@@ -134,6 +134,12 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         
         const response = await clientApi.products.list(params);
         let fetchedProducts = response?.results || response || [];
+
+        // Only show products/supplies that have active accepted harvest stock available
+        fetchedProducts = fetchedProducts.filter((p: any) => {
+          const qty = p.total_available_quantity != null ? Number(p.total_available_quantity) : Number(p.quantity || 0);
+          return qty > 0;
+        });
         
         // Apply client-side filters
         if (organicOnly) {

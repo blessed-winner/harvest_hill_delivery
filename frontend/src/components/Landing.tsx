@@ -139,13 +139,19 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const getSectionItems = (categoryTarget: string) => {
     const targetLower = categoryTarget.toLowerCase();
     
-    // Master catalog products pool (unique items)
-    const masterItems = deduplicateByName(products.length > 0 ? products : activeSupplies);
+    // Only show items that have actual accepted harvest submissions available (quantity > 0)
+    const availableProducts = products.filter((p: any) => (p.total_available_quantity || 0) > 0);
+    const pool = activeSupplies.length > 0 ? activeSupplies : availableProducts;
+    const masterItems = deduplicateByName(pool);
+
+    if (masterItems.length === 0) {
+      return [];
+    }
 
     if (targetLower === 'deals') {
       const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
       if (matchedDeals.length > 0) return deduplicateByName(matchedDeals);
-      return masterItems.slice(0, 6);
+      return [];
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
@@ -153,27 +159,23 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
-      const filtered = masterItems.filter((p: any) => {
+      return masterItems.filter((p: any) => {
         const cat = (p.product_detail?.category || p.category || '').toLowerCase();
         return cat.includes('vegetable') || cat.includes('herb');
       });
-      return filtered.length > 0 ? filtered : masterItems;
     }
 
     if (targetLower.includes('dairy') || targetLower.includes('animal')) {
-      const filtered = masterItems.filter((p: any) => {
+      return masterItems.filter((p: any) => {
         const cat = (p.product_detail?.category || p.category || '').toLowerCase();
         return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
       });
-      return filtered.length > 0 ? filtered : masterItems;
     }
 
-    const filtered = masterItems.filter((p: any) => {
+    return masterItems.filter((p: any) => {
       const cat = (p.product_detail?.category || p.category || '').toLowerCase();
       return cat.includes(targetLower);
     });
-
-    return filtered.length > 0 ? filtered : masterItems;
   };
 
   if (loading) {
