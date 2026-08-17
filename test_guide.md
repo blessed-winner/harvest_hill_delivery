@@ -1,6 +1,6 @@
 # 🌾 Harvest Hill Delivery — Complete End-to-End Test Guide
 
-> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, available stock limits, B2B harvest submissions, privacy scoping, Harvest Hill negotiation & master stock aggregation (e.g. 30kg + 60kg = 90kg), minimal Admin product cards, Admin discount delegation, mandatory transport fee & tax assessment before order approval, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, client product requests, custom crop proposals, multi-image galleries, and session locks starting from a clean database containing ONLY the superuser admin.**
+> **An exhaustive, step-by-step test guide for validating all user journeys, portal workflows, inventory deductions, available stock limits, B2B harvest submissions, sequential supply tracking (`SUP-000001`), aspect-square multi-photo management grids with Cloudinary deletion, mutual B2B negotiation with dual action controls (`Counter` vs `Accept`), zero quantity/price guards, strict pending edit scoping, dirty form change detection (`isDirty`), Harvest Hill negotiation & master stock aggregation (e.g. 30kg + 60kg = 90kg), minimal Admin product cards, Admin discount delegation, mandatory transport fee & tax assessment before order approval, 100% RWF transactions, user-scoped privacy isolation, real-time notifications, guest login redirections, client product requests, custom crop proposals, and session locks starting from a clean database containing ONLY the superuser admin.**
 
 ---
 
@@ -13,20 +13,21 @@
 - [5. Test Suite 2: Unified Role Registration (Client vs Farmer Toggle)](#5-test-suite-2-unified-role-registration-client-vs-farmer-toggle)
 - [6. Test Suite 3: Admin Master Crop Catalog & Direct Harvest Submission](#6-test-suite-3-admin-master-crop-catalog--direct-harvest-submission)
 - [7. Test Suite 4: Minimal Admin Product Catalog UI & Market Demand Toggle](#7-test-suite-4-minimal-admin-product-catalog-ui--market-demand-toggle)
-- [8. Test Suite 5: B2B Farmer Harvest Submission, Proof Photos & Privacy Scoping](#8-test-suite-5-b2b-farmer-harvest-submission-proof-photos--privacy-scoping)
-- [9. Test Suite 6: Harvest Hill B2B Negotiation & Automated Stock Aggregation (30kg + 60kg = 90kg)](#9-test-suite-6-harvest-hill-b2b-negotiation--automated-stock-aggregation-30kg--60kg--90kg)
-- [10. Test Suite 7: Master Product Sourcing & Negotiation History Audit Log](#10-test-suite-7-master-product-sourcing--negotiation-history-audit-log)
-- [11. Test Suite 8: Admin Special Fresh Discount Delegation (🏷️ Delegate Discount)](#11-test-suite-8-admin-special-fresh-discount-delegation-️-delegate-discount)
-- [12. Test Suite 9: Unlisted Product Sourcing (Client Product Requests)](#12-test-suite-9-unlisted-product-sourcing-client-product-requests)
-- [13. Test Suite 10: Free-Form Harvest Submissions (Custom Crop Proposals)](#13-test-suite-10-free-form-harvest-submissions-custom-crop-proposals)
-- [14. Test Suite 11: Single-Product Grouped Catalog & Available Stock Caps](#14-test-suite-11-single-product-grouped-catalog--available-stock-caps)
-- [15. Test Suite 12: Price Counter-Proposals & Negotiation Threads](#15-test-suite-12-price-counter-proposals--negotiation-threads)
-- [16. Test Suite 13: Mandatory Transport Fee & Tax Assessment Before Order Approval](#16-test-suite-13-mandatory-transport-fee--tax-assessment-before-order-approval)
-- [17. Test Suite 14: Client Itemized Payment Breakdown](#17-test-suite-14-client-itemized-payment-breakdown)
-- [18. Test Suite 15: Order Fulfillment, Delivery Note PDF & Automatic Stock Deduction](#18-test-suite-15-order-fulfillment-delivery-note-pdf--automatic-stock-deduction)
-- [19. Test Suite 16: Guest Redirections, Farmer Anonymity Toggle & User-Scoped Cart Isolation](#19-test-suite-16-guest-redirections-farmer-anonymity-toggle--user-scoped-cart-isolation)
-- [20. Test Suite 17: Portal Security & Session Locks](#20-test-suite-17-portal-security--session-locks)
-- [21. Quick Sanity Verification Checklist](#21-quick-sanity-verification-checklist)
+- [8. Test Suite 5: B2B Farmer Harvest Submissions, Multi-Photo Grid & SUP-000001 Identifiers](#8-test-suite-5-b2b-farmer-harvest-submissions-multi-photo-grid--sup-000001-identifiers)
+- [9. Test Suite 6: Mutual B2B Negotiation (`Counter` vs `Accept`) & Stock Aggregation (30kg + 60kg = 90kg)](#9-test-suite-6-mutual-b2b-negotiation-counter-vs-accept--stock-aggregation-30kg--60kg--90kg)
+- [10. Test Suite 7: Pending Harvest Edit Scoping & "isDirty" Update Button Locks](#10-test-suite-7-pending-harvest-edit-scoping--isdirty-update-button-locks)
+- [11. Test Suite 8: Master Product Sourcing & Negotiation History Audit Log](#11-test-suite-8-master-product-sourcing--negotiation-history-audit-log)
+- [12. Test Suite 9: Admin Special Fresh Discount Delegation (🏷️ Delegate Discount)](#12-test-suite-9-admin-special-fresh-discount-delegation-️-delegate-discount)
+- [13. Test Suite 10: Unlisted Product Sourcing (Client Product Requests)](#13-test-suite-10-unlisted-product-sourcing-client-product-requests)
+- [14. Test Suite 11: Free-Form Harvest Submissions (Custom Crop Proposals)](#14-test-suite-11-free-form-harvest-submissions-custom-crop-proposals)
+- [15. Test Suite 12: Single-Product Grouped Catalog & Available Stock Caps](#15-test-suite-12-single-product-grouped-catalog--available-stock-caps)
+- [16. Test Suite 13: Price Counter-Proposals & Bidirectional Real-Time Notifications](#16-test-suite-13-price-counter-proposals--bidirectional-real-time-notifications)
+- [17. Test Suite 14: Mandatory Transport Fee & Tax Assessment Before Order Approval](#17-test-suite-14-mandatory-transport-fee--tax-assessment-before-order-approval)
+- [18. Test Suite 15: Client Itemized Payment Breakdown](#18-test-suite-15-client-itemized-payment-breakdown)
+- [19. Test Suite 16: Order Fulfillment, Delivery Note PDF & Automatic Stock Deduction](#19-test-suite-16-order-fulfillment-delivery-note-pdf--automatic-stock-deduction)
+- [20. Test Suite 17: Guest Redirections, Inventory-Aware Category Browsing & Cart Isolation](#20-test-suite-17-guest-redirections-inventory-aware-category-browsing--cart-isolation)
+- [21. Test Suite 18: Portal Security & Session Locks](#21-test-suite-18-portal-security--session-locks)
+- [22. Quick Sanity Verification Checklist](#22-quick-sanity-verification-checklist)
 
 ---
 
@@ -165,7 +166,7 @@ The database has been wiped completely clean. Only the master administrator acco
 
 ---
 
-## 8. Test Suite 5: B2B Farmer Harvest Submission, Proof Photos & Privacy Scoping
+## 8. Test Suite 5: B2B Farmer Harvest Submissions, Multi-Photo Grid & SUP-000001 Identifiers
 
 1. Log in as **Farmer A** (`farmer_a@harvesthill.test` / `FarmerPass2026!`).
 2. Navigate to **Submit Harvest** (`/farmer?view=submit`).
@@ -173,52 +174,73 @@ The database has been wiped completely clean. Only the master administrator acco
    - Select `Musanze Sweet Irish Potatoes`.
    - **Quantity**: `40 kg`.
    - **Asking Price**: `700 RWF / kg`.
-   - **Visibility Scope**: Select **Harvest Hill Delivery Only (`private_admin`)**.
-   - **Proof Photo**: Upload proof photo of real harvest.
+   - **Visibility Scope**: Default system background is **Harvest Hill Delivery Only (`private_admin`)**.
+   - **Proof Photos**: Upload up to 5 photos.
    - Click **Submit Harvest**.
-4. Log in as **Farmer B** (`farmer_b@harvesthill.test` / `FarmerPass2026!`).
-5. Submit Harvest for **Farmer B**:
-   - Select `Musanze Sweet Irish Potatoes`.
-   - **Quantity**: `60 kg`.
-   - **Asking Price**: `750 RWF / kg`.
-   - **Visibility Scope**: Select **Harvest Hill Delivery Only (`private_admin`)**.
-   - **Proof Photo**: Upload proof photo of real harvest.
-   - Click **Submit Harvest**.
-6. **Privacy Isolation Verification**:
-   - Open client catalog (`http://localhost:3000/`).
-   - **Validation Check**: Raw farmer submissions and proof photos are **NOT visible** to clients or the public. Photos remain private to Harvest Hill Delivery for negotiation audit.
+4. **Sequential Supply Identifier Check**:
+   - Open **My Supplies** (`/farmer?view=supplies`).
+   - **Validation Check**: Supply displays human-readable tracking number **`SUP-000001`** (never raw internal UUIDs).
+5. Submit Harvest for **Farmer B** (`farmer_b@harvesthill.test`):
+   - Select `Musanze Sweet Irish Potatoes` (`60 kg` @ `750 RWF / kg`).
+   - **Validation Check**: Displays **`SUP-000002`**.
+6. **Aspect-Square Multi-Photo Management Grid Check**:
+   - On a pending supply, click **Edit**.
+   - **Validation Check**: Current photos display as aspect-square tiles with `Cover` badge on the first tile.
+   - Hover over a photo tile $\rightarrow$ top-right trash delete button (`<Trash2 />`) appears. Click trash $\rightarrow$ photo is permanently deleted from Cloudinary & DB, and remaining tiles dynamically reshuffle.
+   - Click the `+` square tile to add a new photo on the fly (enforces 5-photo limit).
 
 ---
 
-## 9. Test Suite 6: Harvest Hill B2B Negotiation & Automated Stock Aggregation (30kg + 60kg = 90kg)
+## 9. Test Suite 6: Mutual B2B Negotiation (`Counter` vs `Accept`) & Stock Aggregation (30kg + 60kg = 90kg)
 
 1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
 2. Open **Supplies Management** (`/admin?tab=supplies`).
-3. **Negotiate with Farmer A**:
-   - Select Farmer A's proposal for `Potatoes` (`40 kg` submitted).
-   - Set **Accepted Quantity**: `30 kg` (Harvest Hill decides to accept 30 kg out of 40 kg).
+3. **Zero Quantity & Zero Price Guard Check**:
+   - Select Farmer A's proposal `SUP-000001`.
+   - Enter `0` for Accepted Quantity or Agreed Price.
+   - **Validation Check**: Red warning banner displays (*Accepted quantity and agreed farmer price must both be greater than 0*), and both action buttons are **disabled**.
+4. **Send Counter-Terms to Farmer A (`Counter`)**:
+   - Set **Accepted Quantity**: `30 kg` (out of 40 kg).
    - Set **Agreed Price**: `700 RWF`.
-   - Click **Confirm Terms & Accept into Master Stock**.
-4. **Negotiate with Farmer B**:
-   - Select Farmer B's proposal for `Potatoes` (`60 kg` submitted).
-   - Set **Accepted Quantity**: `60 kg`.
+   - Enter **Optional Terms / Notes**: `"Payment on 14-day cycle, grade A inspection required."`
+   - Click **Counter** (Dark Forest Green button).
+   - **Validation Check**: Proposal updates, and a **live real-time notification** is dispatched to Farmer A.
+5. **Accept & Finalize Stock for Farmer B (`Accept`)**:
+   - Select Farmer B's proposal `SUP-000002` (`60 kg`).
    - Set **Agreed Price**: `720 RWF`.
-   - Click **Confirm Terms & Accept into Master Stock**.
-5. **Automated Stock Aggregation Check**:
+   - Click **Accept** (Dark Forest Green button).
+   - **Validation Check**: Deal closes, `SUP-000002` status transitions to `accepted`, and stock aggregates into master catalog.
+6. **Automated Stock Aggregation Check**:
    - Open Admin Product Catalog (`/admin?tab=products`) or Client Catalog (`/client?screen=catalog`).
    - Locate `Musanze Sweet Irish Potatoes`.
    - **Validation Check**: **Live Stock** automatically displays **`190 kg`** (`100 kg admin + 30 kg Farmer A + 60 kg Farmer B = 190 kg`)!
 
 ---
 
-## 10. Test Suite 7: Master Product Sourcing & Negotiation History Audit Log
+## 10. Test Suite 7: Pending Harvest Edit Scoping & "isDirty" Update Button Locks
+
+1. **Strict Pending Edit Scoping Check**:
+   - Log in as Farmer B (`farmer_b@harvesthill.test`).
+   - Open **My Supplies** (`/farmer?view=supplies`).
+   - Locate `SUP-000002` (Status: `accepted`).
+   - **Validation Check**: Edit button is **disabled** with tooltip: *"Only pending harvest submissions can be edited"*. Backend blocks non-pending updates with `400 Bad Request`.
+2. **"isDirty" Form Change Lock & Unlock Verification**:
+   - Click **Edit** on a pending harvest `SUP-000001`.
+   - **Initial State**: All fields match existing record $\rightarrow$ **Update Harvest button is DISABLED** (*No changes made to update*).
+   - **Modify Field**: Change quantity from `40` to `45` $\rightarrow$ **Update Harvest button immediately ENABLES**.
+   - **Revert Field**: Change quantity back to `40` $\rightarrow$ **Update Harvest button automatically RE-DISABLES**.
+   - **Photo Gallery Change**: Upload a new photo on the fly or delete a photo $\rightarrow$ **Update Harvest button immediately ENABLES**.
+
+---
+
+## 11. Test Suite 8: Master Product Sourcing & Negotiation History Audit Log
 
 1. Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
 2. Open Product Catalog (`/admin?tab=products`).
 3. Click **🤝 Audit** on the `Musanze Sweet Irish Potatoes` card.
 4. **Sourcing & Negotiation Drawer Verification**:
-   - **Farmer A Entry**: Displays `Farmer A`, `30 kg agreed` (`40 kg submitted`), Agreed Price `700 RWF`, `private_admin` scope, and private proof photo thumbnail.
-   - **Farmer B Entry**: Displays `Farmer B`, `60 kg agreed`, Agreed Price `720 RWF`, `private_admin` scope, and private proof photo thumbnail.
+   - **Farmer A Entry (`SUP-000001`)**: Displays `Farmer A`, `30 kg agreed` (`40 kg submitted`), Agreed Price `700 RWF`, `private_admin` scope, custom admin notes, and private proof photo thumbnail.
+   - **Farmer B Entry (`SUP-000002`)**: Displays `Farmer B`, `60 kg agreed`, Agreed Price `720 RWF`, `private_admin` scope, and private proof photo thumbnail.
 
 ---
 
@@ -369,7 +391,7 @@ The database has been wiped completely clean. Only the master administrator acco
 
 ---
 
-## 21. Quick Sanity Verification Checklist
+## 22. Quick Sanity Verification Checklist
 
 ```
 CLEAN BASELINE & REGISTRATION
@@ -379,12 +401,19 @@ CLEAN BASELINE & REGISTRATION
 ADMIN CATALOG & MINIMAL CARDS
 [ ] Master products display minimal aspect-[4/3] cards with category pill & base price / stock bar
 [ ] Needed / Normal market demand pill button toggles requirement status instantly
-[ ] 🤝 Audit button opens complete sourcing & negotiation history drawer
+[ ] 🤝 Audit button opens complete sourcing & negotiation history drawer with SUP-000001 references
 [ ] 🏷️ Delegate Discount opens Admin modal to set/delegate Fresh Deals discount prices
 
-B2B HARVEST NEGOTIATION & STOCK AGGREGATION
-[ ] Farmers submit harvests with proof photos & private_admin scope (photos hidden from clients)
-[ ] Harvest Hill Admin negotiates price & accepted qty (e.g., 30kg out of 40kg)
+B2B HARVEST SUBMISSIONS, SEQUENTIAL TRACKING & PHOTO GRID
+[ ] Supplies assigned auto-sequential human-readable identifiers (SUP-000001, SUP-000002)
+[ ] Proof photos rendered in aspect-square grid with top-right hover trash delete (removes from Cloudinary & DB) and + upload tile (max 5 photos)
+[ ] Farmer edits restricted strictly to pending harvests (disabled edit button on accepted supplies with tooltip and 400 backend check)
+[ ] Form update buttons (Update Harvest, Edit Product, Edit Offer) disabled when untouched (!isDirty), dynamically enable on edit, and re-disable when reverted
+
+MUTUAL B2B HARVEST NEGOTIATION & STOCK AGGREGATION
+[ ] Validation checks block 0 accepted quantity or 0 agreed farmer price with red warning banner
+[ ] Dual action buttons provided: Counter (sends counter-proposal & live notification) and Accept (finalizes deal)
+[ ] Optional custom terms textarea provided with simple placeholder ("Add optional delivery or payment terms...")
 [ ] Live stock automatically sums accepted farmer batches (e.g. 100kg admin + 30kg + 60kg = 190kg)
 
 ORDER FEE ASSESSMENT & FULFILLMENT
