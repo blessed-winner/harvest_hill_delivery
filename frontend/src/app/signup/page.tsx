@@ -195,7 +195,7 @@ export default function SignupPage() {
                       : 'text-[#414942] hover:text-[#1c1c18]'
                   }`}
                 >
-                  🛒 Client / Buyer
+                  Client / Buyer
                 </button>
                 <button
                   type="button"
@@ -206,7 +206,7 @@ export default function SignupPage() {
                       : 'text-[#414942] hover:text-[#1c1c18]'
                   }`}
                 >
-                  🌾 Farmer / Supplier
+                  Farmer / Supplier
                 </button>
               </div>
             </div>
