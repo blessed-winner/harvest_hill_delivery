@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { api } from '../lib/api';
+import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
+import { ContextualNegotiationPane } from '../../common/components/ContextualNegotiationPane';
 
 interface SuppliesProps {
   searchTerm?: string;
@@ -50,6 +51,61 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [targetProductId, setTargetProductId] = useState('');
   const [masterProducts, setMasterProducts] = useState<any[]>([]);
   const [isSubmittingAgreement, setIsSubmittingAgreement] = useState(false);
+
+  // Admin Direct Edit Supply State
+  const [editSupply, setEditSupply] = useState<any | null>(null);
+  const [editQty, setEditQty] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editUnit, setEditUnit] = useState('kg');
+  const [editNotes, setEditNotes] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Contextual Negotiation Pane State
+  const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
+
+  const handleOpenEditModal = (supply: any) => {
+    setEditSupply(supply);
+    setEditQty(String(supply.quantity || ''));
+    setEditPrice(String(supply.price || supply.proposed_price || ''));
+    setEditUnit(supply.unit || 'kg');
+    setEditNotes(supply.notes || '');
+  };
+
+  const handleSaveAdminEdit = async () => {
+    if (!editSupply) return;
+    const parsedQty = parseFloat(editQty);
+    const parsedPrice = parseFloat(editPrice);
+
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      toast("Please enter a valid quantity greater than zero.", "warning");
+      return;
+    }
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toast("Please enter a valid price per unit greater than zero.", "warning");
+      return;
+    }
+
+    try {
+      setIsSavingEdit(true);
+      await apiRequest(`/api/supplies/${editSupply.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          quantity: parsedQty,
+          price: parsedPrice,
+          unit: editUnit,
+          notes: editNotes.trim()
+        })
+      });
+      toast("Supply details updated successfully!", "success");
+      setEditSupply(null);
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to update supply.", "error");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedSupply) {
@@ -491,6 +547,33 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     className="w-full py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm flex items-center justify-center gap-1.5"
                   >
                     <X size={15} /> Reject Proposal
+                  </button>
+                </div>
+              )}
+
+              {!selectedSupply.is_archived && (
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const supToEdit = selectedSupply;
+                      setSelectedSupply(null);
+                      handleOpenEditModal(supToEdit);
+                    }}
+                    className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                  >
+                    <Edit3 size={14} /> Edit Supply
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const supToNeg = selectedSupply;
+                      setSelectedSupply(null);
+                      setActiveNegotiationSupply(supToNeg);
+                    }}
+                    className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                  >
+                    <Handshake size={14} /> Contextual Pane
                   </button>
                 </div>
               )}
@@ -943,6 +1026,100 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           </div>
         </div>
       )}
+
+      {/* Admin Direct Edit Supply Modal */}
+      {editSupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+          <div className="bg-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div>
+                <h3 className="font-extrabold text-base text-on-surface">Edit Harvest / Supply Listing</h3>
+                <p className="text-xs text-on-surface-variant font-medium">Harvest Hill Admin Direct Supply Manager</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditSupply(null)}
+                className="p-1.5 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Quantity</label>
+                  <input
+                    type="number"
+                    value={editQty}
+                    onChange={(e) => setEditQty(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Unit</label>
+                  <input
+                    type="text"
+                    value={editUnit}
+                    onChange={(e) => setEditUnit(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Price per Unit (RWF)</label>
+                <input
+                  type="number"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Notes / Admin Terms</label>
+                <textarea
+                  rows={3}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Enter supply notes or delivery terms..."
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-medium text-on-surface outline-none focus:border-primary resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+              <button
+                type="button"
+                disabled={isSavingEdit}
+                onClick={handleSaveAdminEdit}
+                className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
+              >
+                <Save size={15} /> {isSavingEdit ? "Saving..." : "Save Supply Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditSupply(null)}
+                className="px-5 py-3 bg-surface-container-low border border-outline-variant/40 text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contextual Negotiation Pane */}
+      <ContextualNegotiationPane
+        isOpen={!!activeNegotiationSupply}
+        onClose={() => setActiveNegotiationSupply(null)}
+        contextType="FARMER"
+        supply={activeNegotiationSupply}
+        currentUserRole="admin"
+        onNegotiationUpdated={() => loadSupplies()}
+      />
     </div>
   );
 }
