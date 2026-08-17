@@ -435,8 +435,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             </button>
           </div>
         </section>
-      ) : products.length === 0 ? (
-        /* STATE 1 — No Products (products.length === 0) */
+      ) : activeSupplies.length === 0 ? (
+        /* STATE 1 — No Active Supplies (activeSupplies.length === 0) */
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white border border-[#E8E4DA] rounded-[16px] p-8 sm:p-14 text-center max-w-2xl mx-auto shadow-sm space-y-5 my-4">
             <div className="w-16 h-16 rounded-2xl bg-[#FAF7F0] border border-[#E8E4DA] flex items-center justify-center mx-auto text-[#2D5A3D]">
@@ -448,10 +448,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
                 Marketplace Onboarding
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1C2A1E]">
-                Fresh products are coming soon
+                Fresh harvests are coming soon
               </h2>
               <p className="text-sm text-[#717971] max-w-lg mx-auto leading-relaxed">
-                We're getting local sellers and fresh products onboarded. Check back soon to discover what's available.
+                We're getting local sellers and fresh harvest batches onboarded. Check back soon to discover live harvest submissions.
               </p>
             </div>
 
@@ -475,21 +475,21 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             </div>
           </div>
         </section>
-      ) : products.length <= 5 ? (
-        /* STATE 2 — Few Products (1 <= products.length <= 5) */
+      ) : activeSupplies.length <= 5 ? (
+        /* STATE 2 — Few Active Harvest Submissions (1 <= activeSupplies.length <= 5) */
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E8E4DA]">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg sm:text-2xl font-extrabold text-[#1C2A1E] tracking-tight">
-                  Available Now
+                  Available Harvests Now
                 </h2>
                 <span className="bg-[#2D5A3D] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
-                  {products.length} {products.length === 1 ? 'Product' : 'Products'}
+                  {activeSupplies.length} {activeSupplies.length === 1 ? 'Harvest' : 'Harvests'}
                 </span>
               </div>
               <p className="text-xs text-[#717971] font-medium mt-0.5">
-                More products are being added regularly.
+                Fresh harvest submissions are verified and added regularly.
               </p>
             </div>
 
@@ -502,16 +502,16 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             </button>
           </div>
 
-          {/* Adaptive grid layout based on actual product count */}
+          {/* Adaptive grid layout based on actual active supply count */}
           <div className={cn(
             "grid gap-4",
-            products.length === 1 && "grid-cols-1 max-w-xs mx-auto",
-            products.length === 2 && "grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto",
-            products.length === 3 && "grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto",
-            products.length === 4 && "grid-cols-2 sm:grid-cols-4 max-w-5xl mx-auto",
-            products.length === 5 && "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-6xl mx-auto"
+            activeSupplies.length === 1 && "grid-cols-1 max-w-xs mx-auto",
+            activeSupplies.length === 2 && "grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto",
+            activeSupplies.length === 3 && "grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto",
+            activeSupplies.length === 4 && "grid-cols-2 sm:grid-cols-4 max-w-5xl mx-auto",
+            activeSupplies.length === 5 && "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-6xl mx-auto"
           )}>
-            {products.map((item: any, idx: number) => renderProductCard(item, !!item.is_discounted, idx, 'few-products'))}
+            {activeSupplies.map((item: any, idx: number) => renderProductCard(item, !!item.is_discounted, idx, 'few-products'))}
           </div>
         </section>
       ) : (
