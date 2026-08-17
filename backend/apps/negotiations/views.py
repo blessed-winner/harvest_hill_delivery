@@ -162,6 +162,11 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                 thread.supply.notes = f"[Agreed Terms]: {clean_terms}"
         thread.supply.save()
 
+        # Synchronize linked Product base_price with accepted negotiated price
+        if thread.supply.product and price and float(price) > 0:
+            thread.supply.product.base_price = price
+            thread.supply.product.save()
+
         # Automatically generate a pending invoice upon acceptance for this buyer
         from apps.invoices.models import Invoice
         Invoice.objects.get_or_create(

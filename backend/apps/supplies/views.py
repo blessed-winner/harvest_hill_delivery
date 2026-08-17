@@ -182,6 +182,11 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         initial_status = 'accepted' if self.request.user.role == 'admin' else 'pending'
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
         
+        # Synchronize linked Product base_price with created supply price
+        if instance.product and instance.price and float(instance.price) > 0:
+            instance.product.base_price = instance.price
+            instance.product.save()
+
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
         if len(images) > 1:
@@ -215,6 +220,18 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             instance = serializer.save(photo=photo_file)
         else:
             instance = serializer.save()
+
+        # Synchronize linked Product base_price with updated supply price
+        price_to_sync = instance.agreed_price if (instance.agreed_price and float(instance.agreed_price) > 0) else instance.price
+        if instance.product and price_to_sync and float(price_to_sync) > 0:
+            instance.product.base_price = price_to_sync
+            instance.product.save()
+        elif instance.custom_product_name:
+            from apps.products.models import Product
+            matched_prod = Product.objects.filter(name__iexact=instance.custom_product_name).first()
+            if matched_prod and price_to_sync and float(price_to_sync) > 0:
+                matched_prod.base_price = price_to_sync
+                matched_prod.save()
 
         # Create additional SupplyImage objects if multiple images are uploaded
         if len(images) > 1:
