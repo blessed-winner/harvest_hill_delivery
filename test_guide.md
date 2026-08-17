@@ -212,18 +212,21 @@ The database baseline contains the master administrator account:
 1. **Admin Initiates Negotiation & Sends Terms**:
    - Log in as Admin (`admin@harvesthill.test` / `adminpass123`).
    - Open **Supplies Management** (`/admin?tab=supplies`).
-   - Click **[Negotiate]** on Farmer A's pending submission `SUP-000001` (`40 kg` @ `700 RWF / kg`).
-   - Click **`+ Make offer`** $\rightarrow$ Enter proposed terms: **Qty**: `35 kg`, **Price**: `720 RWF/kg`, **Terms**: `"Pickup at Musanze collection center on Friday"`.
-   - Click **Send Offer**.
+   - Click pending submission `SUP-000001` (`40 kg` @ `700 RWF / kg`) to open Detail Drawer.
+   - Under **Negotiate Terms & Aggregate Inventory**:
+     - Enter **Agreed Accepted Qty**: `35 kg`.
+     - Enter **Agreed Farmer Price**: `720 RWF`.
+     - Enter **Optional Custom Terms / Notes**: `"Pickup at Musanze collection center on Friday"`.
+   - Click **Counter** to send counter-proposal terms to the farmer.
 2. **Real-Time Notification & Farmer Drawer Activation**:
    - **Validation Check**: System dispatches a real-time notification to Farmer A (`"Negotiation Started for SUP-000001: Harvest Hill admin sent negotiation terms"`).
    - Log in as **Farmer A** (`farmer_a@harvesthill.test` / `FarmerPass2026!`).
    - Open **My Supplies** (`/farmer?view=supplies`) or click the negotiation notification bell.
-   - **Validation Check**: `SUP-000001` displays active negotiation badge (`has_admin_negotiation`). Click **[Negotiate]** to open contextual negotiation pane.
+   - **Validation Check**: `SUP-000001` displays active negotiation badge (`has_admin_negotiation`). Click **[Negotiate]** to open negotiation drawer.
 3. **Farmer Counter Offer or Acceptance Flow**:
    - Farmer A inspects Admin's proposed terms (`35 kg` @ `720 RWF / kg` + `"Pickup at Musanze collection center on Friday"`).
-   - **Option A (Accept)**: Farmer clicks **Accept Offer** $\rightarrow$ Confirmation dialog triggers $\rightarrow$ Pane displays green **`✓ AGREEMENT REACHED`** summary banner (Qty `35 kg`, Price `RWF 720/kg`, Total `RWF 25,200`), locks further price edits, and aggregates accepted stock!
-   - **Option B (Counter Offer)**: Farmer clicks **Counter Offer** $\rightarrow$ Form pre-fills with Admin's previous terms (`35 kg`, `720 RWF`) $\rightarrow$ Farmer adjusts price to `715 RWF` and sends counter-proposal.
+   - **Option A (Accept)**: Farmer clicks **Accept** $\rightarrow$ Confirmation dialog triggers $\rightarrow$ Pane displays green **`✓ AGREEMENT REACHED`** summary banner (Qty `35 kg`, Price `RWF 720/kg`, Total `RWF 25,200`), locks further price edits, and aggregates accepted stock!
+   - **Option B (Counter)**: Farmer adjusts price to `715 RWF` and clicks **Counter** to send a counter-proposal.
 
 ---
 
