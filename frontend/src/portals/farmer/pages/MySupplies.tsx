@@ -411,7 +411,7 @@ export default function MySupplies() {
                 <th className="px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant">Submitted Date</th>
                 <th className="px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant">Status</th>
                 <th className="px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant">Price</th>
-                <th className="px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant text-right">Actions</th>
+                <th className="px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
@@ -480,8 +480,8 @@ export default function MySupplies() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => setActiveNegotiationSupply(supply)}
                         className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
