@@ -167,7 +167,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormPrice(req.preferred_price ? String(req.preferred_price) : '');
     setFormQuantityNeeded(String(req.quantity_needed));
     setFormStatus('open');
-    setFormQualityRequirements("• Grade A produce\n• Freshly harvested\n• No visible damage");
+    setFormQualityRequirements("");
     setFormSubmissionDeadline("");
     setFormPreferredPeriod("");
     setFormDescription(req.notes || "");
@@ -206,7 +206,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormPrice("");
     setFormQuantityNeeded("");
     setFormStatus("open");
-    setFormQualityRequirements("• Grade A produce\n• Freshly harvested\n• No visible damage");
+    setFormQualityRequirements("");
     setFormSubmissionDeadline("");
     setFormPreferredPeriod("");
     setFormDescription("");
@@ -911,12 +911,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <select 
                   value={formStatus}
                   onChange={(e) => setFormStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-extrabold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer uppercase tracking-wider"
+                  className="w-full px-2.5 py-2 rounded-xl border border-outline-variant/60 text-[10.5px] font-bold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer uppercase tracking-wider"
                 >
-                  <option value="open">🟢 OPEN (Active)</option>
-                  <option value="draft">🟡 DRAFT (Private)</option>
-                  <option value="closed">🔴 CLOSED (Ended)</option>
-                  <option value="archived">⚪ ARCHIVED</option>
+                  <option value="open">OPEN (Active)</option>
+                  <option value="draft">DRAFT (Private)</option>
+                  <option value="closed">CLOSED (Ended)</option>
+                  <option value="archived">ARCHIVED</option>
                 </select>
               </div>
 
@@ -928,7 +928,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                   type="date" 
                   value={formSubmissionDeadline}
                   onChange={(e) => setFormSubmissionDeadline(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
                 />
               </div>
             </div>
@@ -962,7 +962,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               </label>
               <textarea 
                 rows={3}
-                placeholder="• Grade A produce&#10;• Freshly harvested&#10;• No visible damage"
                 value={formQualityRequirements}
                 onChange={(e) => setFormQualityRequirements(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-mono outline-none bg-[#fafafa] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
