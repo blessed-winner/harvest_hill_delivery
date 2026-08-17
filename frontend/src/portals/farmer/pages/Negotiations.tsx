@@ -470,8 +470,29 @@ export default function Negotiations() {
         </div>
         )}
 
-        {/* Controls */}
-        {activeThread?.status === 'open' && (
+        {/* Controls vs Accepted Stats Bar */}
+        {activeThread?.status === 'accepted' || activeThread?.supply_detail?.status === 'accepted' ? (
+          <div className="p-4 bg-emerald-50/90 border-t border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-emerald-950 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={20} className="text-emerald-700 shrink-0" />
+              <div>
+                <p className="font-sans text-xs font-extrabold uppercase tracking-wider text-emerald-900">Finalized B2B Deal</p>
+                <p className="font-sans text-xs text-emerald-800 font-medium">Terms harmonized and harvest accepted into master stock.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 bg-white px-4 py-2.5 rounded-xl border border-emerald-200 shadow-2xs">
+              <div>
+                <p className="font-mono text-[8px] uppercase tracking-wider text-emerald-800 font-bold">Agreed Price</p>
+                <p className="font-sans text-sm font-extrabold text-primary">{formatRwf(activeThread?.supply_detail?.agreed_price || activeThread?.supply_detail?.price)} / {activeThread?.supply_detail?.unit || 'kg'}</p>
+              </div>
+              <div className="h-6 w-px bg-emerald-200" />
+              <div>
+                <p className="font-mono text-[8px] uppercase tracking-wider text-emerald-800 font-bold">Accepted Qty</p>
+                <p className="font-sans text-sm font-extrabold text-emerald-950">{activeThread?.supply_detail?.accepted_quantity || activeThread?.supply_detail?.quantity} {activeThread?.supply_detail?.unit || 'kg'}</p>
+              </div>
+            </div>
+          </div>
+        ) : activeThread?.status === 'open' && (
           <div className="p-3 sm:p-5 bg-surface-container-lowest border-t border-outline-variant flex-shrink-0 space-y-3 sm:space-y-4">
             <div className="space-y-3 sm:space-y-4">
               <div className="flex flex-col md:flex-row gap-3 sm:gap-4">

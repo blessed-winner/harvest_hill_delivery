@@ -116,6 +116,13 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       return;
     }
 
+    const prodName = selectedSupply.product_detail?.name || selectedSupply.suggested_product_name || selectedSupply.custom_product_name || 'Harvest Batch';
+    const confirmed = await showConfirm(
+      "Finalize B2B Agreement & Aggregate Stock",
+      `Are you sure you want to accept ${parsedQty} ${selectedSupply.unit} of "${prodName}" @ ${formatCurrency(parsedPrice)}/${selectedSupply.unit} into master stock? This will finalize terms and issue notifications.`
+    );
+    if (!confirmed) return;
+
     try {
       setIsSubmittingAgreement(true);
       const payload: any = {
@@ -132,7 +139,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       toast("Negotiated terms agreed & supply accepted into master stock!", "success");
       setSuccessModal({
         isOpen: true,
-        productName: selectedSupply.product_detail?.name || selectedSupply.suggested_product_name || selectedSupply.custom_product_name || 'Harvest Batch',
+        productName: prodName,
       });
       setSelectedSupply(null);
       loadSupplies();
@@ -473,16 +480,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           selectedSupply && (
             <div className="space-y-2.5 w-full font-sans text-xs">
               {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-2.5">
+                <div>
                   <button 
-                    onClick={() => handleUpdateStatus(selectedSupply.id, 'accepted')}
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#144227] text-white rounded-xl font-bold shadow-sm hover:bg-[#376847] transition-all cursor-pointer text-xs"
-                  >
-                    <Check size={15} /> Accept Proposal
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateStatus(selectedSupply.id, 'rejected')}
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm"
+                    onClick={async () => {
+                      const confirmed = await showConfirm("Reject Supply Proposal", "Are you sure you want to reject this supply proposal?");
+                      if (confirmed) {
+                        handleUpdateStatus(selectedSupply.id, 'rejected');
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm flex items-center justify-center gap-1.5"
                   >
                     <X size={15} /> Reject Proposal
                   </button>
@@ -653,144 +659,183 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
             </div>
 
-            {/* B2B Term Agreement Form (Farmer <-> Harvest Hill Negotiation) */}
-            <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
-              <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                  <Handshake size={14} className="text-emerald-700" /> Negotiate Terms & Aggregate Inventory
-                </span>
-                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  Harvest Hill Admin Tool
-                </span>
-              </div>
+            {/* B2B Term Agreement Form vs Finalized Stats Display */}
+            {selectedSupply.status === 'accepted' ? (
+              <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-3 font-sans shadow-xs">
+                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-emerald-700" /> Finalized B2B Terms & Stock Aggregated
+                  </span>
+                  <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase">
+                    Deal Closed
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                    Submitted Qty ({selectedSupply.unit})
-                  </label>
-                  <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
-                    {selectedSupply.quantity} {selectedSupply.unit}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
+                    <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Accepted Quantity</p>
+                    <p className="text-sm font-extrabold text-emerald-950 mt-0.5">{selectedSupply.accepted_quantity || selectedSupply.quantity} {selectedSupply.unit}</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
+                    <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Agreed Farmer Price</p>
+                    <p className="text-sm font-extrabold text-primary mt-0.5">{formatCurrency(selectedSupply.agreed_price || selectedSupply.price)} / {selectedSupply.unit}</p>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                    Agreed Accepted Qty ({selectedSupply.unit})
-                  </label>
-                  <input 
-                    type="number" 
-                    value={agreedQtyInput} 
-                    onChange={(e) => setAgreedQtyInput(e.target.value)}
-                    placeholder={`e.g. ${selectedSupply.quantity}`}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
-                  />
+                <div className="bg-white p-3 rounded-xl border border-emerald-200 flex justify-between items-center shadow-2xs">
+                  <span className="text-xs font-bold text-emerald-900">Total Batch Payout Value</span>
+                  <span className="text-sm font-black text-secondary">
+                    {formatCurrency((selectedSupply.accepted_quantity || selectedSupply.quantity) * (selectedSupply.agreed_price || selectedSupply.price))}
+                  </span>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                    Proposed Price
-                  </label>
-                  <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
-                    {formatCurrency(selectedSupply.price)}
+                {selectedSupply.notes && (
+                  <div className="bg-white/80 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-800">Finalized Terms & Notes</p>
+                    <p className="leading-relaxed font-medium">{selectedSupply.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
+                <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                    <Handshake size={14} className="text-emerald-700" /> Negotiate Terms & Aggregate Inventory
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Harvest Hill Admin Tool
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                      Submitted Qty ({selectedSupply.unit})
+                    </label>
+                    <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                      {selectedSupply.quantity} {selectedSupply.unit}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                      Agreed Accepted Qty ({selectedSupply.unit})
+                    </label>
+                    <input 
+                      type="number" 
+                      value={agreedQtyInput} 
+                      onChange={(e) => setAgreedQtyInput(e.target.value)}
+                      placeholder={`e.g. ${selectedSupply.quantity}`}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                    Agreed Farmer Price (RWF)
-                  </label>
-                  <input 
-                    type="number" 
-                    value={agreedPriceInput} 
-                    onChange={(e) => setAgreedPriceInput(e.target.value)}
-                    placeholder="e.g. 1000"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
-                  />
-                </div>
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                      Proposed Price
+                    </label>
+                    <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                      {formatCurrency(selectedSupply.price)}
+                    </div>
+                  </div>
 
-              <div className="space-y-1 pt-1">
-                <label className="text-[9px] font-extrabold uppercase text-emerald-950">Target Master Product</label>
-                <select
-                  value={targetProductId}
-                  onChange={(e) => setTargetProductId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950 cursor-pointer"
-                >
-                  <option value="">
-                    {selectedSupply.is_suggested_product || !selectedSupply.product
-                      ? `[Approve Suggested Master Product: "${selectedSupply.suggested_product_name || selectedSupply.custom_product_name}"]`
-                      : `-- Select Existing Master Product Template --`}
-                  </option>
-                  {masterProducts.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.category} - {formatCurrency(p.base_price)}/{p.unit})
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                      Agreed Farmer Price (RWF)
+                    </label>
+                    <input 
+                      type="number" 
+                      value={agreedPriceInput} 
+                      onChange={(e) => setAgreedPriceInput(e.target.value)}
+                      placeholder="e.g. 1000"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">Target Master Product</label>
+                  <select
+                    value={targetProductId}
+                    onChange={(e) => setTargetProductId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950 cursor-pointer"
+                  >
+                    <option value="">
+                      {selectedSupply.is_suggested_product || !selectedSupply.product
+                        ? `[Approve Suggested Master Product: "${selectedSupply.suggested_product_name || selectedSupply.custom_product_name}"]`
+                        : `-- Select Existing Master Product Template --`}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {masterProducts.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.category} - {formatCurrency(p.base_price)}/{p.unit})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Optional Custom Terms / Admin Notes Text Field */}
-              <div className="space-y-1 pt-1">
-                <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                  Optional Custom Terms / Notes
-                </label>
-                <textarea
-                  rows={2}
-                  value={adminNotesInput}
-                  onChange={(e) => setAdminNotesInput(e.target.value)}
-                  placeholder="Add optional delivery or payment terms..."
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
-                />
-              </div>
+                {/* Optional Custom Terms / Admin Notes Text Field */}
+                <div className="space-y-1 pt-1">
+                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                    Optional Custom Terms / Notes
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={adminNotesInput}
+                    onChange={(e) => setAdminNotesInput(e.target.value)}
+                    placeholder="Add optional delivery or payment terms..."
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
+                  />
+                </div>
 
-              {/* Validation Warning Feedback */}
-              {(() => {
-                const parsedQty = parseFloat(agreedQtyInput || '0');
-                const parsedPrice = parseFloat(agreedPriceInput || '0');
-                const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+                {/* Validation Warning Feedback */}
+                {(() => {
+                  const parsedQty = parseFloat(agreedQtyInput || '0');
+                  const parsedPrice = parseFloat(agreedPriceInput || '0');
+                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
 
-                if (isInvalid) {
+                  if (isInvalid) {
+                    return (
+                      <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center">
+                        Accepted quantity and agreed farmer price must both be greater than 0.
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {(() => {
+                  const parsedQty = parseFloat(agreedQtyInput || '0');
+                  const parsedPrice = parseFloat(agreedPriceInput || '0');
+                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+
                   return (
-                    <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center">
-                      Accepted quantity and agreed farmer price must both be greater than 0.
+                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={isSubmittingAgreement || isInvalid}
+                        onClick={handleCounterSupply}
+                        className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Send counter-proposal terms to farmer"}
+                      >
+                        <Send size={15} /> Counter
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSubmittingAgreement || isInvalid}
+                        onClick={handleAgreeSupply}
+                        className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Accept terms and finalize harvest into master stock"}
+                      >
+                        <CheckCircle2 size={15} /> Accept
+                      </button>
                     </div>
                   );
-                }
-                return null;
-              })()}
-
-              {(() => {
-                const parsedQty = parseFloat(agreedQtyInput || '0');
-                const parsedPrice = parseFloat(agreedPriceInput || '0');
-                const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
-
-                return (
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                    <button
-                      type="button"
-                      disabled={isSubmittingAgreement || isInvalid}
-                      onClick={handleCounterSupply}
-                      className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Send counter-proposal terms to farmer"}
-                    >
-                      <Send size={15} /> Counter
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSubmittingAgreement || isInvalid}
-                      onClick={handleAgreeSupply}
-                      className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Accept terms and finalize harvest into master stock"}
-                    >
-                      <CheckCircle2 size={15} /> Accept
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
+                })()}
+              </div>
+            )}
 
             <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
               <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
