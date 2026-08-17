@@ -38,9 +38,14 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             if instance.image:
                 delete_cloudinary_image(instance.image)
-            serializer.save(image=self.request.FILES['image'])
+            instance = serializer.save(image=self.request.FILES['image'])
         else:
-            serializer.save()
+            instance = serializer.save()
+
+        # Update all active supplies under this product to match the new base_price!
+        if instance.base_price and float(instance.base_price) > 0:
+            new_price = instance.base_price
+            instance.supplies.filter(is_archived=False).update(price=new_price, agreed_price=new_price)
 
     def perform_destroy(self, instance):
         prod_id = instance.id
