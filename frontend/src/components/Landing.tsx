@@ -36,7 +36,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       title: "Fresh Farm Dairy & Artisan Cheese",
       subtitle: "Sourced daily from certified local dairy cooperatives.",
       tag: "DAILY FRESH",
-      bgImage: "https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?w=1400&auto=format&fit=crop&q=80",
+      bgImage: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=1400&auto=format&fit=crop&q=80",
       ctaCategory: "Dairy"
     },
     {
