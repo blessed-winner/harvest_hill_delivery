@@ -1,24 +1,22 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Plus, ChevronRight, ChevronLeft,
-  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf
+  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
 import { DEFAULT_HOMEPAGE_CONFIG, HomepageSectionConfig } from '../portals/admin/pages/HomepageCustomizer';
+import { cn } from '../portals/farmer/lib/utils';
 
 interface LandingProps {
   onNavigate: (screen: string, category?: string, productId?: number, search?: string) => void;
   addToCart: (product?: any) => void;
 }
 
-
-
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [heroSlide, setHeroSlide] = useState(0);
 
   // Dynamic Homepage Configuration state
@@ -86,14 +84,33 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     async function fetchData() {
       try {
         setLoading(true);
-        const [prodRes, suppRes] = await Promise.all([
-          clientApi.products.list().catch(() => []),
-          clientApi.supplies.list().catch(() => [])
-        ]);
-        setProducts(prodRes?.results || prodRes || []);
-        setSupplies(suppRes?.results || suppRes || []);
-      } catch (err) {
+        setError(null);
+        
+        let prodRes: any = null;
+        let suppRes: any = null;
+
+        try {
+          prodRes = await clientApi.products.list();
+        } catch (err: any) {
+          console.error("Products API error:", err);
+          setError("Failed to connect to the marketplace API. Please check your server or connection.");
+          return;
+        }
+
+        try {
+          suppRes = await clientApi.supplies.list();
+        } catch (err) {
+          // Optional background supplies fetch
+        }
+
+        const prodList = prodRes?.results || (Array.isArray(prodRes) ? prodRes : []);
+        const suppList = suppRes?.results || (Array.isArray(suppRes) ? suppRes : []);
+
+        setProducts(prodList);
+        setSupplies(suppList);
+      } catch (err: any) {
         console.error("Failed to fetch landing data:", err);
+        setError("Unable to load products. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -288,7 +305,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   return (
     <div className="bg-[#FAF7F0] text-[#1C2A1E] font-sans space-y-10 pb-16 min-h-screen">
       
-      {/* SECTION 4: Hero Carousel + Quick Links */}
+      {/* SECTION: Hero Carousel + Quick Links */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-4">
         <div className="relative rounded-[12px] overflow-hidden h-48 sm:h-56 md:h-60 shadow-sm border border-[#E8E4DA] bg-[#1C2A1E]">
           <img 
@@ -398,70 +415,172 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
       </section>
 
-      {/* DYNAMIC HOMEPAGE SECTIONS CONFIGURATOR */}
-      {enabledSections.map((sec) => {
-        const allItems = getSectionItems(sec.category);
-        const perPage = sec.itemsPerPage || 8;
-        const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
-        const currentPage = sectionPages[sec.id] || 0;
+      {/* SECTION: Product Section with Dynamic Inventory States */}
+      {error ? (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border border-[#E8E4DA] rounded-[16px] p-8 text-center max-w-md mx-auto shadow-sm space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+              <AlertCircle size={24} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-extrabold text-[#1C2A1E]">Unable to Load Marketplace</h3>
+              <p className="text-xs text-[#717971]">{error}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              Retry Loading
+            </button>
+          </div>
+        </section>
+      ) : products.length === 0 ? (
+        /* STATE 1 — No Products (products.length === 0) */
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border border-[#E8E4DA] rounded-[16px] p-8 sm:p-14 text-center max-w-2xl mx-auto shadow-sm space-y-5 my-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#FAF7F0] border border-[#E8E4DA] flex items-center justify-center mx-auto text-[#2D5A3D]">
+              <Sprout size={32} />
+            </div>
+            
+            <div className="space-y-2">
+              <span className="bg-[#FAF7F0] text-[#2D5A3D] border border-[#E8E4DA] text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full inline-block">
+                Marketplace Onboarding
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1C2A1E]">
+                Fresh products are coming soon
+              </h2>
+              <p className="text-sm text-[#717971] max-w-lg mx-auto leading-relaxed">
+                We're getting local sellers and fresh products onboarded. Check back soon to discover what's available.
+              </p>
+            </div>
 
-        const visibleItems = allItems.slice(currentPage * perPage, (currentPage + 1) * perPage);
-        const isDealSection = sec.category.toLowerCase() === 'deals';
-
-        return (
-          <section key={sec.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-            {/* Section Header */}
-            <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E8E4DA]">
-              <div>
-                <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
-                  {sec.title}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => onNavigate('catalog')}
+                className="bg-[#2D5A3D] text-white hover:bg-[#1E3E2A] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-2 active:scale-95"
+              >
+                <Grid size={14} />
+                <span>Browse Categories</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/signup?role=supplier';
+                  }
+                }}
+                className="bg-white text-[#2D5A3D] border border-[#E8E4DA] hover:border-[#2D5A3D] font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-2 active:scale-95"
+              >
+                <Leaf size={14} />
+                <span>Become a Seller</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : products.length <= 5 ? (
+        /* STATE 2 — Few Products (1 <= products.length <= 5) */
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E8E4DA]">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg sm:text-2xl font-extrabold text-[#1C2A1E] tracking-tight">
+                  Available Now
                 </h2>
+                <span className="bg-[#2D5A3D] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                  {products.length} {products.length === 1 ? 'Product' : 'Products'}
+                </span>
               </div>
-
-              <div className="flex items-center gap-3 self-end sm:self-auto">
-                {/* Pagination controls for this section */}
-                {totalPages > 1 && (
-                  <div className="flex items-center gap-1.5 bg-white border border-[#E8E4DA] rounded-xl px-2.5 py-1 shadow-sm text-xs font-bold text-[#414942]">
-                    <button
-                      disabled={currentPage === 0}
-                      onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.max(0, currentPage - 1) }))}
-                      className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                      title="Previous page"
-                    >
-                      <ChevronLeft size={15} />
-                    </button>
-                    <span className="font-mono text-[11px] px-1">
-                      {currentPage + 1} / {totalPages}
-                    </span>
-                    <button
-                      disabled={currentPage >= totalPages - 1}
-                      onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.min(totalPages - 1, currentPage + 1) }))}
-                      className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                      title="Next page"
-                    >
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
-                )}
-
-                {/* View All link */}
-                <button
-                  onClick={() => onNavigate('catalog', sec.category !== 'Popular' && sec.category !== 'All' ? sec.category : undefined)}
-                  className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
-                >
-                  <span>View all</span>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+              <p className="text-xs text-[#717971] font-medium mt-0.5">
+                More products are being added regularly.
+              </p>
             </div>
 
-            {/* Product Grid (e.g. 2-row x 4-col, 3-row x 4-col, etc.) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx, sec.id))}
-            </div>
-          </section>
-        );
-      })}
+            <button
+              onClick={() => onNavigate('catalog')}
+              className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D] self-start sm:self-auto"
+            >
+              <span>Explore Catalog</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          {/* Adaptive grid layout based on actual product count */}
+          <div className={cn(
+            "grid gap-4",
+            products.length === 1 && "grid-cols-1 max-w-xs mx-auto",
+            products.length === 2 && "grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto",
+            products.length === 3 && "grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto",
+            products.length === 4 && "grid-cols-2 sm:grid-cols-4 max-w-5xl mx-auto",
+            products.length === 5 && "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-6xl mx-auto"
+          )}>
+            {products.map((item: any, idx: number) => renderProductCard(item, !!item.is_discounted, idx, 'few-products'))}
+          </div>
+        </section>
+      ) : (
+        /* STATE 3 — Many Products (products.length > 5) */
+        enabledSections.map((sec) => {
+          const allItems = getSectionItems(sec.category);
+          const perPage = sec.itemsPerPage || 8;
+          const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+          const currentPage = sectionPages[sec.id] || 0;
+
+          const visibleItems = allItems.slice(currentPage * perPage, (currentPage + 1) * perPage);
+          const isDealSection = sec.category.toLowerCase() === 'deals';
+
+          return (
+            <section key={sec.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+              {/* Section Header */}
+              <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E8E4DA]">
+                <div>
+                  <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
+                    {sec.title}
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-3 self-end sm:self-auto">
+                  {/* Pagination controls for this section */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1.5 bg-white border border-[#E8E4DA] rounded-xl px-2.5 py-1 shadow-sm text-xs font-bold text-[#414942]">
+                      <button
+                        disabled={currentPage === 0}
+                        onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.max(0, currentPage - 1) }))}
+                        className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                        title="Previous page"
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                      <span className="font-mono text-[11px] px-1">
+                        {currentPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        disabled={currentPage >= totalPages - 1}
+                        onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.min(totalPages - 1, currentPage + 1) }))}
+                        className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                        title="Next page"
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* View All link */}
+                  <button
+                    onClick={() => onNavigate('catalog', sec.category !== 'Popular' && sec.category !== 'All' ? sec.category : undefined)}
+                    className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
+                  >
+                    <span>View all</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx, sec.id))}
+              </div>
+            </section>
+          );
+        })
+      )}
 
     </div>
   );
