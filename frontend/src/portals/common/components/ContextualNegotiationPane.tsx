@@ -431,10 +431,10 @@ export function ContextualNegotiationPane({
                           <button
                             type="button"
                             onClick={() => handleDeleteItem(item.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
                             title="Delete message term"
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={12} />
                           </button>
                         )}
                       </div>
@@ -451,7 +451,7 @@ export function ContextualNegotiationPane({
                     className={cn("w-full max-w-md mx-auto my-2 relative group font-sans")}
                   >
                     <div className={cn(
-                      "p-4 rounded-2xl border shadow-md space-y-3 relative overflow-hidden",
+                      "p-4 rounded-2xl border shadow-md space-y-3 relative",
                       item.offer_status === 'ACCEPTED' ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/20" :
                       item.offer_status === 'DECLINED' ? "bg-red-50/80 border-red-200" :
                       item.offer_status === 'COUNTERED' ? "bg-amber-50/80 border-amber-200/80" :
@@ -538,7 +538,7 @@ export function ContextualNegotiationPane({
                         <button
                           type="button"
                           onClick={() => handleDeleteItem(item.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
                           title="Delete offer term"
                         >
                           <Trash2 size={12} />

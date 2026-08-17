@@ -488,7 +488,7 @@ export default function Negotiations() {
                       type="button"
                       onClick={() => handleDeleteOffer(msg.id)}
                       className={cn(
-                        "opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1.5 rounded-full shadow-md cursor-pointer border",
+                        "opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1.5 rounded-full shadow-md cursor-pointer border",
                         msg.sender === 'BUYER' 
                           ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" 
                           : "bg-red-900/90 text-red-100 border-red-700 hover:bg-red-950"

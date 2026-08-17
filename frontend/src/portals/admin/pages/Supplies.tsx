@@ -900,7 +900,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                             }
                           }
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 shadow-md cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 shadow-md cursor-pointer"
                         title="Delete proposal term"
                       >
                         <Trash2 size={12} />
