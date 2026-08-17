@@ -182,23 +182,27 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
 
     async function loadDemands() {
       setIsLoading(true);
-      const safetyTimer = setTimeout(() => {
-        if (mounted) setIsLoading(false);
-      }, 4000);
 
       try {
-        const data = await api.currentDemands();
+        let data = await api.currentDemands();
+        let list = Array.isArray(data) ? data : (data?.results || []);
+
+        // Fallback to all products if no specific demand products returned
+        if (list.length === 0) {
+          data = await api.allProducts();
+          list = Array.isArray(data) ? data : (data?.results || []);
+        }
+
         if (!mounted) return;
         setDemands(
-          (data || []).map((item: DemandProduct) => ({
+          list.map((item: DemandProduct) => ({
             ...item,
             image: item.image_url || item.image || getReferenceImage(item.name) || '',
           }))
         );
       } catch (error) {
-        console.error('Failed to load current demands:', error);
+        console.error('Failed to load harvest templates:', error);
       } finally {
-        clearTimeout(safetyTimer);
         if (mounted) setIsLoading(false);
       }
     }
