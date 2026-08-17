@@ -318,13 +318,13 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
                           {unreadNotifs.map(n => (
                             <div key={n.id} onClick={() => handleMarkRead(n.id)} className="p-3 bg-[#2D5A3D]/5 hover:bg-[#2D5A3D]/10 border-l-4 border-[#2D5A3D] cursor-pointer">
                               <p className="text-xs font-bold text-[#2D5A3D]">{n.title || 'Notification'}</p>
-                              <p className="text-[11px] text-[#414942] mt-0.5">{n.message}</p>
+                              <p className="text-[11px] text-[#414942] mt-0.5 line-clamp-2">{n.message}</p>
                             </div>
                           ))}
                           {readNotifs.map(n => (
                             <div key={n.id} className="p-3 hover:bg-[#FAF7F0]">
                               <p className="text-xs font-bold text-[#414942]">{n.title || 'Notification'}</p>
-                              <p className="text-[11px] text-[#717971] mt-0.5">{n.message}</p>
+                              <p className="text-[11px] text-[#717971] mt-0.5 line-clamp-2">{n.message}</p>
                             </div>
                           ))}
                         </>

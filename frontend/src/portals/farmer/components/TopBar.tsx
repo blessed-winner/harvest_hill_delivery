@@ -226,7 +226,7 @@ export default function TopBar({
                                   </span>
                                 </div>
                               </div>
-                              <p className="font-sans text-[11px] text-on-surface-variant mt-1 leading-relaxed">{notify.message}</p>
+                              <p className="font-sans text-[11px] text-on-surface-variant mt-1 leading-relaxed line-clamp-2">{notify.message}</p>
                               <div className="flex gap-3 mt-2">
                                 <button
                                   onClick={e => { e.stopPropagation(); onMarkRead(notify.id); }}

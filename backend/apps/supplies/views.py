@@ -443,10 +443,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if supply.farmer and getattr(supply.farmer, 'user', None):
             from apps.notifications.utils import send_live_notification
             prod_name = supply.product.name if supply.product else (supply.suggested_product_name or supply.custom_product_name or "Harvest Batch")
+            clean_notes = str(admin_notes).strip() if admin_notes else ''
+            terms_summary = f". Terms: {clean_notes[:45]}..." if len(clean_notes) > 45 else (f". Terms: {clean_notes}" if clean_notes else "")
             send_live_notification(
                 user=supply.farmer.user,
                 title="Harvest Hill Proposed Counter-Terms",
-                message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {unit_str} @ RWF {supply.agreed_price:g}/{unit_str}. Terms: {admin_notes if admin_notes else 'None'}"
+                message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {unit_str} @ RWF {supply.agreed_price:g}/{unit_str}{terms_summary}"
             )
 
         serializer = self.get_serializer(supply)
