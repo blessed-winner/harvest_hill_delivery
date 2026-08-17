@@ -540,11 +540,18 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         )}
       </div>
 
-      <DetailDrawer
-        isOpen={!!selectedSupply}
-        onClose={() => setSelectedSupply(null)}
-        title={selectedSupply?.product_detail?.name || selectedSupply?.custom_product_name || 'Supply Details'}
-        subtitle="Inbound Supply Manager"
+      {(() => {
+        const isHarvestHillSubmission = selectedSupply && (
+          (selectedSupply.farmer_name || '').toLowerCase().includes('harvest hill') ||
+          (selectedSupply.farmer?.farm_name || '').toLowerCase().includes('harvest hill') ||
+          selectedSupply.farmer?.user?.role === 'admin'
+        );
+        return (
+          <DetailDrawer
+            isOpen={!!selectedSupply}
+            onClose={() => setSelectedSupply(null)}
+            title={selectedSupply?.product_detail?.name || selectedSupply?.custom_product_name || 'Supply Details'}
+            subtitle="Inbound Supply Manager"
         footer={
           selectedSupply && (
             <div className="space-y-2.5 w-full font-sans text-xs">
@@ -565,7 +572,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               )}
 
               {!selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className={cn("grid gap-2.5", isHarvestHillSubmission ? "grid-cols-1" : "grid-cols-2")}>
                   <button 
                     type="button"
                     onClick={() => {
@@ -577,17 +584,19 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   >
                     <Edit3 size={14} /> Edit Supply
                   </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      const supToNeg = selectedSupply;
-                      setSelectedSupply(null);
-                      setActiveNegotiationSupply(supToNeg);
-                    }}
-                    className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                  >
-                    <Handshake size={14} /> Contextual Pane
-                  </button>
+                  {!isHarvestHillSubmission && (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const supToNeg = selectedSupply;
+                        setSelectedSupply(null);
+                        setActiveNegotiationSupply(supToNeg);
+                      }}
+                      className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                    >
+                      <Handshake size={14} /> Contextual Pane
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -756,7 +765,21 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
             </div>
 
             {/* B2B Term Agreement Form vs Finalized Stats Display */}
-            {selectedSupply.status === 'accepted' ? (
+            {isHarvestHillSubmission ? (
+              <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-2 font-sans shadow-2xs">
+                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-emerald-700" /> Harvest Hill Direct Stock
+                  </span>
+                  <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase">
+                    Self-Managed Batch
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-950 font-medium leading-relaxed">
+                  This harvest was submitted directly by Harvest Hill. Internal farmer procurement negotiations are omitted as Harvest Hill manages its own stock and pricing directly. Use <strong>Edit Supply</strong> above to modify quantity or price.
+                </p>
+              </div>
+            ) : selectedSupply.status === 'accepted' ? (
               <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-3 font-sans shadow-xs">
                 <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
@@ -1014,6 +1037,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           </div>
         )}
       </DetailDrawer>
+    );
+  })()}
 
       {/* Success Modal Pop-up */}
       {successModal.isOpen && (
