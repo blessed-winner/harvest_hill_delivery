@@ -256,8 +256,8 @@ export default function Negotiations() {
                     <h3 className={cn("font-sans text-sm font-bold truncate", neg.id.toString() === activeNegId ? "text-primary" : "text-on-surface")}>
                       {neg.supply_detail?.product_detail?.name}
                     </h3>
-                    <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">
-                      #{neg.supply_detail?.id} • {neg.supply_detail?.quantity} {neg.supply_detail?.unit}
+                    <p className="font-mono text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
+                      {neg.supply_detail?.supply_number || neg.supply_detail?.supplyNumber || `SUP-${String(neg.supply_detail?.id).slice(0, 6).toUpperCase()}`} • {neg.supply_detail?.quantity} {neg.supply_detail?.unit}
                     </p>
                   </div>
                 </div>

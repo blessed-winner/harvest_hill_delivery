@@ -138,7 +138,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         send_live_notification(
             user=thread.supply.farmer.user,
             title="Agreement Reached",
-            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply #{thread.supply.id} ({prod_name})."
+            message=f"Negotiation finalized with buyer {thread.buyer.email if thread.buyer else 'Client'} for supply {thread.supply.supply_number or thread.supply.id} ({prod_name})."
         )
 
         # Send live notification to all admins
@@ -149,7 +149,7 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             send_live_notification(
                 user=admin,
                 title="Negotiation Finalized",
-                message=f"Negotiation for supply #{thread.supply.id} ({prod_name}) has been finalized."
+                message=f"Negotiation for supply {thread.supply.supply_number or thread.supply.id} ({prod_name}) has been finalized."
             )
 
         # Log action to AuditLog

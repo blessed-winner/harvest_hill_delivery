@@ -274,8 +274,15 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             return Response({"error": "No image_id provided"}, status=400)
         try:
             img_obj = SupplyImage.objects.get(id=image_id, supply=supply)
-            # If deleting the main supply photo, reset it or point to next image
             is_main = (supply.photo and (supply.photo.name == img_obj.image.name))
+            
+            # Permanently delete file from Cloudinary / media storage
+            try:
+                if img_obj.image:
+                    img_obj.image.delete(save=False)
+            except Exception as storage_err:
+                print("Cloudinary storage delete note:", storage_err)
+
             img_obj.delete()
             if is_main:
                 next_img = supply.images.first()

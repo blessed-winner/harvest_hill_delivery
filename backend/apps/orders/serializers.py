@@ -58,7 +58,7 @@ def deduct_inventory_for_order(order):
                     Notification.objects.create(
                         user=admin,
                         title="Inventory Threshold Reached",
-                        message=f"Product '{product.name}' (Supply #{supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
+                        message=f"Product '{product.name}' ({supply.supply_number or supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
                     )
 
     order.is_quantity_deducted = True

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Tag } from 'lucide-react';
+import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Tag, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
@@ -554,7 +554,7 @@ export default function MySupplies() {
                 </div>
                 <div>
                   <h3 className="font-sans text-base font-extrabold tracking-tight">Confirm Deletion</h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record #{selectedDeleteSupply.id}</p>
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">Supply Record {selectedDeleteSupply.supply_number || selectedDeleteSupply.supplyNumber || `SUP-${String(selectedDeleteSupply.id).slice(0, 6).toUpperCase()}`}</p>
                 </div>
               </div>
 
@@ -611,7 +611,7 @@ export default function MySupplies() {
                   </div>
                   <div>
                     <h3 className="font-sans text-base font-extrabold tracking-tight">Update Harvest Supply</h3>
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} (#{editSupply.id})</p>
+                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#b6edc2]/80 mt-0.5">{editSupply.product_detail?.name} ({editSupply.supply_number || editSupply.supplyNumber || `SUP-${String(editSupply.id).slice(0, 6).toUpperCase()}`})</p>
                   </div>
                 </div>
                 <button 
@@ -725,42 +725,72 @@ export default function MySupplies() {
                   />
                 </div>
 
-                {/* 4. Photo Upload */}
+                {/* 4. Harvest Photos Grid (Square Divs with Hover Delete & '+' Upload Tile) */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-primary font-sans">Harvest Photos (Update on the Fly)</label>
-                  
-                  {/* Grid showing current images */}
-                  {editImages.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      {editImages.map((img) => (
-                        <div key={img.id} className="relative w-20 h-20 rounded-xl border border-outline-variant overflow-hidden bg-surface-container-high group">
-                          <img src={img.image_url || img.image} alt="Preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => handleOnTheFlyDelete(img.id)}
-                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow flex items-center justify-center cursor-pointer"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 items-center">
-                    <label className="flex-1 border border-dashed border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center bg-surface-container-low hover:border-primary cursor-pointer transition-all">
-                      <CloudUpload size={20} className="text-primary mb-1" />
-                      <span className="font-sans text-xs text-primary font-extrabold">
-                        {isUploadingImage ? 'Uploading...' : 'Upload New Photo (+)'}
-                      </span>
-                      <input 
-                        type="file"
-                        accept="image/*"
-                        onChange={handleOnTheFlyUpload}
-                        className="hidden"
-                        disabled={isUploadingImage}
-                      />
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold text-primary font-sans">
+                      Harvest Photos ({editImages.length}/5)
                     </label>
+                    <span className="text-[10px] text-on-surface-variant font-mono">
+                      Max 5 photos
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                    {/* Render each uploaded photo as a square div */}
+                    {editImages.map((img: any, idx: number) => (
+                      <div 
+                        key={img.id || idx} 
+                        className="relative aspect-square rounded-2xl border border-outline-variant overflow-hidden bg-surface-container-high group shadow-xs hover:border-primary transition-all select-none"
+                      >
+                        <img 
+                          src={img.image_url || img.image} 
+                          alt={`Harvest photo ${idx + 1}`} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                        
+                        {/* Top-Right Trash Delete Button (hover visible, permanently deletes from Cloudinary & DB) */}
+                        <button
+                          type="button"
+                          onClick={() => handleOnTheFlyDelete(img.id)}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600/90 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-700 transition-all shadow-md flex items-center justify-center cursor-pointer active:scale-90 z-10"
+                          title="Permanently delete photo"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 text-[7px] font-bold uppercase tracking-wider bg-[#144227] text-white px-1.5 py-0.5 rounded-md shadow-xs">
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Dynamic '+' Square Tile for uploading new photo (shown if < 5 threshold) */}
+                    {editImages.length < 5 && (
+                      <label className="aspect-square rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center cursor-pointer transition-all group relative">
+                        {isUploadingImage ? (
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                              <Plus size={18} />
+                            </div>
+                            <span className="text-[9px] font-bold text-primary mt-1 group-hover:underline">
+                              Add Photo
+                            </span>
+                          </>
+                        )}
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          onChange={handleOnTheFlyUpload}
+                          className="hidden"
+                          disabled={isUploadingImage}
+                        />
+                      </label>
+                    )}
                   </div>
                 </div>
 
