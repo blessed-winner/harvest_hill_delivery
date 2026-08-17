@@ -548,14 +548,24 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
         )}
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-2 animate-pulse">
-              <div className="h-40 bg-surface-container-high rounded-lg mb-3" />
-              <div className="px-2 pb-2 space-y-2">
-                <div className="h-4 bg-surface-container-high rounded w-3/4" />
-                <div className="h-3 bg-surface-container-high rounded w-1/2" />
-              </div>
+            <div key={i} className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 animate-pulse space-y-3">
+              <div className="h-4 bg-surface-container-high rounded w-3/4" />
+              <div className="h-3 bg-surface-container-high rounded w-1/2" />
+              <div className="h-16 bg-surface-container-high rounded" />
             </div>
           ))
+        ) : currentDemands.length === 0 ? (
+          <div className="col-span-full bg-white border border-[#E8E4DA] rounded-2xl p-8 sm:p-14 text-center max-w-lg mx-auto shadow-sm space-y-4 my-6">
+            <div className="w-16 h-16 rounded-2xl bg-[#FAF7F0] border border-[#E8E4DA] flex items-center justify-center mx-auto text-[#2D5A3D]">
+              <Package size={30} />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-extrabold text-[#1C2A1E]">No Active Harvest Requirements</h3>
+              <p className="text-xs text-[#717971] leading-relaxed">
+                Harvest Hill has no active requirements available for submission right now. Check back later for new opportunities.
+              </p>
+            </div>
+          </div>
         ) : currentDemands.map((product) => {
           let baseVal = Number(product.base_price || 0);
           if (baseVal > 0 && baseVal < 100) {
@@ -569,70 +579,49 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
               whileHover={{ y: -2 }}
               onClick={() => openProduct(product)}
               className={cn(
-                'bg-surface-container-lowest rounded-xl border p-2.5 custom-shadow cursor-pointer transition-all duration-300 group overflow-hidden flex flex-col justify-between',
+                'bg-white rounded-2xl border p-4 shadow-sm cursor-pointer transition-all duration-300 group flex flex-col justify-between hover:shadow-md hover:border-[#2D5A3D]',
                 selectedProduct?.id === product.id
-                  ? 'border-primary ring-1 ring-primary/30'
-                  : 'border-outline-variant hover:border-outline'
+                  ? 'border-[#2D5A3D] ring-2 ring-[#2D5A3D]/20'
+                  : 'border-[#E8E4DA]'
               )}
             >
               <div>
-                <div className="relative rounded-lg overflow-hidden h-32 sm:h-36 mb-2.5">
-                  <img 
-                    src={product.image || getReferenceImage(product.name) || ''} 
-                    alt={product.name} 
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  {getBadgeMeta(product.name, product.urgency) && (
-                    <div className="absolute top-2.5 right-2.5">
-                      <span className={cn(
-                        "px-2.5 py-0.5 rounded-full font-mono text-[9px] flex items-center gap-1 shadow-sm uppercase tracking-wider font-bold",
-                        getBadgeMeta(product.name, product.urgency)?.className
-                      )}>
-                        {getBadgeMeta(product.name, product.urgency)?.label === 'High Urgency' && (
-                          <Bolt size={10} fill="currentColor" />
-                        )}
-                        {getBadgeMeta(product.name, product.urgency)?.label}
-                      </span>
-                    </div>
-                  )}
+                <div className="flex justify-between items-start mb-2 gap-1">
+                  <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors">{product.name}</h3>
+                  <span className="bg-[#FAF7F0] text-[#2D5A3D] px-2.5 py-0.5 rounded-md font-mono text-[9px] uppercase tracking-wider font-extrabold border border-[#E8E4DA]">
+                    {product.category || 'Vegetables'}
+                  </span>
                 </div>
-                <div className="px-1 pb-1">
-                  <div className="flex justify-between items-start mb-1.5 gap-1">
-                    <h3 className="font-sans text-sm font-bold text-primary truncate">{product.name}</h3>
-                    <span className="bg-primary-container/20 text-primary px-2 py-0.5 rounded font-mono text-[9px] uppercase tracking-wider shrink-0 font-bold">
-                      {product.category}
+
+                {/* Requirement Specifications */}
+                <div className="space-y-2 bg-[#FAF7F0] p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Quantity Needed:</span>
+                    <span className="font-extrabold text-[#1C2A1E]">
+                      {String(product.quantity_needed ?? '0').split(' ')[0]} {product.unit}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex flex-col">
-                      <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider font-bold">Quantity Needed</span>
-                      <span className="font-sans text-base font-bold text-primary">
-                        {String(product.quantity_needed ?? '0').split(' ')[0]}
-                        <span className="text-xs font-normal ml-1">{product.unit}</span>
-                      </span>
-                    </div>
-                    <div
-                      className={cn(
-                        'p-1.5 rounded-lg transition-colors group-hover:translate-x-0.5 duration-300',
-                        selectedProduct?.id === product.id ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-primary'
-                      )}
-                    >
-                      <ArrowRight size={15} />
-                    </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Reference Price:</span>
+                    <span className="font-extrabold text-[#2D5A3D]">
+                      {formattedPrice}/{product.unit}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1 border-t border-[#E8E4DA]">
+                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Submit By:</span>
+                    <span className="font-bold text-[#D9381E]">
+                      {(product as any).submission_deadline ? (product as any).submission_deadline : 'Open'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* RWF Base Price */}
-              <div className="mt-2.5 pt-2.5 border-t border-outline-variant/40 flex justify-between items-center bg-surface-container-low/20 p-2 rounded-lg text-xs shrink-0">
-                <div>
-                  <span className="text-on-surface-variant font-mono text-[9px] uppercase tracking-wider block font-bold">Base Price</span>
-                  <span className="font-sans text-xs font-bold text-primary">
-                    {formattedPrice} / {product.unit}
-                  </span>
-                </div>
+              <div className="mt-2 pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
+                  View requirements <ArrowRight size={13} />
+                </span>
               </div>
             </motion.div>
           );

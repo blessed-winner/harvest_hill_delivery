@@ -153,6 +153,16 @@ class SupplySerializer(serializers.ModelSerializer):
             attrs.pop('is_discounted', None)
             attrs.pop('discount_price', None)
 
+        # Validate that farmers can only submit against OPEN templates before the submission deadline
+        if not self.instance and request and hasattr(request, 'user') and getattr(request.user, 'role', '') == 'farmer':
+            if product:
+                from django.utils import timezone
+                product.check_and_update_status()
+                if product.status != 'open':
+                    raise serializers.ValidationError({"product": f"Harvest submissions for '{product.name}' are currently closed ({product.get_status_display().upper()})."})
+                if product.submission_deadline and product.submission_deadline < timezone.now().date():
+                    raise serializers.ValidationError({"product": f"The submission deadline for '{product.name}' has passed."})
+
         return attrs
 
 class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):

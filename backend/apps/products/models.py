@@ -2,6 +2,13 @@ import uuid
 from django.db import models
 
 class Product(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('open', 'Open'),
+        ('closed', 'Closed'),
+        ('archived', 'Archived'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=100) # e.g. Fruits, Vegetables, Grains, Animal-Based
@@ -15,6 +22,19 @@ class Product(models.Model):
     is_discounted = models.BooleanField(default=False)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    # Product Template / Requirement specific fields
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    quality_requirements = models.TextField(blank=True, default='')
+    submission_deadline = models.DateField(null=True, blank=True)
+    preferred_harvest_period = models.CharField(max_length=255, blank=True, default='')
+
+    def check_and_update_status(self):
+        from django.utils import timezone
+        if self.status == 'open' and self.submission_deadline and self.submission_deadline < timezone.now().date():
+            self.status = 'closed'
+            self.save(update_fields=['status'])
+        return self.status
 
     @property
     def total_available_quantity(self):

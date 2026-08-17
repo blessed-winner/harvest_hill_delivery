@@ -17,15 +17,30 @@ class ProductViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
+        # Auto-close open templates whose submission deadline has passed
+        from django.utils import timezone
+        today = timezone.now().date()
+        Product.objects.filter(status='open', submission_deadline__lt=today).update(status='closed')
+
         queryset = super().get_queryset()
+        status_param = self.request.query_params.get('status', None)
         search = self.request.query_params.get('search', None)
         is_currently_needed = self.request.query_params.get('is_currently_needed', None)
+
+        # For farmers/non-admins, strictly show OPEN requirements
+        if not self.request.user.is_authenticated or getattr(self.request.user, 'role', '') != 'admin':
+            queryset = queryset.filter(status='open')
+        elif status_param and status_param != 'all':
+            queryset = queryset.filter(status=status_param)
+
         if is_currently_needed is not None:
             val = is_currently_needed.lower() in ['true', '1']
             queryset = queryset.filter(is_currently_needed=val)
+
         if search:
             queryset = queryset.filter(name__icontains=search)
-        return queryset
+
+        return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
         product = serializer.save()
@@ -48,6 +63,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance.supplies.filter(is_archived=False).update(price=new_price, agreed_price=new_price)
 
     def perform_destroy(self, instance):
+        if instance.supplies.exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Cannot delete product requirement with associated farmer harvest submissions. Please archive it instead.")
+
         prod_id = instance.id
         prod_name = instance.name
         from apps.common.utils import log_action

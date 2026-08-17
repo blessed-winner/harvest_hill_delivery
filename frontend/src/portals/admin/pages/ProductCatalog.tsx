@@ -22,31 +22,23 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState("Vegetables");
   const [formUnit, setFormUnit] = useState("kg");
-  const [formPrice, setFormPrice] = useState(""); // Holds entered price
-  const [formCurrencyCode, setFormCurrencyCode] = useState<'USD' | 'RWF'>('RWF'); // Custom toggle state
-  const [formIsCurrentlyNeeded, setFormIsCurrentlyNeeded] = useState(false);
-  const [formUrgency, setFormUrgency] = useState("medium");
+  const [formPrice, setFormPrice] = useState(""); // Holds entered reference price
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
+  const [formStatus, setFormStatus] = useState<string>("open");
+  const [formQualityRequirements, setFormQualityRequirements] = useState<string>("");
+  const [formSubmissionDeadline, setFormSubmissionDeadline] = useState<string>("");
+  const [formPreferredPeriod, setFormPreferredPeriod] = useState<string>("");
+  const [formDescription, setFormDescription] = useState<string>("");
 
-  // File Upload states
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  // Status Filter Tabs
+  const [activeStatusTab, setActiveStatusTab] = useState<string>('all');
 
   // UI states
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [activeCategory, setActiveCategory] = useState('All Products');
-  const categories = ['All Products', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
-
-  // Delegate Discount Modal state
-  const [discountProduct, setDiscountProduct] = useState<any | null>(null);
-  const [discountIsActive, setDiscountIsActive] = useState(false);
-  const [discountPriceInput, setDiscountPriceInput] = useState('');
-  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
-
-  const [formIsDiscounted, setFormIsDiscounted] = useState(false);
-  const [formDiscountPrice, setFormDiscountPrice] = useState("");
+  const [activeCategory, setActiveCategory] = useState('All Requirements');
+  const categories = ['All Requirements', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
 
   // Product Requests states
   const [requests, setRequests] = useState<any[]>([]);
@@ -68,10 +60,35 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestPhotoPreviews, setHarvestPhotoPreviews] = useState<string[]>([]);
   const [isSubmittingHarvest, setIsSubmittingHarvest] = useState(false);
 
+  // Delegate Discount Modal state
+  const [discountProduct, setDiscountProduct] = useState<any | null>(null);
+  const [discountIsActive, setDiscountIsActive] = useState(false);
+  const [discountPriceInput, setDiscountPriceInput] = useState('');
+  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+
   // Master Product Sourcing & Negotiation History Drawer state
   const [historyProduct, setHistoryProduct] = useState<any | null>(null);
   const [historySearchTerm, setHistorySearchTerm] = useState('');
   const [historyStatusFilter, setHistoryStatusFilter] = useState('All');
+
+  const handleSaveDiscount = async () => {
+    if (!discountProduct) return;
+    try {
+      setIsSavingDiscount(true);
+      const payload: any = {
+        is_discounted: discountIsActive,
+        discount_price: discountIsActive && discountPriceInput ? parseFloat(discountPriceInput) : null,
+      };
+      await api.products.update(discountProduct.id, payload);
+      toast(`Special fresh discount updated for ${discountProduct.name}!`, "success");
+      setDiscountProduct(null);
+      loadProducts();
+    } catch (err: any) {
+      toast(err.message || "Failed to update discount.", "error");
+    } finally {
+      setIsSavingDiscount(false);
+    }
+  };
 
   // Custom Dialog Modal State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -93,12 +110,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setIsLoading(true);
     const params: Record<string, string> = {};
     if (searchTerm) params.search = searchTerm;
+    if (activeStatusTab !== 'all') params.status = activeStatusTab;
     api.products.list(params)
       .then(res => {
         setProducts(res || []);
       })
       .catch(err => {
-        console.error("Failed to load products:", err);
+        console.error("Failed to load product requirements:", err);
       })
       .finally(() => {
         setIsLoading(false);
@@ -147,12 +165,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory(req.category || 'Vegetables');
     setFormUnit(req.unit || 'kg');
     setFormPrice(req.preferred_price ? String(req.preferred_price) : '');
-    setFormCurrencyCode("RWF");
-    setFormIsCurrentlyNeeded(true);
-    setFormUrgency("medium");
     setFormQuantityNeeded(String(req.quantity_needed));
-    setImageFile(null);
-    setImagePreviewUrl("");
+    setFormStatus('open');
+    setFormQualityRequirements("• Grade A produce\n• Freshly harvested\n• No visible damage");
+    setFormSubmissionDeadline("");
+    setFormPreferredPeriod("");
+    setFormDescription(req.notes || "");
     setErrorMessage("");
     setSelectedProduct("new");
   };
@@ -163,7 +181,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     } else {
       loadProducts();
     }
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, activeStatusTab]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -186,14 +204,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory("Vegetables");
     setFormUnit("kg");
     setFormPrice("");
-    setFormCurrencyCode("RWF");
-    setFormIsCurrentlyNeeded(false);
-    setFormUrgency("medium");
     setFormQuantityNeeded("");
-    setFormIsDiscounted(false);
-    setFormDiscountPrice("");
-    setImageFile(null);
-    setImagePreviewUrl("");
+    setFormStatus("open");
+    setFormQualityRequirements("• Grade A produce\n• Freshly harvested\n• No visible damage");
+    setFormSubmissionDeadline("");
+    setFormPreferredPeriod("");
+    setFormDescription("");
     setErrorMessage("");
     setSelectedProduct("new");
   };
@@ -204,41 +220,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormCategory(product.category || "Vegetables");
     setFormUnit(product.unit || "kg");
     setFormPrice(product.base_price ? String(product.base_price) : "");
-    setFormCurrencyCode("USD");
-    setFormIsCurrentlyNeeded(product.is_currently_needed || false);
-    setFormUrgency(product.urgency || "medium");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
-    setFormIsDiscounted(!!product.is_discounted);
-    setFormDiscountPrice(product.discount_price ? String(product.discount_price) : "");
-    setImageFile(null);
-    setImagePreviewUrl(product.image_url || "");
+    setFormStatus(product.status || "open");
+    setFormQualityRequirements(product.quality_requirements || "");
+    setFormSubmissionDeadline(product.submission_deadline || "");
+    setFormPreferredPeriod(product.preferred_harvest_period || "");
+    setFormDescription(product.description || "");
     setErrorMessage("");
-  };
-
-  const handleOpenDiscountModal = (product: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDiscountProduct(product);
-    setDiscountIsActive(!!product.is_discounted);
-    setDiscountPriceInput(product.discount_price ? String(product.discount_price) : (product.base_price ? String(Math.round(Number(product.base_price) * 0.8)) : ''));
-  };
-
-  const handleSaveDiscount = async () => {
-    if (!discountProduct) return;
-    try {
-      setIsSavingDiscount(true);
-      const payload: any = {
-        is_discounted: discountIsActive,
-        discount_price: discountIsActive && discountPriceInput ? parseFloat(discountPriceInput) : null,
-      };
-      await api.products.update(discountProduct.id, payload);
-      toast(`Special fresh discount updated for ${discountProduct.name}!`, "success");
-      setDiscountProduct(null);
-      loadProducts();
-    } catch (err: any) {
-      toast(err.message || "Failed to update discount.", "error");
-    } finally {
-      setIsSavingDiscount(false);
-    }
   };
 
   const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
@@ -322,16 +310,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
   const handleSaveProduct = async () => {
     if (!formName || !formPrice || !formQuantityNeeded) {
-      setErrorMessage("Name, price and quantity needed are required.");
+      setErrorMessage("Requirement name, reference price and quantity needed are required.");
       return;
     }
 
     const priceRwf = parseFloat(formPrice);
     const qtyVal = parseFloat(formQuantityNeeded);
 
-    // Validate bounds on the client side
     if (priceRwf <= 0) {
-      setErrorMessage("Base price must be greater than zero.");
+      setErrorMessage("Reference price must be greater than zero.");
       return;
     }
 
@@ -340,72 +327,90 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
-    // Check duplicate name case-insensitively on client side
     const isDuplicate = products.some(p => 
       p.name.toLowerCase() === formName.toLowerCase() && 
       (!selectedProduct || p.id !== selectedProduct.id)
     );
     if (isDuplicate) {
-      setErrorMessage("A product with this name already exists in the catalog.");
+      setErrorMessage("A requirement with this name already exists.");
       return;
     }
 
     setIsSaving(true);
     setErrorMessage("");
 
-    const formData = new FormData();
-    formData.append('name', formName);
-    formData.append('category', formCategory);
-    formData.append('unit', formUnit);
-    formData.append('base_price', String(priceRwf));
-    formData.append('is_currently_needed', String(formIsCurrentlyNeeded));
-    formData.append('urgency', formUrgency);
-    formData.append('quantity_needed', String(qtyVal));
-    formData.append('is_discounted', String(formIsDiscounted));
-    if (formIsDiscounted && formDiscountPrice) {
-      formData.append('discount_price', formDiscountPrice);
-    }
-    
-    if (imageFile) {
-      formData.append('image', imageFile);
-    }
+    const payload: any = {
+      name: formName,
+      category: formCategory,
+      unit: formUnit,
+      base_price: priceRwf,
+      quantity_needed: qtyVal,
+      status: formStatus,
+      quality_requirements: formQualityRequirements,
+      submission_deadline: formSubmissionDeadline || null,
+      preferred_harvest_period: formPreferredPeriod,
+      description: formDescription,
+    };
 
     try {
       if (selectedProduct === 'new') {
-        await api.products.create(formData);
+        await api.products.create(payload);
+        toast(`Requirement for "${formName}" created successfully!`, "success");
       } else {
-        await api.products.update(selectedProduct.id, formData);
+        await api.products.update(selectedProduct.id, payload);
+        toast(`Requirement for "${formName}" updated successfully!`, "success");
       }
-      setImageFile(null);
-      setImagePreviewUrl("");
       setErrorMessage("");
       setSelectedProduct(null);
       loadProducts();
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to save product.");
+      setErrorMessage(err.message || "Failed to save requirement.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteProduct = (product: any, e: React.MouseEvent) => {
+  const handleDeleteOrArchiveProduct = (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Delete Product Spec',
-      message: `Are you sure you want to permanently delete the product spec for ${product.name}?`,
-      confirmText: 'Delete crop',
-      confirmColor: 'bg-red-600',
-      onConfirm: async () => {
-        try {
-          await api.products.delete(product.id);
-          setSelectedProduct(null);
-          loadProducts();
-        } catch (err: any) {
-          toast(err.message || "Failed to delete product.", "error");
+    const submissionCount = product.submission_count || product.sourcing_history_count || 0;
+
+    if (submissionCount > 0) {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Archive this requirement?',
+        message: `Farmers have already submitted ${submissionCount} harvest offer(s) against "${product.name}". Archiving will remove it from active administration while preserving the requirement and submission history.`,
+        confirmText: 'Archive requirement',
+        confirmColor: 'bg-amber-700 hover:bg-amber-800',
+        onConfirm: async () => {
+          try {
+            await api.products.update(product.id, { status: 'archived' });
+            toast(`Requirement for "${product.name}" archived successfully.`, "success");
+            setSelectedProduct(null);
+            loadProducts();
+          } catch (err: any) {
+            toast(err.message || "Failed to archive requirement.", "error");
+          }
         }
-      }
-    });
+      });
+    } else {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Delete this requirement?',
+        message: `No farmer submissions are associated with "${product.name}". This action cannot be undone.`,
+        confirmText: 'Delete requirement',
+        confirmColor: 'bg-red-600 hover:bg-red-700',
+        onConfirm: async () => {
+          try {
+            await api.products.delete(product.id);
+            toast(`Requirement for "${product.name}" deleted permanently.`, "success");
+            setSelectedProduct(null);
+            loadProducts();
+          } catch (err: any) {
+            toast(err.message || "Failed to delete requirement.", "error");
+          }
+        }
+      });
+    }
   };
 
   const filteredProducts = products.filter(p => {
@@ -439,25 +444,51 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       <div className="px-6 py-5 shrink-0 bg-white border-b border-outline-variant">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold text-on-surface tracking-tight">Product Catalog</h2>
-            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Manage crop specifications, price targets, and buyer sourcing demands.</p>
+            <h2 className="text-2xl font-extrabold text-on-surface tracking-tight">Harvest Hill Requirements</h2>
+            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Manage crop requirement specs, target reference prices, and farmer harvest submission deadlines.</p>
           </div>
           <button 
             onClick={handleOpenAddProduct}
             className="flex items-center justify-center px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-extrabold shadow-sm hover:opacity-90 transition-all cursor-pointer whitespace-nowrap shrink-0 self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4 mr-1.5" /> Add Product Spec
+            <Plus className="w-4 h-4 mr-1.5" /> Create Requirement
           </button>
         </div>
 
-        <div className="max-w-full overflow-x-auto scrollbar-none">
+        {/* Status Filter Tabs & Category Filter */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-between max-w-full overflow-x-auto scrollbar-none pb-1">
+          {/* Status Tabs */}
+          <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-max">
+            {[
+              { id: 'all', label: 'All Statuses' },
+              { id: 'open', label: 'Open' },
+              { id: 'draft', label: 'Draft' },
+              { id: 'closed', label: 'Closed' },
+              { id: 'archived', label: 'Archived' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveStatusTab(tab.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap uppercase tracking-wider text-[10px]",
+                  activeStatusTab === tab.id 
+                    ? "bg-white text-primary shadow-sm" 
+                    : "text-on-surface-variant hover:bg-surface-container-high"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Category Tabs */}
           <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-max">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   activeCategory === cat 
                     ? "bg-white text-primary shadow-sm" 
                     : "text-on-surface-variant hover:bg-surface-container-high"
@@ -537,7 +568,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             onClick={() => handleCreateProductFromRequest(req)}
                             className="px-2.5 py-1.5 bg-[#144227] hover:bg-[#376847] text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1.5 inline-flex"
                           >
-                            <Plus size={11} className="mr-1" /> Create Template
+                            <Plus size={11} className="mr-1" /> Create Requirement
                           </button>
                         )}
                         <button
@@ -557,148 +588,140 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         ) : (
           <>
             {isLoading ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading catalog...</div>
+              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading requirements...</div>
             ) : filteredProducts.length === 0 ? (
-              <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
-                <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
-                <p className="text-sm font-bold">No products found.</p>
-                <p className="text-xs">Add new crops or change categories.</p>
+              <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant bg-white border border-[#E8E4DA] rounded-2xl max-w-lg mx-auto space-y-3">
+                <AlertCircle className="w-10 h-10 opacity-40 text-primary" />
+                <div className="space-y-1">
+                  <p className="text-base font-extrabold text-[#1C2A1E]">No Product Requirements Found</p>
+                  <p className="text-xs text-[#717971]">There are no requirements matching the selected status or category filters.</p>
+                </div>
+                <button
+                  onClick={handleOpenAddProduct}
+                  className="px-4 py-2 bg-[#2D5A3D] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#1E3E2A] transition-all cursor-pointer"
+                >
+                  + Create First Requirement
+                </button>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {currentProducts.map((product, i) => (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      key={product.id}
-                      onClick={() => handleOpenEditProduct(product)}
-                      className="group bg-white rounded-2xl p-3 border border-[#E8E4DA] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer relative hover:-translate-y-0.5"
-                    >
-                      <div>
-                        {/* Minimal Image Container */}
-                        <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#FAF7F0] mb-3 flex items-center justify-center border border-[#F0ECE1]">
-                          {product.image_url ? (
-                            <img 
-                              src={product.image_url} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                              alt={product.name} 
-                            />
-                          ) : (
-                            <Package className="w-10 h-10 text-[#C4BFAF]" />
-                          )}
+                {/* Text-driven Product Requirement Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {currentProducts.map((product, i) => {
+                    const st = (product.status || 'open').toLowerCase();
+                    const isOpen = st === 'open';
+                    const isDraft = st === 'draft';
+                    const isClosed = st === 'closed';
+                    const isArchived = st === 'archived';
+                    const subCount = product.submission_count || product.sourcing_history_count || 0;
 
-                          {/* Category Pill Top Left */}
-                          <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-md text-[9px] font-extrabold text-[#2D5A3D] px-2 py-0.5 rounded-full border border-[#E8E4DA] shadow-xs">
-                            {product.category || 'Produce'}
-                          </span>
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        key={product.id}
+                        onClick={() => handleOpenEditProduct(product)}
+                        className="group bg-white rounded-2xl p-4 border border-[#E8E4DA] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer relative hover:-translate-y-0.5"
+                      >
+                        <div>
+                          {/* Card Top Pill Header */}
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border border-[#E8E4DA] uppercase tracking-wider">
+                              {product.category || 'Vegetables'}
+                            </span>
 
-                          {/* Top Right Action & Badges */}
-                          <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
-                            {product.is_discounted && (
-                              <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">
-                                🏷️ RWF {product.discount_price ? Number(product.discount_price).toLocaleString() : product.base_price}
-                              </span>
-                            )}
-                            <button 
-                              onClick={(e) => handleDeleteProduct(product, e)}
-                              className="w-6 h-6 bg-white/90 backdrop-blur-sm text-[#777777] hover:text-red-600 rounded-full flex items-center justify-center hover:bg-red-50 transition-colors border border-[#E8E4DA] shadow-xs cursor-pointer"
-                              title="Delete Crop"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <span className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs",
+                              isOpen && "bg-emerald-100 text-emerald-900 border-emerald-300",
+                              isDraft && "bg-amber-100 text-amber-900 border-amber-300",
+                              isClosed && "bg-gray-100 text-gray-700 border-gray-300",
+                              isArchived && "bg-purple-100 text-purple-900 border-purple-300"
+                            )}>
+                              {st}
+                            </span>
                           </div>
 
-                          {/* Bottom Needed Status Pill */}
-                          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleNeeded(product, e)}
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-bold tracking-tight backdrop-blur-sm flex items-center gap-1 border shadow-xs transition-all cursor-pointer",
-                                product.is_currently_needed
-                                  ? "bg-[#2D5A3D]/95 text-white border-transparent"
-                                  : "bg-white/90 text-[#666666] border-[#E8E4DA]"
-                              )}
-                              title="Toggle Market Need"
-                            >
-                              <span className={cn("w-1.5 h-1.5 rounded-full", product.is_currently_needed ? "bg-emerald-300 animate-pulse" : "bg-gray-400")} />
-                              {product.is_currently_needed ? 'Needed' : 'Normal'}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Title & Metadata */}
-                        <div className="px-1 mb-2">
-                          <h3 className="font-bold text-sm text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors truncate">
+                          {/* Requirement Title */}
+                          <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors mb-2 leading-tight">
                             {product.name}
                           </h3>
+
+                          {/* Requirement Spec Box */}
+                          <div className="space-y-2 bg-[#FAF7F0]/80 p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed:</span>
+                              <span className="font-extrabold text-[#1C2A1E]">
+                                {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Reference Price:</span>
+                              <span className="font-extrabold text-[#2D5A3D]">
+                                RWF {parseFloat(product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By:</span>
+                              <span className="font-bold text-[#1C2A1E]">
+                                {product.submission_deadline ? product.submission_deadline : 'No deadline'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-[#E8E4DA]">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Farmer Offers:</span>
+                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-[10px]">
+                                {subCount} {subCount === 1 ? 'submission' : 'submissions'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Price & Stock Row */}
-                        <div className="px-1 flex items-center justify-between py-2 border-t border-b border-[#F4F1E8] my-2">
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-[#888888] font-bold block">Base Price</span>
-                            <span className="text-xs font-black text-[#1C2A1E]">
-                              {formatPrice(product.base_price)} <span className="text-[10px] font-bold text-[#777777]">/{product.unit}</span>
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-[9px] uppercase tracking-wider text-[#2D5A3D] font-bold block">Live Stock</span>
-                            <span className="text-xs font-black text-[#2D5A3D] bg-[#F0F5F1] px-2 py-0.5 rounded-md border border-[#D3E2D6] inline-block">
-                              {(product.total_available_quantity || 0).toLocaleString()} {product.unit}
-                            </span>
-                          </div>
+                        {/* Card Actions Bar */}
+                        <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-[#F4F1E8] mt-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryProduct(product);
+                            }}
+                            className="py-1.5 px-2 bg-[#F5F3ED] hover:bg-[#EBE7DC] text-[#4A473D] border border-[#E3DFC2] rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer flex-1"
+                            title="Requirement Audit & Submissions History"
+                          >
+                            <Handshake size={11} /> History
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenHarvestModal(product, e)}
+                            className="py-1.5 px-2 bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer flex-1"
+                            title="Record Admin Internal Harvest Batch"
+                          >
+                            <Sprout size={11} /> Harvest
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteOrArchiveProduct(product, e)}
+                            className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                            title={subCount > 0 ? "Archive Requirement" : "Delete Requirement"}
+                          >
+                            <Trash2 size={11} />
+                            {subCount > 0 ? 'Archive' : 'Delete'}
+                          </button>
                         </div>
-                      </div>
-
-                      {/* Minimal Clean Actions Bar */}
-                      <div className="grid grid-cols-3 gap-1.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setHistoryProduct(product);
-                          }}
-                          className="py-1.5 bg-[#F5F3ED] hover:bg-[#EBE7DC] text-[#4A473D] border border-[#E3DFC2] rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
-                          title="Sourcing & Negotiation History"
-                        >
-                          <Handshake size={11} /> Audit
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => handleOpenDiscountModal(product, e)}
-                          className={cn(
-                            "py-1.5 rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer border",
-                            product.is_discounted 
-                              ? "bg-[#D9381E] hover:bg-[#B82B14] text-white border-[#B82B14] shadow-xs" 
-                              : "bg-[#FFF5F0] hover:bg-[#FFEAE0] text-[#D9381E] border-[#FFD0C7]"
-                          )}
-                          title="Delegate Special Fresh Discount"
-                        >
-                          🏷️ {product.is_discounted ? 'Discounted' : 'Discount'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => handleOpenHarvestModal(product, e)}
-                          className="py-1.5 bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white rounded-lg text-[9.5px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer"
-                          title="Record Admin Harvest Batch"
-                        >
-                          <Sprout size={11} /> Harvest
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
     
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <div className="mt-8 px-6 py-4 bg-surface-container-low border border-outline-variant rounded-xl flex items-center justify-between">
                     <span className="text-xs text-on-surface-variant font-bold">
-                      Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} crops
+                      Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} requirements
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -727,8 +750,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       <DetailDrawer
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
-        title={selectedProduct === 'new' ? "Add New Product" : "Edit Product Specifications"}
-        subtitle="Configure product metrics, base pricing, and market urgency levels"
+        title={selectedProduct === 'new' ? "Create Product Requirement" : "Edit Product Requirement"}
+        subtitle="Configure Harvest Hill crop requirements, target reference price, and submission deadline"
         footer={
           <div className="w-full space-y-3">
             {errorMessage && (
@@ -747,109 +770,31 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               >
                 Cancel
               </button>
-                {(() => {
-                  const isFormDirty = selectedProduct === 'new' ? true : (
-                    selectedProduct ? (
-                      formName !== (selectedProduct.name || '') ||
-                      formCategory !== (selectedProduct.category || 'Vegetables') ||
-                      formUnit !== (selectedProduct.unit || 'kg') ||
-                      formPrice !== (selectedProduct.base_price ? String(selectedProduct.base_price) : '') ||
-                      formUrgency !== (selectedProduct.urgency || 'medium') ||
-                      formQuantityNeeded !== (selectedProduct.quantity_needed ? String(selectedProduct.quantity_needed) : '') ||
-                      formIsDiscounted !== (!!selectedProduct.is_discounted) ||
-                      formDiscountPrice !== (selectedProduct.discount_price ? String(selectedProduct.discount_price) : '') ||
-                      imageFile !== null
-                    ) : false
-                  );
-
-                  return (
-                    <button 
-                      onClick={handleSaveProduct}
-                      disabled={isSaving || !isFormDirty}
-                      className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      title={!isFormDirty ? "No changes made to product spec" : "Save product changes"}
-                    >
-                      {isSaving ? 'Creating...' : selectedProduct === 'new' ? 'Save Product' : 'Update Product'}
-                    </button>
-                  );
-                })()}
-              </div>
-            </div>
-        }
-      >
-        <div className="space-y-6">
-          {/* File Upload Preview Panel */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Photo</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-outline-variant border-dashed rounded-xl hover:border-primary/50 transition-colors bg-surface-container-low/50 relative overflow-hidden group min-h-[180px] items-center">
-              {imagePreviewUrl ? (
-                <div className="w-full h-full relative">
-                  <img src={imagePreviewUrl} className="w-full h-full object-cover rounded-lg" alt="Preview" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
-                    <p className="text-white text-xs font-bold">Click to change image</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setImageFile(null);
-                        setImagePreviewUrl("");
-                      }}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors"
-                    >
-                      Remove Image
-                    </button>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="absolute inset-0 opacity-0 cursor-pointer z-20"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImageFile(file);
-                        setImagePreviewUrl(URL.createObjectURL(file));
-                      }
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-1 text-center w-full">
-                  <ImageIcon className="mx-auto h-12 w-12 text-outline-variant" />
-                  <div className="flex text-sm text-on-surface-variant justify-center mt-2">
-                    <label className="relative cursor-pointer bg-transparent rounded-md font-semibold text-primary hover:text-primary-container focus-within:outline-none">
-                      <span>Upload an image file</span>
-                    </label>
-                  </div>
-                  <p className="text-xs text-on-surface-variant/70">PNG, JPG, GIF up to 5MB</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setImageFile(file);
-                        setImagePreviewUrl(URL.createObjectURL(file));
-                      }
-                    }}
-                  />
-                </div>
-              )}
+              <button 
+                onClick={handleSaveProduct}
+                disabled={isSaving}
+                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {isSaving ? 'Saving...' : selectedProduct === 'new' ? 'Create Requirement' : 'Update Requirement'}
+              </button>
             </div>
           </div>
-
+        }
+      >
+        <div className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 space-y-2">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Product Name</label>
+            <div className="col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Name</label>
               <input 
                 type="text" 
-                placeholder="e.g. Roma Tomatoes"
+                placeholder="e.g. Tomatoes"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Category</label>
               <select 
                 value={formCategory}
@@ -863,8 +808,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <option value="Grains">Grains</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Unit of Measurement</label>
               <select 
                 value={formUnit}
                 onChange={(e) => setFormUnit(e.target.value)}
@@ -873,82 +819,97 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <option value="kg">kg</option>
                 <option value="litre">litre</option>
                 <option value="crate">crate</option>
-                <option value="jar">jar</option>
+                <option value="bag">bag</option>
+                <option value="ton">ton</option>
+                <option value="piece">piece</option>
                 <option value="bundle">bundle</option>
-                <option value="dozen">dozen</option>
-                <option value="bunch">bunch</option>
-                <option value="tray">tray</option>
-                <option value="pack">pack</option>
                 <option value="box">box</option>
-                <option value="bottle">bottle</option>
-                <option value="punnet">punnet</option>
-                <option value="head">head</option>
-                <option value="block">block</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-                Base Price (RWF)
-              </label>
-              <div className="relative">
-                <input 
-                  type="number" 
-                  placeholder="e.g. 1500" 
-                  value={formPrice}
-                  onChange={(e) => setFormPrice(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quantity Needed</label>
               <input 
                 type="number" 
-                placeholder="e.g. 50"
+                placeholder="e.g. 1000"
                 value={formQuantityNeeded}
                 onChange={(e) => setFormQuantityNeeded(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
               />
             </div>
-          </div>
 
-          <div className="p-4 bg-surface-container-low rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold">Currently Needed</span>
-              <AlertCircle className="w-4 h-4 text-on-surface-variant/40" />
-            </div>
-            <div 
-              onClick={() => setFormIsCurrentlyNeeded(!formIsCurrentlyNeeded)}
-              className={cn(
-                "w-10 h-5 rounded-full p-1 transition-colors cursor-pointer",
-                formIsCurrentlyNeeded ? "bg-primary" : "bg-outline-variant"
-              )}
-            >
-              <div className={cn(
-                "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                formIsCurrentlyNeeded ? "translate-x-5" : "translate-x-0"
-              )} />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Reference Price (RWF)</label>
+              <input 
+                type="number" 
+                placeholder="e.g. 800"
+                value={formPrice}
+                onChange={(e) => setFormPrice(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+              />
             </div>
           </div>
 
-          {formIsCurrentlyNeeded && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Urgency Level</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Status</label>
               <select 
-                value={formUrgency}
-                onChange={(e) => setFormUrgency(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white font-bold"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="steady">Steady</option>
+                <option value="open">OPEN (Active for farmer submissions)</option>
+                <option value="draft">DRAFT (Admin workspace only)</option>
+                <option value="closed">CLOSED (Submissions ended)</option>
+                <option value="archived">ARCHIVED (Historical record)</option>
               </select>
             </div>
-          )}
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Submission Deadline</label>
+              <input 
+                type="date" 
+                value={formSubmissionDeadline}
+                onChange={(e) => setFormSubmissionDeadline(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Preferred Harvest / Delivery Period</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Late August 2026 harvest cycle"
+              value={formPreferredPeriod}
+              onChange={(e) => setFormPreferredPeriod(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-sm font-medium outline-none"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Quality Requirements</label>
+            <textarea 
+              rows={3}
+              placeholder="• Grade A produce&#10;• Freshly harvested&#10;• No visible damage"
+              value={formQualityRequirements}
+              onChange={(e) => setFormQualityRequirements(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-xs font-mono outline-none"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Requirement Description</label>
+            <textarea 
+              rows={2}
+              placeholder="Describe what Harvest Hill is looking for in this supply cycle..."
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-outline-variant text-xs font-medium outline-none"
+            />
+          </div>
         </div>
       </DetailDrawer>
 

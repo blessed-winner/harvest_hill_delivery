@@ -740,27 +740,78 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
             )}
 
-            {/* Demure Itemized Particulars Card */}
-            <div className="p-4 bg-surface-container-low/70 rounded-2xl border border-outline-variant/30 space-y-2.5">
-              <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
-                <span className="text-xs text-on-surface-variant font-medium">Farmer / Supplier</span>
-                <span className="text-xs font-bold text-on-surface">{selectedSupply.farmer_name || 'Farmer'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-on-surface-variant font-medium">Origin Location</span>
-                <span className="text-xs font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-on-surface-variant font-medium">Quantity Available</span>
-                <span className="text-xs font-bold text-on-surface">{selectedSupply.quantity} {selectedSupply.unit}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-on-surface-variant font-medium">Proposed Asking Price</span>
-                <span className="text-xs font-bold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-on-surface-variant font-medium">Catalog Base Price</span>
-                <span className="text-xs font-semibold text-on-surface-variant/80">{formatCurrency(selectedSupply.base_price || selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}</span>
+            {/* Side-by-Side / Stacked Requirement vs Farmer Submission Comparison */}
+            <div className="space-y-3 font-sans">
+              {/* Requirement Box */}
+              {selectedSupply.product_detail && (
+                <div className="p-3.5 bg-[#FAF7F0] rounded-xl border border-[#E8E4DA] space-y-2">
+                  <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E4DA]">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2D5A3D]">
+                      Harvest Hill Requirement
+                    </span>
+                    <span className="text-[10px] font-bold text-[#717971]">
+                      Deadline: {selectedSupply.product_detail?.submission_deadline || 'Open'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Crop Requirement</span>
+                      <span className="font-extrabold text-[#1C2A1E]">{selectedSupply.product_detail?.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Quantity Needed</span>
+                      <span className="font-extrabold text-[#1C2A1E]">
+                        {parseFloat(selectedSupply.product_detail?.quantity_needed || 0).toLocaleString()} {selectedSupply.unit}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Reference Target Price</span>
+                      <span className="font-extrabold text-[#2D5A3D]">
+                        {formatCurrency(selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Category</span>
+                      <span className="font-bold text-[#1C2A1E]">{selectedSupply.product_detail?.category || 'Vegetables'}</span>
+                    </div>
+                  </div>
+                  {selectedSupply.product_detail?.quality_requirements && (
+                    <div className="pt-1.5 border-t border-[#E8E4DA] text-[11px] text-[#414942]">
+                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#717971] block mb-0.5">Quality Requirements</span>
+                      <p className="whitespace-pre-line font-mono text-[10.5px] bg-white p-2 rounded-lg border border-[#E8E4DA]">{selectedSupply.product_detail?.quality_requirements}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Farmer Submission Box */}
+              <div className="p-3.5 bg-white rounded-xl border border-outline-variant/50 space-y-2 shadow-2xs">
+                <div className="flex justify-between items-center pb-1.5 border-b border-outline-variant/30">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
+                    Farmer Harvest Offer
+                  </span>
+                  <span className="text-[10px] font-bold text-on-surface-variant">
+                    Submitted by {selectedSupply.farmer_name || 'Partner Farm'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Available Quantity</span>
+                    <span className="font-extrabold text-on-surface">{selectedSupply.quantity} {selectedSupply.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farmer Asking Price</span>
+                    <span className="font-extrabold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Harvest Date</span>
+                    <span className="font-bold text-on-surface">{selectedSupply.available_date || 'Freshly Harvested'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farm Location</span>
+                    <span className="font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
