@@ -139,10 +139,9 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const getSectionItems = (categoryTarget: string) => {
     const targetLower = categoryTarget.toLowerCase();
     
-    // Only show items that have actual accepted harvest submissions available (quantity > 0)
-    const availableProducts = products.filter((p: any) => (p.total_available_quantity || 0) > 0);
-    const pool = activeSupplies.length > 0 ? activeSupplies : availableProducts;
-    const masterItems = deduplicateByName(pool);
+    // ONLY show actual accepted harvest submissions on the landing page.
+    // Product templates must NEVER be displayed on the landing page.
+    const masterItems = deduplicateByName(activeSupplies);
 
     if (masterItems.length === 0) {
       return [];
