@@ -482,13 +482,15 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => setActiveNegotiationSupply(supply)}
-                        className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                        title="Negotiate terms with Harvest Hill"
-                      >
-                        <Handshake size={16} /> Negotiate
-                      </button>
+                      {(supply.latest_offer || supply.has_admin_negotiation) && (
+                        <button
+                          onClick={() => setActiveNegotiationSupply(supply)}
+                          className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                          title="View negotiation terms from Harvest Hill Admin"
+                        >
+                          <Handshake size={16} /> Negotiate
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDiscountClick(supply)}
                         className="p-2 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"

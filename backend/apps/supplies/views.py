@@ -45,6 +45,7 @@ class SupplySerializer(serializers.ModelSerializer):
     supply_number = serializers.CharField(read_only=True)
     supplyNumber = serializers.CharField(source='supply_number', read_only=True)
     latest_offer = serializers.SerializerMethodField()
+    has_admin_negotiation = serializers.SerializerMethodField()
 
     class Meta:
         model = Supply
@@ -55,9 +56,12 @@ class SupplySerializer(serializers.ModelSerializer):
             'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
             'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
             'bulk_min_qty', 'bulk_price', 'rating', 'rating_count',
-            'custom_product_name', 'custom_category', 'custom_unit', 'latest_offer'
+            'custom_product_name', 'custom_category', 'custom_unit', 'latest_offer', 'has_admin_negotiation'
         ]
         read_only_fields = ['created_at']
+
+    def get_has_admin_negotiation(self, obj):
+        return obj.negotiation_threads.exists()
 
     def get_latest_offer(self, obj):
         thread = obj.negotiation_threads.all().order_by('created_at').last()
