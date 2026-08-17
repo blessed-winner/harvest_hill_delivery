@@ -747,15 +747,34 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               >
                 Cancel
               </button>
-              <button 
-                onClick={handleSaveProduct}
-                disabled={isSaving}
-                className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-70 flex items-center justify-center gap-2"
-              >
-                {isSaving ? 'Creating...' : 'Save Product'}
-              </button>
+                {(() => {
+                  const isFormDirty = selectedProduct === 'new' ? true : (
+                    selectedProduct ? (
+                      formName !== (selectedProduct.name || '') ||
+                      formCategory !== (selectedProduct.category || 'Vegetables') ||
+                      formUnit !== (selectedProduct.unit || 'kg') ||
+                      formPrice !== (selectedProduct.base_price ? String(selectedProduct.base_price) : '') ||
+                      formUrgency !== (selectedProduct.urgency || 'medium') ||
+                      formQuantityNeeded !== (selectedProduct.quantity_needed ? String(selectedProduct.quantity_needed) : '') ||
+                      formIsDiscounted !== (!!selectedProduct.is_discounted) ||
+                      formDiscountPrice !== (selectedProduct.discount_price ? String(selectedProduct.discount_price) : '') ||
+                      imageFile !== null
+                    ) : false
+                  );
+
+                  return (
+                    <button 
+                      onClick={handleSaveProduct}
+                      disabled={isSaving || !isFormDirty}
+                      className="flex-[2] px-6 py-3 bg-primary text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      title={!isFormDirty ? "No changes made to product spec" : "Save product changes"}
+                    >
+                      {isSaving ? 'Creating...' : selectedProduct === 'new' ? 'Save Product' : 'Update Product'}
+                    </button>
+                  );
+                })()}
+              </div>
             </div>
-          </div>
         }
       >
         <div className="space-y-6">

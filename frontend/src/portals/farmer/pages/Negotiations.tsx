@@ -393,10 +393,27 @@ export default function Negotiations() {
                         className="w-full px-2 py-1 border rounded text-xs outline-none" 
                       />
                     </div>
-                    <div className="flex gap-2 justify-end pt-1">
-                      <button onClick={() => setEditingOfferId(null)} className="px-2.5 py-1 text-[10px] border rounded hover:bg-surface-container-low cursor-pointer">Cancel</button>
-                      <button onClick={() => handleEditOfferSubmit(activeThread.id, msg.id)} className="px-2.5 py-1 text-[10px] bg-[#144227] text-white rounded hover:opacity-90 cursor-pointer">Save</button>
-                    </div>
+                    {(() => {
+                      const isOfferDirty = (
+                        String(editPrice) !== String(msg.raw_price || '') ||
+                        String(editQty) !== String(msg.quantity || '') ||
+                        String(editMsg) !== String(msg.message || '')
+                      );
+
+                      return (
+                        <div className="flex gap-2 justify-end pt-1">
+                          <button onClick={() => setEditingOfferId(null)} className="px-2.5 py-1 text-[10px] border rounded hover:bg-surface-container-low cursor-pointer">Cancel</button>
+                          <button 
+                            onClick={() => handleEditOfferSubmit(activeThread.id, msg.id)} 
+                            disabled={!isOfferDirty}
+                            className="px-2.5 py-1 text-[10px] bg-[#144227] text-white rounded hover:opacity-90 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={!isOfferDirty ? "No changes made to offer" : "Save offer changes"}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );

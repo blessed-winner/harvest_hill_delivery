@@ -823,29 +823,43 @@ export default function MySupplies() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-4 flex gap-3 justify-end shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setEditSupply(null)}
-                    className="px-6 py-2.5 rounded-xl border border-[#c1c9c0] text-[#414942] font-extrabold font-sans text-xs hover:bg-surface-container-low transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating || !!validationErrors.quantity || !!validationErrors.price}
-                    className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-extrabold font-sans text-xs shadow-md hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isUpdating ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Save size={16} />
-                        Update Harvest
-                      </>
-                    )}
-                  </button>
-                </div>
+                {(() => {
+                  const isFormDirty = editSupply ? (
+                    String(editQuantity) !== String(editSupply.quantity || '') ||
+                    String(editPrice) !== String(editSupply.proposed_price || editSupply.price || '') ||
+                    String(editDate) !== String(editSupply.available_date || '') ||
+                    String(editQuality) !== String(editSupply.quality_grade || 'standard') ||
+                    String(editNotes) !== String(editSupply.notes || '') ||
+                    editPhoto !== null
+                  ) : false;
+
+                  return (
+                    <div className="pt-4 flex gap-3 justify-end shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setEditSupply(null)}
+                        className="px-6 py-2.5 rounded-xl border border-[#c1c9c0] text-[#414942] font-extrabold font-sans text-xs hover:bg-surface-container-low transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!isFormDirty || isUpdating || !!validationErrors.quantity || !!validationErrors.price}
+                        className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-extrabold font-sans text-xs shadow-md hover:shadow-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={!isFormDirty ? "No changes made to update" : "Update harvest record"}
+                      >
+                        {isUpdating ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Save size={16} />
+                            Update Harvest
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })()}
               </form>
             </motion.div>
           </>
