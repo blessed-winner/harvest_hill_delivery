@@ -909,11 +909,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
                     <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
-                        <Sparkles size={12} className="text-emerald-700" /> Farmer Notes & Proposal Terms
+                        <Sparkles size={12} className="text-emerald-700" /> Negotiation Terms & Notes
                       </span>
-                      {selectedSupply.latest_offer && (
+                      {selectedSupply.latest_offer ? (
                         <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                          Latest Farmer Proposal
+                          {selectedSupply.latest_offer.sender_role === 'admin' ? 'Harvest Hill Terms' : 'Farmer Terms'}
+                        </span>
+                      ) : (
+                        <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+                          Farmer Notes
                         </span>
                       )}
                     </div>
@@ -921,12 +925,12 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     {selectedSupply.latest_offer && (
                       <div className="flex items-center gap-4 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200/60">
                         <div>
-                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Offered Price</p>
+                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Proposed Price</p>
                           <p className="text-xs font-extrabold text-primary">{formatCurrency(selectedSupply.latest_offer.price)} / {selectedSupply.unit}</p>
                         </div>
                         <div className="h-5 w-px bg-emerald-200" />
                         <div>
-                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Offered Qty</p>
+                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Proposed Qty</p>
                           <p className="text-xs font-extrabold text-emerald-950">{selectedSupply.latest_offer.quantity} {selectedSupply.unit}</p>
                         </div>
                       </div>
@@ -934,7 +938,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
                     {(selectedSupply.latest_offer?.message || selectedSupply.notes) && (
                       <div>
-                        <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Notes / Terms</p>
+                        <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Custom Terms / Notes</p>
                         <p className="text-xs text-emerald-950 font-medium leading-relaxed bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30">
                           {selectedSupply.latest_offer?.message || selectedSupply.notes}
                         </p>
