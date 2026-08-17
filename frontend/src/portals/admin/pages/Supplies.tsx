@@ -46,6 +46,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   // Negotiation Agreement Form State
   const [agreedQtyInput, setAgreedQtyInput] = useState('');
   const [agreedPriceInput, setAgreedPriceInput] = useState('');
+  const [adminNotesInput, setAdminNotesInput] = useState('');
   const [targetProductId, setTargetProductId] = useState('');
   const [masterProducts, setMasterProducts] = useState<any[]>([]);
   const [isSubmittingAgreement, setIsSubmittingAgreement] = useState(false);
@@ -55,6 +56,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       setAgreedQtyInput(selectedSupply.accepted_quantity ? String(selectedSupply.accepted_quantity) : String(selectedSupply.quantity || ''));
       setAgreedPriceInput(selectedSupply.agreed_price ? String(selectedSupply.agreed_price) : String(selectedSupply.price || ''));
       setTargetProductId(selectedSupply.product ? String(selectedSupply.product) : '');
+      const existingNotes = selectedSupply.notes || '';
+      const extractedAdminTerms = existingNotes.includes('[Admin Terms]:') ? existingNotes.split('[Admin Terms]:')[1]?.trim() : '';
+      setAdminNotesInput(extractedAdminTerms || '');
     }
   }, [selectedSupply]);
 
@@ -64,11 +68,24 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   const handleAgreeSupply = async () => {
     if (!selectedSupply) return;
+    const parsedQty = parseFloat(agreedQtyInput || '0');
+    const parsedPrice = parseFloat(agreedPriceInput || '0');
+
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      toast("Accepted quantity must be greater than zero.", "warning");
+      return;
+    }
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toast("Agreed farmer price must be greater than zero.", "warning");
+      return;
+    }
+
     try {
       setIsSubmittingAgreement(true);
       const payload: any = {
-        accepted_quantity: parseFloat(agreedQtyInput || '0'),
-        agreed_price: parseFloat(agreedPriceInput || '0'),
+        accepted_quantity: parsedQty,
+        agreed_price: parsedPrice,
+        admin_notes: adminNotesInput.trim(),
         approve_suggested: true
       };
       if (targetProductId) {
@@ -679,14 +696,53 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 </select>
               </div>
 
-              <button
-                type="button"
-                disabled={isSubmittingAgreement}
-                onClick={handleAgreeSupply}
-                className="w-full py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
-              >
-                <CheckCircle2 size={16} /> Confirm Terms & Accept into Master Stock
-              </button>
+              {/* Optional Custom Terms / Admin Notes Text Field */}
+              <div className="space-y-1 pt-1">
+                <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                  Optional Custom Negotiation Terms / Seller Notes
+                </label>
+                <textarea
+                  rows={2}
+                  value={adminNotesInput}
+                  onChange={(e) => setAdminNotesInput(e.target.value)}
+                  placeholder="e.g. Include payment on 14-day cycle, cold chain transport required, or grade A inspection terms..."
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
+                />
+              </div>
+
+              {/* Validation Warning Feedback */}
+              {(() => {
+                const parsedQty = parseFloat(agreedQtyInput || '0');
+                const parsedPrice = parseFloat(agreedPriceInput || '0');
+                const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+
+                if (isInvalid) {
+                  return (
+                    <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center">
+                      Accepted quantity and agreed farmer price must both be greater than 0.
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {(() => {
+                const parsedQty = parseFloat(agreedQtyInput || '0');
+                const parsedPrice = parseFloat(agreedPriceInput || '0');
+                const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+
+                return (
+                  <button
+                    type="button"
+                    disabled={isSubmittingAgreement || isInvalid}
+                    onClick={handleAgreeSupply}
+                    className="w-full py-3 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-1"
+                    title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Confirm terms & accept harvest"}
+                  >
+                    <CheckCircle2 size={16} /> Confirm Terms & Accept into Master Stock
+                  </button>
+                );
+              })()}
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">

@@ -331,20 +331,37 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if accepted_qty is not None:
             try:
                 acc_val = float(accepted_qty)
-                if acc_val <= 0 or acc_val > float(supply.quantity):
-                    return Response({"error": f"Accepted quantity must be between 1 and submitted quantity ({supply.quantity:g})."}, status=400)
+                if acc_val <= 0:
+                    return Response({"error": "Accepted quantity must be greater than zero."}, status=400)
+                if acc_val > float(supply.quantity):
+                    return Response({"error": f"Accepted quantity cannot exceed submitted quantity ({supply.quantity:g})."}, status=400)
                 supply.accepted_quantity = acc_val
             except (ValueError, TypeError):
                 return Response({"error": "Invalid accepted quantity format."}, status=400)
+        else:
+            return Response({"error": "Accepted quantity is required and must be greater than zero."}, status=400)
 
         if agreed_p is not None:
             try:
                 p_val = float(agreed_p)
                 if p_val <= 0:
-                    return Response({"error": "Agreed price must be greater than zero."}, status=400)
+                    return Response({"error": "Agreed farmer price must be greater than zero."}, status=400)
                 supply.agreed_price = p_val
             except (ValueError, TypeError):
                 return Response({"error": "Invalid agreed price format."}, status=400)
+        else:
+            return Response({"error": "Agreed farmer price is required and must be greater than zero."}, status=400)
+
+        admin_notes = request.data.get('admin_notes') or request.data.get('notes') or ''
+        if admin_notes and str(admin_notes).strip():
+            clean_terms = str(admin_notes).strip()
+            if supply.notes and '[Admin Terms]:' not in supply.notes:
+                supply.notes = f"{supply.notes}\n\n[Admin Terms]: {clean_terms}"
+            elif supply.notes and '[Admin Terms]:' in supply.notes:
+                base_notes = supply.notes.split('[Admin Terms]:')[0].strip()
+                supply.notes = f"{base_notes}\n\n[Admin Terms]: {clean_terms}" if base_notes else f"[Admin Terms]: {clean_terms}"
+            else:
+                supply.notes = f"[Admin Terms]: {clean_terms}"
 
         # Handle master product mapping
         if target_product_id:
