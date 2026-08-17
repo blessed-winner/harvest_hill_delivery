@@ -128,7 +128,11 @@ class ProductShortSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'category', 'unit', 'image', 'image_url']
+        fields = [
+            'id', 'name', 'category', 'unit', 'image', 'image_url',
+            'base_price', 'quantity_needed', 'status', 'quality_requirements', 
+            'submission_deadline', 'preferred_harvest_period', 'description'
+        ]
 
     def get_image_url(self, obj):
         if not obj.image:

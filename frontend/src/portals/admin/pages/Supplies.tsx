@@ -743,8 +743,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
             {/* Side-by-Side / Stacked Requirement vs Farmer Submission Comparison */}
             <div className="space-y-3 font-sans">
               {/* Requirement Box */}
-              {selectedSupply.product_detail && (
-                <div className="p-3.5 bg-[#FAF7F0] rounded-xl border border-[#E8E4DA] space-y-2">
+              {(selectedSupply.product_detail || selectedSupply.custom_product_name) && (
+                <div className="p-3.5 bg-[#FAF7F0] rounded-xl border border-[#E8E4DA] space-y-2.5">
                   <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E4DA]">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2D5A3D]">
                       Harvest Hill Requirement
@@ -753,32 +753,49 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       Deadline: {selectedSupply.product_detail?.submission_deadline || 'Open'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Crop Requirement</span>
-                      <span className="font-extrabold text-[#1C2A1E]">{selectedSupply.product_detail?.name}</span>
+                  
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    {/* Left Side: Crop Requirement & Target Price */}
+                    <div className="space-y-3 min-w-0 pr-1">
+                      <div>
+                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Crop Requirement</span>
+                        <span className="font-extrabold text-[#1C2A1E] leading-snug block break-words">
+                          {selectedSupply.product_detail?.name || selectedSupply.custom_product_name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Reference Target Price</span>
+                        <span className="font-extrabold text-[#2D5A3D] block">
+                          {formatCurrency(selectedSupply.product_detail?.base_price || selectedSupply.base_price || selectedSupply.price)} / {selectedSupply.unit}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Quantity Needed</span>
-                      <span className="font-extrabold text-[#1C2A1E]">
-                        {parseFloat(selectedSupply.product_detail?.quantity_needed || 0).toLocaleString()} {selectedSupply.unit}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Reference Target Price</span>
-                      <span className="font-extrabold text-[#2D5A3D]">
-                        {formatCurrency(selectedSupply.product_detail?.base_price)} / {selectedSupply.unit}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider">Category</span>
-                      <span className="font-bold text-[#1C2A1E]">{selectedSupply.product_detail?.category || 'Vegetables'}</span>
+
+                    {/* Right Side: Quantity Needed & Category (Separated with border-l divider) */}
+                    <div className="space-y-3 min-w-0 pl-3.5 border-l border-[#E8E4DA]">
+                      <div>
+                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Quantity Needed</span>
+                        <span className="font-extrabold text-[#1C2A1E] block">
+                          {(() => {
+                            const templateQty = parseFloat(selectedSupply.product_detail?.quantity_needed || 0);
+                            const displayQty = templateQty > 0 ? templateQty : parseFloat(selectedSupply.quantity || 0);
+                            return `${displayQty.toLocaleString()} ${selectedSupply.unit}`;
+                          })()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Category</span>
+                        <span className="font-bold text-[#1C2A1E] block">
+                          {selectedSupply.product_detail?.category || selectedSupply.custom_category || 'Vegetables'}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
                   {selectedSupply.product_detail?.quality_requirements && (
-                    <div className="pt-1.5 border-t border-[#E8E4DA] text-[11px] text-[#414942]">
-                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#717971] block mb-0.5">Quality Requirements</span>
-                      <p className="whitespace-pre-line font-mono text-[10.5px] bg-white p-2 rounded-lg border border-[#E8E4DA]">{selectedSupply.product_detail?.quality_requirements}</p>
+                    <div className="pt-2 border-t border-[#E8E4DA] text-[11px] text-[#414942]">
+                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#717971] block mb-1">Quality Requirements</span>
+                      <p className="whitespace-pre-line font-mono text-[10.5px] bg-white p-2.5 rounded-lg border border-[#E8E4DA]">{selectedSupply.product_detail?.quality_requirements}</p>
                     </div>
                   )}
                 </div>
