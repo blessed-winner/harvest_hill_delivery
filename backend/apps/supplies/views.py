@@ -286,9 +286,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 else:
                     product.is_currently_needed = True
                 
-                # Update the product image if supply has a photo and product doesn't
-                if instance.photo and not product.image:
-                    product.image = instance.photo
                 product.save()
         
         # When supply is delivered or archived, check if product should still be visible in client catalog
