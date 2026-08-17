@@ -863,15 +863,34 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 <div className="relative">
                   <input 
                     type="number" 
+                    min="1"
                     placeholder="e.g. 1000"
                     value={formQuantityNeeded}
-                    onChange={(e) => setFormQuantityNeeded(e.target.value)}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormQuantityNeeded(val);
+                      if (val && parseFloat(val) <= 0) {
+                        setErrorMessage("Quantity needed must be greater than zero.");
+                      } else if (errorMessage === "Quantity needed must be greater than zero.") {
+                        setErrorMessage("");
+                      }
+                    }}
+                    className={cn(
+                      "w-full pl-3.5 pr-10 py-2.5 rounded-xl border text-sm font-extrabold outline-none bg-surface-container-lowest focus:ring-2 transition-all",
+                      formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0
+                        ? "border-red-500 focus:ring-red-200"
+                        : "border-outline-variant/60 focus:border-primary focus:ring-primary/10"
+                    )}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold font-mono text-on-surface-variant/70 uppercase">
                     {formUnit}
                   </span>
                 </div>
+                {formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0 && (
+                  <p className="text-[10px] text-red-600 font-bold mt-1">
+                    Quantity needed must be greater than 0.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
