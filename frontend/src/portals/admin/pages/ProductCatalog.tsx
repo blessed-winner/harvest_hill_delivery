@@ -37,8 +37,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [activeCategory, setActiveCategory] = useState('All Requirements');
-  const categories = ['All Requirements', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
+  const [activeCategory, setActiveCategory] = useState('All');
+  const categories = ['All', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based', 'Client Requests'];
 
   // Product Requests states
   const [requests, setRequests] = useState<any[]>([]);
@@ -414,7 +414,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesCategory = activeCategory === 'All Products' || p.category === activeCategory;
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
     const matchesSearch = searchTerm 
       ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
@@ -455,40 +455,29 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </button>
         </div>
 
-        {/* Status Filter Tabs & Category Filter */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-between max-w-full overflow-x-auto scrollbar-none pb-1">
-          {/* Status Tabs */}
-          <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-max">
-            {[
-              { id: 'all', label: 'All Statuses' },
-              { id: 'open', label: 'Open' },
-              { id: 'draft', label: 'Draft' },
-              { id: 'closed', label: 'Closed' },
-              { id: 'archived', label: 'Archived' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveStatusTab(tab.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap uppercase tracking-wider text-[10px]",
-                  activeStatusTab === tab.id 
-                    ? "bg-white text-primary shadow-sm" 
-                    : "text-on-surface-variant hover:bg-surface-container-high"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {/* Combined Filter Bar: Status Select + Category Tabs */}
+        <div className="flex flex-col sm:flex-row gap-3 items-center max-w-full overflow-x-auto scrollbar-none pb-1">
+          <div className="flex items-center gap-1.5 bg-surface-container-low p-1.5 rounded-xl w-max border border-outline-variant/30">
+            {/* Status Dropdown inside the category filter container */}
+            <select
+              value={activeStatusTab}
+              onChange={(e) => setActiveStatusTab(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white border border-outline-variant/60 text-primary uppercase tracking-wider outline-none cursor-pointer shadow-2xs hover:border-primary/50 transition-colors mr-1"
+            >
+              <option value="all">Status: All</option>
+              <option value="open">Status: Open</option>
+              <option value="draft">Status: Draft</option>
+              <option value="closed">Status: Closed</option>
+              <option value="archived">Status: Archived</option>
+            </select>
 
-          {/* Category Tabs */}
-          <div className="flex space-x-1 bg-surface-container-low p-1 rounded-xl w-max">
+            {/* Category Tabs */}
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   activeCategory === cat 
                     ? "bg-white text-primary shadow-sm" 
                     : "text-on-surface-variant hover:bg-surface-container-high"
