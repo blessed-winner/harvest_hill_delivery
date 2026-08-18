@@ -15,6 +15,27 @@ const getFullImageUrl = (url: string | null | undefined) => {
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
+const getCategoryFallbackImage = (category?: string, name?: string) => {
+  const c = (category || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  if (n.includes('potato') || n.includes('irish')) return 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80';
+  if (n.includes('tomato')) return 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80';
+  if (n.includes('carrot')) return 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=800&q=80';
+  if (n.includes('onion')) return 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cf?w=800&q=80';
+  if (n.includes('banana') || n.includes('matooke')) return 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&q=80';
+  if (n.includes('apple')) return 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=800&q=80';
+  if (n.includes('milk') || n.includes('dairy')) return 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=800&q=80';
+  if (n.includes('maize') || n.includes('corn')) return 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800&q=80';
+  if (n.includes('cabbage')) return 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=800&q=80';
+  
+  if (c.includes('fruit')) return 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80';
+  if (c.includes('vegetable')) return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80';
+  if (c.includes('dairy')) return 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=800&q=80';
+  if (c.includes('grain')) return 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&q=80';
+  
+  return 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80';
+};
+
 const normalizeUrlPath = (url: string): string => {
   if (!url) return '';
   try {
@@ -85,8 +106,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         }
 
         if (fetchedSupply) {
-          const rawImg = fetchedSupply.image_url || fetchedSupply.image || fetchedSupply.photo || fetchedSupply.product_detail?.image_url;
-          const mainImageUrl = getFullImageUrl(rawImg);
+          const prodName = fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce';
+          const prodCat = fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce';
+          const rawImg = fetchedSupply.image_url || fetchedSupply.image || fetchedSupply.photo || fetchedSupply.photo_url || fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image;
+          
+          let mainImageUrl = getFullImageUrl(rawImg);
+          if (!mainImageUrl) {
+            mainImageUrl = getCategoryFallbackImage(prodCat, prodName);
+          }
 
           const imagesList: string[] = [];
           if (mainImageUrl) {
@@ -346,23 +373,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         {/* Left Column: Image Gallery */}
         <div className="space-y-4">
           {(() => {
-            const currentImg = product.images?.[activeImgIndex] || product.image_url || null;
-            if (currentImg) {
-              return (
-                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
-                  <img 
-                    src={currentImg} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              );
-            }
+            const currentImg = product.images?.[activeImgIndex] || product.image_url || getCategoryFallbackImage(product.category, product.name);
             return (
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner flex flex-col items-center justify-center text-[#717971] gap-2 p-6 text-center">
-                <Package size={48} className="text-[#c1c9c0]" />
-                <span className="text-xs font-bold font-sans text-[#144227]">Fresh Produce Spec</span>
-                <span className="text-[10px] text-[#717971]">Verified Quality Harvest Hill Produce</span>
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
+                <img 
+                  src={currentImg} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
               </div>
             );
           })()}
