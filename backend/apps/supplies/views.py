@@ -215,8 +215,19 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=instance.id, target_name=instance.product.name if instance.product else (instance.suggested_product_name or "Harvest Supply"))
 
     def perform_update(self, serializer):
-        old_status = self.get_object().status
+        obj = self.get_object()
+        old_status = obj.status
         
+        # Admin cannot directly edit harvest submissions of other farmers (only Harvest Hill's own submissions)
+        if self.request.user.role == 'admin':
+            is_harvest_hill = (
+                not obj.farmer or 
+                (obj.farmer.user and obj.farmer.user.role == 'admin') or 
+                (obj.farmer.farm_name and 'harvest hill' in obj.farmer.farm_name.lower())
+            )
+            if not is_harvest_hill:
+                raise serializers.ValidationError("Harvest Hill Delivery cannot directly edit farmer harvest submissions. Use negotiation proposals to adjust price and accepted quantity.")
+
         # Farmers can only update pending harvest submissions
         if self.request.user.role == 'farmer' and old_status != 'pending':
             raise serializers.ValidationError("Farmers can only update pending harvest submissions. Accepted or negotiated harvests cannot be edited.")

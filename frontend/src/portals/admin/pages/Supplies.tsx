@@ -609,19 +609,20 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               )}
 
               {!selectedSupply.is_archived && (
-                <div className={cn("grid gap-2.5", isHarvestHillSubmission ? "grid-cols-1" : "grid-cols-2")}>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      const supToEdit = selectedSupply;
-                      setSelectedSupply(null);
-                      handleOpenEditModal(supToEdit);
-                    }}
-                    className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
-                  >
-                    <Edit3 size={14} /> Edit Supply
-                  </button>
-                  {!isHarvestHillSubmission && (
+                <div className="w-full">
+                  {isHarvestHillSubmission ? (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const supToEdit = selectedSupply;
+                        setSelectedSupply(null);
+                        handleOpenEditModal(supToEdit);
+                      }}
+                      className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                    >
+                      <Edit3 size={14} /> Edit Supply
+                    </button>
+                  ) : (
                     <button 
                       type="button"
                       onClick={() => {
@@ -631,7 +632,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       }}
                       className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                     >
-                      <Handshake size={14} /> Contextual Pane
+                      <Handshake size={14} /> Contextual Negotiation Pane
                     </button>
                   )}
                 </div>
