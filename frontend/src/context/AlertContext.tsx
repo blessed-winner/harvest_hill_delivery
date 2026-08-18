@@ -138,7 +138,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         message,
         confirmText: options?.confirmText || 'Confirm',
         cancelText: options?.cancelText || 'Cancel',
-        isDanger: options?.isDanger ?? true,
+        isDanger: options?.isDanger ?? false,
         resolve: (val: boolean) => {
           setConfirmConfig(null);
           resolve(val);
@@ -247,7 +247,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 {confirmConfig.isDanger ? (
                   <AlertTriangle className="text-[#ba1a1a] w-5 h-5" />
                 ) : (
-                  <Info className="text-[#144227] w-5 h-5" />
+                  <CheckCircle2 className="text-[#144227] w-5 h-5" />
                 )}
                 <h3 className="text-xs font-extrabold text-[#1c1c18]">{confirmConfig.title}</h3>
               </div>

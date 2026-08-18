@@ -144,7 +144,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   const handleDeleteOfferTerm = async (offerId: number) => {
     if (!adminThread || !selectedSupply) return;
-    const confirmed = await showConfirm("Delete Negotiation Term", "Are you sure you want to delete this negotiation term?");
+    const confirmed = await showConfirm("Delete Negotiation Term", "Are you sure you want to delete this negotiation term?", { isDanger: true });
     if (!confirmed) return;
     try {
       await api.negotiations.deleteOffer(adminThread.id, offerId);
