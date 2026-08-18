@@ -120,12 +120,50 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const [adminThread, setAdminThread] = useState<any>(null);
+  const [isLoadingThread, setIsLoadingThread] = useState(false);
+
+  const loadAdminThread = async (supplyId: number | string) => {
+    if (!supplyId) return;
+    try {
+      setIsLoadingThread(true);
+      const res = await apiRequest(`/api/negotiations/threads/?supply_id=${supplyId}`);
+      let currentThread = null;
+      if (Array.isArray(res)) {
+        currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res[0];
+      } else if (res?.results) {
+        currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res.results[0];
+      }
+      setAdminThread(currentThread || null);
+    } catch {
+      setAdminThread(null);
+    } finally {
+      setIsLoadingThread(false);
+    }
+  };
+
+  const handleDeleteOfferTerm = async (offerId: number) => {
+    if (!adminThread || !selectedSupply) return;
+    const confirmed = await showConfirm("Delete Negotiation Term", "Are you sure you want to delete this negotiation term?");
+    if (!confirmed) return;
+    try {
+      await api.negotiations.deleteOffer(adminThread.id, offerId);
+      toast("Negotiation term removed.", "success");
+      loadAdminThread(selectedSupply.id);
+    } catch (err: any) {
+      toast(err.message || "Failed to delete term.", "error");
+    }
+  };
+
   useEffect(() => {
-    if (selectedSupply) {
+    if (selectedSupply?.id) {
       setAgreedQtyInput(selectedSupply.accepted_quantity ? String(selectedSupply.accepted_quantity) : String(selectedSupply.quantity || ''));
       setAgreedPriceInput(selectedSupply.agreed_price ? String(selectedSupply.agreed_price) : String(selectedSupply.price || ''));
       setTargetProductId(selectedSupply.product ? String(selectedSupply.product) : '');
       setAdminNotesInput('');
+      loadAdminThread(selectedSupply.id);
+    } else {
+      setAdminThread(null);
     }
   }, [selectedSupply?.id]);
 
@@ -161,7 +199,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       await api.supplies.counterSupply(selectedSupply.id, payload);
       toast(`Counter-proposal (${parsedQty} ${selectedSupply.unit} @ RWF ${parsedPrice}) sent to farmer! Live notification dispatched.`, "success");
       setAdminNotesInput('');
-      setSelectedSupply(null);
+      loadAdminThread(selectedSupply.id);
       loadSupplies();
     } catch (err: any) {
       toast(err.message || "Failed to send counter-proposal.", "error");
@@ -880,71 +918,93 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   </span>
                 </div>
 
-                {/* Farmer Notes & Custom Proposal Terms Display */}
-                {(selectedSupply.notes || selectedSupply.latest_offer) && (
-                  <div className="relative group p-3 bg-white/95 rounded-xl border border-emerald-300/80 shadow-2xs space-y-2 font-sans">
-                    {/* Hover Trash Delete Option for Admin on Negotiation Terms */}
-                    {selectedSupply.latest_offer && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const confirmed = await showConfirm("Delete Proposal Term", "Are you sure you want to delete this proposal term?");
-                          if (confirmed) {
-                            try {
-                              // We need thread ID: try getting thread or delete offer directly
-                              toast("Proposal term removed.", "success");
-                              setSelectedSupply((prev: any) => prev ? { ...prev, latest_offer: null } : null);
-                            } catch (err: any) {
-                              toast(err.message || "Failed to remove term.", "error");
-                            }
-                          }
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1.5 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 shadow-md cursor-pointer"
-                        title="Delete proposal term"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
+                {/* Interactive Admin Negotiation Chat & Terms History Window */}
+                <div className="space-y-2 font-sans">
+                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                      <MessageSquare size={13} className="text-emerald-700" /> Negotiation Chat & Terms History
+                    </span>
+                    <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      {adminThread?.offers?.length || 0} Message{(adminThread?.offers?.length || 0) === 1 ? '' : 's'}
+                    </span>
+                  </div>
 
-                    <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
-                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
-                        <Sparkles size={12} className="text-emerald-700" /> Negotiation Terms & Notes
-                      </span>
-                      {selectedSupply.latest_offer ? (
-                        <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                          {selectedSupply.latest_offer.sender_role === 'admin' ? 'Harvest Hill Terms' : 'Farmer Terms'}
-                        </span>
-                      ) : (
-                        <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                          Farmer Notes
-                        </span>
-                      )}
-                    </div>
-
-                    {selectedSupply.latest_offer && (
-                      <div className="flex items-center gap-4 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200/60">
-                        <div>
-                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Proposed Price</p>
-                          <p className="text-xs font-extrabold text-primary">{formatCurrency(selectedSupply.latest_offer.price)} / {selectedSupply.unit}</p>
-                        </div>
-                        <div className="h-5 w-px bg-emerald-200" />
-                        <div>
-                          <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-widest">Proposed Qty</p>
-                          <p className="text-xs font-extrabold text-emerald-950">{selectedSupply.latest_offer.quantity} {selectedSupply.unit}</p>
-                        </div>
+                  <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-3 bg-white/95 rounded-xl border border-emerald-300/80 space-y-2.5 shadow-2xs">
+                    {isLoadingThread ? (
+                      <div className="py-6 text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-2">
+                        <RefreshCw size={14} className="animate-spin text-emerald-700" /> Loading negotiation chat...
                       </div>
-                    )}
+                    ) : adminThread?.offers && adminThread.offers.length > 0 ? (
+                      adminThread.offers.map((offer: any, idx: number) => {
+                        const isFarmer = offer.sender === 'farmer';
+                        return (
+                          <div 
+                            key={offer.id || idx}
+                            className={cn(
+                              "p-3 rounded-xl border text-xs font-sans space-y-1.5 relative group transition-all",
+                              isFarmer 
+                                ? "bg-amber-50/90 border-amber-200/90 text-amber-950" 
+                                : "bg-emerald-50/90 border-emerald-200/90 text-emerald-950"
+                            )}
+                          >
+                            {/* Hover Trash Delete Option */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOfferTerm(offer.id)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                              title="Delete negotiation term"
+                            >
+                              <Trash2 size={11} />
+                            </button>
 
-                    {(selectedSupply.latest_offer?.message || selectedSupply.notes) && (
-                      <div>
-                        <p className="text-[8px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Custom Terms / Notes</p>
-                        <p className="text-xs text-emerald-950 font-medium leading-relaxed bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30">
-                          {selectedSupply.latest_offer?.message || selectedSupply.notes}
+                            {/* Header Row */}
+                            <div className="flex items-center justify-between border-b border-black/5 pb-1">
+                              <span className="text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                                <span className={cn(
+                                  "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shadow-2xs",
+                                  isFarmer ? "bg-amber-700" : "bg-emerald-800"
+                                )}>
+                                  {isFarmer ? 'FM' : 'HH'}
+                                </span>
+                                <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
+                              </span>
+                              <span className="text-[8px] font-mono opacity-70 pr-5">
+                                {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                              </span>
+                            </div>
+
+                            {/* Proposed Specs */}
+                            <div className="flex items-center gap-4 bg-white/80 p-2 rounded-lg border border-black/5 font-mono text-xs">
+                              <div>
+                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
+                                <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
+                              </div>
+                              <div className="h-5 w-px bg-black/10" />
+                              <div>
+                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
+                                <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
+                              </div>
+                            </div>
+
+                            {/* Custom Terms or Notes */}
+                            {(offer.terms || offer.message) && (
+                              <p className="text-[11px] font-medium leading-relaxed bg-white/60 p-2 rounded-lg border border-black/5 text-emerald-950">
+                                {offer.terms || offer.message}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/70 text-xs space-y-1">
+                        <span className="text-[9px] font-extrabold text-amber-900 uppercase tracking-wider block">Farmer Submission Notes</span>
+                        <p className="text-amber-950 font-medium leading-relaxed">
+                          {selectedSupply.notes || "No custom notes submitted with initial harvest."}
                         </p>
                       </div>
                     )}
                   </div>
-                )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
