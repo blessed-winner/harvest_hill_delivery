@@ -125,11 +125,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       setAgreedQtyInput(selectedSupply.accepted_quantity ? String(selectedSupply.accepted_quantity) : String(selectedSupply.quantity || ''));
       setAgreedPriceInput(selectedSupply.agreed_price ? String(selectedSupply.agreed_price) : String(selectedSupply.price || ''));
       setTargetProductId(selectedSupply.product ? String(selectedSupply.product) : '');
-      const existingNotes = selectedSupply.notes || '';
-      const extractedAdminTerms = existingNotes.includes('[Admin Terms]:') ? existingNotes.split('[Admin Terms]:')[1]?.trim() : '';
-      setAdminNotesInput(extractedAdminTerms || '');
+      setAdminNotesInput('');
     }
-  }, [selectedSupply]);
+  }, [selectedSupply?.id]);
 
   useEffect(() => {
     api.products.list().then(res => setMasterProducts(res || [])).catch(() => {});
@@ -162,6 +160,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
       await api.supplies.counterSupply(selectedSupply.id, payload);
       toast(`Counter-proposal (${parsedQty} ${selectedSupply.unit} @ RWF ${parsedPrice}) sent to farmer! Live notification dispatched.`, "success");
+      setAdminNotesInput('');
       setSelectedSupply(null);
       loadSupplies();
     } catch (err: any) {
@@ -1050,14 +1049,31 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   const parsedPrice = parseFloat(agreedPriceInput || '0');
                   const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
 
+                  const origQty = parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
+                  const origPrice = parseFloat(String(selectedSupply.agreed_price ?? (selectedSupply.proposed_price || selectedSupply.price || '0')));
+
+                  const isQtyChanged = Math.abs(parsedQty - origQty) > 0.001;
+                  const isPriceChanged = Math.abs(parsedPrice - origPrice) > 0.001;
+                  const isNotesEntered = adminNotesInput.trim().length > 0;
+                  const isProductSelected = !!targetProductId && String(targetProductId) !== String(selectedSupply.product || '');
+
+                  const isTermsUpdated = isQtyChanged || isPriceChanged || isNotesEntered || isProductSelected;
+                  const isCounterDisabled = isSubmittingAgreement || isInvalid || !isTermsUpdated;
+
                   return (
                     <div className="flex flex-col sm:flex-row gap-2 pt-1">
                       <button
                         type="button"
-                        disabled={isSubmittingAgreement || isInvalid}
+                        disabled={isCounterDisabled}
                         onClick={handleCounterSupply}
                         className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Send counter-proposal terms to farmer"}
+                        title={
+                          isInvalid
+                            ? "Accepted quantity and agreed price must both be greater than 0"
+                            : !isTermsUpdated
+                            ? "Modify price, quantity, custom notes, or target product to enable counter button"
+                            : "Send counter-proposal terms to farmer"
+                        }
                       >
                         <Send size={15} /> Counter
                       </button>
