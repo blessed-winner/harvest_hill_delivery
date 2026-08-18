@@ -345,13 +345,27 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         
         {/* Left Column: Image Gallery */}
         <div className="space-y-4">
-          <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
-            <img 
-              src={product.images?.[activeImgIndex] || product.image_url || ''} 
-              alt={product.name} 
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
+          {(() => {
+            const currentImg = product.images?.[activeImgIndex] || product.image_url || null;
+            if (currentImg) {
+              return (
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
+                  <img 
+                    src={currentImg} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+              );
+            }
+            return (
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner flex flex-col items-center justify-center text-[#717971] gap-2 p-6 text-center">
+                <Package size={48} className="text-[#c1c9c0]" />
+                <span className="text-xs font-bold font-sans text-[#144227]">Fresh Produce Spec</span>
+                <span className="text-[10px] text-[#717971]">Verified Quality Harvest Hill Produce</span>
+              </div>
+            );
+          })()}
 
           {/* Gallery Thumbnails */}
           {product.images && product.images.length > 0 && (
