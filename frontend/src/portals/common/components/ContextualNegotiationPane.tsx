@@ -678,7 +678,7 @@ export function ContextualNegotiationPane({
                       }}
                       className="py-2.5 px-4 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-extrabold text-xs transition-all hover:bg-emerald-200 active:scale-[0.98] flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      <Plus size={14} /> {showOfferForm ? 'Close offer form' : '+ Make offer'}
+                      <Plus size={14} /> {showOfferForm ? 'Close offer form' : 'Make offer'}
                     </button>
                   </div>
                 </div>
