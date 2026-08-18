@@ -1159,16 +1159,6 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
               </span>
             </div>
-
-            {/* Farmer Notes Section */}
-            {selectedSupply.notes && (
-              <div className="space-y-1.5">
-                <h4 className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-widest">Farmer Notes</h4>
-                <p className="p-3 bg-surface-container-lowest rounded-xl text-xs border border-outline-variant/30 text-on-surface leading-relaxed">
-                  {selectedSupply.notes}
-                </p>
-              </div>
-            )}
           </div>
         )}
       </DetailDrawer>
