@@ -128,13 +128,25 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     try {
       setIsLoadingThread(true);
       const res = await apiRequest(`/api/negotiations/threads/?supply_id=${supplyId}`);
-      let currentThread = null;
+      let currentThread: any = null;
       if (Array.isArray(res)) {
         currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res[0];
       } else if (res?.results) {
         currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res.results[0];
       }
       setAdminThread(currentThread || null);
+
+      if (currentThread && Array.isArray(currentThread.offers) && currentThread.offers.length > 0) {
+        const latestOffer = currentThread.offers[currentThread.offers.length - 1];
+        if (latestOffer) {
+          if (latestOffer.price !== undefined && latestOffer.price !== null) {
+            setAgreedPriceInput(String(latestOffer.price));
+          }
+          if (latestOffer.quantity !== undefined && latestOffer.quantity !== null) {
+            setAgreedQtyInput(String(latestOffer.quantity));
+          }
+        }
+      }
     } catch {
       setAdminThread(null);
     } finally {
@@ -1110,8 +1122,17 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   const parsedPrice = parseFloat(agreedPriceInput || '0');
                   const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
 
-                  const origQty = parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
-                  const origPrice = parseFloat(String(selectedSupply.agreed_price ?? (selectedSupply.proposed_price || selectedSupply.price || '0')));
+                  const latestOffer = adminThread?.offers && adminThread.offers.length > 0
+                    ? adminThread.offers[adminThread.offers.length - 1]
+                    : null;
+
+                  const origQty = latestOffer
+                    ? parseFloat(String(latestOffer.quantity))
+                    : parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
+
+                  const origPrice = latestOffer
+                    ? parseFloat(String(latestOffer.price))
+                    : parseFloat(String(selectedSupply.agreed_price ?? (selectedSupply.proposed_price || selectedSupply.price || '0')));
 
                   const isQtyChanged = Math.abs(parsedQty - origQty) > 0.001;
                   const isPriceChanged = Math.abs(parsedPrice - origPrice) > 0.001;
