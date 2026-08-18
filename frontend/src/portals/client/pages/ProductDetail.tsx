@@ -122,9 +122,24 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
           if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
-              const url = getFullImageUrl(imgObj.image_url || imgObj.image);
+              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image || imgObj.photo));
               if (url && !imagesList.includes(url)) imagesList.push(url);
             });
+          }
+
+          if (Array.isArray(fetchedSupply.photos) && fetchedSupply.photos.length > 0) {
+            fetchedSupply.photos.forEach((imgObj: any) => {
+              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image || imgObj.photo));
+              if (url && !imagesList.includes(url)) imagesList.push(url);
+            });
+          }
+
+          // Add complementary quality inspection angle thumbnail if only 1 image exists
+          if (imagesList.length === 1) {
+            const fallbackSec = getCategoryFallbackImage(prodCat, `${prodName} sample`);
+            if (fallbackSec && !imagesList.includes(fallbackSec)) {
+              imagesList.push(fallbackSec);
+            }
           }
 
           const priceVal = fetchedSupply.is_discounted && fetchedSupply.discount_price
