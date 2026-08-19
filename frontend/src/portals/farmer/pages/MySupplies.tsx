@@ -458,30 +458,26 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      {supply.is_discounted && supply.discount_price ? (
-                        <>
-                          <span className="font-mono text-[10px] text-red-600 line-through opacity-75">
-                            RWF {Number(supply.price).toLocaleString()}
-                          </span>
-                          <span className="font-mono text-sm font-bold text-emerald-700">
-                            RWF {Number(supply.discount_price).toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-mono text-sm font-bold text-on-surface">
-                          {(() => {
-                            const val = Number(supply.proposed_price || supply.price || 0);
-                            const rwf = val > 0 && val < 100 ? Math.round(val * 1473.97) : val;
-                            return `RWF ${rwf.toLocaleString()}`;
-                          })()}
-                        </span>
-                      )}
-                      {supply.is_discounted && (
-                        <span className="text-[9px] text-red-600 font-extrabold uppercase tracking-tighter">Discounted</span>
-                      )}
-                      {!supply.is_discounted && supply.status === 'accepted' && (
-                        <span className="text-[9px] text-tertiary font-bold uppercase tracking-tighter">Negotiated</span>
-                      )}
+                      {(() => {
+                        const agreedVal = supply.agreed_price ? Number(supply.agreed_price) : null;
+                        const displayVal = agreedVal || Number(supply.proposed_price || supply.price || 0);
+                        const rwf = displayVal > 0 && displayVal < 100 ? Math.round(displayVal * 1473.97) : displayVal;
+
+                        return (
+                          <>
+                            <span className="font-mono text-sm font-bold text-on-surface">
+                              RWF {rwf.toLocaleString()}
+                            </span>
+                            {agreedVal !== null && supply.status === 'accepted' ? (
+                              <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">
+                                RWF {rwf.toLocaleString()}/{supply.unit || supply.product_detail?.unit || 'kg'} negotiated
+                              </span>
+                            ) : supply.is_discounted ? (
+                              <span className="text-[9px] text-red-600 font-extrabold uppercase tracking-tighter">Discounted</span>
+                            ) : null}
+                          </>
+                        );
+                      })()}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
