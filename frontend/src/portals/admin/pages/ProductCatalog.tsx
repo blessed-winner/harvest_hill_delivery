@@ -726,16 +726,21 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                               </span>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing Mode:</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing:</span>
                               {product.pricing_mode === 'farmer_proposes' ? (
-                                <span className="font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">
-                                  Farmer Proposes
+                                <span className="font-extrabold text-amber-900 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded text-[9.5px] uppercase tracking-wider font-mono">
+                                  FARMER PROPOSES
                                 </span>
                               ) : (
-                                <span className="font-extrabold text-[#2D5A3D]">
-                                  Harvest Hill: RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
-                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 border border-[#2D5A3D]/20 px-2 py-0.5 rounded text-[9.5px] uppercase tracking-wider font-mono">
+                                    HARVEST HILL OFFERS
+                                  </span>
+                                  <span className="font-mono text-xs font-black text-[#1C2A1E]">
+                                    RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
+                                  </span>
+                                </div>
                               )}
                             </div>
 
@@ -747,9 +752,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             </div>
 
                             <div className="flex items-center justify-between pt-1 border-t border-[#E8E4DA]">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Farmer Offers:</span>
-                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-[10px]">
-                                {subCount} {subCount === 1 ? 'submission' : 'submissions'}
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submissions:</span>
+                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-[10px] font-mono">
+                                {subCount}
                               </span>
                             </div>
                           </div>
