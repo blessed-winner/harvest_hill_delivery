@@ -14,6 +14,17 @@ class Product(models.Model):
         ('farmer_proposes', 'Farmer Proposes'),
     ]
 
+    VISIBILITY_CHOICES = [
+        ('HARVEST_HILL_ONLY', 'Harvest Hill Delivery Only'),
+        ('SPECIFIC_CLIENTS', 'Specific Chosen Clients'),
+        ('REGISTERED_CLIENTS', 'All Registered Clients'),
+        ('PUBLIC', 'Public Marketplace'),
+        ('private_admin', 'Harvest Hill Delivery Only'),
+        ('specific_clients', 'Specific Chosen Clients'),
+        ('all_clients', 'All Registered Clients'),
+        ('public', 'Public Marketplace'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     display_id = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
     name = models.CharField(max_length=255)
@@ -29,6 +40,8 @@ class Product(models.Model):
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_discounted = models.BooleanField(default=False)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='PUBLIC')
+    target_clients = models.ManyToManyField('accounts.ClientProfile', blank=True, related_name='exclusive_products')
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     # Product Template / Requirement specific fields
@@ -74,8 +87,38 @@ class Product(models.Model):
                 total += float(s.quantity)
         return total
 
+    def is_visible_to_user(self, user=None):
+        """Returns True if the MasterProduct itself is visible to the given user."""
+        scope = self.visibility_scope
+
+        # Admin retains access to all MasterProducts
+        if user and hasattr(user, 'is_authenticated') and user.is_authenticated and getattr(user, 'role', '') == 'admin':
+            return True
+
+        if scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            return False
+
+        if scope in ['PUBLIC', 'public']:
+            return True
+
+        if scope in ['REGISTERED_CLIENTS', 'all_clients']:
+            return bool(user and hasattr(user, 'is_authenticated') and user.is_authenticated)
+
+        if scope in ['SPECIFIC_CLIENTS', 'specific_clients']:
+            if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+                return False
+            user_client_profile = getattr(user, 'client_profile', None)
+            is_in_users = self.target_clients.filter(user=user).exists()
+            is_in_profiles = self.target_clients.filter(pk=user_client_profile.pk).exists() if user_client_profile else False
+            return is_in_users or is_in_profiles
+
+        return False
+
     def get_available_quantity_for_user(self, user=None):
-        """Calculates available quantity filtered strictly by user authorization and visibility scope."""
+        """Calculates available quantity filtered strictly by user authorization and double-lock visibility."""
+        if not self.is_visible_to_user(user):
+            return 0.0
+
         accepted_supplies = self.supplies.filter(is_archived=False, status='accepted')
         total = 0.0
         for s in accepted_supplies:

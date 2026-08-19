@@ -270,6 +270,13 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         # Admin submissions are auto-accepted immediately; farmer submissions start as pending
         initial_status = 'accepted' if self.request.user.role == 'admin' else 'pending'
+        
+        # Explicit creation visibility scope workflow per Section 2:
+        # Farmer / custom harvest submission -> HARVEST_HILL_ONLY
+        # Admin-created / published supply -> PUBLIC
+        if 'visibility_scope' not in serializer.validated_data or not serializer.validated_data['visibility_scope']:
+            serializer.validated_data['visibility_scope'] = 'PUBLIC' if self.request.user.role == 'admin' else 'HARVEST_HILL_ONLY'
+
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
         
         # Create related SupplyImage instances only for extra gallery images

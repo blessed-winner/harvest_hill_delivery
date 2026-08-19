@@ -406,6 +406,15 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
             val = is_discounted.lower() in ['true', '1']
             queryset = queryset.filter(is_discounted=val)
         
+        # Double-lock access enforcement per Section 4:
+        # A client should only see/use a MasterProduct when:
+        # 1. The MasterProduct itself is visible to that client, AND
+        # 2. There is relevant approved/available supply that the client is authorized to access.
+        user = request.user
+        if not user or not user.is_authenticated or user.role != 'admin':
+            visible_ids = [p.pk for p in queryset if p.is_visible_to_user(user) and p.get_available_quantity_for_user(user) > 0]
+            queryset = queryset.filter(pk__in=visible_ids)
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'results': serializer.data,
@@ -418,15 +427,13 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
         tags=['Client Portal']
     )
     def retrieve(self, request, *args, **kwargs):
-        """Get a single supply by ID"""
+        """Get a single product by ID with strict direct access authorization check"""
         instance = self.get_object()
+        user = request.user
+        if not user or not user.is_authenticated or user.role != 'admin':
+            if not instance.is_visible_to_user(user) or instance.get_available_quantity_for_user(user) <= 0:
+                return Response({"detail": "Not found or unauthorized access to this product."}, status=404)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @extend_schema(
-        summary="Get product details",
-        description="Get detailed information about a specific product",
-        tags=['Client Portal']
-    )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+
