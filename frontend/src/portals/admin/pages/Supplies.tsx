@@ -1303,6 +1303,37 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   </div>
                 </div>
 
+                {/* Total Deal Payout Price & Savings Box */}
+                {selectedSupply.discount_price && (
+                  (() => {
+                    const qty = parseFloat(selectedSupply.accepted_quantity || selectedSupply.quantity || 0);
+                    const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
+                    const discP = parseFloat(selectedSupply.discount_price);
+                    const discTotal = qty * discP;
+                    const stdTotal = qty * stdP;
+                    const savedBatchRwf = stdTotal - discTotal;
+
+                    return (
+                      <div className="bg-white/90 p-2.5 rounded-xl border border-orange-200/80 flex items-center justify-between text-xs shadow-2xs">
+                        <div>
+                          <p className="text-[9.5px] font-extrabold text-orange-900 uppercase tracking-wider">Total Deal Price ({qty} {selectedSupply.unit || 'kg'})</p>
+                          <p className="text-sm font-black text-orange-950 font-mono mt-0.5">
+                            {formatCurrency(discTotal)}
+                          </p>
+                        </div>
+                        {savedBatchRwf > 0 && (
+                          <div className="text-right">
+                            <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Total Batch Savings</p>
+                            <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
+                              Save {formatCurrency(savedBatchRwf)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
+                )}
+
                 {/* Actions: Edit Fresh Deal vs Abort Deal */}
                 <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
                   <button
