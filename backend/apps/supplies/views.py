@@ -196,12 +196,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         initial_status = 'accepted' if self.request.user.role == 'admin' else 'pending'
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
         
-        # Synchronize linked Product base_price with created supply price ONLY IF submitted by Admin
-        if self.request.user and getattr(self.request.user, 'role', '') == 'admin':
-            if instance.product and instance.price and float(instance.price) > 0:
-                instance.product.base_price = instance.price
-                instance.product.save()
-
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
         if len(images) > 1:
@@ -250,24 +244,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             instance = serializer.save(photo=photo_file)
         else:
             instance = serializer.save()
-
-        # Synchronize linked Product base_price with updated supply price ONLY IF updated by Admin
-        if self.request.user and getattr(self.request.user, 'role', '') == 'admin':
-            price_to_sync = instance.agreed_price if (instance.agreed_price and float(instance.agreed_price) > 0) else instance.price
-            if price_to_sync and float(price_to_sync) > 0:
-                if instance.product:
-                    instance.product.base_price = price_to_sync
-                    instance.product.save()
-                    # Also synchronize all active admin supplies under this product
-                    instance.product.supplies.filter(is_archived=False, farmer__user__role='admin').update(price=price_to_sync)
-                prod_search_name = instance.product.name if instance.product else (instance.custom_product_name or instance.suggested_product_name)
-                if prod_search_name:
-                    from apps.products.models import Product
-                    matched_prods = Product.objects.filter(name__iexact=prod_search_name)
-                    for p in matched_prods:
-                        p.base_price = price_to_sync
-                        p.save()
-                        p.supplies.filter(is_archived=False, farmer__user__role='admin').update(price=price_to_sync)
 
         # Create additional SupplyImage objects if multiple images are uploaded
         if len(images) > 1:

@@ -148,19 +148,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         })
       });
 
-      // Also update linked Product base_price if supply is attached to a Product
-      if (editSupply.product) {
-        try {
-          await apiRequest(`/api/products/${editSupply.product}/`, {
-            method: 'PATCH',
-            body: JSON.stringify({ base_price: parsedPrice })
-          });
-        } catch {
-          // Ignore if product direct update is silent
-        }
-      }
-
-      toast("Supply details & product price updated successfully!", "success");
+      toast("Supply details updated successfully!", "success");
       setEditSupply(null);
       setSelectedSupply(null);
       loadSupplies();
