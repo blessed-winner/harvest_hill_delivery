@@ -48,6 +48,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
+    loadSupplies();
+  }, [loadSupplies]);
+
+  useEffect(() => {
     api.systemSettings.get().then((res: any) => {
       if (res && res.show_farmer_names_to_clients !== undefined) {
         setShowFarmerNames(!!res.show_farmer_names_to_clients);
