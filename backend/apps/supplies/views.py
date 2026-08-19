@@ -218,7 +218,8 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         obj = self.get_object()
         old_status = obj.status
         
-        # Admin cannot directly edit harvest submissions of other farmers (only Harvest Hill's own submissions)
+        # Admin cannot directly edit raw farmer harvest specs (quantity, asking price, quality_grade, notes, photo) of other farmers.
+        # But Admin CAN update administrative settings: visibility_scope, disclose_farmer_name, target_clients, is_discounted, discount_price, is_archived, status, product, accepted_quantity, agreed_price.
         if self.request.user.role == 'admin':
             is_harvest_hill = (
                 not obj.farmer or 
@@ -226,7 +227,10 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 (obj.farmer.farm_name and 'harvest hill' in obj.farmer.farm_name.lower())
             )
             if not is_harvest_hill:
-                raise serializers.ValidationError("Harvest Hill Delivery cannot directly edit farmer harvest submissions. Use negotiation proposals to adjust price and accepted quantity.")
+                farmer_spec_fields = {'quantity', 'price', 'quality_grade', 'notes', 'photo', 'available_date', 'custom_product_name'}
+                attempted_spec_changes = set(serializer.validated_data.keys()).intersection(farmer_spec_fields)
+                if attempted_spec_changes:
+                    raise serializers.ValidationError(f"Harvest Hill Delivery cannot directly edit raw farmer harvest specifications ({', '.join(attempted_spec_changes)}). Use negotiation proposals to adjust price and accepted quantity.")
 
         # Farmers can only update pending harvest submissions
         if self.request.user.role == 'farmer' and old_status != 'pending':

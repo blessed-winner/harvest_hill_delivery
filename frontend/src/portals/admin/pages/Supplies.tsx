@@ -63,6 +63,57 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   // Contextual Negotiation Pane State
   const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
 
+  // Fresh Deals Discount Modal State
+  const [discountSupply, setDiscountSupply] = useState<any | null>(null);
+  const [discountIsActive, setDiscountIsActive] = useState(false);
+  const [discountPriceInput, setDiscountPriceInput] = useState('');
+  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+
+  // Visibility & Access Controls Modal State
+  const [visibilitySupply, setVisibilitySupply] = useState<any | null>(null);
+  const [visibilityScopeInput, setVisibilityScopeInput] = useState('public');
+  const [discloseFarmerNameInput, setDiscloseFarmerNameInput] = useState(false);
+  const [isSavingVisibility, setIsSavingVisibility] = useState(false);
+
+  const handleSaveDiscountOffer = async () => {
+    if (!discountSupply) return;
+    try {
+      setIsSavingDiscount(true);
+      const parsedDiscountPrice = discountPriceInput ? parseFloat(discountPriceInput) : null;
+      await api.supplies.update(discountSupply.id, {
+        is_discounted: discountIsActive,
+        discount_price: discountIsActive ? parsedDiscountPrice : null,
+      });
+
+      toast(`Fresh deal discount settings saved!`, "success");
+      setDiscountSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to save discount settings.", "error");
+    } finally {
+      setIsSavingDiscount(false);
+    }
+  };
+
+  const handleSaveVisibilityControls = async () => {
+    if (!visibilitySupply) return;
+    try {
+      setIsSavingVisibility(true);
+      await api.supplies.update(visibilitySupply.id, {
+        visibility_scope: visibilityScopeInput,
+        disclose_farmer_name: discloseFarmerNameInput,
+      });
+
+      toast(`Visibility settings saved!`, "success");
+      setVisibilitySupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to save visibility settings.", "error");
+    } finally {
+      setIsSavingVisibility(false);
+    }
+  };
+
   const handleOpenEditModal = (supply: any) => {
     setEditSupply(supply);
     setEditQty(String(supply.quantity || ''));
@@ -653,6 +704,37 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       <Handshake size={14} /> Contextual Negotiation Pane
                     </button>
                   )}
+                </div>
+              )}
+
+              {!selectedSupply.is_archived && (
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sup = selectedSupply;
+                      setSelectedSupply(null);
+                      setDiscountSupply(sup);
+                      setDiscountIsActive(!!sup.is_discounted);
+                      setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
+                    }}
+                    className="w-full py-2 bg-orange-50 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1 cursor-pointer text-xs"
+                  >
+                    🏷️ Fresh Deals
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sup = selectedSupply;
+                      setSelectedSupply(null);
+                      setVisibilitySupply(sup);
+                      setVisibilityScopeInput(sup.visibility_scope || 'private_admin');
+                      setDiscloseFarmerNameInput(!!sup.disclose_farmer_name);
+                    }}
+                    className="w-full py-2 bg-blue-50 border border-blue-200 text-blue-950 rounded-xl font-extrabold hover:bg-blue-100 transition-all flex items-center justify-center gap-1 cursor-pointer text-xs"
+                  >
+                    🔒 Visibility
+                  </button>
                 </div>
               )}
 
@@ -1310,6 +1392,162 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         currentUserRole="admin"
         onNegotiationUpdated={() => loadSupplies()}
       />
+
+      {/* Admin Fresh Deals Discount Modal */}
+      {discountSupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans text-xs">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div className="flex items-center gap-2 text-orange-950 font-bold">
+                <span className="text-base">🏷️</span>
+                <h3 className="font-extrabold text-base text-on-surface">Delegate Fresh Deal Discount</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDiscountSupply(null)}
+                className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/40">
+              <div>
+                <p className="text-xs font-bold text-on-surface">Supply Batch</p>
+                <p className="text-[10px] text-on-surface-variant font-mono font-semibold">
+                  {discountSupply.product_detail?.name || discountSupply.custom_product_name || 'Harvest Supply'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-emerald-800 uppercase">Effective Price</p>
+                <p className="text-xs font-black text-emerald-700">{formatCurrency(discountSupply.agreed_price || discountSupply.price)}</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-orange-50/80 border border-orange-200 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-extrabold text-orange-950">Enable Fresh Deals Discount</p>
+                  <p className="text-[10px] text-orange-800">Features supply under Seasonal Discounts on client landing page</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={discountIsActive}
+                  onChange={(e) => setDiscountIsActive(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded cursor-pointer accent-orange-600"
+                />
+              </div>
+
+              {discountIsActive && (
+                <div className="space-y-1.5 pt-2 border-t border-orange-200">
+                  <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
+                    Discounted Offer Price (RWF per {discountSupply.unit})
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 600"
+                    value={discountPriceInput}
+                    onChange={(e) => setDiscountPriceInput(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-orange-300 text-sm font-bold bg-white text-on-surface outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+              <button
+                type="button"
+                onClick={() => setDiscountSupply(null)}
+                className="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface-variant rounded-xl font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDiscountOffer}
+                disabled={isSavingDiscount}
+                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                {isSavingDiscount ? 'Saving...' : 'Save Discount'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Visibility & Access Controls Modal */}
+      {visibilitySupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans text-xs">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div className="flex items-center gap-2 text-blue-950 font-bold">
+                <span className="text-base">🔒</span>
+                <h3 className="font-extrabold text-base text-on-surface">Visibility & Client Access Controls</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVisibilitySupply(null)}
+                className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Visibility Scope
+                </label>
+                <select
+                  value={visibilityScopeInput}
+                  onChange={(e) => setVisibilityScopeInput(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant text-xs font-bold bg-white text-on-surface outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="private_admin">🔒 Harvest Hill Delivery Only (Private)</option>
+                  <option value="specific_clients">👥 Specific Chosen Clients</option>
+                  <option value="all_clients">🔑 All Registered Clients</option>
+                  <option value="public">🌐 Public to All People (Public Marketplace)</option>
+                </select>
+              </div>
+
+              <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-extrabold text-blue-950">Disclose Farmer Name to Buyers/Public</p>
+                    <p className="text-[10px] text-blue-800">
+                      When unchecked, supplier displays anonymously as "Harvest Hill Delivery".
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={discloseFarmerNameInput}
+                    onChange={(e) => setDiscloseFarmerNameInput(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded cursor-pointer accent-blue-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+              <button
+                type="button"
+                onClick={() => setVisibilitySupply(null)}
+                className="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface-variant rounded-xl font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveVisibilityControls}
+                disabled={isSavingVisibility}
+                className="flex-1 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+              >
+                {isSavingVisibility ? 'Saving...' : 'Save Visibility Controls'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

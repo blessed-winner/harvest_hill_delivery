@@ -357,7 +357,40 @@ The database baseline contains the master administrator account:
 
 ---
 
-## 21. Quick Sanity Verification Checklist
+---
+
+## 21. Test Suite 18: Master Product Aggregation, Single Image Rule & Farmer Crop Suggestions
+
+1. **Farmer A & Farmer B Submissions**:
+   - **Farmer A** submits 40 kg of potatoes with proof photos. Harvest Hill Delivery negotiates price and agrees to take **30 kg**.
+   - **Farmer B** submits 60 kg of potatoes with proof photos. Harvest Hill Delivery negotiates price and agrees to take **60 kg**.
+2. **Master Product Consolidation**:
+   - Harvest Hill Delivery accepts both supplies into the master product `"Potatoes"`.
+   - **Validation Check**: Public marketplace & client catalog displays **1 single card** for `"Potatoes"` with **90 kg total available stock** (`30 kg + 60 kg = 90 kg`).
+3. **Master Single Image & Privacy Rule**:
+   - **Validation Check**: The card image displayed on the client/public marketplace is **strictly Harvest Hill Delivery's official Master Product picture**, NOT raw farmer proof photos (farmer proof photos remain private to Harvest Hill for negotiation inspection).
+4. **Farmer Unlisted Crop Suggestion**:
+   - Farmer submits harvest choosing *"Suggest Unlisted Crop"*.
+   - Admin inspects custom proposal on `Supplies.tsx` $\rightarrow$ Accepts terms $\rightarrow$ Creates/links Master Product template $\rightarrow$ Accepted quantity is added to master list and becomes visible to clients/public.
+
+---
+
+## 22. Test Suite 19: Admin Supply Visibility & Access Controls (🔒 Visibility Controls)
+
+1. Log in as Admin (`admin@harvesthill.test`).
+2. Open Supplies Management (`/admin?tab=supplies`).
+3. Select an approved supply $\rightarrow$ Click **🔒 Visibility**.
+4. **Scope Selection**:
+   - `🔒 Harvest Hill Delivery Only (Private)`: Visible only in Admin Portal.
+   - `👥 Specific Chosen Clients`: Visible only to selected client profiles.
+   - `🔑 All Registered Clients`: Visible to logged-in client accounts.
+   - `🌐 Public to All People`: Visible to all public visitors on landing page & catalog.
+5. **Disclose Farmer Name Toggle**:
+   - Check **Disclose Farmer Name to Buyers/Public** to show farm name. Unchecked displays supplier anonymously as `"Harvest Hill Delivery"`.
+
+---
+
+## 23. Quick Sanity Verification Checklist
 
 ```
 CLEAN BASELINE & REGISTRATION
@@ -377,20 +410,25 @@ FARMER DISCOVERY & HARVEST SUBMISSIONS
 [ ] Harvest submissions assigned sequential tracking numbers (SUP-000001, SUP-000002)
 [ ] Proof photos rendered in aspect-square grid with hover delete button
 [ ] Farmer Dashboard "Products currently needed" renders text-driven spec cards matching SubmitHarvest (no images)
+[ ] Discount controls removed from Farmer Portal (managed exclusively by Admin)
+[ ] Farmers can suggest unlisted crops for admin verification & master listing
 
-ADMIN SUPPLIES COMPARISON & NEGOTIATION
+ADMIN SUPPLIES COMPARISON, NEGOTIATION & GOVERNANCE
 [ ] Detail drawer displays side-by-side comparison with vertical divider separation between left/right columns
 [ ] Long crop names wrap cleanly (break-words) without colliding with adjacent columns
 [ ] Requirement box correctly displays actual template values (Quantity Needed & Reference Price)
 [ ] Contextual negotiation supports dual action controls (Counter offer vs Accept) and pre-filled fields
+[ ] Admin can delegate Fresh Deals discount (is_discounted & discount_price) on approved supplies
+[ ] Admin can configure Visibility Controls (private_admin, specific_clients, all_clients, public) & disclose_farmer_name toggle
 
-LANDING PAGE & FULFILLMENT
-[ ] Approved farmer harvest offers appear on landing page for all visitors with dynamic live stock text (e.g. "40 kg live stock")
-[ ] Product templates (requirements) never appear on landing page
+LANDING PAGE, MASTER AGGREGATION & FULFILLMENT
+[ ] Accepted supplies consolidated into 1 single Master Product card with total accepted stock (e.g. 30kg + 60kg = 90kg)
+[ ] Client/Public marketplace displays single official Harvest Hill Master Product image (farmer photos remain private)
+[ ] Supplier name defaults to "Harvest Hill Delivery" unless disclose_farmer_name is explicitly enabled by Admin
 [ ] Orders require mandatory Transport Fee and Tax Assessment (> 0) before approval
 [ ] Fulfilling orders to Delivered auto-deducts live stock and issues itemized Delivery Note PDF
 ```
 
 ---
 
-*Last Updated: 2026-08-17*
+*Last Updated: 2026-08-19*
