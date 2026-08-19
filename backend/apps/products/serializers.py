@@ -8,6 +8,7 @@ def _product_has_image(image):
 
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    displayId = serializers.CharField(source='display_id', read_only=True)
     total_available_quantity = serializers.SerializerMethodField()
     supplier_count = serializers.IntegerField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
@@ -24,7 +25,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
+            'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count'
@@ -160,11 +161,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class ProductShortSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    displayId = serializers.CharField(source='display_id', read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'category', 'unit', 'image', 'image_url',
+            'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url',
             'pricing_mode', 'offered_price', 'base_price', 'quantity_needed', 'status', 'quality_requirements', 
             'submission_deadline', 'preferred_harvest_period', 'description'
         ]

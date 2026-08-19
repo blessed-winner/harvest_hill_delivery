@@ -10,7 +10,7 @@ interface SuppliesProps {
   searchTerm?: string;
 }
 
-export function Supplies({ searchTerm = '' }: SuppliesProps) {
+export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const { toast, showConfirm } = useAlert();
   const [supplies, setSupplies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +18,34 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [activeStatusTab, setActiveStatusTab] = useState('All');
   const [showFarmerNames, setShowFarmerNames] = useState(false);
+
+  // Search state
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+  const searchTerm = propSearchTerm || internalSearchTerm;
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const loadSupplies = React.useCallback(() => {
+    setIsLoading(true);
+    const query = debouncedSearchTerm.trim() ? `?search=${encodeURIComponent(debouncedSearchTerm.trim())}` : '';
+    apiRequest(`/api/supplies/${query}`)
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res?.results || []);
+        setSupplies(list);
+      })
+      .catch(err => {
+        console.error("Failed to load supplies:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     api.systemSettings.get().then((res: any) => {
@@ -381,23 +409,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     'Rejected': 'rejected',
   };
 
-  const loadSupplies = () => {
-    setIsLoading(true);
-    api.supplies.list()
-      .then(res => {
-        setSupplies(res || []);
-      })
-      .catch(err => {
-        console.error("Failed to load supplies:", err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
 
-  useEffect(() => {
-    loadSupplies();
-  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -477,6 +489,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
     const matchesSearch = searchTerm 
       ? (s.product_detail?.name || s.custom_product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.product_detail?.displayId || s.product_detail?.display_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.farmer_name || s.farmer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (s.product_detail?.category || s.custom_category || '').toLowerCase().includes(searchTerm.toLowerCase())
       : true;
@@ -488,6 +501,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     const map = new Map<string, {
       id: string;
       productId: string | number | null;
+      displayId?: string;
       name: string;
       category: string;
       unit: string;
@@ -506,6 +520,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     for (const sup of filteredSupplies) {
       const prodName = (sup.product_detail?.name || sup.custom_product_name || sup.suggested_product_name || 'Produce').trim();
       const prodId = sup.product || sup.product_detail?.id || prodName.toLowerCase();
+      const displayId = sup.product_detail?.displayId || sup.product_detail?.display_id || sup.displayId || sup.display_id || '';
       const key = String(prodId);
 
       const isAccepted = sup.status === 'accepted';
@@ -520,6 +535,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         map.set(key, {
           id: key,
           productId: sup.product || null,
+          displayId: displayId,
           name: prodName,
           category: (sup.product_detail?.category || sup.custom_category || 'Vegetables').toUpperCase(),
           unit: sup.unit || sup.product_detail?.unit || 'kg',
@@ -536,6 +552,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         });
       } else {
         const group = map.get(key)!;
+        if (!group.displayId && displayId) {
+          group.displayId = displayId;
+        }
         group.supplies.push(sup);
         group.batchCount += 1;
         if (isAccepted) {
@@ -565,6 +584,28 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           <p className="text-sm text-on-surface-variant font-medium">Manage inbound stock proposals and bulk deals.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Admin Supply Logs Backend Search Bar */}
+          <div className="relative w-72 sm:w-80">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60">
+              <Search size={14} />
+            </div>
+            <input
+              type="text"
+              placeholder="Search master products by ID or name..."
+              value={searchTerm}
+              onChange={(e) => setInternalSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-white border border-outline-variant rounded-xl text-xs font-semibold text-on-surface outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-2xs"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setInternalSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-on-surface-variant hover:text-on-surface font-extrabold text-xs cursor-pointer"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
           <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
             {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
               <button 
@@ -624,7 +665,12 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
           ) : masterProductGroups.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
               <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
-              <p className="text-sm font-bold">No supplies found.</p>
+              <p className="text-sm font-bold">No master products found.</p>
+              {searchTerm && (
+                <p className="text-xs text-on-surface-variant mt-1">
+                  No products matched <strong className="text-primary">"{searchTerm}"</strong>. Try searching by ID (e.g. MST-000001) or crop name.
+                </p>
+              )}
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
@@ -633,12 +679,13 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   <th className="px-4 py-3 text-center w-10">
                     <input 
                       type="checkbox"
-                      checked={currentGroups.length > 0 && currentGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
+                      checked={masterProductGroups.length > 0 && masterProductGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
                       onChange={(e) => {
-                        const allIds = currentGroups.flatMap(g => g.supplies.map(s => s.id));
                         if (e.target.checked) {
-                          setSelectedIds(prev => Array.from(new Set([...prev, ...allIds])));
+                          const allIds = masterProductGroups.flatMap(g => g.supplies.map(s => s.id));
+                          setSelectedIds(Array.from(new Set([...selectedIds, ...allIds])));
                         } else {
+                          const allIds = masterProductGroups.flatMap(g => g.supplies.map(s => s.id));
                           setSelectedIds(prev => prev.filter(id => !allIds.includes(id)));
                         }
                       }}
@@ -677,8 +724,15 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-sm font-bold text-on-surface">{group.name}</p>
-                        <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-on-surface">{group.name}</p>
+                          {group.displayId && (
+                            <span className="text-[9.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
+                              {group.displayId}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
                           {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
                         </p>
                       </div>

@@ -15,6 +15,7 @@ class Product(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    display_id = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=100) # e.g. Fruits, Vegetables, Grains, Animal-Based
     description = models.TextField(blank=True, default='')
@@ -44,6 +45,15 @@ class Product(models.Model):
         return self.status
 
     def save(self, *args, **kwargs):
+        if not self.display_id:
+            existing_count = Product.objects.count() + 1
+            num_str = f"{existing_count:06d}"
+            self.display_id = f"MST-{num_str}"
+            while Product.objects.filter(display_id=self.display_id).exclude(pk=self.pk).exists():
+                existing_count += 1
+                num_str = f"{existing_count:06d}"
+                self.display_id = f"MST-{num_str}"
+
         if self.pricing_mode == 'harvest_hill_offers':
             if self.offered_price is not None:
                 self.base_price = self.offered_price

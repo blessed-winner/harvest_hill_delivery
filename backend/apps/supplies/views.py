@@ -232,6 +232,20 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = SupplySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = self.request.query_params.get('search', None)
+        if search:
+            search_str = search.strip()
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(product__name__icontains=search_str) |
+                Q(product__display_id__icontains=search_str) |
+                Q(custom_product_name__icontains=search_str) |
+                Q(suggested_product_name__icontains=search_str)
+            )
+        return queryset
+
     def perform_create(self, serializer):
         # Extract files from request
         images = self.request.FILES.getlist('images')
