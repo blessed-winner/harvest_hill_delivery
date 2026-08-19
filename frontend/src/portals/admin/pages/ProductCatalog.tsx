@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -935,91 +935,143 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
 
           {/* Section 2: Volume & Target Pricing Card */}
-          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
-            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
-              <Package size={13} className="text-primary" />
-              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
-                2. Volume & Target Reference Price
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Quantity Needed <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    min="1"
-                    placeholder="e.g. 1000"
-                    value={formQuantityNeeded}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormQuantityNeeded(val);
-                      if (val && parseFloat(val) <= 0) {
-                        setErrorMessage("Quantity needed must be greater than zero.");
-                      } else if (errorMessage === "Quantity needed must be greater than zero.") {
-                        setErrorMessage("");
-                      }
-                    }}
-                    className={cn(
-                      "w-full pl-3.5 pr-10 py-2.5 rounded-xl border text-sm font-extrabold outline-none bg-surface-container-lowest focus:ring-2 transition-all",
-                      formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0
-                        ? "border-red-500 focus:ring-red-200"
-                        : "border-outline-variant/60 focus:border-primary focus:ring-primary/10"
-                    )}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold font-mono text-on-surface-variant/70 uppercase">
-                    {formUnit}
+          <div className="p-4.5 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs font-sans">
+            <div className="flex items-center justify-between pb-2.5 border-b border-outline-variant/20">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  <Package size={14} />
+                </div>
+                <div>
+                  <span className="text-xs font-extrabold text-primary uppercase tracking-wider block">
+                    2. Volume & Pricing Model
+                  </span>
+                  <span className="text-[10.5px] text-on-surface-variant font-medium">
+                    Set target harvest quantities and select procurement pricing mode
                   </span>
                 </div>
-                {formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0 && (
-                  <p className="text-[10px] text-red-600 font-bold mt-1">
-                    Quantity needed must be greater than 0.
-                  </p>
-                )}
               </div>
+            </div>
 
-              {/* Pricing Mode Section */}
-              <div className="space-y-3 p-3.5 bg-[#fcf9f2] rounded-xl border border-[#e5e2db]">
-                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Pricing Mode <span className="text-red-500">*</span>
-                </label>
-                
-                {(() => {
-                  const subCount = selectedProduct && selectedProduct !== 'new' ? (selectedProduct.submission_count || selectedProduct.sourcing_history_count || 0) : 0;
-                  return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Quantity Needed Input */}
+            <div className="space-y-1.5">
+              <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider flex items-center justify-between">
+                <span>Quantity Needed <span className="text-red-500">*</span></span>
+                <span className="text-[10px] text-on-surface-variant font-medium">Unit: <strong className="uppercase text-primary font-mono">{formUnit}</strong></span>
+              </label>
+              <div className="relative">
+                <input 
+                  type="number" 
+                  min="1"
+                  placeholder="e.g. 1000"
+                  value={formQuantityNeeded}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormQuantityNeeded(val);
+                    if (val && parseFloat(val) <= 0) {
+                      setErrorMessage("Quantity needed must be greater than zero.");
+                    } else if (errorMessage === "Quantity needed must be greater than zero.") {
+                      setErrorMessage("");
+                    }
+                  }}
+                  className={cn(
+                    "w-full pl-4 pr-16 py-2.5 rounded-xl border text-sm font-extrabold outline-none bg-surface-container-lowest focus:ring-2 transition-all",
+                    formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0
+                      ? "border-red-500 focus:ring-red-200"
+                      : "border-outline-variant/60 focus:border-primary focus:ring-primary/10"
+                  )}
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black font-mono text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-md">
+                  {formUnit}
+                </span>
+              </div>
+              {formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0 && (
+                <p className="text-[10.5px] text-red-600 font-bold mt-1 flex items-center gap-1">
+                  <AlertCircle size={12} /> Quantity needed must be greater than 0.
+                </p>
+              )}
+            </div>
+
+            {/* Pricing Mode Radio Selector */}
+            <div className="space-y-3 pt-2 border-t border-outline-variant/20">
+              <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider block">
+                Procurement Pricing Mode <span className="text-red-500">*</span>
+              </label>
+              
+              {(() => {
+                const subCount = selectedProduct && selectedProduct !== 'new' ? (selectedProduct.submission_count || selectedProduct.sourcing_history_count || 0) : 0;
+                return (
+                  <div className="space-y-2.5">
+                    {subCount > 0 && (
+                      <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                        <span>Pricing mode locked ({subCount} active submission{subCount > 1 ? 's' : ''} exist).</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {/* Option 1: Harvest Hill Offers */}
                       <label 
                         onClick={() => {
                           if (subCount > 0) return;
                           setFormPricingMode('harvest_hill_offers');
                         }}
                         className={cn(
-                          "p-3 rounded-xl border flex flex-col gap-1 transition-all",
+                          "p-3.5 rounded-xl border flex items-start gap-3 transition-all",
                           subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
                           formPricingMode === 'harvest_hill_offers' 
-                            ? "bg-primary/10 border-primary shadow-2xs" 
+                            ? "bg-emerald-50/90 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs" 
                             : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="radio" 
-                            name="pricing_mode" 
-                            checked={formPricingMode === 'harvest_hill_offers'}
-                            disabled={subCount > 0}
-                            onChange={() => {}}
-                            className="text-primary accent-primary cursor-pointer" 
-                          />
-                          <span className="font-extrabold text-xs text-on-surface">Harvest Hill offers price</span>
+                        <input 
+                          type="radio" 
+                          name="pricing_mode" 
+                          checked={formPricingMode === 'harvest_hill_offers'}
+                          disabled={subCount > 0}
+                          onChange={() => {}}
+                          className="mt-0.5 text-primary accent-primary cursor-pointer" 
+                        />
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
+                              🏷️ Harvest Hill Offers Price
+                            </span>
+                            {formPricingMode === 'harvest_hill_offers' && (
+                              <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                            Harvest Hill sets an explicit target price per {formUnit} for farmer submissions.
+                          </p>
+
+                          {formPricingMode === 'harvest_hill_offers' && (
+                            <div className="pt-2.5 mt-2 border-t border-emerald-200/80 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                              <label className="text-[10px] font-extrabold text-emerald-950 uppercase tracking-wider block">
+                                Offered Price (RWF per {formUnit}) <span className="text-red-500">*</span>
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-900 font-mono">
+                                  RWF
+                                </span>
+                                <input 
+                                  type="number" 
+                                  placeholder="e.g. 1200"
+                                  value={formOfferedPrice}
+                                  onChange={(e) => {
+                                    setFormOfferedPrice(e.target.value);
+                                    setFormPrice(e.target.value);
+                                  }}
+                                  className="w-full pl-14 pr-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-extrabold text-emerald-950 outline-none bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 transition-all font-mono"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <span className="text-[10px] text-on-surface-variant leading-relaxed pl-5">
-                          You set an explicit offered price visible to local farmers.
-                        </span>
                       </label>
 
+                      {/* Option 2: Farmer Proposes */}
                       <label 
                         onClick={() => {
                           if (subCount > 0) return;
@@ -1027,60 +1079,41 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                           setFormOfferedPrice('');
                         }}
                         className={cn(
-                          "p-3 rounded-xl border flex flex-col gap-1 transition-all",
+                          "p-3.5 rounded-xl border flex items-start gap-3 transition-all",
                           subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
                           formPricingMode === 'farmer_proposes' 
-                            ? "bg-primary/10 border-primary shadow-2xs" 
+                            ? "bg-emerald-50/90 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs" 
                             : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="radio" 
-                            name="pricing_mode" 
-                            checked={formPricingMode === 'farmer_proposes'}
-                            disabled={subCount > 0}
-                            onChange={() => {}}
-                            className="text-primary accent-primary cursor-pointer" 
-                          />
-                          <span className="font-extrabold text-xs text-on-surface">Farmer proposes price</span>
+                        <input 
+                          type="radio" 
+                          name="pricing_mode" 
+                          checked={formPricingMode === 'farmer_proposes'}
+                          disabled={subCount > 0}
+                          onChange={() => {}}
+                          className="mt-0.5 text-primary accent-primary cursor-pointer" 
+                        />
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
+                              🤝 Farmer Proposes Price
+                            </span>
+                            {formPricingMode === 'farmer_proposes' && (
+                              <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                            Farmers submit their asking price when proposing harvest offers.
+                          </p>
                         </div>
-                        <span className="text-[10px] text-on-surface-variant leading-relaxed pl-5">
-                          Farmers submit their asking price when posting harvest.
-                        </span>
                       </label>
                     </div>
-                  );
-                })()}
-
-                {formPricingMode === 'harvest_hill_offers' ? (
-                  <div className="space-y-1.5 pt-2 border-t border-[#e5e2db]">
-                    <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                      Offered Price (RWF) <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">
-                        RWF
-                      </span>
-                      <input 
-                        type="number" 
-                        placeholder="e.g. 800"
-                        value={formOfferedPrice}
-                        onChange={(e) => {
-                          setFormOfferedPrice(e.target.value);
-                          setFormPrice(e.target.value);
-                        }}
-                        className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold text-primary outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                      />
-                    </div>
                   </div>
-                ) : (
-                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-[10.5px] text-amber-950 font-medium flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-800 shrink-0" />
-                    <span>The farmer will submit their asking price when submitting a harvest offer.</span>
-                  </div>
-                )}
-              </div>
+                );
+              })()}
             </div>
           </div>
 
