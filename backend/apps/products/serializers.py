@@ -96,7 +96,19 @@ class ProductSerializer(serializers.ModelSerializer):
         if float(quantity_needed) < min_qty:
             raise serializers.ValidationError({"quantity_needed": min_msg})
 
-        # 3. Duplicate product name check (case-insensitive)
+        # 3. Submission deadline validation for OPEN status
+        status_val = attrs.get('status', instance.status if instance else 'open')
+        deadline = attrs.get('submission_deadline', instance.submission_deadline if instance else None)
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        if status_val == 'open' and deadline and deadline < today:
+            formatted_dl = deadline.strftime('%B %d, %Y') if hasattr(deadline, 'strftime') else str(deadline)
+            raise serializers.ValidationError({
+                "submission_deadline": f"Cannot activate or set a requirement to OPEN when its submission deadline ({formatted_dl}) has passed. Please update the submission deadline to today or a future date first."
+            })
+
+        # 4. Duplicate product name check (case-insensitive)
         name_duplicates = Product.objects.filter(name__iexact=name)
         if instance:
             name_duplicates = name_duplicates.exclude(pk=instance.pk)

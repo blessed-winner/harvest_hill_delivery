@@ -189,6 +189,16 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
   const handleToggleNeeded = async (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const isPastDeadline = product.submission_deadline && product.submission_deadline < todayStr;
+
+    // If attempting to open/activate a requirement whose deadline has passed, open edit modal and prompt admin to update date!
+    if ((!product.is_currently_needed || product.status !== 'open') && isPastDeadline) {
+      toast(`Submission deadline for "${product.name}" (${product.submission_deadline}) has passed. Please update the deadline date to activate it.`, "warning");
+      handleOpenEditProduct(product);
+      return;
+    }
+
     try {
       await api.products.update(product.id, { is_currently_needed: !product.is_currently_needed });
       toast(`Market demand status for ${product.name} updated!`, "success");
@@ -823,7 +833,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <button 
                 type="button"
                 onClick={handleSaveProduct}
-                disabled={isSaving || !isFormDirty}
+                disabled={isSaving || !isFormDirty || (formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10))}
+                title={formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10) ? "Cannot activate requirement with an expired deadline" : undefined}
                 className="flex-[2] px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-[#376847] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
               >
                 {isSaving ? (
@@ -1010,6 +1021,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 />
               </div>
             </div>
+
+            {formStatus === 'open' && formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10) && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-extrabold text-[11px] text-amber-950">Submission Deadline Expired</p>
+                  <p className="text-[10px] text-amber-800 leading-relaxed mt-0.5">
+                    The submission deadline ({formSubmissionDeadline}) has passed. Please update the deadline date to today or a future date to activate this requirement as OPEN.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
