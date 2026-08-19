@@ -95,6 +95,21 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const handleAbortDiscount = async (supply: any) => {
+    try {
+      await api.supplies.update(supply.id, {
+        is_discounted: false,
+        discount_price: null,
+      });
+      const stdPrice = supply.agreed_price || supply.price;
+      toast(`Fresh deal aborted. Price reverted to standard (${formatCurrency(stdPrice)}).`, "success");
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      toast(err.message || "Failed to abort fresh deal.", "error");
+    }
+  };
+
   const handleSaveVisibilityControls = async () => {
     if (!visibilitySupply) return;
     try {
@@ -696,21 +711,23 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               )}
 
               {!selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sup = selectedSupply;
-                      setSelectedSupply(null);
-                      setDiscountSupply(sup);
-                      setDiscountIsActive(!!sup.is_discounted);
-                      setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
-                    }}
-                    className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
-                  >
-                    <Tag size={13} className="text-orange-700" />
-                    <span>Fresh Deals</span>
-                  </button>
+                <div className={cn("grid gap-2.5", selectedSupply.is_discounted ? "grid-cols-1" : "grid-cols-2")}>
+                  {!selectedSupply.is_discounted && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sup = selectedSupply;
+                        setSelectedSupply(null);
+                        setDiscountSupply(sup);
+                        setDiscountIsActive(!!sup.is_discounted);
+                        setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
+                      }}
+                      className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                    >
+                      <Tag size={13} className="text-orange-700" />
+                      <span>Fresh Deals</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -1249,6 +1266,77 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </div>
                   );
                 })()}
+              </div>
+            )}
+
+            {/* Active Fresh Deal Banner (Rendered right below finalized negotiation terms when supply is discounted) */}
+            {selectedSupply.is_discounted && (
+              <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                      <Tag size={15} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs text-orange-950">Active Fresh Deal</span>
+                        {selectedSupply.discount_price && (
+                          <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
+                            {(() => {
+                              const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
+                              const discP = parseFloat(selectedSupply.discount_price);
+                              if (stdP > 0 && discP < stdP) {
+                                return `${Math.round(((stdP - discP) / stdP) * 100)}% OFF`;
+                              }
+                              return 'Active';
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
+                        Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(selectedSupply.discount_price)}</span> / {selectedSupply.unit || 'kg'}
+                        <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
+                          (Standard: {formatCurrency(selectedSupply.agreed_price || selectedSupply.price)})
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions: Edit Fresh Deal vs Abort Deal */}
+                <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sup = selectedSupply;
+                      setSelectedSupply(null);
+                      setDiscountSupply(sup);
+                      setDiscountIsActive(true);
+                      setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
+                    }}
+                    className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Edit3 size={13} className="text-orange-800" />
+                    <span>Edit Deal</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const confirmed = await showConfirm(
+                        "Abort Fresh Deal?",
+                        `Are you sure you want to abort the fresh deal discount for ${selectedSupply.product_detail?.name || selectedSupply.custom_product_name || 'this supply'}? Price will revert back to standard (${formatCurrency(selectedSupply.agreed_price || selectedSupply.price)}).`
+                      );
+                      if (confirmed) {
+                        handleAbortDiscount(selectedSupply);
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <X size={13} />
+                    <span>Abort Deal</span>
+                  </button>
+                </div>
               </div>
             )}
 
