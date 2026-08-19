@@ -579,11 +579,18 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       ) : null}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-primary">
-                          {formatCurrency(s.agreed_price || s.price || s.proposed_price)}
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant font-bold">vs {formatCurrency(s.base_price || s.product_detail?.base_price)}</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-primary">
+                            {formatCurrency(s.price || s.proposed_price)}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-bold">vs {formatCurrency(s.base_price || s.product_detail?.base_price)}</span>
+                        </div>
+                        {s.agreed_price && (
+                          <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-0.5 font-mono w-fit">
+                            {formatCurrency(s.agreed_price)}/{s.unit || 'kg'} agreed
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
