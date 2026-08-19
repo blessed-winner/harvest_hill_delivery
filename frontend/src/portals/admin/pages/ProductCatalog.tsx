@@ -717,43 +717,44 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             {product.name}
                           </h3>
 
-                          {/* Requirement Spec Box */}
-                          <div className="space-y-2 bg-[#FAF7F0]/80 p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed:</span>
-                              <span className="font-extrabold text-[#1C2A1E]">
+                          {/* Requirement Spec Box - Vertical Hierarchy */}
+                          <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                            <div>
+                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
+                              <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
                                 {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
-                              </span>
+                              </p>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing:</span>
+                            <div className="py-1 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">
+                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing</p>
                               {product.pricing_mode === 'farmer_proposes' ? (
-                                <span className="font-extrabold text-amber-900 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded text-[9.5px] uppercase tracking-wider font-mono">
-                                  FARMER PROPOSES
-                                </span>
+                                <div>
+                                  <p className="text-[11px] font-medium text-[#717971]">Farmer proposes</p>
+                                  <p className="text-xs font-semibold text-[#4A473D] mt-0.5">
+                                    Price submitted during harvest submission
+                                  </p>
+                                </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 border border-[#2D5A3D]/20 px-2 py-0.5 rounded text-[9.5px] uppercase tracking-wider font-mono">
-                                    HARVEST HILL OFFERS
-                                  </span>
-                                  <span className="font-mono text-xs font-black text-[#1C2A1E]">
-                                    RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
-                                  </span>
+                                <div>
+                                  <p className="text-[11px] font-medium text-[#717971]">Harvest Hill offers</p>
+                                  <p className="text-base font-black text-[#2D5A3D] font-mono mt-0.5">
+                                    RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()} / {product.unit || 'kg'}
+                                  </p>
                                 </div>
                               )}
                             </div>
 
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By:</span>
-                              <span className="font-bold text-[#1C2A1E]">
+                            <div>
+                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By</p>
+                              <p className="text-xs font-bold text-[#1C2A1E] mt-0.5">
                                 {product.submission_deadline ? product.submission_deadline : 'No deadline'}
-                              </span>
+                              </p>
                             </div>
 
                             <div className="flex items-center justify-between pt-1 border-t border-[#E8E4DA]">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submissions:</span>
-                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-[10px] font-mono">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submissions</span>
+                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-xs font-mono">
                                 {subCount}
                               </span>
                             </div>
