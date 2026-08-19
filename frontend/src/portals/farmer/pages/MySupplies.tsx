@@ -468,13 +468,9 @@ export default function MySupplies() {
                             <span className="font-mono text-sm font-bold text-on-surface">
                               RWF {rwf.toLocaleString()}
                             </span>
-                            {agreedVal !== null && supply.status === 'accepted' ? (
-                              <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">
-                                RWF {rwf.toLocaleString()}/{supply.unit || supply.product_detail?.unit || 'kg'} negotiated
-                              </span>
-                            ) : supply.is_discounted ? (
+                            {supply.is_discounted && (
                               <span className="text-[9px] text-red-600 font-extrabold uppercase tracking-tighter">Discounted</span>
-                            ) : null}
+                            )}
                           </>
                         );
                       })()}
