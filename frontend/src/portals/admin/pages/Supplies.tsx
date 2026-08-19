@@ -608,6 +608,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     />
                   </th>
                   <th className="px-6 py-3">Master Product</th>
+                  <th className="px-6 py-3">Suppliers</th>
                   <th className="px-6 py-3 text-right">Available Stock</th>
                   <th className="px-6 py-3">Selling Price</th>
                   <th className="px-6 py-3">Status</th>
@@ -642,6 +643,12 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">
                           {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
                         </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-on-surface">
+                        <Users size={13} className="text-primary shrink-0" />
+                        <span>{group.supplierCount} {group.supplierCount === 1 ? 'Supplier' : 'Suppliers'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
