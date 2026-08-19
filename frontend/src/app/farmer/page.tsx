@@ -11,6 +11,7 @@ import Invoices from '../../portals/farmer/pages/Invoices';
 import Settings from '../../portals/farmer/pages/Settings';
 import ClientRequests from '../../portals/farmer/pages/ClientRequests';
 import { View } from '../../portals/types';
+import { api } from '../../portals/farmer/lib/api';
 
 export default function FarmerPage() {
   const router = useRouter();
@@ -27,15 +28,26 @@ export default function FarmerPage() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_role');
-        router.push('/');
-      } else {
-        setAuthorized(true);
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlView = urlParams.get('view') as View;
-        if (urlView) {
-          setActiveView(urlView);
-        }
+        router.replace('/');
+        return;
       }
+
+      // Verify active session before rendering FarmerLayout to prevent UI flash on 401
+      api.me()
+        .then(() => {
+          setAuthorized(true);
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlView = urlParams.get('view') as View;
+          if (urlView) {
+            setActiveView(urlView);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user_role');
+          router.replace('/');
+        });
     }
   }, [router]);
 

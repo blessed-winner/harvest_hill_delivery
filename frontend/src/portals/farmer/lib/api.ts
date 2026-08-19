@@ -127,6 +127,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
 }
 
 export const api = {
+  // Current User Info
+  me: () => apiRequest('/api/accounts/me/'),
+
   // ── Dashboard ──────────────────────────────────────────────────────────────
   dashboardSummary: () => apiRequest('/api/farmer/dashboard/summary/'),
   dashboardSupplyVolume: (range?: string) =>

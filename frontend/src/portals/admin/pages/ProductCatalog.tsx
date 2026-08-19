@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
@@ -233,6 +233,54 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormDescription(product.description || "");
     setErrorMessage("");
   };
+
+  const isFormDirty = useMemo(() => {
+    if (!selectedProduct) return false;
+    if (selectedProduct === 'new') {
+      return !!formName.trim();
+    }
+
+    const norm = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const isFutureDeadline = selectedProduct.submission_deadline && selectedProduct.submission_deadline >= todayStr;
+    const initialStatus = isFutureDeadline ? 'open' : norm(selectedProduct.status || 'open');
+
+    const nameChanged = norm(formName) !== norm(selectedProduct.name);
+    const catChanged = norm(formCategory) !== norm(selectedProduct.category || 'Vegetables');
+    const unitChanged = norm(formUnit) !== norm(selectedProduct.unit || 'kg');
+    const priceChanged = norm(formPrice) !== norm(selectedProduct.base_price);
+    const qtyChanged = norm(formQuantityNeeded) !== norm(selectedProduct.quantity_needed);
+    const statusChanged = norm(formStatus) !== initialStatus;
+    const qualityChanged = norm(formQualityRequirements) !== norm(selectedProduct.quality_requirements);
+    const deadlineChanged = norm(formSubmissionDeadline) !== norm(selectedProduct.submission_deadline);
+    const periodChanged = norm(formPreferredPeriod) !== norm(selectedProduct.preferred_harvest_period);
+    const descChanged = norm(formDescription) !== norm(selectedProduct.description);
+
+    return (
+      nameChanged ||
+      catChanged ||
+      unitChanged ||
+      priceChanged ||
+      qtyChanged ||
+      statusChanged ||
+      qualityChanged ||
+      deadlineChanged ||
+      periodChanged ||
+      descChanged
+    );
+  }, [
+    selectedProduct,
+    formName,
+    formCategory,
+    formUnit,
+    formPrice,
+    formQuantityNeeded,
+    formStatus,
+    formQualityRequirements,
+    formSubmissionDeadline,
+    formPreferredPeriod,
+    formDescription
+  ]);
 
   const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -775,8 +823,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <button 
                 type="button"
                 onClick={handleSaveProduct}
-                disabled={isSaving}
-                className="flex-[2] px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-[#376847] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2 text-xs"
+                disabled={isSaving || !isFormDirty}
+                className="flex-[2] px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-[#376847] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
               >
                 {isSaving ? (
                   <>

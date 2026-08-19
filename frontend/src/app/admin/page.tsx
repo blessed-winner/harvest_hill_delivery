@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../portals/admin/AdminLayout';
+import { api } from '../../portals/admin/lib/api';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -16,10 +17,19 @@ export default function AdminPage() {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_role');
-        router.push('/');
-      } else {
-        setAuthorized(true);
+        router.replace('/');
+        return;
       }
+
+      // Verify active session before rendering AdminLayout to prevent UI flash on 401
+      api.me()
+        .then(() => setAuthorized(true))
+        .catch(() => {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user_role');
+          router.replace('/');
+        });
     }
   }, [router]);
 

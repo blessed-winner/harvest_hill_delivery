@@ -19,10 +19,17 @@ def product_needed_notification(sender, instance, created, **kwargs):
         farmers = User.objects.filter(role='farmer', is_active=True)
         for farmer in farmers:
             try:
+                if created:
+                    title = "New Harvest Demand"
+                    message = f"Harvest Hill now needs: {instance.name} ({instance.urgency} urgency)."
+                else:
+                    title = "Harvest Demand Updated"
+                    message = f"Harvest Hill requirement for '{instance.name}' has been updated."
+
                 send_live_notification(
                     user=farmer,
-                    title="New Harvest Demand",
-                    message=f"Harvest Hill now needs: {instance.name} ({instance.urgency} urgency)."
+                    title=title,
+                    message=message
                 )
             except Exception as e:
                 print(f"Failed to trigger signal notification for user {farmer.email}: {e}")
