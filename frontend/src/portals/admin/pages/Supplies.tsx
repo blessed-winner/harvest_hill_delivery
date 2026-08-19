@@ -1436,20 +1436,59 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
 
               {discountIsActive && (
-                <div className="space-y-1.5 pt-3 border-t border-orange-200">
-                  <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
-                    Discounted Offer Price (RWF per {discountSupply.unit})
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-900">RWF</span>
-                    <input
-                      type="number"
-                      placeholder="e.g. 600"
-                      value={discountPriceInput}
-                      onChange={(e) => setDiscountPriceInput(e.target.value)}
-                      className="w-full pl-12 pr-3 py-2 rounded-xl border border-orange-300 text-sm font-extrabold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+                <div className="space-y-3 pt-3 border-t border-orange-200">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
+                      Discounted Offer Price (RWF per {discountSupply.unit})
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-900">RWF</span>
+                      <input
+                        type="number"
+                        placeholder="e.g. 600"
+                        value={discountPriceInput}
+                        onChange={(e) => setDiscountPriceInput(e.target.value)}
+                        className="w-full pl-12 pr-3 py-2 rounded-xl border border-orange-300 text-sm font-extrabold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
                   </div>
+
+                  {discountPriceInput && parseFloat(discountPriceInput) > 0 && (
+                    (() => {
+                      const stdPrice = parseFloat(discountSupply.agreed_price || discountSupply.price || discountSupply.base_price || 0);
+                      const discPrice = parseFloat(discountPriceInput);
+                      if (stdPrice > 0 && discPrice > 0 && discPrice < stdPrice) {
+                        const savedRwf = stdPrice - discPrice;
+                        const savedPercent = Math.round((savedRwf / stdPrice) * 100);
+                        return (
+                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs animate-in fade-in duration-200 shadow-2xs">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xs">
+                                %
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-emerald-950">Real-Time Savings</p>
+                                <p className="text-[10.5px] text-emerald-800 font-medium">
+                                  Save <span className="font-extrabold font-mono text-emerald-900">RWF {savedRwf.toLocaleString()}</span> per {discountSupply.unit || 'kg'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="px-2.5 py-1 bg-emerald-700 text-white rounded-lg font-black text-xs font-mono shadow-2xs">
+                              {savedPercent}% OFF
+                            </div>
+                          </div>
+                        );
+                      } else if (discPrice >= stdPrice && stdPrice > 0) {
+                        return (
+                          <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 font-medium flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span>Discount price should be lower than standard price ({formatCurrency(stdPrice)}) to show savings.</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
                 </div>
               )}
             </div>
