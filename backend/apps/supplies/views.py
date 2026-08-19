@@ -302,6 +302,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 if attempted_spec_changes:
                     raise serializers.ValidationError(f"Harvest Hill Delivery cannot directly edit raw farmer harvest specifications ({', '.join(attempted_spec_changes)}). Use negotiation proposals to adjust price and accepted quantity.")
 
+            # Auto-promote visibility scope to PUBLIC if activating a Fresh Deal discount on an internal supply
+            if serializer.validated_data.get('is_discounted') is True:
+                current_scope = serializer.validated_data.get('visibility_scope') or obj.visibility_scope
+                if current_scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+                    serializer.validated_data['visibility_scope'] = 'PUBLIC'
+
         # Farmers can only update pending harvest submissions
         if self.request.user.role == 'farmer' and old_status != 'pending':
             raise serializers.ValidationError("Farmers can only update pending harvest submissions. Accepted or negotiated harvests cannot be edited.")
