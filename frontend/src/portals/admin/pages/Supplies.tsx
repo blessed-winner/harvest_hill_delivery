@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -718,9 +718,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       setDiscountIsActive(!!sup.is_discounted);
                       setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
                     }}
-                    className="w-full py-2 bg-orange-50 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1 cursor-pointer text-xs"
+                    className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
                   >
-                    🏷️ Fresh Deals
+                    <Tag size={13} className="text-orange-700" />
+                    <span>Fresh Deals</span>
                   </button>
                   <button
                     type="button"
@@ -731,9 +732,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       setVisibilityScopeInput(sup.visibility_scope || 'private_admin');
                       setDiscloseFarmerNameInput(!!sup.disclose_farmer_name);
                     }}
-                    className="w-full py-2 bg-blue-50 border border-blue-200 text-blue-950 rounded-xl font-extrabold hover:bg-blue-100 transition-all flex items-center justify-center gap-1 cursor-pointer text-xs"
+                    className="w-full py-2.5 bg-[#f6f3ec] border border-[#e5e2db] text-[#1c1c18] rounded-xl font-extrabold hover:bg-[#f0eee7] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
                   >
-                    🔒 Visibility
+                    <Eye size={13} className="text-primary" />
+                    <span>Visibility</span>
                   </button>
                 </div>
               )}
@@ -1396,39 +1398,46 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       {/* Admin Fresh Deals Discount Modal */}
       {discountSupply && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans text-xs">
-            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
-              <div className="flex items-center gap-2 text-orange-950 font-bold">
-                <span className="text-base">🏷️</span>
-                <h3 className="font-extrabold text-base text-on-surface">Delegate Fresh Deal Discount</h3>
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-5 font-sans text-xs">
+            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-800 flex items-center justify-center font-bold">
+                  <Tag size={20} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#1c1c18]">Delegate Fresh Deal Discount</h3>
+                  <p className="text-[10px] text-[#717971] font-semibold">Configure seasonal promotion offer pricing</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setDiscountSupply(null)}
-                className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl text-[#717971] hover:bg-[#f0eee7] transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/40">
+            <div className="p-3.5 bg-[#f6f3ec]/60 rounded-2xl border border-[#e5e2db] flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-on-surface">Supply Batch</p>
-                <p className="text-[10px] text-on-surface-variant font-mono font-semibold">
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Crop Batch</p>
+                <p className="text-xs font-extrabold text-[#1c1c18] mt-0.5">
                   {discountSupply.product_detail?.name || discountSupply.custom_product_name || 'Harvest Supply'}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold text-emerald-800 uppercase">Effective Price</p>
-                <p className="text-xs font-black text-emerald-700">{formatCurrency(discountSupply.agreed_price || discountSupply.price)}</p>
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Standard Price</p>
+                <p className="text-xs font-black text-primary font-mono mt-0.5">{formatCurrency(discountSupply.agreed_price || discountSupply.price)}</p>
               </div>
             </div>
 
-            <div className="p-4 bg-orange-50/80 border border-orange-200 rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setDiscountIsActive(!discountIsActive)}>
                 <div>
                   <p className="text-xs font-extrabold text-orange-950">Enable Fresh Deals Discount</p>
-                  <p className="text-[10px] text-orange-800">Features supply under Seasonal Discounts on client landing page</p>
+                  <p className="text-[10px] text-orange-800 leading-relaxed mt-0.5">
+                    Features supply under Seasonal Discounts on client landing page.
+                  </p>
                 </div>
                 <input
                   type="checkbox"
@@ -1439,26 +1448,29 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               </div>
 
               {discountIsActive && (
-                <div className="space-y-1.5 pt-2 border-t border-orange-200">
+                <div className="space-y-1.5 pt-3 border-t border-orange-200">
                   <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
                     Discounted Offer Price (RWF per {discountSupply.unit})
                   </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 600"
-                    value={discountPriceInput}
-                    onChange={(e) => setDiscountPriceInput(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-orange-300 text-sm font-bold bg-white text-on-surface outline-none focus:ring-2 focus:ring-orange-500"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-900">RWF</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 600"
+                      value={discountPriceInput}
+                      onChange={(e) => setDiscountPriceInput(e.target.value)}
+                      className="w-full pl-12 pr-3 py-2 rounded-xl border border-orange-300 text-sm font-extrabold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+            <div className="flex gap-2.5 pt-2 border-t border-[#e5e2db]">
               <button
                 type="button"
                 onClick={() => setDiscountSupply(null)}
-                className="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface-variant rounded-xl font-bold transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[#f0eee7] hover:bg-[#e5e2db] text-[#414942] rounded-xl font-bold transition-all cursor-pointer text-xs"
               >
                 Cancel
               </button>
@@ -1466,9 +1478,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 type="button"
                 onClick={handleSaveDiscountOffer}
                 disabled={isSavingDiscount}
-                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-extrabold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs"
               >
-                {isSavingDiscount ? 'Saving...' : 'Save Discount'}
+                <Tag size={14} />
+                <span>{isSavingDiscount ? 'Saving...' : 'Save Discount'}</span>
               </button>
             </div>
           </div>
@@ -1478,61 +1491,110 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       {/* Admin Visibility & Access Controls Modal */}
       {visibilitySupply && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans text-xs">
-            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
-              <div className="flex items-center gap-2 text-blue-950 font-bold">
-                <span className="text-base">🔒</span>
-                <h3 className="font-extrabold text-base text-on-surface">Visibility & Client Access Controls</h3>
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/60 space-y-5 font-sans text-xs">
+            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#1c1c18]">Visibility & Client Access</h3>
+                  <p className="text-[10px] text-[#717971] font-semibold">Set marketplace visibility and anonymity controls</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setVisibilitySupply(null)}
-                className="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl text-[#717971] hover:bg-[#f0eee7] transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
+            <div className="p-3.5 bg-[#f6f3ec]/60 rounded-2xl border border-[#e5e2db] flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Crop Batch</p>
+                <p className="text-xs font-extrabold text-[#1c1c18] mt-0.5">
+                  {visibilitySupply.product_detail?.name || visibilitySupply.custom_product_name || 'Harvest Supply'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Batch Number</p>
+                <p className="text-xs font-bold text-primary font-mono mt-0.5">{visibilitySupply.supply_number || `SUP-${String(visibilitySupply.id).slice(0, 6).toUpperCase()}`}</p>
+              </div>
+            </div>
+
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Visibility Scope
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider block">
+                  Marketplace Visibility Scope
                 </label>
-                <select
-                  value={visibilityScopeInput}
-                  onChange={(e) => setVisibilityScopeInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-outline-variant text-xs font-bold bg-white text-on-surface outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="private_admin">🔒 Harvest Hill Delivery Only (Private)</option>
-                  <option value="specific_clients">👥 Specific Chosen Clients</option>
-                  <option value="all_clients">🔑 All Registered Clients</option>
-                  <option value="public">🌐 Public to All People (Public Marketplace)</option>
-                </select>
+                <div className="space-y-2">
+                  {[
+                    { id: 'private_admin', label: 'Harvest Hill Delivery Only', desc: 'Restricted internally to Harvest Hill Delivery administration', icon: Lock },
+                    { id: 'specific_clients', label: 'Specific Chosen Clients', desc: 'Exclusive access to designated wholesale client accounts', icon: Users },
+                    { id: 'all_clients', label: 'All Registered Clients', desc: 'Visible to all authenticated client buyer accounts', icon: UserCheck },
+                    { id: 'public', label: 'Public Marketplace', desc: 'Accessible to all visitors (guests and clients)', icon: Globe },
+                  ].map((item) => {
+                    const isSelected = visibilityScopeInput === item.id;
+                    const IconComp = item.icon;
+                    return (
+                      <label
+                        key={item.id}
+                        onClick={() => setVisibilityScopeInput(item.id)}
+                        className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#144227]/5 border-[#144227] shadow-xs'
+                            : 'bg-white border-[#e5e2db] hover:bg-[#f6f3ec]/40'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                          isSelected ? 'bg-[#144227] text-white' : 'bg-[#f0eee7] text-[#717971]'
+                        }`}>
+                          <IconComp size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-xs font-extrabold ${isSelected ? 'text-[#144227]' : 'text-[#1c1c18]'}`}>
+                              {item.label}
+                            </span>
+                            {isSelected && (
+                              <span className="w-2 h-2 rounded-full bg-[#144227]"></span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-[#717971] leading-relaxed mt-0.5">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-extrabold text-blue-950">Disclose Farmer Name to Buyers/Public</p>
-                    <p className="text-[10px] text-blue-800">
-                      When unchecked, supplier displays anonymously as "Harvest Hill Delivery".
+              <div className="p-4 bg-white border border-[#e5e2db] rounded-2xl space-y-2 shadow-xs">
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => setDiscloseFarmerNameInput(!discloseFarmerNameInput)}>
+                  <div className="pr-4">
+                    <p className="text-xs font-extrabold text-[#1c1c18]">Disclose Farm Name to Buyers</p>
+                    <p className="text-[10px] text-[#717971] leading-relaxed mt-0.5">
+                      When off, supplier displays anonymously as <strong className="text-[#144227]">"Harvest Hill Delivery"</strong>.
                     </p>
                   </div>
                   <input
                     type="checkbox"
                     checked={discloseFarmerNameInput}
                     onChange={(e) => setDiscloseFarmerNameInput(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded cursor-pointer accent-blue-600"
+                    className="w-4 h-4 rounded border-[#c1c9c0] text-[#144227] focus:ring-[#144227] cursor-pointer accent-[#144227]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
+            <div className="flex gap-2.5 pt-2 border-t border-[#e5e2db]">
               <button
                 type="button"
                 onClick={() => setVisibilitySupply(null)}
-                className="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container text-on-surface-variant rounded-xl font-bold transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[#f0eee7] hover:bg-[#e5e2db] text-[#414942] rounded-xl font-bold transition-all cursor-pointer text-xs"
               >
                 Cancel
               </button>
@@ -1540,9 +1602,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 type="button"
                 onClick={handleSaveVisibilityControls}
                 disabled={isSavingVisibility}
-                className="flex-1 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                className="flex-1 py-2.5 bg-[#144227] hover:bg-[#376847] text-white rounded-xl font-extrabold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs"
               >
-                {isSavingVisibility ? 'Saving...' : 'Save Visibility Controls'}
+                <Save size={14} />
+                <span>{isSavingVisibility ? 'Saving...' : 'Save Settings'}</span>
               </button>
             </div>
           </div>

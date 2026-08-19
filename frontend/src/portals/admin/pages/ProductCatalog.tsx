@@ -1488,8 +1488,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           >
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm">
-                  🏷️
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-800 flex items-center justify-center font-bold text-sm">
+                  <Tag size={16} />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-on-surface">Delegate Fresh Discount</h3>
