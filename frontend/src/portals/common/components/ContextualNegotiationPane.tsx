@@ -55,13 +55,13 @@ export function ContextualNegotiationPane({
     if (!supplyId) return;
     try {
       setIsLoading(true);
-      // Fetch threads for this supply
+      // Fetch threads for this exact supply
       const res = await apiRequest(`/api/negotiations/threads/?supply_id=${supplyId}`);
       let currentThread = null;
       if (Array.isArray(res)) {
-        currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res[0];
-      } else if (res.results && Array.isArray(res.results)) {
-        currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res.results[0];
+        currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || null;
+      } else if (res?.results && Array.isArray(res.results)) {
+        currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || null;
       }
 
       if (!currentThread) {

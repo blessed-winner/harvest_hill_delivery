@@ -13,6 +13,9 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        supply_id = self.request.query_params.get('supply_id') or self.request.query_params.get('supply')
+        if supply_id:
+            queryset = queryset.filter(supply_id=supply_id)
         if self.request.user.role == 'farmer':
             try:
                 profile = self.request.user.farmer_profile

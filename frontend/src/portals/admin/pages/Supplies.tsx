@@ -184,9 +184,9 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
       const res = await apiRequest(`/api/negotiations/threads/?supply_id=${supplyId}`);
       let currentThread: any = null;
       if (Array.isArray(res)) {
-        currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res[0];
+        currentThread = res.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || null;
       } else if (res?.results) {
-        currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || res.results[0];
+        currentThread = res.results.find((t: any) => String(t.supply) === String(supplyId) || String(t.supply_detail?.id) === String(supplyId)) || null;
       }
       setAdminThread(currentThread || null);
 
@@ -445,12 +445,79 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
     return matchesSearch;
   });
 
-  // Pagination calculations
-  const suppliesPerPage = 8;
-  const indexOfLastSupply = currentPage * suppliesPerPage;
-  const indexOfFirstSupply = indexOfLastSupply - suppliesPerPage;
-  const currentSupplies = filteredSupplies.slice(indexOfFirstSupply, indexOfLastSupply);
-  const totalPages = Math.ceil(filteredSupplies.length / suppliesPerPage);
+  // Group supplies into Master Product entities (1 row per Master Product)
+  const masterProductGroups = React.useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      productId: string | number | null;
+      name: string;
+      category: string;
+      unit: string;
+      totalAvailableStock: number;
+      batchCount: number;
+      supplierCount: number;
+      masterSellingPrice: number;
+      isDiscounted: boolean;
+      discountPrice: number | null;
+      effectivePrice: number;
+      status: string;
+      supplies: any[];
+      primarySupply: any;
+    }>();
+
+    for (const sup of filteredSupplies) {
+      const prodName = (sup.product_detail?.name || sup.custom_product_name || sup.suggested_product_name || 'Produce').trim();
+      const prodId = sup.product || sup.product_detail?.id || prodName.toLowerCase();
+      const key = String(prodId);
+
+      const isAccepted = sup.status === 'accepted';
+      const qty = isAccepted ? Number(sup.accepted_quantity ?? sup.quantity ?? 0) : 0;
+      
+      const masterPrice = Number(sup.product_detail?.base_price || sup.product_detail?.offered_price || sup.base_price || sup.agreed_price || sup.price || 0);
+      const isDisc = !!(sup.product_detail?.is_discounted || sup.is_discounted);
+      const discPrice = (sup.product_detail?.discount_price || sup.discount_price) ? Number(sup.product_detail?.discount_price || sup.discount_price) : null;
+      const effPrice = isDisc && discPrice ? discPrice : masterPrice;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          productId: sup.product || null,
+          name: prodName,
+          category: (sup.product_detail?.category || sup.custom_category || 'Vegetables').toUpperCase(),
+          unit: sup.unit || sup.product_detail?.unit || 'kg',
+          totalAvailableStock: qty,
+          batchCount: 1,
+          supplierCount: 1,
+          masterSellingPrice: masterPrice,
+          isDiscounted: isDisc,
+          discountPrice: discPrice,
+          effectivePrice: effPrice,
+          status: isAccepted ? 'accepted' : sup.status,
+          supplies: [sup],
+          primarySupply: sup,
+        });
+      } else {
+        const group = map.get(key)!;
+        group.supplies.push(sup);
+        group.batchCount += 1;
+        if (isAccepted) {
+          group.totalAvailableStock += qty;
+          group.status = 'accepted';
+        }
+        const distinctFarmers = new Set(group.supplies.map(s => s.farmer_name || s.farmer?.farm_name || 'Partner Farm'));
+        group.supplierCount = distinctFarmers.size;
+      }
+    }
+
+    return Array.from(map.values());
+  }, [filteredSupplies]);
+
+  // Pagination calculations (operates on Master Product groups)
+  const groupsPerPage = 8;
+  const indexOfLastGroup = currentPage * groupsPerPage;
+  const indexOfFirstGroup = indexOfLastGroup - groupsPerPage;
+  const currentGroups = masterProductGroups.slice(indexOfFirstGroup, indexOfLastGroup);
+  const totalPages = Math.ceil(masterProductGroups.length / groupsPerPage);
 
   return (
     <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 min-h-[calc(100vh-56px)] flex flex-col bg-[#f9f9f7]">
@@ -516,7 +583,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
               <p className="text-sm font-bold text-primary">Loading supplies...</p>
               <p className="text-xs text-on-surface-variant/70 mt-0.5">Fetching latest stock proposals</p>
             </div>
-          ) : filteredSupplies.length === 0 ? (
+          ) : masterProductGroups.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
               <AlertCircle className="w-8 h-8 opacity-40 text-primary mb-2" />
               <p className="text-sm font-bold">No supplies found.</p>
@@ -528,139 +595,94 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   <th className="px-4 py-3 text-center w-10">
                     <input 
                       type="checkbox"
-                      checked={currentSupplies.length > 0 && currentSupplies.every(s => selectedIds.includes(s.id))}
+                      checked={currentGroups.length > 0 && currentGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
                       onChange={(e) => {
+                        const allIds = currentGroups.flatMap(g => g.supplies.map(s => s.id));
                         if (e.target.checked) {
-                          const idsToSelect = currentSupplies.map(s => s.id);
-                          setSelectedIds(prev => Array.from(new Set([...prev, ...idsToSelect])));
+                          setSelectedIds(prev => Array.from(new Set([...prev, ...allIds])));
                         } else {
-                          const idsToRemove = currentSupplies.map(s => s.id);
-                          setSelectedIds(prev => prev.filter(id => !idsToRemove.includes(id)));
+                          setSelectedIds(prev => prev.filter(id => !allIds.includes(id)));
                         }
                       }}
                       className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
                     />
                   </th>
                   <th className="px-6 py-3">Master Product</th>
-                  <th className="px-6 py-3">Suppliers</th>
-                  <th className="px-6 py-3 text-right">Total Available Supply</th>
-                  <th className="px-6 py-3">Master Selling Price</th>
-                  <th className="px-6 py-3">Status / Deal</th>
+                  <th className="px-6 py-3 text-right">Available Stock</th>
+                  <th className="px-6 py-3">Selling Price</th>
+                  <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
-                {currentSupplies.map((s) => {
-                  const prodName = s.product_detail?.name || s.custom_product_name || s.suggested_product_name || 'Harvest Product';
-                  const prodCategory = s.product_detail?.category || s.custom_category || 'Vegetables';
-                  const isDiscounted = s.product_detail?.is_discounted || s.is_discounted;
-                  const discPrice = s.product_detail?.discount_price || s.discount_price;
-                  const masterPrice = s.product_detail?.base_price || s.agreed_price || s.price;
-                  
-                  // Compute supplies count under same master product
-                  const siblingSupplies = filteredSupplies.filter(item => 
-                    (item.product_detail?.name || item.custom_product_name || item.suggested_product_name) === prodName
-                  );
-                  const supplierCount = new Set(siblingSupplies.map(item => item.farmer_name || item.farmer?.farm_name || 'Partner Farm')).size;
-                  const totalStock = siblingSupplies
-                    .filter(item => item.status === 'accepted')
-                    .reduce((sum, item) => sum + (Number(item.accepted_quantity ?? item.quantity ?? 0)), 0);
-
-                  return (
-                    <tr 
-                      key={s.id} 
-                      onClick={() => setSelectedSupply(s)}
-                      className="hover:bg-surface-container-low transition-colors cursor-pointer group"
-                    >
-                      <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox"
-                          checked={selectedIds.includes(s.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedIds(prev => [...prev, s.id]);
-                            } else {
-                              setSelectedIds(prev => prev.filter(id => id !== s.id));
-                            }
-                          }}
-                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="text-sm font-bold text-on-surface">{prodName}</p>
-                          <p className="text-[10px] font-bold text-on-surface-variant font-mono uppercase tracking-widest">
-                            {prodCategory} • {siblingSupplies.length} Batch{siblingSupplies.length > 1 ? 'es' : ''}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono flex items-center gap-1">
-                            <Users size={12} /> {supplierCount} Supplier{supplierCount > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <p className="font-mono text-sm font-black text-on-surface">
-                          {totalStock > 0 ? `${totalStock.toLocaleString()} ${s.unit}` : `${s.quantity} ${s.unit} (pending)`}
+                {currentGroups.map((group) => (
+                  <tr 
+                    key={group.id} 
+                    onClick={() => setSelectedSupply(group.primarySupply)}
+                    className="hover:bg-surface-container-low transition-colors cursor-pointer group"
+                  >
+                    <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox"
+                        checked={group.supplies.every(s => selectedIds.includes(s.id))}
+                        onChange={(e) => {
+                          const ids = group.supplies.map(s => s.id);
+                          if (e.target.checked) {
+                            setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+                          } else {
+                            setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+                          }
+                        }}
+                        className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-sm font-bold text-on-surface">{group.name}</p>
+                        <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider">
+                          {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
                         </p>
-                        {totalStock > 0 ? (
-                          <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-0.5">
-                            {totalStock.toLocaleString()} {s.unit} Composition
-                          </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-mono text-sm font-black text-on-surface">
+                        {group.totalAvailableStock > 0 ? `${group.totalAvailableStock.toLocaleString()} ${group.unit}` : `0 ${group.unit}`}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-0.5">
+                        {group.isDiscounted && group.discountPrice ? (
+                          <div>
+                            <span className="line-through text-[10px] text-on-surface-variant/70 font-bold block">
+                              {formatCurrency(group.masterSellingPrice)}
+                            </span>
+                            <span className="font-mono text-sm font-black text-orange-700">
+                              {formatCurrency(group.discountPrice)} / {group.unit}
+                            </span>
+                          </div>
                         ) : (
-                          <span className="inline-block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-0.5">
-                            Pending Review
+                          <span className="font-mono text-sm font-extrabold text-primary">
+                            {formatCurrency(group.masterSellingPrice)} / {group.unit}
                           </span>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-0.5">
-                          {isDiscounted && discPrice ? (
-                            <div>
-                              <span className="line-through text-[10px] text-on-surface-variant/70 font-bold block">
-                                {formatCurrency(masterPrice)}
-                              </span>
-                              <span className="font-mono text-sm font-black text-orange-700">
-                                {formatCurrency(discPrice)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="font-mono text-sm font-extrabold text-primary">
-                              {formatCurrency(masterPrice)}
-                            </span>
-                          )}
-                          <span className="text-[9px] text-on-surface-variant font-semibold block uppercase">
-                            per {s.unit}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                          {isDiscounted ? (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-orange-100 text-orange-900 border border-orange-300 flex items-center gap-1">
-                              <Tag size={11} className="text-orange-800" /> Fresh Deal Active
-                            </span>
-                          ) : (
-                            <span className={cn(
-                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
-                              totalStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
-                            )}>
-                              {totalStock > 0 ? 'Active Stock' : s.status}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 text-xs font-bold text-primary group-hover:underline">
-                          <span>Inspect</span>
-                          <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
+                        group.totalAvailableStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
+                      )}>
+                        {group.totalAvailableStock > 0 ? 'Active stock' : 'Pending Review'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1 text-xs font-bold text-primary group-hover:underline">
+                        <span>Inspect</span>
+                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
@@ -670,7 +692,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
         {!isLoading && totalPages > 1 && (
           <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
             <span className="text-xs text-on-surface-variant font-bold">
-              Showing {indexOfFirstSupply + 1}-{Math.min(indexOfLastSupply, filteredSupplies.length)} of {filteredSupplies.length} supplies
+              Showing {indexOfFirstGroup + 1}-{Math.min(indexOfLastGroup, masterProductGroups.length)} of {masterProductGroups.length} Master Products
             </span>
             <div className="flex gap-2">
               <button
@@ -1208,10 +1230,10 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                         );
                       })
                     ) : (
-                      <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/70 text-xs space-y-1">
-                        <span className="text-[9px] font-extrabold text-amber-900 uppercase tracking-wider block">Farmer Submission Notes</span>
-                        <p className="text-amber-950 font-medium leading-relaxed">
-                          {selectedSupply.notes || "No custom notes submitted with initial harvest."}
+                      <div className="p-3.5 bg-white/80 rounded-xl border border-emerald-200/80 text-xs space-y-1">
+                        <p className="font-extrabold text-emerald-950">No negotiation started yet for this supply.</p>
+                        <p className="text-emerald-900/80 text-[11px] leading-relaxed">
+                          {selectedSupply.notes ? `Farmer Submission Notes: "${selectedSupply.notes}"` : "This supply is pending review and has no active negotiation thread."}
                         </p>
                       </div>
                     )}
