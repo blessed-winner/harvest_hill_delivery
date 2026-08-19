@@ -529,7 +529,11 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <p className="font-mono text-sm font-bold">{s.quantity} {s.unit}</p>
-                      {Number(s.quantity) === 0 ? (
+                      {s.status === 'accepted' && s.accepted_quantity !== undefined && s.accepted_quantity !== null ? (
+                        <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-0.5">
+                          {s.accepted_quantity} {s.unit} accepted
+                        </span>
+                      ) : Number(s.quantity) === 0 ? (
                         <span className="inline-block text-[9px] font-extrabold text-red-700 bg-red-100 px-2 py-0.5 rounded uppercase mt-0.5">Out of Stock</span>
                       ) : Number(s.quantity) <= 10 ? (
                         <span className="inline-block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-0.5">Low Stock</span>

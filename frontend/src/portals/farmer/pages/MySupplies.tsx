@@ -434,7 +434,11 @@ export default function MySupplies() {
                   </td>
                   <td className="px-6 py-4 font-mono text-sm">
                     {supply.quantity} {supply.unit || supply.product_detail?.unit || 'kg'}
-                    {Number(supply.quantity) === 0 ? (
+                    {supply.status === 'accepted' && supply.accepted_quantity !== undefined && supply.accepted_quantity !== null ? (
+                      <span className="block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">
+                        {supply.accepted_quantity} {supply.unit || supply.product_detail?.unit || 'kg'} accepted
+                      </span>
+                    ) : Number(supply.quantity) === 0 ? (
                       <span className="block text-[9px] font-extrabold text-red-700 bg-red-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">Out of Stock</span>
                     ) : Number(supply.quantity) <= 10 ? (
                       <span className="block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-1 w-fit">Low Stock</span>
