@@ -135,76 +135,92 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         const response = await clientApi.products.list(params);
         let fetchedProducts = response?.results || response || [];
 
-        // Only show products/supplies that have active accepted harvest stock available
-        fetchedProducts = fetchedProducts.filter((p: any) => {
-          const qty = p.total_available_quantity != null ? Number(p.total_available_quantity) : Number(p.quantity || 0);
-          return qty > 0;
-        });
-        
+        // Also fetch active supplies to get complete aggregated quantities across all accepted harvests
+        const suppResp = await clientApi.supplies.list().catch(() => null);
+        const fetchedSupplies = suppResp?.results || (Array.isArray(suppResp) ? suppResp : []);
+
+        const combinedPool = [...fetchedProducts, ...fetchedSupplies];
+
+        // Aggregate combined pool into unique Master Product cards with total accepted stock
+        const masterMap = new Map<string, any>();
+
+        for (const item of combinedPool) {
+          if (item.status && item.status !== 'accepted' && item.status !== 'open') continue;
+
+          const isSupply = !!item.product_detail;
+          const name = (isSupply ? item.product_detail?.name : (item.name || item.custom_product_name || item.suggested_product_name || 'Produce')).trim();
+          if (!name) continue;
+
+          const key = name.toLowerCase();
+
+          // Quantity calculation: prefer total_available_quantity or accepted_quantity if set, else quantity
+          let qty = 0;
+          if (item.total_available_quantity != null) {
+            qty = Number(item.total_available_quantity);
+          } else if (item.accepted_quantity != null) {
+            qty = Number(item.accepted_quantity);
+          } else if (item.quantity != null) {
+            qty = Number(item.quantity);
+          }
+
+          const isDiscounted = !!item.is_discounted;
+          const price = isDiscounted
+            ? Number(item.discount_price || item.base_price || item.price || 0)
+            : Number(item.agreed_price || item.base_price || item.price || 0);
+
+          const rawImg = item.image_url || item.photo || item.product_detail?.image_url;
+          let image_url = rawImg;
+          if (image_url && typeof image_url === 'string') {
+            if (image_url.includes('media/http')) image_url = 'https://' + image_url.split('http')[1];
+            else if (image_url.includes('media/https')) image_url = 'https://' + image_url.split('https')[1];
+          }
+
+          if (masterMap.has(key)) {
+            const existing = masterMap.get(key);
+            existing.quantity += qty;
+            existing.total_available_quantity += qty;
+
+            if (!existing.image_url && image_url) {
+              existing.image_url = image_url;
+              existing.photo = image_url;
+            }
+          } else {
+            masterMap.set(key, {
+              id: item.product || item.id,
+              product_id: item.product || item.id,
+              name,
+              category: isSupply ? item.product_detail?.category : (item.category || 'Vegetables'),
+              urgency: isSupply ? item.product_detail?.urgency : (item.urgency || 'medium'),
+              unit: item.unit || (isSupply ? item.product_detail?.unit : 'kg') || 'kg',
+              price,
+              base_price: Number(item.base_price || item.price || 0),
+              discount_price: item.discount_price ? Number(item.discount_price) : null,
+              is_discounted: isDiscounted,
+              quantity: qty,
+              total_available_quantity: qty,
+              image_url,
+              photo: image_url,
+              farmer_name: 'Harvest Hill Delivery',
+              farmer_location: 'Kigali, Rwanda',
+              bulk_min_qty: item.bulk_min_qty ? Number(item.bulk_min_qty) : null,
+              bulk_price: item.bulk_price ? Number(item.bulk_price) : null,
+              has_bulk_deal: !!(item.bulk_min_qty && item.bulk_price),
+              raw_item: item
+            });
+          }
+        }
+
+        let uniqueProducts = Array.from(masterMap.values()).filter((p: any) => p.quantity > 0);
+
         // Apply client-side filters
         if (organicOnly) {
-          fetchedProducts = fetchedProducts.filter((p: any) => 
-            p.product_detail?.name?.toLowerCase().includes('organic') || p.notes?.toLowerCase().includes('organic')
+          uniqueProducts = uniqueProducts.filter((p: any) => 
+            p.name?.toLowerCase().includes('organic') || p.raw_item?.notes?.toLowerCase().includes('organic')
           );
         }
         if (bulkAvailable) {
-          fetchedProducts = fetchedProducts.filter((p: any) => (p.bulk_min_qty && p.bulk_price) || parseFloat(p.quantity || 0) >= 50);
+          uniqueProducts = uniqueProducts.filter((p: any) => (p.bulk_min_qty && p.bulk_price) || parseFloat(p.quantity || 0) >= 50);
         }
-
-        // Map Master Products & Supplies cleanly into display objects
-        const mappedProducts = fetchedProducts.map((item: any) => {
-          const isSupply = !!item.product_detail;
-          const name = isSupply ? item.product_detail?.name : (item.name || 'Harvest Produce');
-          const category = isSupply ? item.product_detail?.category : (item.category || 'Vegetables');
-          const unit = item.unit || (isSupply ? item.product_detail?.unit : 'kg') || 'kg';
-          const isDiscounted = !!item.is_discounted;
-          
-          const price = isDiscounted
-            ? Number(item.discount_price || item.base_price || item.price || 0)
-            : Number(item.base_price || item.price || 0);
-
-          const quantity = item.total_available_quantity != null 
-            ? Number(item.total_available_quantity) 
-            : Number(item.quantity || 0);
-
-          const rawImg = item.image_url || item.photo || item.product_detail?.image_url;
-          const image_url = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
-            ? 'https://' + rawImg.split('http')[1]
-            : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);
-
-          return {
-            id: item.id,
-            product_id: item.product || item.id,
-            name,
-            category,
-            urgency: isSupply ? item.product_detail?.urgency : (item.urgency || 'medium'),
-            unit,
-            price,
-            base_price: Number(item.base_price || item.price || 0),
-            discount_price: item.discount_price ? Number(item.discount_price) : null,
-            is_discounted: isDiscounted,
-            quantity,
-            total_available_quantity: quantity,
-            image_url,
-            photo: image_url,
-            farmer_name: item.farmer_name || 'Harvest Hill Certified Partner Farm',
-            bulk_min_qty: item.bulk_min_qty ? Number(item.bulk_min_qty) : null,
-            bulk_price: item.bulk_price ? Number(item.bulk_price) : null,
-            has_bulk_deal: !!(item.bulk_min_qty && item.bulk_price),
-            raw_item: item
-          };
-        });
-
-        // Deduplicate master items by product name to show 1 unique card per crop type
-        const seenNames = new Set<string>();
-        const uniqueProducts: any[] = [];
-        mappedProducts.forEach((p: any) => {
-          const nameKey = p.name.trim().toLowerCase();
-          if (nameKey && !seenNames.has(nameKey)) {
-            seenNames.add(nameKey);
-            uniqueProducts.push(p);
-          }
-        });
 
         // Apply client-side sorting
         uniqueProducts.sort((a: any, b: any) => {

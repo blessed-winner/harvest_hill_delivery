@@ -118,37 +118,90 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchData();
   }, []);
 
-  // Active supplies & products from backend database
-  const activeSupplies = supplies.filter((s: any) => s.status === 'accepted');
+  // Helper to aggregate active accepted supplies into single Master Product cards
+  const aggregateMasterProducts = (suppliesList: any[]) => {
+    const map = new Map<string, any>();
 
-  // Helper to ensure each product appears exactly once (no duplicates)
-  const deduplicateByName = (itemList: any[]) => {
-    const seen = new Set<string>();
-    const result: any[] = [];
-    for (const item of itemList) {
-      const prodName = (item.product_detail?.name || item.name || '').trim().toLowerCase();
-      if (prodName && !seen.has(prodName)) {
-        seen.add(prodName);
-        result.push(item);
+    for (const s of suppliesList) {
+      if (s.status !== 'accepted' && s.status !== 'open') continue;
+
+      const prodName = (s.product_detail?.name || s.name || s.custom_product_name || s.suggested_product_name || 'Produce').trim();
+      if (!prodName) continue;
+
+      const key = prodName.toLowerCase();
+
+      // Accepted quantity calculation: prefer accepted_quantity if set, else quantity
+      let qty = 0;
+      if (s.accepted_quantity !== undefined && s.accepted_quantity !== null) {
+        qty = parseFloat(String(s.accepted_quantity));
+      } else if (s.quantity !== undefined && s.quantity !== null) {
+        qty = parseFloat(String(s.quantity));
+      } else if (s.total_available_quantity !== undefined && s.total_available_quantity !== null) {
+        qty = parseFloat(String(s.total_available_quantity));
+      }
+
+      const price = s.is_discounted && s.discount_price
+        ? parseFloat(String(s.discount_price))
+        : parseFloat(String(s.agreed_price || s.base_price || s.price || s.proposed_price || 0));
+
+      const rawImg = s.product_detail?.image_url || s.image_url || s.photo || s.photo_url;
+      let imageUrl = rawImg;
+      if (imageUrl && typeof imageUrl === 'string') {
+        if (imageUrl.includes('media/http')) imageUrl = 'https://' + imageUrl.split('http')[1];
+        else if (imageUrl.includes('media/https')) imageUrl = 'https://' + imageUrl.split('https')[1];
+      }
+
+      if (map.has(key)) {
+        const existing = map.get(key);
+        existing.quantity += qty;
+        existing.total_available_quantity += qty;
+
+        if (!existing.image_url && imageUrl) {
+          existing.image_url = imageUrl;
+          existing.photo = imageUrl;
+        }
+      } else {
+        map.set(key, {
+          id: s.product || s.id,
+          product_id: s.product || s.id,
+          name: prodName,
+          category: s.product_detail?.category || s.category || 'Vegetables',
+          urgency: s.product_detail?.urgency || s.urgency || 'medium',
+          unit: s.unit || s.product_detail?.unit || 'kg',
+          price: price,
+          base_price: parseFloat(String(s.base_price || price)),
+          discount_price: s.discount_price ? parseFloat(String(s.discount_price)) : null,
+          is_discounted: !!s.is_discounted,
+          quantity: qty,
+          total_available_quantity: qty,
+          image_url: imageUrl,
+          photo: imageUrl,
+          farmer_name: "Harvest Hill Delivery",
+          farmer_location: "Kigali, Rwanda",
+          quality_grade: s.quality_grade || "Grade A",
+          status: "accepted",
+          raw_item: s
+        });
       }
     }
-    return result;
+
+    return Array.from(map.values());
   };
+
+  const activeMasterProducts = aggregateMasterProducts(supplies);
+  const activeSupplies = activeMasterProducts;
 
   // Helper to resolve unique items for a category
   const getSectionItems = (categoryTarget: string) => {
     const targetLower = categoryTarget.toLowerCase();
-    
-    // ONLY show actual accepted harvest submissions on the landing page.
-    // Product templates must NEVER be displayed on the landing page.
-    const masterItems = activeSupplies;
+    const masterItems = activeMasterProducts;
 
     if (masterItems.length === 0) {
       return [];
     }
 
     if (targetLower === 'deals') {
-      const matchedDeals = activeSupplies.filter((s: any) => s.is_discounted);
+      const matchedDeals = masterItems.filter((s: any) => s.is_discounted);
       if (matchedDeals.length > 0) return matchedDeals;
       return [];
     }
@@ -159,20 +212,20 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
       return masterItems.filter((p: any) => {
-        const cat = (p.product_detail?.category || p.category || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
         return cat.includes('vegetable') || cat.includes('herb');
       });
     }
 
     if (targetLower.includes('dairy') || targetLower.includes('animal')) {
       return masterItems.filter((p: any) => {
-        const cat = (p.product_detail?.category || p.category || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
         return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
       });
     }
 
     return masterItems.filter((p: any) => {
-      const cat = (p.product_detail?.category || p.category || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
       return cat.includes(targetLower);
     });
   };
