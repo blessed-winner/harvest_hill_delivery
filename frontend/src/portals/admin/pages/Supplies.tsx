@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -541,83 +541,126 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
                     />
                   </th>
-                  <th className="px-6 py-3">Product</th>
-                  <th className="px-6 py-3">Farmer</th>
-                  <th className="px-6 py-3 text-right">Quantity</th>
-                  <th className="px-6 py-3">Proposed vs Base</th>
-                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Master Product</th>
+                  <th className="px-6 py-3">Suppliers</th>
+                  <th className="px-6 py-3 text-right">Total Available Supply</th>
+                  <th className="px-6 py-3">Master Selling Price</th>
+                  <th className="px-6 py-3">Status / Deal</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
-                {currentSupplies.map((s) => (
-                  <tr 
-                    key={s.id} 
-                    onClick={() => setSelectedSupply(s)}
-                    className="hover:bg-surface-container-low transition-colors cursor-pointer group"
-                  >
-                    <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
-                      <input 
-                        type="checkbox"
-                        checked={selectedIds.includes(s.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds(prev => [...prev, s.id]);
-                          } else {
-                            setSelectedIds(prev => prev.filter(id => id !== s.id));
-                          }
-                        }}
-                        className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-bold">{s.product_detail?.name || s.custom_product_name || 'Crop'}</p>
-                        <p className="text-[10px] font-bold text-on-surface-variant font-mono uppercase tracking-widest">
-                          {s.supply_number || s.supplyNumber || `SUP-${String(s.id).slice(0, 6).toUpperCase()}`} • {s.product_detail?.category || s.custom_category || 'General'}
+                {currentSupplies.map((s) => {
+                  const prodName = s.product_detail?.name || s.custom_product_name || s.suggested_product_name || 'Harvest Product';
+                  const prodCategory = s.product_detail?.category || s.custom_category || 'Vegetables';
+                  const isDiscounted = s.product_detail?.is_discounted || s.is_discounted;
+                  const discPrice = s.product_detail?.discount_price || s.discount_price;
+                  const masterPrice = s.product_detail?.base_price || s.agreed_price || s.price;
+                  
+                  // Compute supplies count under same master product
+                  const siblingSupplies = filteredSupplies.filter(item => 
+                    (item.product_detail?.name || item.custom_product_name || item.suggested_product_name) === prodName
+                  );
+                  const supplierCount = new Set(siblingSupplies.map(item => item.farmer_name || item.farmer?.farm_name || 'Partner Farm')).size;
+                  const totalStock = siblingSupplies
+                    .filter(item => item.status === 'accepted')
+                    .reduce((sum, item) => sum + (Number(item.accepted_quantity ?? item.quantity ?? 0)), 0);
+
+                  return (
+                    <tr 
+                      key={s.id} 
+                      onClick={() => setSelectedSupply(s)}
+                      className="hover:bg-surface-container-low transition-colors cursor-pointer group"
+                    >
+                      <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedIds.includes(s.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(prev => [...prev, s.id]);
+                            } else {
+                              setSelectedIds(prev => prev.filter(id => id !== s.id));
+                            }
+                          }}
+                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-sm font-bold text-on-surface">{prodName}</p>
+                          <p className="text-[10px] font-bold text-on-surface-variant font-mono uppercase tracking-widest">
+                            {prodCategory} • {siblingSupplies.length} Batch{siblingSupplies.length > 1 ? 'es' : ''}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono">
+                            👥 {supplierCount} Supplier{supplierCount > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <p className="font-mono text-sm font-black text-on-surface">
+                          {totalStock > 0 ? `${totalStock.toLocaleString()} ${s.unit}` : `${s.quantity} ${s.unit} (pending)`}
                         </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold">{s.farmer_name || 'Farmer'}</p>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <p className="font-mono text-sm font-bold">{s.quantity} {s.unit}</p>
-                      {s.status === 'accepted' && s.accepted_quantity !== undefined && s.accepted_quantity !== null ? (
-                        <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-0.5">
-                          {s.accepted_quantity} {s.unit} accepted
-                        </span>
-                      ) : Number(s.quantity) === 0 ? (
-                        <span className="inline-block text-[9px] font-extrabold text-red-700 bg-red-100 px-2 py-0.5 rounded uppercase mt-0.5">Out of Stock</span>
-                      ) : Number(s.quantity) <= 10 ? (
-                        <span className="inline-block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-0.5">Low Stock</span>
-                      ) : null}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-primary">
-                          {formatCurrency(s.agreed_price || s.price || s.proposed_price)}
-                        </span>
-                        <span className="text-[10px] text-on-surface-variant font-bold">vs {formatCurrency(s.base_price || s.product_detail?.base_price)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
-                        Number(s.quantity) === 0 ? "bg-red-100 text-red-800 border-red-200" :
-                        s.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-200" :
-                        s.status === 'accepted' ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
-                        s.status === 'rejected' ? "bg-red-100 text-red-800 border-red-200" :
-                        "bg-surface-container-highest text-on-surface-variant"
-                      )}>
-                        {s.is_archived ? 'Archived' : (Number(s.quantity) === 0 ? 'Out of Stock' : s.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
-                    </td>
-                  </tr>
-                ))}
+                        {totalStock > 0 ? (
+                          <span className="inline-block text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase mt-0.5">
+                            {totalStock.toLocaleString()} {s.unit} Composition
+                          </span>
+                        ) : (
+                          <span className="inline-block text-[9px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded uppercase mt-0.5">
+                            Pending Review
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-0.5">
+                          {isDiscounted && discPrice ? (
+                            <div>
+                              <span className="line-through text-[10px] text-on-surface-variant/70 font-bold block">
+                                {formatCurrency(masterPrice)}
+                              </span>
+                              <span className="font-mono text-sm font-black text-orange-700">
+                                {formatCurrency(discPrice)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-sm font-extrabold text-primary">
+                              {formatCurrency(masterPrice)}
+                            </span>
+                          )}
+                          <span className="text-[9px] text-on-surface-variant font-semibold block uppercase">
+                            per {s.unit}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5">
+                          {isDiscounted ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-orange-100 text-orange-900 border border-orange-300">
+                              🏷️ Fresh Deal Active
+                            </span>
+                          ) : (
+                            <span className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
+                              totalStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
+                            )}>
+                              {totalStock > 0 ? 'Active Stock' : s.status}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1 text-xs font-bold text-primary group-hover:underline">
+                          <span>Inspect</span>
+                          <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -976,6 +1019,67 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 </div>
               </div>
             </div>
+
+            {/* Master Product Supply Composition Breakdown Card */}
+            {(() => {
+              const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
+              const siblingSupplies = supplies.filter(s => 
+                (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
+              );
+
+              const totalAcceptedStock = siblingSupplies
+                .filter(s => s.status === 'accepted')
+                .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
+
+              return (
+                <div className="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/60 space-y-3 font-sans shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+                    <div>
+                      <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-primary flex items-center gap-1.5">
+                        <Package size={14} /> Master Product Inventory Composition
+                      </h4>
+                      <p className="text-[10.5px] text-on-surface-variant font-medium mt-0.5">
+                        {siblingSupplies.length} Supply Batch{siblingSupplies.length > 1 ? 'es' : ''} • {totalAcceptedStock.toLocaleString()} {selectedSupply.unit} Total Stock
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                    {siblingSupplies.map((sup, idx) => (
+                      <div 
+                        key={sup.id || idx} 
+                        onClick={() => setSelectedSupply(sup)}
+                        className={cn(
+                          "p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer",
+                          selectedSupply.id === sup.id ? "bg-primary/10 border-primary shadow-2xs" : "bg-white border-outline-variant/40 hover:bg-surface-container-high"
+                        )}
+                      >
+                        <div>
+                          <p className="font-extrabold text-on-surface flex items-center gap-1.5">
+                            <span>👨‍🌾 {sup.farmer_name || 'Partner Farm'}</span>
+                            <span className="text-[9px] font-mono text-on-surface-variant/70">({sup.supply_number || 'SUP-BATCH'})</span>
+                          </p>
+                          <p className="text-[10.5px] font-medium text-on-surface-variant mt-0.5">
+                            Acquisition Price: <span className="font-bold font-mono text-primary">{formatCurrency(sup.agreed_price || sup.price)}</span> / {sup.unit}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-mono font-black text-xs block text-on-surface">
+                            {Number(sup.accepted_quantity ?? sup.quantity ?? 0).toLocaleString()} {sup.unit}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-extrabold px-2 py-0.5 rounded uppercase mt-0.5 inline-block",
+                            sup.status === 'accepted' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                          )}>
+                            {sup.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* B2B Term Agreement Form vs Finalized Stats Display */}
             {isHarvestHillSubmission ? null : selectedSupply.status === 'accepted' ? (

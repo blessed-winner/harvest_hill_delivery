@@ -9,6 +9,8 @@ def _product_has_image(image):
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     total_available_quantity = serializers.FloatField(read_only=True)
+    supplier_count = serializers.IntegerField(read_only=True)
+    effective_price = serializers.FloatField(read_only=True)
     sourcing_history_count = serializers.IntegerField(read_only=True)
     sourcing_supplies = serializers.SerializerMethodField()
     price = serializers.FloatField(read_only=True)
@@ -18,8 +20,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
-            'pricing_mode', 'offered_price', 'base_price', 'price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
-            'sourcing_history_count', 'sourcing_supplies', 'created_at',
+            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count'
         ]
         extra_kwargs = {

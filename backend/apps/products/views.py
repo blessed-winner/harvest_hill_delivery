@@ -72,11 +72,6 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance.status = 'open'
             instance.save(update_fields=['status'])
 
-        # Update all active supplies under this product to match the new base_price!
-        if instance.base_price and float(instance.base_price) > 0:
-            new_price = instance.base_price
-            instance.supplies.filter(is_archived=False).update(price=new_price, agreed_price=new_price)
-
     def perform_destroy(self, instance):
         if instance.supplies.exists():
             from rest_framework.exceptions import ValidationError

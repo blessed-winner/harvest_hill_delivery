@@ -65,6 +65,18 @@ class Product(models.Model):
         return total
 
     @property
+    def supplier_count(self):
+        """Calculates count of distinct farmers providing accepted active supplies."""
+        return self.supplies.filter(is_archived=False, status='accepted').values('farmer').distinct().count()
+
+    @property
+    def effective_price(self):
+        """Returns discount_price if is_discounted and valid, else normal price/base_price."""
+        if self.is_discounted and self.discount_price and float(self.discount_price) > 0:
+            return float(self.discount_price)
+        return float(self.price)
+
+    @property
     def price(self):
         """Returns offered_price if pricing_mode is harvest_hill_offers, or falls back to latest accepted supply price."""
         if self.pricing_mode == 'harvest_hill_offers' and self.offered_price and float(self.offered_price) > 0:

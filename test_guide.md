@@ -418,12 +418,42 @@ The database baseline contains the master administrator account:
 
 ---
 
-## 25. Quick Sanity Verification Checklist
+## 26. Test Suite 21: Master Product Inventory Composition & Fresh Deals Alignment
+
+1. **Admin Supplies View Aggregation**:
+   - Log in as Admin (`admin@harvesthill.test`) $\rightarrow$ Open Supplies (`/admin?tab=supplies`).
+   - **Validation Check**: Table lists **1 row per Master Product** showing total aggregated supply (e.g. `950 kg`) and distinct supplier count (e.g. `👥 3 Suppliers`).
+   - Click a Master Product row $\rightarrow$ **Master Product Detail Drawer** opens:
+     - **Master Product Summary**: Selling Price (`RWF 1,200/kg`), Active Deal badge, Effective client price, Total Available Stock (`950 kg`).
+     - **Master Product Inventory Composition Card**: Lists underlying farmer supplies (`Jean — 300 kg @ RWF 800`, `Eric — 250 kg @ RWF 850`, `Alice — 400 kg @ RWF 780`).
+
+2. **Fresh Deals Discount Independence**:
+   - In Admin Supplies or Product Catalog, set a Fresh Deal discount on a Master Product (e.g. 10% OFF $\rightarrow$ `RWF 1,080 / kg`).
+   - **Validation Check**: Master Product price updates to `RWF 1,080`.
+   - **Acquisition Price Guard**: Underlying farmer acquisition prices (`RWF 800`, `RWF 850`, `RWF 780`) remain **100% unchanged**.
+
+3. **Client Catalog Default State & Cards**:
+   - Log in as Client (`alice.client@harvesthill.test`) $\rightarrow$ Open Product Catalog (`/catalog`).
+   - **Validation Check**: Default filter is **`All Products`**.
+   - **Discount Styling**: Discounted Master Products display a `-10% OFF` badge over image, smaller struck-through original price (`RWF 1,200`), and prominent discounted price (`RWF 1,080`).
+   - Select **Deals** filter $\rightarrow$ Displays only Master Products with active discounts.
+
+---
+
+## 27. Quick Sanity Verification Checklist
 
 ```
 CLEAN BASELINE & REGISTRATION
 [ ] Baseline initialized with admin@harvesthill.test only
 [ ] /signup role toggle switch allows registering Farmer vs Client accounts cleanly
+
+MASTER PRODUCT INVENTORY COMPOSITION & DISCOUNTS
+[ ] Primary Admin Supplies table lists 1 row per Master Product with total stock and supplier count
+[ ] Supply Detail Drawer displays Master Product Summary and Supply Composition breakdown
+[ ] Fresh Deals discounts apply exclusively to Master Products (farmer acquisition prices protected)
+[ ] Client Catalog opens with 'All Products' selected by default
+[ ] Discounted Master Products render -XX% badge, struck-through original price, and bold discount price
+[ ] Deals category filter displays all discounted Master Products
 
 PRODUCT REQUIREMENTS & PRICING MODES
 [ ] Pricing Mode radio selection explicitly toggles HARVEST_HILL_OFFERS vs FARMER_PROPOSES
@@ -432,23 +462,12 @@ PRODUCT REQUIREMENTS & PRICING MODES
 [ ] Backend validates pricing_mode constraints, rejecting invalid/mismatched requests
 [ ] Changing pricing_mode on requirements with active submissions is blocked to protect historical records
 [ ] Farmer view renders "Harvest Hill: RWF 1,200/kg" or "You propose asking price" with zero empty placeholders
-[ ] Submitting harvest against expired/closed requirement rejected automatically by backend
 
 FARMER DISCOVERY & HARVEST SUBMISSIONS
 [ ] Farmers discover requirements and submit harvest offers in single "Submit Harvest" section
 [ ] Harvest submissions assigned sequential tracking numbers (SUP-000001, SUP-000002)
 [ ] Proof photos rendered in aspect-square grid with hover delete button
 [ ] Farmer Dashboard "Products currently needed" renders text-driven spec cards matching SubmitHarvest (no images)
-[ ] Discount controls removed from Farmer Portal (managed exclusively by Admin)
-[ ] Farmers can suggest unlisted crops for admin verification & master listing
-
-ADMIN SUPPLIES COMPARISON, NEGOTIATION & GOVERNANCE
-[ ] Detail drawer displays side-by-side comparison with vertical divider separation between left/right columns
-[ ] Long crop names wrap cleanly (break-words) without colliding with adjacent columns
-[ ] Requirement box correctly displays actual template values (Quantity Needed & Offered/Asking Price)
-[ ] Contextual negotiation supports dual action controls (Counter offer vs Accept) and pre-filled fields
-[ ] Admin can delegate Fresh Deals discount (is_discounted & discount_price) on approved supplies
-[ ] Admin can configure Visibility Controls (private_admin, specific_clients, all_clients, public) & disclose_farmer_name toggle
 
 LANDING PAGE, MASTER AGGREGATION & FULFILLMENT
 [ ] Accepted supplies consolidated into 1 single Master Product card with total accepted stock (e.g. 30kg + 60kg = 90kg)

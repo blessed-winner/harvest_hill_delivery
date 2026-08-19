@@ -587,11 +587,15 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                           <Package className="w-10 h-10 opacity-40" />
                         </div>
                       )}
-                      {urgencyBadge && (
+                      {isDiscounted && prod.base_price && Number(prod.base_price) > Number(price) ? (
+                        <span className="absolute top-2.5 right-2.5 text-[9px] font-black text-white bg-[#D9381E] px-2 py-0.5 rounded-md uppercase shadow-sm font-mono tracking-wider">
+                          -{Math.round(((Number(prod.base_price) - Number(price)) / Number(prod.base_price)) * 100)}% OFF
+                        </span>
+                      ) : urgencyBadge ? (
                         <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${badgeColor}`}>
                           {urgencyBadge}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Content Panel */}
@@ -624,9 +628,20 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                         layoutMode === 'grid' ? 'mt-2.5 pt-2' : 'mt-2 pt-2'
                       }`}>
                         <div>
-                          <span className="block text-xs font-bold text-[#144227]">
-                            RWF {parseFloat(product.price || 0).toLocaleString()}
-                          </span>
+                          {isDiscounted && prod.base_price && Number(prod.base_price) > Number(price) ? (
+                            <div>
+                              <span className="line-through text-[10px] text-[#717971] font-bold block">
+                                RWF {Number(prod.base_price).toLocaleString()}
+                              </span>
+                              <span className="block text-sm font-extrabold text-[#D9381E]">
+                                RWF {parseFloat(product.price || 0).toLocaleString()}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="block text-xs font-bold text-[#144227]">
+                              RWF {parseFloat(product.price || 0).toLocaleString()}
+                            </span>
+                          )}
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">
                             per {product.unit || 'kg'}
                           </span>
