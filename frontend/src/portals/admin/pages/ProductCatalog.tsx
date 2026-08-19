@@ -1034,7 +1034,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                         <div className="space-y-0.5 flex-1">
                           <div className="flex items-center justify-between">
                             <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
-                              🏷️ Harvest Hill Offers Price
+                              <Tag size={13} className="text-primary" /> Harvest Hill Offers Price
                             </span>
                             {formPricingMode === 'harvest_hill_offers' && (
                               <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
@@ -1097,7 +1097,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                         <div className="space-y-0.5 flex-1">
                           <div className="flex items-center justify-between">
                             <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
-                              🤝 Farmer Proposes Price
+                              <Handshake size={13} className="text-primary" /> Farmer Proposes Price
                             </span>
                             {formPricingMode === 'farmer_proposes' && (
                               <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">

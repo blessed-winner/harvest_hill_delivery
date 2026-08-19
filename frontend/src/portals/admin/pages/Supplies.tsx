@@ -596,8 +596,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono">
-                            👥 {supplierCount} Supplier{supplierCount > 1 ? 's' : ''}
+                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono flex items-center gap-1">
+                            <Users size={12} /> {supplierCount} Supplier{supplierCount > 1 ? 's' : ''}
                           </span>
                         </div>
                       </td>
@@ -639,8 +639,8 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1.5">
                           {isDiscounted ? (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-orange-100 text-orange-900 border border-orange-300">
-                              🏷️ Fresh Deal Active
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-orange-100 text-orange-900 border border-orange-300 flex items-center gap-1">
+                              <Tag size={11} className="text-orange-800" /> Fresh Deal Active
                             </span>
                           ) : (
                             <span className={cn(
