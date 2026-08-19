@@ -1078,7 +1078,7 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                       >
                         <div>
                           <p className="font-extrabold text-on-surface flex items-center gap-1.5">
-                            <span>👨‍🌾 {sup.farmer_name || 'Partner Farm'}</span>
+                            <span className="flex items-center gap-1"><UserCheck size={13} className="text-primary" /> {sup.farmer_name || 'Partner Farm'}</span>
                             <span className="text-[9px] font-mono text-on-surface-variant/70">({sup.supply_number || 'SUP-BATCH'})</span>
                           </p>
                           <p className="text-[10.5px] font-medium text-on-surface-variant mt-0.5">
