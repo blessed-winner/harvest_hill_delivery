@@ -57,11 +57,19 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
   };
 
   const loadNotifications = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (!token) return;
     try {
       const data = await clientApi.notifications.list();
       setNotifications(Array.isArray(data) ? data : data?.results || []);
-    } catch (err) {
-      console.error("Failed to load notifications:", err);
+    } catch (err: any) {
+      // Silently handle expired/invalid token for background polling
+      if (err?.message?.includes('token') || err?.message?.includes('credentials') || err?.message?.includes('Unauthorized')) {
+        setNotifications([]);
+        setIsLoggedIn(false);
+      } else {
+        console.error("Failed to load notifications:", err);
+      }
     }
   };
 
