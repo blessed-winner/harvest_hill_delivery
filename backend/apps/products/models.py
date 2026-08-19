@@ -9,6 +9,11 @@ class Product(models.Model):
         ('archived', 'Archived'),
     ]
 
+    PRICING_MODE_CHOICES = [
+        ('harvest_hill_offers', 'Harvest Hill Offers'),
+        ('farmer_proposes', 'Farmer Proposes'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=100) # e.g. Fruits, Vegetables, Grains, Animal-Based
@@ -16,6 +21,8 @@ class Product(models.Model):
     is_currently_needed = models.BooleanField(default=False)
     urgency = models.CharField(max_length=20, default='low') # low, medium, high
     unit = models.CharField(max_length=10, default='kg')
+    pricing_mode = models.CharField(max_length=30, choices=PRICING_MODE_CHOICES, default='harvest_hill_offers')
+    offered_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     image = models.ImageField(upload_to='products/', max_length=500, null=True, blank=True)
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -36,6 +43,15 @@ class Product(models.Model):
             self.save(update_fields=['status'])
         return self.status
 
+    def save(self, *args, **kwargs):
+        if self.pricing_mode == 'harvest_hill_offers':
+            if self.offered_price is not None:
+                self.base_price = self.offered_price
+        elif self.pricing_mode == 'farmer_proposes':
+            self.offered_price = None
+            self.base_price = 0.00
+        super().save(*args, **kwargs)
+
     @property
     def total_available_quantity(self):
         """Calculates total aggregated quantity ONLY from accepted active farmer supplies."""
@@ -50,7 +66,9 @@ class Product(models.Model):
 
     @property
     def price(self):
-        """Returns active master base_price if > 0, or falls back to latest accepted supply price."""
+        """Returns offered_price if pricing_mode is harvest_hill_offers, or falls back to latest accepted supply price."""
+        if self.pricing_mode == 'harvest_hill_offers' and self.offered_price and float(self.offered_price) > 0:
+            return float(self.offered_price)
         if self.base_price and float(self.base_price) > 0:
             return float(self.base_price)
         latest_supply = self.supplies.filter(is_archived=False, status='accepted').order_by('-created_at').first()

@@ -18,7 +18,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
-            'base_price', 'price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'pricing_mode', 'offered_price', 'base_price', 'price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
             'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count'
         ]
@@ -65,12 +65,31 @@ class ProductSerializer(serializers.ModelSerializer):
         instance = getattr(self, 'instance', None)
 
         name = attrs.get('name', instance.name if instance else None)
-        base_price = attrs.get('base_price', instance.base_price if instance else 0)
+        pricing_mode = attrs.get('pricing_mode', instance.pricing_mode if instance else 'harvest_hill_offers')
+        offered_price = attrs.get('offered_price', instance.offered_price if instance else None)
         quantity_needed = attrs.get('quantity_needed', instance.quantity_needed if instance else 0)
 
-        # 1. Base price check (> 0)
-        if float(base_price) <= 0:
-            raise serializers.ValidationError({"base_price": "Base price must be greater than zero."})
+        # 0. Prevent unsafe pricing_mode changes if submissions exist
+        if instance and 'pricing_mode' in attrs and attrs['pricing_mode'] != instance.pricing_mode:
+            if instance.supplies.exclude(status='rejected').exists():
+                raise serializers.ValidationError({
+                    "pricing_mode": f"Cannot change the pricing mode for '{instance.name}' because active harvest submissions exist. Please close or archive this requirement and create a new requirement instead."
+                })
+
+        # 1. Pricing Mode vs Offered Price Validation
+        if pricing_mode == 'harvest_hill_offers':
+            if offered_price is None or float(offered_price) <= 0:
+                raise serializers.ValidationError({
+                    "offered_price": "An offered price greater than zero is required when Harvest Hill offers the price."
+                })
+            attrs['base_price'] = offered_price
+        elif pricing_mode == 'farmer_proposes':
+            if offered_price is not None:
+                raise serializers.ValidationError({
+                    "offered_price": "Offered price must be null/absent when the pricing mode is 'Farmer proposes the price'."
+                })
+            attrs['offered_price'] = None
+            attrs['base_price'] = 0.00
 
         # 2. Dynamic unit-based quantity check
         unit = attrs.get('unit', instance.unit if instance else 'kg').lower()
@@ -121,15 +140,12 @@ class ProductSerializer(serializers.ModelSerializer):
         if not obj.image:
             return None
         try:
-            # If it's already a Cloudinary URL, return it directly
             name = obj.image.name if hasattr(obj.image, 'name') else str(obj.image)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
-            # For ImageField backed by MediaCloudinaryStorage, .url gives the Cloudinary URL
             url = obj.image.url
-            # Strip any localhost/media prefix leftover from old local storage
             if 'localhost' in url or '127.0.0.1' in url:
-                return None  # Image was stored locally; no valid Cloudinary URL
+                return None
             return url
         except Exception:
             return None
@@ -142,7 +158,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'category', 'unit', 'image', 'image_url',
-            'base_price', 'quantity_needed', 'status', 'quality_requirements', 
+            'pricing_mode', 'offered_price', 'base_price', 'quantity_needed', 'status', 'quality_requirements', 
             'submission_deadline', 'preferred_harvest_period', 'description'
         ]
 

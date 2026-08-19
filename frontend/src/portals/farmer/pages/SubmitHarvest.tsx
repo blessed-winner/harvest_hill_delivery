@@ -2,22 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf, Plus } from 'lucide-react';
+import { Search, SlidersHorizontal, Bolt, ArrowRight, X, Calendar as CalendarIcon, Verified, Star, Package, TrendingUp, CloudUpload, Send, Leaf, Plus, Info, CheckCircle2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
 
 type DemandProduct = {
-  id: number;
+  id: number | string | null;
   name: string;
   category: string;
   unit: string;
+  pricing_mode?: string;
+  offered_price?: string | number | null;
   base_price?: string | number;
   image?: string | null;
   image_url?: string | null;
   quantity_needed?: string | number | null;
   urgency?: 'high' | 'steady' | string;
   description?: string;
+  isCustom?: boolean;
+  isRequest?: boolean;
 };
 
 type HarvestFormState = {
@@ -291,11 +295,8 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
 
   const openProduct = (product: DemandProduct) => {
     setSelectedProduct(product);
-    let baseVal = Number(product.base_price || 0);
-    if (baseVal > 0 && baseVal < 100) {
-      baseVal = Math.round(baseVal * 1473.97);
-    }
-    const initialAskingPrice = baseVal ? String(baseVal) : '';
+    let baseVal = Number(product.offered_price || product.base_price || 0);
+    const initialAskingPrice = (product.pricing_mode === 'harvest_hill_offers' && baseVal > 0) ? String(baseVal) : '';
 
     setForm({
       quantity: product.quantity_needed ? String(product.quantity_needed).split(' ')[0] : '',
@@ -603,10 +604,16 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Reference Price:</span>
-                    <span className="font-extrabold text-[#2D5A3D]">
-                      {formattedPrice}/{product.unit}
-                    </span>
+                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Pricing:</span>
+                    {product.pricing_mode === 'farmer_proposes' ? (
+                      <span className="font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">
+                        You propose asking price
+                      </span>
+                    ) : (
+                      <span className="font-extrabold text-[#2D5A3D]">
+                        Harvest Hill: RWF {parseFloat(String(product.offered_price || product.base_price || 0)).toLocaleString()}/{product.unit}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center pt-1 border-t border-[#E8E4DA]">
@@ -873,8 +880,34 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                   </div>
                 </div>
 
+                {selectedProduct.pricing_mode === 'farmer_proposes' ? (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1">
+                    <div className="flex items-center gap-1.5 font-extrabold text-amber-900">
+                      <Info className="w-4 h-4 text-amber-800 shrink-0" />
+                      <span>You will propose your asking price for this harvest.</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      Harvest Hill Delivery does not publish an offered price for this requirement. Please enter your asking price per {selectedProduct.unit}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-950 space-y-1">
+                    <div className="flex items-center justify-between font-extrabold text-emerald-900">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                        Harvest Hill Offered Price:
+                      </span>
+                      <span className="text-sm font-black text-emerald-900">
+                        RWF {parseFloat(String(selectedProduct.offered_price || selectedProduct.base_price || 0)).toLocaleString()}/{selectedProduct.unit}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2 bg-surface-container-low/40 p-3.5 rounded-xl border border-outline-variant/60">
-                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold block">Asking Price per {selectedProduct.unit} (RWF)</label>
+                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold block">
+                    {selectedProduct.pricing_mode === 'farmer_proposes' ? "Your Asking Price" : "Your Asking / Counter Price"} per {selectedProduct.unit} (RWF)
+                  </label>
                   <div className="relative w-full">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-primary text-xs">
                       RWF
@@ -885,6 +918,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant/60"
                       )}
                       type="text"
+                      placeholder={selectedProduct.pricing_mode === 'farmer_proposes' ? "Enter your asking price..." : `e.g. ${selectedProduct.offered_price || selectedProduct.base_price}`}
                       value={form.askingPrice}
                       onChange={(event) => {
                         const val = event.target.value;

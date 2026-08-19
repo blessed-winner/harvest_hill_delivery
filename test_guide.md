@@ -390,20 +390,49 @@ The database baseline contains the master administrator account:
 
 ---
 
-## 23. Quick Sanity Verification Checklist
+## 24. Test Suite 20: Product Requirement Pricing Modes (HARVEST_HILL_OFFERS vs FARMER_PROPOSES)
+
+1. **Admin Requirement Creation with Harvest Hill Offered Price**:
+   - Log in as Admin (`admin@harvesthill.test`).
+   - Go to Product Catalog (`/admin?tab=products`) $\rightarrow$ Click **Create Requirement**.
+   - Select **Pricing Mode**: `(●) Harvest Hill offers the price`.
+   - Enter Offered Price `1,200 RWF / kg` $\rightarrow$ Submit.
+   - **Validation Check**: Requirement is created with `pricing_mode = 'harvest_hill_offers'` and `offered_price = 1200.00 RWF`.
+
+2. **Admin Requirement Creation with Farmer Proposes Price**:
+   - Click **Create Requirement**.
+   - Select **Pricing Mode**: `(●) Farmer proposes the price`.
+   - **Validation Check**: Offered price field disappears and explanatory notice renders. Offered price is saved as `None` / `null`.
+
+3. **Backend Validation Enforcements**:
+   - Creating `HARVEST_HILL_OFFERS` without an offered price is rejected (HTTP 400).
+   - Creating `FARMER_PROPOSES` with an offered price is rejected (HTTP 400).
+
+4. **Farmer View & Harvest Submission**:
+   - Log in as Farmer (`farmer_a@harvesthill.test`) $\rightarrow$ Go to **Submit Harvest**.
+   - **For Harvest Hill Offered requirement**: Card displays `"Harvest Hill: RWF 1,200/kg"`. Submission drawer defaults asking price to `1,200 RWF`.
+   - **For Farmer Proposes requirement**: Card displays `"Pricing: You propose asking price"` (NO empty or `RWF —` placeholders). Submission drawer requires entering an asking price (> 0).
+
+5. **Editing Safeguard**:
+   - Attempting to edit `pricing_mode` on a requirement with active farmer submissions is **BLOCKED** to preserve historical correctness.
+
+---
+
+## 25. Quick Sanity Verification Checklist
 
 ```
 CLEAN BASELINE & REGISTRATION
 [ ] Baseline initialized with admin@harvesthill.test only
 [ ] /signup role toggle switch allows registering Farmer vs Client accounts cleanly
 
-PRODUCT REQUIREMENTS (TEMPLATES) & ZERO GUARDS
-[ ] Product Templates are strictly text-driven requirement specifications (NO images)
-[ ] Quantity Needed input enforces min="1" and live zero validation ("Quantity needed must be greater than 0.")
-[ ] Quality Requirements field opens with neutral, unbiased placeholder text
-[ ] Compact filter bar consolidates status dropdown (Status: All, Open, Draft, Closed, Archived) before category tabs
-[ ] Requirement deletion blocked with HTTP 400 if active farmer submissions exist (instructs admin to archive)
-[ ] Expired requirements (submission_deadline < today) auto-close to 'closed' and disappear from farmer view
+PRODUCT REQUIREMENTS & PRICING MODES
+[ ] Pricing Mode radio selection explicitly toggles HARVEST_HILL_OFFERS vs FARMER_PROPOSES
+[ ] Offered price required (> 0) when HARVEST_HILL_OFFERS is selected
+[ ] Offered price field hidden and cleared when FARMER_PROPOSES is selected
+[ ] Backend validates pricing_mode constraints, rejecting invalid/mismatched requests
+[ ] Changing pricing_mode on requirements with active submissions is blocked to protect historical records
+[ ] Farmer view renders "Harvest Hill: RWF 1,200/kg" or "You propose asking price" with zero empty placeholders
+[ ] Submitting harvest against expired/closed requirement rejected automatically by backend
 
 FARMER DISCOVERY & HARVEST SUBMISSIONS
 [ ] Farmers discover requirements and submit harvest offers in single "Submit Harvest" section
@@ -416,7 +445,7 @@ FARMER DISCOVERY & HARVEST SUBMISSIONS
 ADMIN SUPPLIES COMPARISON, NEGOTIATION & GOVERNANCE
 [ ] Detail drawer displays side-by-side comparison with vertical divider separation between left/right columns
 [ ] Long crop names wrap cleanly (break-words) without colliding with adjacent columns
-[ ] Requirement box correctly displays actual template values (Quantity Needed & Reference Price)
+[ ] Requirement box correctly displays actual template values (Quantity Needed & Offered/Asking Price)
 [ ] Contextual negotiation supports dual action controls (Counter offer vs Accept) and pre-filled fields
 [ ] Admin can delegate Fresh Deals discount (is_discounted & discount_price) on approved supplies
 [ ] Admin can configure Visibility Controls (private_admin, specific_clients, all_clients, public) & disclose_farmer_name toggle

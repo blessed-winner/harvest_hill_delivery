@@ -59,6 +59,10 @@ class SupplySerializer(serializers.ModelSerializer):
             'custom_product_name', 'custom_category', 'custom_unit', 'latest_offer', 'has_admin_negotiation'
         ]
         read_only_fields = ['created_at']
+        extra_kwargs = {
+            'price': {'required': False, 'allow_null': True},
+            'photo': {'required': False, 'allow_null': True},
+        }
 
     def get_has_admin_negotiation(self, obj):
         return obj.negotiation_threads.exists()
@@ -119,18 +123,31 @@ class SupplySerializer(serializers.ModelSerializer):
         return obj.custom_unit or 'kg'
 
     def validate(self, attrs):
-        # Only validate fields if they are provided (handles partial updates/PATCH cleanly)
-        if 'price' in attrs:
-            price = attrs['price']
-            if float(price) <= 0:
-                raise serializers.ValidationError({"price": "Price must be greater than zero."})
-        elif not self.instance:
-            raise serializers.ValidationError({"price": "Price is required."})
-
+        request = self.context.get('request')
         product = attrs.get('product') or (self.instance.product if self.instance else None)
         custom_product = attrs.get('custom_product_name') or (self.instance.custom_product_name if self.instance else '')
+
         if not product and not custom_product:
-            raise serializers.ValidationError({"product": "Either product template or custom product name is required."})
+            raise serializers.ValidationError({"product": "Either product requirement template or custom product name is required."})
+
+        # Validate pricing based on Product pricing_mode
+        if product:
+            if product.pricing_mode == 'farmer_proposes':
+                price = attrs.get('price') or (self.instance.price if self.instance else None)
+                if price is None or float(price) <= 0:
+                    raise serializers.ValidationError({"price": f"Asking price is required when submitting a harvest for '{product.name}'."})
+            elif product.pricing_mode == 'harvest_hill_offers':
+                if 'price' not in attrs and not self.instance:
+                    attrs['price'] = product.offered_price or product.base_price
+                elif 'price' in attrs:
+                    if float(attrs['price']) <= 0:
+                        raise serializers.ValidationError({"price": "Price must be greater than zero."})
+        else:
+            if 'price' in attrs:
+                if float(attrs['price']) <= 0:
+                    raise serializers.ValidationError({"price": "Price must be greater than zero."})
+            elif not self.instance:
+                raise serializers.ValidationError({"price": "Price is required."})
 
         if 'quantity' in attrs:
             quantity = attrs['quantity']
@@ -148,7 +165,6 @@ class SupplySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"bulk_price": "Bulk special price must be greater than zero."})
 
         # Farmers cannot delegate or set discount fields; only Harvest Hill Delivery Admin can
-        request = self.context.get('request')
         if request and hasattr(request, 'user') and getattr(request.user, 'role', '') == 'farmer':
             attrs.pop('is_discounted', None)
             attrs.pop('discount_price', None)

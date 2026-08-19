@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -22,6 +22,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState("Vegetables");
   const [formUnit, setFormUnit] = useState("kg");
+  const [formPricingMode, setFormPricingMode] = useState<string>("harvest_hill_offers");
+  const [formOfferedPrice, setFormOfferedPrice] = useState<string>("");
   const [formPrice, setFormPrice] = useState(""); // Holds entered reference price
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
   const [formStatus, setFormStatus] = useState<string>("open");
@@ -164,6 +166,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormName(req.product_name);
     setFormCategory(req.category || 'Vegetables');
     setFormUnit(req.unit || 'kg');
+    setFormPricingMode('harvest_hill_offers');
+    setFormOfferedPrice(req.preferred_price ? String(req.preferred_price) : '');
     setFormPrice(req.preferred_price ? String(req.preferred_price) : '');
     setFormQuantityNeeded(String(req.quantity_needed));
     setFormStatus('open');
@@ -213,6 +217,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormName("");
     setFormCategory("Vegetables");
     setFormUnit("kg");
+    setFormPricingMode("harvest_hill_offers");
+    setFormOfferedPrice("");
     setFormPrice("");
     setFormQuantityNeeded("");
     setFormStatus("open");
@@ -230,7 +236,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormName(product.name || "");
     setFormCategory(product.category || "Vegetables");
     setFormUnit(product.unit || "kg");
-    setFormPrice(product.base_price ? String(product.base_price) : "");
+    const pm = product.pricing_mode || (product.offered_price || product.base_price ? 'harvest_hill_offers' : 'farmer_proposes');
+    setFormPricingMode(pm);
+    const pVal = (product.offered_price !== null && product.offered_price !== undefined) 
+      ? String(product.offered_price) 
+      : (product.base_price ? String(product.base_price) : "");
+    setFormOfferedPrice(pVal);
+    setFormPrice(pVal);
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
     
     // Auto-open status if deadline is in future or today
@@ -372,19 +384,17 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const handleSaveProduct = async () => {
-    if (!formName || !formPrice || !formQuantityNeeded) {
-      setErrorMessage("Requirement name, reference price and quantity needed are required.");
+    if (!formName || !formQuantityNeeded) {
+      setErrorMessage("Requirement name and quantity needed are required.");
       return;
     }
 
-    const priceRwf = parseFloat(formPrice);
+    if (formPricingMode === 'harvest_hill_offers' && (!formOfferedPrice || parseFloat(formOfferedPrice) <= 0)) {
+      setErrorMessage("Offered price must be greater than zero when Harvest Hill offers the price.");
+      return;
+    }
+
     const qtyVal = parseFloat(formQuantityNeeded);
-
-    if (priceRwf <= 0) {
-      setErrorMessage("Reference price must be greater than zero.");
-      return;
-    }
-
     if (qtyVal <= 0) {
       setErrorMessage("Quantity needed must be greater than zero.");
       return;
@@ -409,16 +419,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     }
 
     const payload: any = {
-      name: formName,
+      name: formName.trim(),
       category: formCategory,
       unit: formUnit,
-      base_price: priceRwf,
+      pricing_mode: formPricingMode,
+      offered_price: formPricingMode === 'harvest_hill_offers' ? parseFloat(formOfferedPrice) : null,
+      base_price: formPricingMode === 'harvest_hill_offers' ? parseFloat(formOfferedPrice) : 0,
       quantity_needed: qtyVal,
       status: finalStatus,
-      quality_requirements: formQualityRequirements,
+      quality_requirements: formQualityRequirements.trim(),
       submission_deadline: formSubmissionDeadline || null,
-      preferred_harvest_period: formPreferredPeriod,
-      description: formDescription,
+      preferred_harvest_period: formPreferredPeriod.trim(),
+      description: formDescription.trim(),
     };
 
     try {
@@ -715,10 +727,16 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             </div>
 
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Reference Price:</span>
-                              <span className="font-extrabold text-[#2D5A3D]">
-                                RWF {parseFloat(product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
-                              </span>
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing Mode:</span>
+                              {product.pricing_mode === 'farmer_proposes' ? (
+                                <span className="font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">
+                                  Farmer Proposes
+                                </span>
+                              ) : (
+                                <span className="font-extrabold text-[#2D5A3D]">
+                                  Harvest Hill: RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()}/{product.unit || 'kg'}
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -963,22 +981,105 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 )}
               </div>
 
-              <div className="space-y-1.5">
+              {/* Pricing Mode Section */}
+              <div className="space-y-3 p-3.5 bg-[#fcf9f2] rounded-xl border border-[#e5e2db]">
                 <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Target Price (RWF) <span className="text-red-500">*</span>
+                  Pricing Mode <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">
-                    RWF
-                  </span>
-                  <input 
-                    type="number" 
-                    placeholder="e.g. 800"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold text-primary outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-                  />
-                </div>
+                
+                {(() => {
+                  const subCount = selectedProduct && selectedProduct !== 'new' ? (selectedProduct.submission_count || selectedProduct.sourcing_history_count || 0) : 0;
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <label 
+                        onClick={() => {
+                          if (subCount > 0) return;
+                          setFormPricingMode('harvest_hill_offers');
+                        }}
+                        className={cn(
+                          "p-3 rounded-xl border flex flex-col gap-1 transition-all",
+                          subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+                          formPricingMode === 'harvest_hill_offers' 
+                            ? "bg-primary/10 border-primary shadow-2xs" 
+                            : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="radio" 
+                            name="pricing_mode" 
+                            checked={formPricingMode === 'harvest_hill_offers'}
+                            disabled={subCount > 0}
+                            onChange={() => {}}
+                            className="text-primary accent-primary cursor-pointer" 
+                          />
+                          <span className="font-extrabold text-xs text-on-surface">Harvest Hill offers price</span>
+                        </div>
+                        <span className="text-[10px] text-on-surface-variant leading-relaxed pl-5">
+                          You set an explicit offered price visible to local farmers.
+                        </span>
+                      </label>
+
+                      <label 
+                        onClick={() => {
+                          if (subCount > 0) return;
+                          setFormPricingMode('farmer_proposes');
+                          setFormOfferedPrice('');
+                        }}
+                        className={cn(
+                          "p-3 rounded-xl border flex flex-col gap-1 transition-all",
+                          subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+                          formPricingMode === 'farmer_proposes' 
+                            ? "bg-primary/10 border-primary shadow-2xs" 
+                            : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="radio" 
+                            name="pricing_mode" 
+                            checked={formPricingMode === 'farmer_proposes'}
+                            disabled={subCount > 0}
+                            onChange={() => {}}
+                            className="text-primary accent-primary cursor-pointer" 
+                          />
+                          <span className="font-extrabold text-xs text-on-surface">Farmer proposes price</span>
+                        </div>
+                        <span className="text-[10px] text-on-surface-variant leading-relaxed pl-5">
+                          Farmers submit their asking price when posting harvest.
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })()}
+
+                {formPricingMode === 'harvest_hill_offers' ? (
+                  <div className="space-y-1.5 pt-2 border-t border-[#e5e2db]">
+                    <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                      Offered Price (RWF) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-primary">
+                        RWF
+                      </span>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 800"
+                        value={formOfferedPrice}
+                        onChange={(e) => {
+                          setFormOfferedPrice(e.target.value);
+                          setFormPrice(e.target.value);
+                        }}
+                        className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold text-primary outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-[10.5px] text-amber-950 font-medium flex items-center gap-2">
+                    <Info className="w-4 h-4 text-amber-800 shrink-0" />
+                    <span>The farmer will submit their asking price when submitting a harvest offer.</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
