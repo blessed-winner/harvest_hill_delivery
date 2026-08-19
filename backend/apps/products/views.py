@@ -21,6 +21,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         today = timezone.now().date()
         Product.objects.filter(status='open', submission_deadline__lt=today).update(status='closed')
+        # Auto-reopen closed templates whose submission deadline has been extended/updated to today or a future date
+        Product.objects.filter(status='closed', submission_deadline__gte=today).update(status='open')
 
         queryset = super().get_queryset()
         status_param = self.request.query_params.get('status', None)
@@ -43,11 +45,19 @@ class ProductViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
+        from django.utils import timezone
+        today = timezone.now().date()
         product = serializer.save()
+        if product.submission_deadline and product.submission_deadline >= today and product.status == 'closed':
+            product.status = 'open'
+            product.save(update_fields=['status'])
         from apps.common.utils import log_action
         log_action(self.request, actor=self.request.user, action="product_added", target_model="Product", target_id=product.id, target_name=product.name)
 
     def perform_update(self, serializer):
+        from django.utils import timezone
+        today = timezone.now().date()
+
         # If a new image is being uploaded, delete the old one from Cloudinary
         if 'image' in self.request.FILES:
             instance = self.get_object()
@@ -56,6 +66,11 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance = serializer.save(image=self.request.FILES['image'])
         else:
             instance = serializer.save()
+
+        # Auto-reopen requirement status to 'open' if submission_deadline is updated to today or a future date
+        if instance.submission_deadline and instance.submission_deadline >= today and instance.status == 'closed':
+            instance.status = 'open'
+            instance.save(update_fields=['status'])
 
         # Update all active supplies under this product to match the new base_price!
         if instance.base_price and float(instance.base_price) > 0:

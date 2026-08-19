@@ -215,13 +215,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const handleOpenEditProduct = (product: any) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
     setSelectedProduct(product);
     setFormName(product.name || "");
     setFormCategory(product.category || "Vegetables");
     setFormUnit(product.unit || "kg");
     setFormPrice(product.base_price ? String(product.base_price) : "");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
-    setFormStatus(product.status || "open");
+    
+    // Auto-open status if deadline is in future or today
+    const isFutureDeadline = product.submission_deadline && product.submission_deadline >= todayStr;
+    setFormStatus(isFutureDeadline ? "open" : (product.status || "open"));
+    
     setFormQualityRequirements(product.quality_requirements || "");
     setFormSubmissionDeadline(product.submission_deadline || "");
     setFormPreferredPeriod(product.preferred_harvest_period || "");
@@ -339,13 +344,19 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setIsSaving(true);
     setErrorMessage("");
 
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let finalStatus = formStatus;
+    if (formSubmissionDeadline && formSubmissionDeadline >= todayStr && formStatus === 'closed') {
+      finalStatus = 'open';
+    }
+
     const payload: any = {
       name: formName,
       category: formCategory,
       unit: formUnit,
       base_price: priceRwf,
       quantity_needed: qtyVal,
-      status: formStatus,
+      status: finalStatus,
       quality_requirements: formQualityRequirements,
       submission_deadline: formSubmissionDeadline || null,
       preferred_harvest_period: formPreferredPeriod,
