@@ -71,9 +71,39 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   // Visibility & Access Controls Modal State
   const [visibilitySupply, setVisibilitySupply] = useState<any | null>(null);
-  const [visibilityScopeInput, setVisibilityScopeInput] = useState('public');
+  const [visibilityScopeInput, setVisibilityScopeInput] = useState('HARVEST_HILL_ONLY');
   const [discloseFarmerNameInput, setDiscloseFarmerNameInput] = useState(false);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<any[]>([]);
+  const [availableClients, setAvailableClients] = useState<any[]>([]);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+
+  const fetchAvailableClients = async () => {
+    try {
+      setIsLoadingClients(true);
+      const res = await apiRequest('/api/accounts/users/?role=client');
+      const list = Array.isArray(res) ? res : (res?.results || []);
+      setAvailableClients(list);
+    } catch {
+      setAvailableClients([]);
+    } finally {
+      setIsLoadingClients(false);
+    }
+  };
+
+  const handleOpenVisibilityModal = (supply: any) => {
+    setVisibilitySupply(supply);
+    const scope = supply.visibility_scope || 'HARVEST_HILL_ONLY';
+    setVisibilityScopeInput(scope);
+    setDiscloseFarmerNameInput(!!supply.disclose_farmer_name);
+    
+    // Load existing target clients if any
+    const existingTargets = supply.target_clients_detail || supply.target_clients || [];
+    setSelectedClients(existingTargets);
+    setClientSearchQuery('');
+    fetchAvailableClients();
+  };
 
   const handleSaveDiscountOffer = async () => {
     if (!discountSupply) return;
@@ -112,11 +142,19 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
 
   const handleSaveVisibilityControls = async () => {
     if (!visibilitySupply) return;
+
+    if ((visibilityScopeInput === 'SPECIFIC_CLIENTS' || visibilityScopeInput === 'specific_clients') && selectedClients.length === 0) {
+      toast("Select at least one client for this visibility option.", "warning");
+      return;
+    }
+
     try {
       setIsSavingVisibility(true);
+      const clientIds = selectedClients.map(c => c.id || c.user_id || c.pk);
       await api.supplies.update(visibilitySupply.id, {
         visibility_scope: visibilityScopeInput,
         disclose_farmer_name: discloseFarmerNameInput,
+        target_clients: clientIds,
       });
 
       toast(`Visibility settings saved!`, "success");
@@ -1810,12 +1848,20 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                 </label>
                 <div className="space-y-2">
                   {[
-                    { id: 'private_admin', label: 'Harvest Hill Delivery Only', desc: 'Restricted internally to Harvest Hill Delivery administration', icon: Lock },
-                    { id: 'specific_clients', label: 'Specific Chosen Clients', desc: 'Exclusive access to designated wholesale client accounts', icon: Users },
-                    { id: 'all_clients', label: 'All Registered Clients', desc: 'Visible to all authenticated client buyer accounts', icon: UserCheck },
-                    { id: 'public', label: 'Public Marketplace', desc: 'Accessible to all visitors (guests and clients)', icon: Globe },
+                    { id: 'HARVEST_HILL_ONLY', label: 'Harvest Hill Delivery Only', desc: 'Restricted internally to Harvest Hill Delivery administration', icon: Lock },
+                    { id: 'SPECIFIC_CLIENTS', label: 'Specific Chosen Clients', desc: 'Exclusive access to designated wholesale client accounts', icon: Users },
+                    { id: 'REGISTERED_CLIENTS', label: 'All Registered Clients', desc: 'Visible to all authenticated client buyer accounts', icon: UserCheck },
+                    { id: 'PUBLIC', label: 'Public Marketplace', desc: 'Accessible to all visitors, including guests and registered clients', icon: Globe },
                   ].map((item) => {
-                    const isSelected = visibilityScopeInput === item.id;
+                    const isSelected = visibilityScopeInput === item.id || (
+                      item.id === 'HARVEST_HILL_ONLY' && visibilityScopeInput === 'private_admin'
+                    ) || (
+                      item.id === 'SPECIFIC_CLIENTS' && visibilityScopeInput === 'specific_clients'
+                    ) || (
+                      item.id === 'REGISTERED_CLIENTS' && visibilityScopeInput === 'all_clients'
+                    ) || (
+                      item.id === 'PUBLIC' && visibilityScopeInput === 'public'
+                    );
                     const IconComp = item.icon;
                     return (
                       <label
@@ -1850,6 +1896,119 @@ export function Supplies({ searchTerm = '' }: SuppliesProps) {
                   })}
                 </div>
               </div>
+
+              {/* Specific Chosen Clients Selection Control */}
+              {(visibilityScopeInput === 'SPECIFIC_CLIENTS' || visibilityScopeInput === 'specific_clients') && (
+                <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3 font-sans animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10.5px] font-extrabold text-amber-950 uppercase tracking-wider block">
+                      Choose clients who can access this harvest
+                    </label>
+                    <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                      {selectedClients.length} Selected
+                    </span>
+                  </div>
+
+                  {/* Client Search Input */}
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="Search username or email..."
+                      value={clientSearchQuery}
+                      onChange={(e) => setClientSearchQuery(e.target.value)}
+                      className="w-full pl-3 pr-8 py-2 rounded-xl border border-amber-300 bg-white text-xs font-medium text-[#1c1c18] outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    {clientSearchQuery && (
+                      <button 
+                        type="button"
+                        onClick={() => setClientSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-800 hover:text-amber-950 text-xs font-bold"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Matching Search Results Dropdown */}
+                  {clientSearchQuery.trim().length > 0 && (
+                    <div className="max-h-36 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-amber-200 divide-y divide-amber-100 shadow-xs">
+                      {availableClients
+                        .filter(c => {
+                          const q = clientSearchQuery.toLowerCase();
+                          const email = (c.email || '').toLowerCase();
+                          const uname = (c.username || '').toLowerCase();
+                          const bname = (c.client_profile?.business_name || c.business_name || '').toLowerCase();
+                          return email.includes(q) || uname.includes(q) || bname.includes(q);
+                        })
+                        .map(c => {
+                          const cid = c.client_profile?.id || c.id;
+                          const isAlreadySelected = selectedClients.some(sc => (sc.id || sc.user_id) === cid || sc.email === c.email);
+                          const displayName = c.client_profile?.business_name || c.username || c.email;
+
+                          return (
+                            <div 
+                              key={c.id} 
+                              onClick={() => {
+                                if (!isAlreadySelected) {
+                                  setSelectedClients(prev => [...prev, {
+                                    id: cid,
+                                    email: c.email,
+                                    username: c.username,
+                                    name: displayName
+                                  }]);
+                                  setClientSearchQuery('');
+                                }
+                              }}
+                              className={`p-2 px-3 text-xs flex items-center justify-between transition-colors ${
+                                isAlreadySelected ? 'bg-amber-50 opacity-60 cursor-not-allowed' : 'hover:bg-amber-100/60 cursor-pointer'
+                              }`}
+                            >
+                              <div>
+                                <p className="font-extrabold text-amber-950">{displayName}</p>
+                                <p className="text-[10px] text-amber-800 font-mono">{c.email}</p>
+                              </div>
+                              <button 
+                                type="button"
+                                disabled={isAlreadySelected}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isAlreadySelected ? 'bg-amber-200 text-amber-800' : 'bg-primary text-white hover:opacity-90'
+                                }`}
+                              >
+                                {isAlreadySelected ? 'Added' : '+ Add'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+
+                  {/* Selected Clients Tags / Removable Chips */}
+                  <div className="space-y-1">
+                    <span className="text-[9.5px] font-bold text-amber-900 uppercase tracking-wider block">Selected clients:</span>
+                    {selectedClients.length === 0 ? (
+                      <p className="text-[11px] text-amber-800 italic">No clients selected yet. Search above to add wholesale clients.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {selectedClients.map((c, idx) => (
+                          <span 
+                            key={c.id || idx} 
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-950 shadow-2xs"
+                          >
+                            <span>{c.email || c.username || c.name}</span>
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedClients(prev => prev.filter((_, i) => i !== idx))}
+                              className="w-4 h-4 rounded-full bg-amber-100 text-amber-900 hover:bg-amber-200 flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="p-4 bg-white border border-[#e5e2db] rounded-2xl space-y-2 shadow-xs">
                 <div className="flex items-center justify-between cursor-pointer" onClick={() => setDiscloseFarmerNameInput(!discloseFarmerNameInput)}>

@@ -11,7 +11,11 @@ class RoleScopedQuerysetMixin:
         
         if not user.is_authenticated:
             if model.__name__ == 'Supply':
-                return queryset.filter(status='accepted', is_archived=False)
+                return queryset.filter(
+                    status='accepted',
+                    is_archived=False,
+                    visibility_scope__in=['PUBLIC', 'public']
+                )
             if model.__name__ == 'Product':
                 return queryset.filter(status='open')
             return queryset.none()
@@ -25,11 +29,11 @@ class RoleScopedQuerysetMixin:
                 # If farmer is querying their own dashboard ('My Supplies'), return farmer's supplies
                 if self.request.query_params.get('my_supplies') == 'true' and hasattr(user, 'farmer_profile'):
                     return queryset.filter(farmer=user.farmer_profile)
-                # Otherwise for marketplace landing page, return all accepted non-archived supplies + farmer's own
-                if hasattr(user, 'farmer_profile'):
-                    from django.db.models import Q
-                    return queryset.filter(Q(status='accepted', is_archived=False) | Q(farmer=user.farmer_profile)).distinct()
-                return queryset.filter(status='accepted', is_archived=False)
+                # Otherwise for marketplace landing page, return accepted public/registered supplies + farmer's own
+                from django.db.models import Q
+                q_own = Q(farmer=user.farmer_profile) if hasattr(user, 'farmer_profile') else Q()
+                q_public = Q(status='accepted', is_archived=False, visibility_scope__in=['PUBLIC', 'public', 'REGISTERED_CLIENTS', 'all_clients'])
+                return queryset.filter(q_own | q_public).distinct()
 
             if hasattr(model, 'farmer') and hasattr(user, 'farmer_profile'):
                 return queryset.filter(farmer=user.farmer_profile)
@@ -39,7 +43,24 @@ class RoleScopedQuerysetMixin:
         # Client specific filtering
         if user.role == 'client':
             if model.__name__ == 'Supply':
-                return queryset.filter(status='accepted', is_archived=False)
+                from django.db.models import Q
+                user_client_profile = getattr(user, 'client_profile', None)
+                
+                q_public = Q(visibility_scope__in=['PUBLIC', 'public'])
+                q_registered = Q(visibility_scope__in=['REGISTERED_CLIENTS', 'all_clients'])
+                q_specific = Q(
+                    visibility_scope__in=['SPECIFIC_CLIENTS', 'specific_clients'],
+                    target_clients__user=user
+                )
+                if user_client_profile:
+                    q_specific = q_specific | Q(
+                        visibility_scope__in=['SPECIFIC_CLIENTS', 'specific_clients'],
+                        target_clients=user_client_profile
+                    )
+
+                return queryset.filter(
+                    Q(status='accepted', is_archived=False) & (q_public | q_registered | q_specific)
+                ).distinct()
             if model.__name__ == 'Product':
                 return queryset
             if hasattr(model, 'client') and hasattr(user, 'client_profile'):

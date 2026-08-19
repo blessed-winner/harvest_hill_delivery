@@ -64,6 +64,18 @@ class Product(models.Model):
                 total += float(s.quantity)
         return total
 
+    def get_available_quantity_for_user(self, user=None):
+        """Calculates available quantity filtered strictly by user authorization and visibility scope."""
+        accepted_supplies = self.supplies.filter(is_archived=False, status='accepted')
+        total = 0.0
+        for s in accepted_supplies:
+            if s.is_visible_to_user(user):
+                if s.accepted_quantity is not None:
+                    total += float(s.accepted_quantity)
+                else:
+                    total += float(s.quantity)
+        return total
+
     @property
     def supplier_count(self):
         """Calculates count of distinct farmers providing accepted active supplies."""

@@ -17,6 +17,19 @@ class SupplyImageSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
+class TargetClientSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.accounts.models import ClientProfile
+        model = ClientProfile
+        fields = ['id', 'email', 'username', 'name']
+
+    def get_name(self, obj):
+        return obj.business_name or (obj.user.username if obj.user else '') or (obj.user.email if obj.user else '')
+
 class SupplySerializer(serializers.ModelSerializer):
     proposed_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2, read_only=True)
     base_price = serializers.SerializerMethodField()
@@ -27,6 +40,14 @@ class SupplySerializer(serializers.ModelSerializer):
     images = SupplyImageSerializer(many=True, read_only=True)
     effective_quantity = serializers.FloatField(read_only=True)
     photo = serializers.SerializerMethodField()
+
+    from apps.accounts.models import ClientProfile
+    target_clients_detail = TargetClientSerializer(source='target_clients', many=True, read_only=True)
+    target_clients = serializers.PrimaryKeyRelatedField(
+        queryset=ClientProfile.objects.all(),
+        many=True,
+        required=False
+    )
 
     def get_photo(self, obj):
         if not obj.photo:
@@ -52,7 +73,7 @@ class SupplySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'supply_number', 'supplyNumber', 'product', 'product_detail', 'quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
             'price', 'proposed_price', 'agreed_price', 'base_price', 
-            'status', 'visibility_scope', 'is_suggested_product', 'suggested_product_name', 'disclose_farmer_name',
+            'status', 'visibility_scope', 'target_clients', 'target_clients_detail', 'is_suggested_product', 'suggested_product_name', 'disclose_farmer_name',
             'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
             'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
             'bulk_min_qty', 'bulk_price', 'rating', 'rating_count',
@@ -63,6 +84,8 @@ class SupplySerializer(serializers.ModelSerializer):
             'price': {'required': False, 'allow_null': True},
             'photo': {'required': False, 'allow_null': True},
         }
+
+
 
     def get_has_admin_negotiation(self, obj):
         return obj.negotiation_threads.exists()
@@ -85,29 +108,32 @@ class SupplySerializer(serializers.ModelSerializer):
 
     def get_farmer_name(self, obj):
         request = self.context.get('request')
-        from apps.accounts.models import SystemSetting
-        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
-        show_names = (setting.value.lower() == 'true') if setting else False
 
-        # If user is admin or farmer inspecting their dashboard, show real farm name
+        # Admin or owner farmer always sees actual farm name
         if request and request.user and request.user.is_authenticated and request.user.role in ['admin', 'farmer']:
             return obj.farmer.farm_name or 'Harvest Hill Partner Farm'
         
-        if show_names:
+        # Check supply-level disclosure toggle or system setting
+        from apps.accounts.models import SystemSetting
+        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
+        global_override = (setting.value.lower() == 'true') if setting else False
+
+        if getattr(obj, 'disclose_farmer_name', False) or global_override:
             return obj.farmer.farm_name or 'Harvest Hill Partner Farm'
 
         return "Harvest Hill Delivery"
 
     def get_farmer_location(self, obj):
         request = self.context.get('request')
-        from apps.accounts.models import SystemSetting
-        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
-        show_names = (setting.value.lower() == 'true') if setting else False
 
         if request and request.user and request.user.is_authenticated and request.user.role in ['admin', 'farmer']:
             return obj.farmer.location or 'Rwanda'
         
-        if show_names:
+        from apps.accounts.models import SystemSetting
+        setting = SystemSetting.objects.filter(key='show_farmer_names_to_clients').first()
+        global_override = (setting.value.lower() == 'true') if setting else False
+
+        if getattr(obj, 'disclose_farmer_name', False) or global_override:
             return obj.farmer.location or 'Rwanda'
 
         return "Kigali, Rwanda"
@@ -124,6 +150,26 @@ class SupplySerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get('request')
+
+        # 1. Marketplace Visibility Scope Validation
+        v_scope = attrs.get('visibility_scope')
+        if v_scope is None and self.instance:
+            v_scope = self.instance.visibility_scope
+
+        if v_scope in ['SPECIFIC_CLIENTS', 'specific_clients']:
+            if 'target_clients' in attrs:
+                target_clients = attrs['target_clients']
+            elif self.instance:
+                target_clients = list(self.instance.target_clients.all())
+            else:
+                target_clients = []
+
+            if not target_clients:
+                raise serializers.ValidationError({
+                    "target_clients": "Select at least one client for this visibility option."
+                })
+
+        # 2. Product and Custom Product Validation
         product = attrs.get('product') or (self.instance.product if self.instance else None)
         custom_product = attrs.get('custom_product_name') or (self.instance.custom_product_name if self.instance else '')
 

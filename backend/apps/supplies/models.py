@@ -17,10 +17,15 @@ class Supply(models.Model):
         ('economy', 'Economy')
     ]
     VISIBILITY_CHOICES = [
+        ('HARVEST_HILL_ONLY', 'Harvest Hill Delivery Only'),
+        ('SPECIFIC_CLIENTS', 'Specific Chosen Clients'),
+        ('REGISTERED_CLIENTS', 'All Registered Clients'),
+        ('PUBLIC', 'Public Marketplace'),
+        # Backward-compatible choice aliases
         ('private_admin', 'Harvest Hill Delivery Only'),
         ('specific_clients', 'Specific Chosen Clients'),
         ('all_clients', 'All Registered Clients'),
-        ('public', 'Public (All Visitors)'),
+        ('public', 'Public Marketplace'),
     ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(FarmerProfile, on_delete=models.CASCADE, related_name='supplies')
@@ -33,8 +38,50 @@ class Supply(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2) # Farmer's initial proposed price
     agreed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Agreed price negotiated with Harvest Hill
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='private_admin')
+    visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='HARVEST_HILL_ONLY')
     target_clients = models.ManyToManyField('accounts.ClientProfile', blank=True, related_name='exclusive_supplies')
+
+    def is_visible_to_user(self, user):
+        """
+        Evaluates strict authorization for a given user instance (or None for unauthenticated guests).
+        Enforces status='accepted' and non-archived state for non-admin viewers.
+        """
+        if self.is_archived:
+            return bool(user and user.is_authenticated and getattr(user, 'role', '') == 'admin')
+
+        if user and user.is_authenticated and getattr(user, 'role', '') == 'admin':
+            return True
+
+        if user and user.is_authenticated and getattr(user, 'role', '') == 'farmer':
+            if hasattr(user, 'farmer_profile') and self.farmer_id == user.farmer_profile.id:
+                return True
+
+        # Non-admin and non-owner MUST be accepted
+        if self.status != 'accepted':
+            return False
+
+        scope = self.visibility_scope
+
+        if scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            return False
+
+        if scope in ['PUBLIC', 'public']:
+            return True
+
+        if scope in ['REGISTERED_CLIENTS', 'all_clients']:
+            return bool(user and user.is_authenticated and getattr(user, 'role', '') == 'client')
+
+        if scope in ['SPECIFIC_CLIENTS', 'specific_clients']:
+            if not user or not user.is_authenticated or getattr(user, 'role', '') != 'client':
+                return False
+            user_client_profile = getattr(user, 'client_profile', None)
+            if user_client_profile and self.target_clients.filter(id=user_client_profile.id).exists():
+                return True
+            if self.target_clients.filter(user=user).exists():
+                return True
+            return False
+
+        return False
     is_suggested_product = models.BooleanField(default=False)
     suggested_product_name = models.CharField(max_length=255, blank=True, default='')
     disclose_farmer_name = models.BooleanField(default=False)

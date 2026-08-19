@@ -8,13 +8,18 @@ def _product_has_image(image):
 
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
-    total_available_quantity = serializers.FloatField(read_only=True)
+    total_available_quantity = serializers.SerializerMethodField()
     supplier_count = serializers.IntegerField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
     sourcing_history_count = serializers.IntegerField(read_only=True)
     sourcing_supplies = serializers.SerializerMethodField()
     price = serializers.FloatField(read_only=True)
     submission_count = serializers.SerializerMethodField()
+
+    def get_total_available_quantity(self, obj):
+        request = self.context.get('request')
+        user = request.user if request and hasattr(request, 'user') else None
+        return obj.get_available_quantity_for_user(user)
 
     class Meta:
         model = Product
