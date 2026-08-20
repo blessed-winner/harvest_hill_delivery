@@ -308,10 +308,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if 'visibility_scope' not in serializer.validated_data or not serializer.validated_data['visibility_scope']:
             serializer.validated_data['visibility_scope'] = 'PUBLIC' if self.request.user.role == 'admin' else 'HARVEST_HILL_ONLY'
 
-        # Bulk deal offers are solely determined by Harvest Hill Admin, not by farmers
+        # Bulk deal offers & Fresh deal discounts are solely delegated by Harvest Hill Admin, not by farmers
         if self.request.user.role != 'admin':
             serializer.validated_data['bulk_min_qty'] = None
             serializer.validated_data['bulk_price'] = None
+            serializer.validated_data['is_discounted'] = False
+            serializer.validated_data['discount_price'] = None
 
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
 
@@ -363,6 +365,13 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         # Farmers can only update pending harvest submissions
         if self.request.user.role == 'farmer' and old_status != 'pending':
             raise serializers.ValidationError("Farmers can only update pending harvest submissions. Accepted or negotiated harvests cannot be edited.")
+
+        # Non-admin farmers cannot modify Fresh Deal discounts or Bulk Deal parameters
+        if self.request.user.role != 'admin':
+            serializer.validated_data.pop('is_discounted', None)
+            serializer.validated_data.pop('discount_price', None)
+            serializer.validated_data.pop('bulk_min_qty', None)
+            serializer.validated_data.pop('bulk_price', None)
 
         # If a farmer updates their harvest, reset the status to pending
         if self.request.user.role == 'farmer':
