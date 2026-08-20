@@ -235,6 +235,18 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         search = self.request.query_params.get('search', None)
+        category = self.request.query_params.get('category', None)
+
+        if category and category.lower() != 'all':
+            cat_lower = category.lower()
+            from django.db.models import Q
+            if cat_lower in ['dairy', 'animal', 'animal-based']:
+                queryset = queryset.filter(Q(product__category__icontains='dairy') | Q(product__category__icontains='animal') | Q(custom_category__icontains='dairy') | Q(custom_category__icontains='animal'))
+            elif cat_lower in ['deals', 'flash deals']:
+                queryset = queryset.filter(Q(is_discounted=True) | Q(product__is_discounted=True) | Q(product__fresh_deals__status='ACTIVE')).distinct()
+            else:
+                queryset = queryset.filter(Q(product__category__icontains=category) | Q(custom_category__icontains=category))
+
         if search:
             search_str = search.strip()
             from django.db.models import Q

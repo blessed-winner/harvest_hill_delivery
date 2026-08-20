@@ -182,12 +182,18 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
 
           if (masterMap.has(key)) {
             const existing = masterMap.get(key);
-            existing.quantity += qty;
-            existing.total_available_quantity += qty;
-
-            if (!existing.image_url && image_url) {
-              existing.image_url = image_url;
-              existing.photo = image_url;
+            if (isSupply && existing.isFromProduct) {
+              if (!existing.image_url && image_url) {
+                existing.image_url = image_url;
+                existing.photo = image_url;
+              }
+            } else {
+              existing.quantity += qty;
+              existing.total_available_quantity += qty;
+              if (!existing.image_url && image_url) {
+                existing.image_url = image_url;
+                existing.photo = image_url;
+              }
             }
           } else {
             masterMap.set(key, {
@@ -210,6 +216,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
               bulk_min_qty: item.bulk_min_qty ? Number(item.bulk_min_qty) : null,
               bulk_price: item.bulk_price ? Number(item.bulk_price) : null,
               has_bulk_deal: !!(item.bulk_min_qty && item.bulk_price),
+              isFromProduct: !isSupply,
               raw_item: item
             });
           }
