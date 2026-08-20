@@ -148,9 +148,11 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         const masterMap = new Map<string, any>();
 
         for (const item of combinedPool) {
-          if (item.status && item.status !== 'accepted' && item.status !== 'open') continue;
+          if (item.status === 'archived' || item.is_archived) continue;
 
           const isSupply = !!item.product_detail;
+          if (isSupply && item.status !== 'accepted') continue;
+
           const name = (isSupply ? item.product_detail?.name : (item.name || item.custom_product_name || item.suggested_product_name || 'Produce')).trim();
           if (!name) continue;
 
