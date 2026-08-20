@@ -70,11 +70,15 @@ class Product(models.Model):
                 self.display_id = f"MST-{num_str}"
 
         if self.pricing_mode == 'harvest_hill_offers':
-            if self.offered_price is not None:
+            if self.offered_price is not None and float(self.offered_price) > 0:
                 self.base_price = self.offered_price
         elif self.pricing_mode == 'farmer_proposes':
             self.offered_price = None
-            self.base_price = 0.00
+            if not self.base_price or float(self.base_price) <= 0:
+                if self.pk:
+                    latest_supply = self.supplies.filter(is_archived=False).exclude(status='rejected').order_by('-created_at').first()
+                    if latest_supply and (latest_supply.agreed_price or latest_supply.price):
+                        self.base_price = latest_supply.agreed_price or latest_supply.price
         super().save(*args, **kwargs)
 
     @property
