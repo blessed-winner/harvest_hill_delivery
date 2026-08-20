@@ -206,6 +206,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             quantity: fetchedSupply.total_available_quantity ?? fetchedSupply.quantity ?? 0,
             quality_grade: fetchedSupply.quality_grade || 'Grade A',
             notes: fetchedSupply.description || fetchedSupply.notes || 'Fresh wholesale produce sustainably sourced from verified local partner farms.',
+            supplier_notes: (fetchedSupply.notes && fetchedSupply.notes.trim() !== '') ? fetchedSupply.notes.trim() : ((fetchedSupply.description && fetchedSupply.description.trim() !== '') ? fetchedSupply.description.trim() : null),
             available_date: fetchedSupply.available_date,
             rating: fetchedSupply.rating || 5.0,
             rating_count: fetchedSupply.rating_count || 1
@@ -226,6 +227,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     fetchProduct();
   }, [productId]);
 
+  const [showSupplierNotesModal, setShowSupplierNotesModal] = useState(false);
   const [activeThread, setActiveThread] = useState<any>(null);
   const [loadingThread, setLoadingThread] = useState(false);
   const [negotiatedPrice, setNegotiatedPrice] = useState<number | null>(null);
@@ -627,11 +629,25 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             </button>
           </div>
 
-          {/* Product Info Guarantee Note */}
-          <div className="bg-[#f0eee7]/60 border border-[#e5e2db] rounded-xl p-4 mt-6">
+          {/* Product Info Guarantee Note & Supplier Notes Link */}
+          <div className="bg-[#f0eee7]/60 border border-[#e5e2db] rounded-xl p-4 mt-6 space-y-2">
             <p className="text-xs text-[#414942] leading-relaxed">
               <span className="font-bold text-[#144227]">Quality Guarantee:</span> Sourced from verified local producers. {product.status !== 'accepted' && 'Price negotiations are subject to bulk order quantities and supplier confirmation.'}
             </p>
+
+            {product.supplier_notes && (
+              <div className="pt-1.5 border-t border-[#e5e2db]/60 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#717971]">Harvest & Delivery Notes</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSupplierNotesModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-[#144227] text-[#144227] hover:text-white font-extrabold text-[11px] transition-all cursor-pointer border border-[#144227]/30 shadow-2xs"
+                >
+                  <FileText size={13} />
+                  <span>View Supplier Notes</span>
+                </button>
+              </div>
+            )}
           </div>
 
         </div>
@@ -836,6 +852,59 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         message={successDialog.message}
         confirmText="Done"
       />
+
+      {/* ── SUPPLIER NOTES MODAL ────────────────────────────────────────────── */}
+      {showSupplierNotesModal && product?.supplier_notes && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#e5e2db] space-y-4 font-sans text-left relative">
+            <div className="flex items-center justify-between border-b border-[#f0eee7] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#144227]/10 text-[#144227] flex items-center justify-center font-bold shadow-2xs">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 text-[9px] font-black uppercase tracking-widest rounded-full border border-emerald-200 font-mono">
+                    Verified Supplier Notes
+                  </span>
+                  <h3 className="text-base font-extrabold text-[#1c1c18] mt-0.5">
+                    {product.name}
+                  </h3>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowSupplierNotesModal(false)}
+                className="p-1.5 rounded-xl text-[#717971] hover:bg-[#f6f3ec] transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4 bg-[#fcf9f2] rounded-2xl border border-[#e5e2db] space-y-2 text-xs">
+              <div className="flex items-center justify-between border-b border-[#e5e2db] pb-2 text-[10.5px]">
+                <span className="font-extrabold text-[#144227] uppercase tracking-wider">Source Origin</span>
+                <span className="font-bold text-[#414942]">{product.farmer_name || 'Harvest Hill Delivery'}</span>
+              </div>
+
+              <div className="pt-1">
+                <p className="text-[9.5px] font-bold text-[#717971] uppercase tracking-wider mb-1">Supplier Notes & Handling Instructions</p>
+                <p className="text-[#1c1c18] font-medium leading-relaxed whitespace-pre-line text-xs">
+                  {product.supplier_notes}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-1 text-right">
+              <button
+                type="button"
+                onClick={() => setShowSupplierNotesModal(false)}
+                className="w-full py-2.5 bg-[#144227] text-white rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer shadow-sm text-center"
+              >
+                Close Notes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

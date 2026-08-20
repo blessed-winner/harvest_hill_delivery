@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package, FileText } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -105,6 +105,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [deleteWarningSupply, setDeleteWarningSupply] = useState<any | null>(null);
   const [isDeletingPermanently, setIsDeletingPermanently] = useState(false);
   const [isArchivingInstead, setIsArchivingInstead] = useState(false);
+
+  // Supplier Notes Modal State
+  const [showAdminNotesModal, setShowAdminNotesModal] = useState(false);
 
   // Visibility & Access Controls Modal State
   const [visibilitySupply, setVisibilitySupply] = useState<any | null>(null);
@@ -1136,6 +1139,29 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     <span className="font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
                   </div>
                 </div>
+
+                {selectedSupply.notes && selectedSupply.notes.trim() !== '' && (
+                  <div className="pt-2 border-t border-outline-variant/30 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
+                        <FileText size={13} className="text-primary shrink-0" /> Supplier Notes
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminNotesModal(!showAdminNotesModal)}
+                        className="text-[10.5px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        {showAdminNotesModal ? 'Hide Notes' : 'View Supplier Notes'}
+                      </button>
+                    </div>
+
+                    {showAdminNotesModal && (
+                      <div className="mt-1.5 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/40 text-on-surface font-medium leading-relaxed whitespace-pre-line text-xs animate-in fade-in duration-200">
+                        {selectedSupply.notes}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
