@@ -333,16 +333,6 @@ export default function Negotiations() {
             <h4 className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
               {activeThread ? `Market Context: ${activeThread.supply_detail?.product_detail?.name || 'Product'}` : 'Market Context'}
             </h4>
-            <div className="flex items-center gap-3">
-              <span className="font-sans text-xl font-extrabold text-primary">
-                {activeThread?.supply_detail?.base_price ? formatRwf(activeThread.supply_detail.base_price) : '—'}
-              </span>
-              {activeThread?.supply_detail?.base_price && (
-                <span className="text-on-surface-variant font-mono text-[10px] uppercase font-bold bg-surface-container-high px-2 py-0.5 rounded-full">
-                  Base Catalog Price
-                </span>
-              )}
-            </div>
           </div>
           <div className="flex items-center gap-4">
             {activeThread && (
