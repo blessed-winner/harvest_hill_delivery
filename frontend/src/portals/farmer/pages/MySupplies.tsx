@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Plus, Handshake } from 'lucide-react';
+import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, CloudUpload, Sparkles, Save, Plus, Handshake, ShieldCheck, Lock } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
@@ -11,7 +11,11 @@ import { ContextualNegotiationPane } from '../../common/components/ContextualNeg
 const romaTomatoesImage =
   'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80';
 
-export default function MySupplies() {
+interface MySuppliesProps {
+  onViewChange?: (view: any, data?: any) => void;
+}
+
+export default function MySupplies({ onViewChange }: MySuppliesProps) {
   const { toast } = useAlert();
   const [supplies, setSupplies] = useState<any[]>([]);
 
@@ -30,7 +34,8 @@ export default function MySupplies() {
 
 
 
-  // Edit form state
+  // Edit form state & approved harvest notice state
+  const [approvedNoticeSupply, setApprovedNoticeSupply] = useState<any | null>(null);
   const [editQuantity, setEditQuantity] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editDate, setEditDate] = useState('');
@@ -102,6 +107,11 @@ export default function MySupplies() {
   const [hasImageChanges, setHasImageChanges] = useState(false);
 
   const handleEditClick = (supply: any) => {
+    if (supply.status === 'accepted') {
+      setApprovedNoticeSupply(supply);
+      return;
+    }
+
     if (supply.status !== 'pending') {
       toast("Farmers can only update pending harvest submissions.", "warning");
       return;
@@ -436,16 +446,23 @@ export default function MySupplies() {
 
                       <button 
                         onClick={() => handleEditClick(supply)}
-                        disabled={supply.status !== 'pending'}
                         className={cn(
                           "p-2 rounded-lg transition-colors cursor-pointer",
                           supply.status === 'pending'
                             ? "text-primary hover:bg-primary/10"
+                            : supply.status === 'accepted'
+                            ? "text-emerald-800 hover:bg-emerald-50 font-extrabold"
                             : "text-on-surface-variant/30 cursor-not-allowed opacity-40"
                         )}
-                        title={supply.status === 'pending' ? "Edit supply/product details" : "Only pending harvest submissions can be edited"}
+                        title={
+                          supply.status === 'pending'
+                            ? "Edit harvest submission details"
+                            : supply.status === 'accepted'
+                            ? "Harvest Approved & Finalized (Click to view policy)"
+                            : "Only pending harvest submissions can be edited"
+                        }
                       >
-                        <Edit3 size={18} />
+                        {supply.status === 'accepted' ? <Lock size={18} /> : <Edit3 size={18} />}
                       </button>
                       <button 
                         onClick={() => setDeleteConfirmId(supply.id)}
@@ -818,6 +835,112 @@ export default function MySupplies() {
           }).catch(() => {});
         }}
       />
+
+      {/* Approved Harvest Locked & Read-Only Notice Modal */}
+      <AnimatePresence>
+        {approvedNoticeSupply && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setApprovedNoticeSupply(null)}
+              className="fixed inset-0 bg-[#144227]/40 z-[60] backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              className="fixed inset-0 m-auto w-[90vw] max-w-md h-fit bg-white z-[70] rounded-3xl border border-emerald-200 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4 font-sans text-left"
+            >
+              {/* Top Header with Shield Icon */}
+              <div className="flex items-center justify-between border-b pb-3 border-emerald-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
+                    <ShieldCheck size={22} />
+                  </div>
+                  <div>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9.5px] font-black uppercase tracking-widest rounded-full border border-emerald-200 font-mono">
+                      Approved & Finalized
+                    </span>
+                    <h3 className="text-base font-extrabold text-[#1c1c18] mt-0.5">
+                      Harvest Locked from Edits
+                    </h3>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setApprovedNoticeSupply(null)} 
+                  className="p-1 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Harvest Info Pill */}
+              <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-1">
+                <p className="text-[10px] font-mono font-bold text-emerald-900 uppercase tracking-wider">
+                  {approvedNoticeSupply.supply_number || `SUP-${String(approvedNoticeSupply.id).slice(0, 6).toUpperCase()}`}
+                </p>
+                <p className="text-sm font-extrabold text-[#1c1c18]">
+                  {approvedNoticeSupply.product_detail?.name || approvedNoticeSupply.suggested_product_name || approvedNoticeSupply.custom_product_name || 'Crop Harvest'}
+                </p>
+                <p className="text-xs font-semibold text-emerald-800">
+                  {approvedNoticeSupply.accepted_quantity || approvedNoticeSupply.quantity} {approvedNoticeSupply.unit || 'kg'} @ RWF {Number(approvedNoticeSupply.agreed_price || approvedNoticeSupply.price || 0).toLocaleString()}/{approvedNoticeSupply.unit || 'kg'}
+                </p>
+              </div>
+
+              {/* Explanatory Message */}
+              <div className="space-y-2 text-xs text-[#414942] leading-relaxed">
+                <p className="font-semibold text-on-surface">
+                  This harvest submission has been accepted and integrated into Harvest Hill Delivery's master stock inventory.
+                </p>
+                <p className="text-on-surface-variant text-[11.5px]">
+                  Once terms are approved and finalized, harvest submissions cannot be edited or modified to preserve supply agreement integrity.
+                </p>
+              </div>
+
+              {/* Prompt Box */}
+              <div className="p-3.5 bg-[#FAF7F0] rounded-2xl border border-[#E8E4DA] space-y-1.5 text-xs">
+                <p className="font-extrabold text-[#144227] flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-emerald-700 shrink-0" />
+                  <span>Have more produce ready for harvest?</span>
+                </p>
+                <p className="text-[11px] text-[#414942] font-medium leading-normal">
+                  If you have an additional crop batch available, you can submit a new harvest proposal to Harvest Hill Delivery anytime.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setApprovedNoticeSupply(null)}
+                  className="flex-1 py-3 px-4 bg-surface-container-low border border-outline-variant/40 text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer text-center"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApprovedNoticeSupply(null);
+                    if (onViewChange) {
+                      onViewChange('submit');
+                    } else if (typeof window !== 'undefined') {
+                      window.location.href = '/farmer?view=submit';
+                    }
+                  }}
+                  className="flex-1 py-3 px-4 bg-primary hover:bg-[#376847] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer text-center shadow-sm"
+                >
+                  <Plus size={15} />
+                  <span>Submit New Harvest</span>
+                </button>
+              </div>
+
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

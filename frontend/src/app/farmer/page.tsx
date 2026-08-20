@@ -87,7 +87,7 @@ export default function FarmerPage() {
       case 'submit':
         return <SubmitHarvest preselectedProduct={preselectedProduct} clearPreselected={() => setPreselectedProduct(null)} />;
       case 'supplies':
-        return <MySupplies />;
+        return <MySupplies onViewChange={handleViewChange} />;
       case 'negotiations':
         return <Negotiations />;
       case 'invoices':
