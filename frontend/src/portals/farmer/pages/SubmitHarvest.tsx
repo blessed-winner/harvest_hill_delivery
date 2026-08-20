@@ -34,8 +34,6 @@ type HarvestFormState = {
   customProductName?: string;
   customCategory?: string;
   customUnit?: string;
-  bulkMinQty?: string;
-  bulkPrice?: string;
 };
 
 const initialFormState: HarvestFormState = {
@@ -48,8 +46,6 @@ const initialFormState: HarvestFormState = {
   customProductName: '',
   customCategory: 'Vegetables',
   customUnit: 'kg',
-  bulkMinQty: '',
-  bulkPrice: '',
 };
 
 const referenceProductImages: Record<string, string> = {
@@ -348,12 +344,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
         images: photos,
         status: isDraft ? 'draft' : 'pending',
       };
-
-      if (form.bulkMinQty && form.bulkPrice) {
-        payload.bulk_min_qty = Number(form.bulkMinQty);
-        payload.bulk_price = Number(form.bulkPrice);
-      }
-
       if (selectedProduct.isCustom || selectedProduct.isRequest || !selectedProduct.id) {
         payload.product = null;
         payload.is_suggested_product = true;
@@ -810,38 +800,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         type="date"
                         value={form.availableDate}
                         onChange={(e) => setForm(current => ({ ...current, availableDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Optional Bulk Deal Offer Section */}
-                <div className="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-widest flex items-center gap-1">
-                      Optional Bulk Deal Offer
-                    </span>
-                    <span className="text-[9px] font-medium text-emerald-700">Tiered Discount for Volume Buyers</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-emerald-900 uppercase">Min Bulk Qty</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 50"
-                        value={form.bulkMinQty || ''}
-                        onChange={(e) => setForm(c => ({ ...c, bulkMinQty: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:ring-1 focus:ring-emerald-600"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-emerald-900 uppercase">Bulk Price / Unit (RWF)</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 1000"
-                        value={form.bulkPrice || ''}
-                        onChange={(e) => setForm(c => ({ ...c, bulkPrice: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:ring-1 focus:ring-emerald-600"
                       />
                     </div>
                   </div>
