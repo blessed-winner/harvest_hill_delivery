@@ -338,6 +338,20 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         action_name = "supply_draft_saved" if status_val == 'draft' else "supply_submitted"
         log_action(self.request, actor=self.request.user, action=action_name, target_model="Supply", target_id=instance.id, target_name=instance.product.name if instance.product else (instance.suggested_product_name or "Harvest Supply"))
 
+        # Dispatch live notification to all admins for farmer harvest submissions
+        if self.request.user.role != 'admin':
+            from django.contrib.auth import get_user_model
+            from apps.notifications.utils import send_live_notification
+            User = get_user_model()
+            admins = User.objects.filter(role='admin')
+            crop_title = instance.product.name if instance.product else (instance.suggested_product_name or instance.custom_product_name or "Crop Harvest")
+            farmer_title = farmer_profile.farm_name or getattr(self.request.user, 'username', 'Farmer')
+            sup_num = instance.supply_number or f"SUP-{str(instance.id)[:6].upper()}"
+            notif_title = f"🌾 New Harvest Submission ({sup_num})"
+            notif_msg = f"{farmer_title} submitted {instance.quantity} {instance.unit} of '{crop_title}' @ RWF {instance.price}/{instance.unit} for review."
+            for adm in admins:
+                send_live_notification(adm, notif_title, notif_msg)
+
     def perform_update(self, serializer):
         obj = self.get_object()
         old_status = obj.status
