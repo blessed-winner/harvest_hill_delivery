@@ -136,7 +136,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         let fetchedProducts = response?.results || response || [];
 
         // Also fetch active supplies to get complete aggregated quantities across all accepted harvests
-        const suppResp = await clientApi.supplies.list().catch(() => null);
+        const suppResp = await clientApi.supplies.list(params).catch(() => null);
         const fetchedSupplies = suppResp?.results || (Array.isArray(suppResp) ? suppResp : []);
 
         const combinedPool = [...fetchedProducts, ...fetchedSupplies];
@@ -163,9 +163,9 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             qty = Number(item.quantity);
           }
 
-          const isDiscounted = !!item.is_discounted;
+          const isDiscounted = !!(item.is_discounted || item.has_active_discount || item.hasActiveDiscount);
           const price = isDiscounted
-            ? Number(item.discount_price || item.base_price || item.price || 0)
+            ? Number(item.discount_price || item.effective_price || item.discountedPrice || item.base_price || item.price || 0)
             : Number(item.agreed_price || item.base_price || item.price || 0);
 
           const rawImg = item.image_url || item.photo || item.product_detail?.image_url;
@@ -211,6 +211,39 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         }
 
         let uniqueProducts = Array.from(masterMap.values()).filter((p: any) => p.quantity > 0);
+
+        // Apply client-side category filter
+        if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
+          const catTarget = selectedCategory.toLowerCase();
+          uniqueProducts = uniqueProducts.filter((p: any) => {
+            const c = (p.category || p.raw_item?.category || p.raw_item?.product_detail?.category || '').toLowerCase();
+            if (catTarget === 'deals' || catTarget === 'flash deals') {
+              return !!(p.is_discounted || p.raw_item?.is_discounted || p.raw_item?.has_active_discount || (p.base_price && p.price < p.base_price));
+            }
+            if (catTarget === 'bulk orders' || catTarget === 'bulk') {
+              return !!(p.bulk_min_qty || p.has_bulk_deal || Number(p.quantity) >= 50);
+            }
+            if (catTarget === 'seasonal') {
+              return p.urgency === 'high';
+            }
+            if (catTarget === 'dairy' || catTarget === 'animal-based') {
+              return c.includes('dairy') || c.includes('animal');
+            }
+            return c.includes(catTarget);
+          });
+        }
+
+        // Apply client-side search filter
+        if (searchQuery && searchQuery.trim() !== '') {
+          const q = searchQuery.trim().toLowerCase();
+          uniqueProducts = uniqueProducts.filter((p: any) => {
+            const n = (p.name || '').toLowerCase();
+            const c = (p.category || '').toLowerCase();
+            const desc = (p.raw_item?.description || p.raw_item?.notes || '').toLowerCase();
+            const farmer = (p.farmer_name || '').toLowerCase();
+            return n.includes(q) || c.includes(q) || desc.includes(q) || farmer.includes(q);
+          });
+        }
 
         // Apply client-side filters
         if (organicOnly) {

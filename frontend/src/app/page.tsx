@@ -101,7 +101,7 @@ export default function HomePage() {
     }
 
     setActiveScreen(screen);
-    if (category) setSelectedCategory(category);
+    if (category !== undefined) setSelectedCategory(category);
     if (productId !== undefined) setSelectedProductId(productId);
     if (querySearch !== undefined) setSearchQuery(querySearch);
 

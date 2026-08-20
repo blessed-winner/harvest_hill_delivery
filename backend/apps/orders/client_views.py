@@ -391,20 +391,33 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
         
         if category and category.lower() != 'all':
             cat_lower = category.lower()
+            from django.db.models import Q
             if cat_lower in ['dairy', 'animal', 'animal-based']:
-                from django.db.models import Q
                 queryset = queryset.filter(Q(category__icontains='dairy') | Q(category__icontains='animal'))
             elif cat_lower in ['deals', 'flash deals']:
-                queryset = queryset.filter(is_discounted=True)
+                queryset = queryset.filter(Q(is_discounted=True) | Q(fresh_deals__status='ACTIVE')).distinct()
+            elif cat_lower in ['seasonal']:
+                queryset = queryset.filter(urgency__iexact='high')
+            elif cat_lower in ['bulk orders', 'bulk']:
+                queryset = queryset.filter(quantity_needed__gte=50)
             else:
                 queryset = queryset.filter(category__icontains=category)
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search) | 
+                Q(category__icontains=search) | 
+                Q(description__icontains=search)
+            )
         if urgency:
             queryset = queryset.filter(urgency__iexact=urgency)
         if is_discounted is not None:
             val = is_discounted.lower() in ['true', '1']
-            queryset = queryset.filter(is_discounted=val)
+            from django.db.models import Q
+            if val:
+                queryset = queryset.filter(Q(is_discounted=True) | Q(fresh_deals__status='ACTIVE')).distinct()
+            else:
+                queryset = queryset.filter(is_discounted=False)
         
         # Double-lock access enforcement per Section 4:
         # A client should only see/use a MasterProduct when:
