@@ -385,8 +385,8 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       (urgencyFilter === 'high' && (product.urgency === 'high' || product.name.toLowerCase().includes('tomato'))) ||
       (urgencyFilter === 'steady' && product.urgency === 'steady' && !product.name.toLowerCase().includes('tomato'));
     const matchesPrice = priceFilter === 'All' || 
-      (priceFilter === 'Under $1.00' && Number(product.base_price || 0) < 1.00) ||
-      (priceFilter === 'Over $1.00' && Number(product.base_price || 0) >= 1.00);
+      (priceFilter === 'Under RWF 1,000' && Number(product.offered_price || product.base_price || 0) < 1000) ||
+      (priceFilter === 'Over RWF 1,000' && Number(product.offered_price || product.base_price || 0) >= 1000);
     return matchesSearch && matchesCategory && matchesUrgency && matchesPrice;
   });
 
@@ -469,7 +469,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
             <div className="space-y-2">
               <label className="block font-mono text-[9px] uppercase tracking-widest text-on-surface-variant font-bold">Price Level</label>
               <div className="flex flex-col gap-1.5">
-                {['All', 'Under $1.00', 'Over $1.00'].map((price) => (
+                {['All', 'Under RWF 1,000', 'Over RWF 1,000'].map((price) => (
                   <button
                     key={price}
                     type="button"
@@ -673,12 +673,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                       {selectedProduct.isCustom ? 'Propose New Crop Harvest' : `Submit Harvest: ${selectedProduct.name}`}
                     </h3>
                     <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest font-bold">
-                      {selectedProduct.isCustom ? 'Custom Crop Submission' : (
-                        `Demand Base Price: ${isSelectedProductRwf 
-                          ? `RWF ${(Number(selectedProduct.base_price || 0) * 1300).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-                          : `$${Number(selectedProduct.base_price || 0).toFixed(2)}`
-                        }`
-                      )}
+                      {selectedProduct.isCustom ? 'Custom Crop Submission' : 'Harvest Hill Requirement Submission'}
                     </p>
                   </div>
                 </div>
