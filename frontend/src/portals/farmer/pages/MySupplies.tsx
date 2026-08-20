@@ -85,7 +85,6 @@ export default function MySupplies() {
   const [editQuantity, setEditQuantity] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editDate, setEditDate] = useState('');
-  const [editQuality, setEditQuality] = useState('standard');
   const [editNotes, setEditNotes] = useState('');
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
@@ -163,7 +162,6 @@ export default function MySupplies() {
     setEditQuantity(supply.quantity || '');
     setEditPrice(supply.proposed_price || supply.price || '');
     setEditDate(supply.available_date || '');
-    setEditQuality(supply.quality_grade || 'standard');
     setEditNotes(supply.notes || '');
     setEditPhoto(null);
     setHasImageChanges(false);
@@ -272,7 +270,6 @@ export default function MySupplies() {
         quantity: qty,
         price: priceVal,
         available_date: editDate || null,
-        quality_grade: editQuality,
         notes: editNotes,
       };
 
@@ -727,29 +724,15 @@ export default function MySupplies() {
                   </div>
                 </div>
 
-                {/* 2. Ready Date & Quality */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-primary font-sans">Harvest Ready Date</label>
-                    <input 
-                      type="date"
-                      value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all cursor-pointer"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-primary font-sans">Quality Grade</label>
-                    <select 
-                      value={editQuality}
-                      onChange={(e) => setEditQuality(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all cursor-pointer"
-                    >
-                      <option value="premium">Premium Grade (Top Tier)</option>
-                      <option value="standard">Standard Grade (Choice)</option>
-                      <option value="economy">Economy Grade (Utility)</option>
-                    </select>
-                  </div>
+                {/* 2. Ready Date */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-primary font-sans">Harvest Ready Date</label>
+                  <input 
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-low font-sans text-sm focus:border-primary outline-none transition-all cursor-pointer"
+                  />
                 </div>
 
                 {/* 3. Notes */}
@@ -839,7 +822,6 @@ export default function MySupplies() {
                     String(editQuantity) !== String(editSupply.quantity || '') ||
                     String(editPrice) !== String(editSupply.proposed_price || editSupply.price || '') ||
                     String(editDate) !== String(editSupply.available_date || '') ||
-                    String(editQuality) !== String(editSupply.quality_grade || 'standard') ||
                     String(editNotes) !== String(editSupply.notes || '') ||
                     editPhoto !== null ||
                     hasImageChanges

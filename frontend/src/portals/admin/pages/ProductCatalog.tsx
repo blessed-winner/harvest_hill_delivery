@@ -56,7 +56,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestBulkMinQty, setHarvestBulkMinQty] = useState('');
   const [harvestBulkPrice, setHarvestBulkPrice] = useState('');
   const [harvestDate, setHarvestDate] = useState(new Date().toISOString().slice(0, 10));
-  const [harvestGrade, setHarvestGrade] = useState('premium');
   const [harvestNotes, setHarvestNotes] = useState('');
   const [harvestPhotos, setHarvestPhotos] = useState<File[]>([]);
   const [harvestPhotoPreviews, setHarvestPhotoPreviews] = useState<string[]>([]);
@@ -312,7 +311,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setHarvestBulkMinQty('');
     setHarvestBulkPrice('');
     setHarvestDate(new Date().toISOString().slice(0, 10));
-    setHarvestGrade('premium');
     setHarvestNotes('');
     setHarvestPhotos([]);
     setHarvestPhotoPreviews([]);
@@ -354,7 +352,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         quantity: parseFloat(harvestQty),
         price: parseFloat(harvestPrice),
         available_date: harvestDate,
-        quality_grade: harvestGrade,
         notes: harvestNotes,
         status: 'accepted' // Auto-accept admin farm harvest
       };
@@ -1349,29 +1346,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Harvest Date</label>
-                  <input
-                    type="date"
-                    value={harvestDate}
-                    onChange={(e) => setHarvestDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all bg-white"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Quality Grade</label>
-                  <select
-                    value={harvestGrade}
-                    onChange={(e) => setHarvestGrade(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-bold outline-none transition-all bg-white cursor-pointer"
-                  >
-                    <option value="premium">Premium (Grade A)</option>
-                    <option value="standard">Standard (Grade B)</option>
-                    <option value="economy">Economy (Grade C)</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">Harvest Date</label>
+                <input
+                  type="date"
+                  value={harvestDate}
+                  onChange={(e) => setHarvestDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all bg-white"
+                />
               </div>
 
               <div className="space-y-1">

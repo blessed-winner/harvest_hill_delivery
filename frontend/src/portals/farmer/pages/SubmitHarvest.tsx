@@ -28,7 +28,6 @@ type HarvestFormState = {
   quantity: string;
   availableDate: string;
   askingPrice: string;
-  qualityGrade: 'premium' | 'standard' | 'economy';
   visibilityScope: 'private_admin' | 'specific_clients' | 'all_clients' | 'public';
   notes: string;
   photo: File | null;
@@ -43,7 +42,6 @@ const initialFormState: HarvestFormState = {
   quantity: '',
   availableDate: new Date().toISOString().slice(0, 10),
   askingPrice: '',
-  qualityGrade: 'premium',
   visibilityScope: 'private_admin',
   notes: '',
   photo: null,
@@ -237,7 +235,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
           quantity: String(preselectedProduct.quantity_needed || ''),
           availableDate: new Date().toISOString().slice(0, 10),
           askingPrice: preselectedProduct.base_price ? String(preselectedProduct.base_price) : '',
-          qualityGrade: 'standard',
           visibilityScope: 'private_admin',
           notes: `Supplying in response to client request.`,
           photo: null,
@@ -255,7 +252,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
           quantity: preselectedProduct.quantity_needed ? String(preselectedProduct.quantity_needed).split(' ')[0] : '',
           availableDate: new Date().toISOString().slice(0, 10),
           askingPrice: baseVal ? String(baseVal) : '',
-          qualityGrade: 'standard',
           visibilityScope: 'private_admin',
           notes: '',
           photo: null,
@@ -281,7 +277,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       quantity: '',
       availableDate: new Date().toISOString().slice(0, 10),
       askingPrice: '',
-      qualityGrade: 'standard',
       visibilityScope: 'private_admin',
       notes: '',
       photo: null,
@@ -302,7 +297,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
       quantity: product.quantity_needed ? String(product.quantity_needed).split(' ')[0] : '',
       availableDate: new Date().toISOString().slice(0, 10),
       askingPrice: initialAskingPrice,
-      qualityGrade: 'premium',
       visibilityScope: 'private_admin',
       notes: '',
       photo: null,
@@ -348,7 +342,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
         quantity: qty,
         price: askingPriceRWF,
         available_date: form.availableDate,
-        quality_grade: form.qualityGrade,
         visibility_scope: form.visibilityScope || 'private_admin',
         notes: form.notes,
         photo: photos[0] || null,
@@ -851,32 +844,6 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:ring-1 focus:ring-emerald-600"
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">Quality Grade Selection</label>
-                  <div className="flex gap-2">
-                    {[
-                      { id: 'premium', label: 'Premium', icon: Verified },
-                      { id: 'standard', label: 'Standard', icon: Star },
-                      { id: 'economy', label: 'Economy', icon: Package }
-                    ].map((grade) => (
-                      <button
-                        key={grade.id}
-                        type="button"
-                        onClick={() => setForm((current) => ({ ...current, qualityGrade: grade.id as HarvestFormState['qualityGrade'] }))}
-                        className={cn(
-                          'flex-1 py-2 px-2 rounded-lg border flex items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer',
-                          form.qualityGrade === grade.id
-                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                            : 'border-outline-variant hover:border-outline bg-white text-on-surface-variant'
-                        )}
-                      >
-                        <grade.icon size={14} fill={form.qualityGrade === grade.id ? 'currentColor' : 'none'} />
-                        <span className="font-mono text-[10px] uppercase font-bold">{grade.label}</span>
-                      </button>
-                    ))}
                   </div>
                 </div>
 

@@ -86,7 +86,7 @@ class Supply(models.Model):
     suggested_product_name = models.CharField(max_length=255, blank=True, default='')
     disclose_farmer_name = models.BooleanField(default=False)
     available_date = models.DateField(null=True, blank=True)
-    quality_grade = models.CharField(max_length=20, choices=QUALITY_CHOICES, default='standard')
+    quality_grade = models.CharField(max_length=20, choices=QUALITY_CHOICES, default='standard', blank=True, null=True)
     notes = models.TextField(blank=True, default='')
     photo = models.ImageField(upload_to='supplies/', max_length=500, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

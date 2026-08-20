@@ -38,6 +38,12 @@ class ProductSerializer(serializers.ModelSerializer):
     sourcing_supplies = serializers.SerializerMethodField()
     price = serializers.FloatField(read_only=True)
     submission_count = serializers.SerializerMethodField()
+    base_price = serializers.SerializerMethodField()
+
+    def get_base_price(self, obj):
+        if obj.base_price and float(obj.base_price) > 0:
+            return float(obj.base_price)
+        return float(obj.price)
 
     def get_total_available_quantity(self, obj):
         request = self.context.get('request')

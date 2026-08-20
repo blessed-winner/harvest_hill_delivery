@@ -139,9 +139,18 @@ class SupplySerializer(serializers.ModelSerializer):
         return "Kigali, Rwanda"
 
     def get_base_price(self, obj):
+        if obj.agreed_price and float(obj.agreed_price) > 0:
+            return float(obj.agreed_price)
+        if obj.price and float(obj.price) > 0:
+            return float(obj.price)
         if obj.product:
-            return obj.product.base_price
-        return None
+            if obj.product.base_price and float(obj.product.base_price) > 0:
+                return float(obj.product.base_price)
+            if obj.product.offered_price and float(obj.product.offered_price) > 0:
+                return float(obj.product.offered_price)
+            if obj.product.price and float(obj.product.price) > 0:
+                return float(obj.product.price)
+        return 0.0
 
     def get_unit(self, obj):
         if obj.product:
@@ -306,6 +315,15 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             serializer.validated_data['visibility_scope'] = 'PUBLIC' if self.request.user.role == 'admin' else 'HARVEST_HILL_ONLY'
 
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
+
+        # Propagate submitted price to product base_price and agreed_price
+        if instance.price and float(instance.price) > 0:
+            if not instance.agreed_price:
+                instance.agreed_price = instance.price
+                instance.save(update_fields=['agreed_price'])
+            if instance.product and (not instance.product.base_price or float(instance.product.base_price) <= 0 or instance.product.pricing_mode == 'farmer_proposes'):
+                instance.product.base_price = instance.price
+                instance.product.save(update_fields=['base_price'])
         
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
