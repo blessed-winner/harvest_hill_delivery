@@ -365,7 +365,6 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           <button onClick={() => onNavigate('catalog', 'Herbs')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Herbs</button>
           <button onClick={() => onNavigate('catalog', 'Seasonal')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Seasonal</button>
           <button onClick={() => onNavigate('catalog', 'Bulk Orders')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Bulk Orders</button>
-          <button onClick={() => onNavigate('catalog', 'Sell')} className="text-[#2D5A3D] font-bold hover:underline cursor-pointer transition-colors shrink-0">Sell on Harvest Hill</button>
         </div>
       </nav>
 
