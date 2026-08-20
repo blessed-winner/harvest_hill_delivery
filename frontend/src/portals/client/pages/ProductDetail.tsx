@@ -456,34 +456,46 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
             </p>
 
-            <div className="flex items-center gap-4 pt-1">
-              <div className="text-2xl font-black text-[#1c1c18] flex items-baseline gap-2">
-                {negotiatedPrice !== null ? (
-                  <>
-                    <span className="line-through text-red-600 text-xs font-semibold opacity-75">RWF {parseFloat(product.original_price || product.price || 0).toLocaleString()}</span>
-                    <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()}</span>
-                  </>
-                ) : (
-                  product.is_discounted && product.original_price && product.original_price > product.price ? (
-                    <>
-                      <span className="line-through text-red-600 text-sm font-semibold opacity-75">RWF {parseFloat(product.original_price).toLocaleString()}</span>
-                      <span className="text-[#D9381E] font-black text-3xl">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
-                    </>
-                  ) : (
-                    <span className="text-3xl font-black">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
-                  )
-                )}
-                <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'kg'}</span>
-              </div>
-              {product.quantity && product.quantity > 0 ? (
-                <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-                  Available: {product.quantity} {product.unit}
-                </span>
+            <div className="pt-1 space-y-1.5">
+              {negotiatedPrice !== null ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="line-through text-[#717971] text-xs font-semibold">RWF {Number(product.original_price || product.price || 0).toLocaleString()} / {product.unit || 'kg'}</span>
+                  <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()} / {product.unit || 'kg'}</span>
+                </div>
+              ) : product.is_discounted && product.original_price && Number(product.original_price) > Number(product.price) ? (
+                <div className="space-y-1">
+                  <span className="line-through text-[#717971] text-xs font-bold block">
+                    RWF {Number(product.original_price).toLocaleString()} / {product.unit || 'kg'}
+                  </span>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[#D9381E] font-black text-3xl">
+                      RWF {Number(product.price).toLocaleString()} / {product.unit || 'kg'}
+                    </span>
+                    <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-2.5 py-0.5 rounded shadow-sm font-sans tracking-wide">
+                      SAVE {Math.round(Number(product.discount_percentage))}%
+                    </span>
+                  </div>
+                </div>
               ) : (
-                <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-                  Check Availability
-                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-[#1c1c18]">
+                    RWF {Number(product.price || 0).toLocaleString()}
+                  </span>
+                  <span className="text-xs font-bold text-[#717971]">per {product.unit || 'kg'}</span>
+                </div>
               )}
+
+              <div className="pt-1">
+                {product.quantity && product.quantity > 0 ? (
+                  <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
+                    AVAILABLE: {product.quantity} {product.unit ? String(product.unit).toUpperCase() : 'KG'}
+                  </span>
+                ) : (
+                  <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
+                    CHECK AVAILABILITY
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
