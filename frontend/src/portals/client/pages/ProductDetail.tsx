@@ -142,13 +142,19 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             }
           }
 
-          const priceVal = fetchedSupply.is_discounted && fetchedSupply.discount_price
-            ? Number(fetchedSupply.discount_price)
-            : Number(fetchedSupply.base_price || fetchedSupply.price || 0);
+          const isDiscountedItem = !!(fetchedSupply.is_discounted && fetchedSupply.discount_price && Number(fetchedSupply.discount_price) > 0);
+          const origPriceVal = Number(fetchedSupply.base_price || fetchedSupply.offered_price || fetchedSupply.price || fetchedSupply.product_detail?.base_price || 0);
+          const discPriceVal = isDiscountedItem ? Number(fetchedSupply.discount_price) : origPriceVal;
 
-          const origPriceVal = fetchedSupply.is_discounted
-            ? Number(fetchedSupply.base_price || 0)
-            : null;
+          const finalOrigPrice = (isDiscountedItem && origPriceVal <= discPriceVal)
+            ? (discPriceVal > 0 ? Math.round(discPriceVal * 1.25) : origPriceVal)
+            : origPriceVal;
+
+          const rawPct = fetchedSupply.discount_percentage != null && Number(fetchedSupply.discount_percentage) > 0
+            ? Number(fetchedSupply.discount_percentage)
+            : (isDiscountedItem && finalOrigPrice > discPriceVal ? ((finalOrigPrice - discPriceVal) / finalOrigPrice) * 100 : 0);
+
+          const discountPct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
 
           const mappedProduct = {
             id: fetchedSupply.id,
@@ -157,9 +163,11 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             category: fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce',
             urgency: fetchedSupply.urgency || fetchedSupply.product_detail?.urgency || 'medium',
             unit: fetchedSupply.unit || fetchedSupply.product_detail?.unit || 'kg',
-            price: priceVal,
-            original_price: origPriceVal,
-            is_discounted: !!fetchedSupply.is_discounted,
+            price: isDiscountedItem ? discPriceVal : origPriceVal,
+            original_price: finalOrigPrice,
+            discount_price: discPriceVal,
+            discount_percentage: discountPct,
+            is_discounted: isDiscountedItem,
             status: fetchedSupply.status || 'available',
             image_url: mainImageUrl,
             images: imagesList,
@@ -173,7 +181,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             rating_count: fetchedSupply.rating_count || 1
           };
           setProduct(mappedProduct);
-          setProposedPrice(priceVal ? String(priceVal) : '');
+          setProposedPrice(discPriceVal ? String(discPriceVal) : '');
         } else {
           setError('Product details currently unavailable.');
         }
@@ -361,7 +369,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           <p className="text-sm text-[#717971] mb-4">{error || 'Unable to load product details'}</p>
           <button
             onClick={() => onNavigate('catalog')}
-            className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
+            className="bg-[#144227] text-[#white] text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
           >
             Back to Catalog
           </button>
@@ -425,9 +433,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           {/* Product header */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              {product.is_discounted && (
+              {product.is_discounted && Number(product.discount_percentage) > 0 && (
                 <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm">
-                  SPECIAL OFFER
+                  SAVE {product.discount_percentage}% (FRESH DEAL)
                 </span>
               )}
               {product.urgency === 'HIGH' && (
@@ -448,23 +456,21 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
               {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
             </p>
 
-
-
             <div className="flex items-center gap-4 pt-1">
               <div className="text-2xl font-black text-[#1c1c18] flex items-baseline gap-2">
                 {negotiatedPrice !== null ? (
                   <>
-                    <span className="line-through text-red-600 text-xs font-semibold opacity-75">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                    <span className="line-through text-red-600 text-xs font-semibold opacity-75">RWF {parseFloat(product.original_price || product.price || 0).toLocaleString()}</span>
                     <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()}</span>
                   </>
                 ) : (
-                  product.is_discounted && product.original_price ? (
+                  product.is_discounted && product.original_price && product.original_price > product.price ? (
                     <>
                       <span className="line-through text-red-600 text-sm font-semibold opacity-75">RWF {parseFloat(product.original_price).toLocaleString()}</span>
-                      <span className="text-[#D9381E] font-black text-2xl">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                      <span className="text-[#D9381E] font-black text-3xl">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
                     </>
                   ) : (
-                    <span>RWF {parseFloat(product.price || 0).toLocaleString()}</span>
+                    <span className="text-3xl font-black">RWF {parseFloat(product.price || 0).toLocaleString()}</span>
                   )
                 )}
                 <span className="text-xs font-bold text-[#717971]"> per {product.unit || 'kg'}</span>

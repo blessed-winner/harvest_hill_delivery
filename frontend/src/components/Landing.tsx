@@ -140,9 +140,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         qty = parseFloat(String(s.total_available_quantity));
       }
 
-      const price = s.is_discounted && s.discount_price
-        ? parseFloat(String(s.discount_price))
-        : parseFloat(String(s.agreed_price || s.base_price || s.price || s.proposed_price || 0));
+      const origPrice = parseFloat(String(s.product_detail?.base_price || s.product_detail?.price || s.base_price || s.price || s.offered_price || 0));
+      const discPrice = s.is_discounted && s.discount_price ? parseFloat(String(s.discount_price)) : null;
+      const isDisc = !!(s.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
+      const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
 
       const rawImg = s.product_detail?.image_url || s.image_url || s.photo || s.photo_url;
       let imageUrl = rawImg;
@@ -168,10 +169,12 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           category: s.product_detail?.category || s.category || 'Vegetables',
           urgency: s.product_detail?.urgency || s.urgency || 'medium',
           unit: s.unit || s.product_detail?.unit || 'kg',
-          price: price,
-          base_price: parseFloat(String(s.base_price || price)),
-          discount_price: s.discount_price ? parseFloat(String(s.discount_price)) : null,
-          is_discounted: !!s.is_discounted,
+          price: origPrice,
+          base_price: origPrice,
+          discount_price: discPrice,
+          effective_price: effectivePrice,
+          discount_percentage: s.discount_percentage || (isDisc && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0),
+          is_discounted: isDisc,
           quantity: qty,
           total_available_quantity: qty,
           image_url: imageUrl,
@@ -247,16 +250,21 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     const name = isSupply ? item.product_detail?.name : item.name;
     const farm = isSupply ? (item.farmer_name || 'Harvest Hill Partner Farm') : 'Harvest Hill Certified Partner Farm';
     
-    const isDiscountedItem = item.is_discounted || isDeal;
-    const discPrice = isDiscountedItem
-      ? Number(item.discount_price || item.discountPrice || item.price || item.base_price || 0)
-      : Number(item.price || item.base_price || 0);
-    const origPrice = isDiscountedItem
-      ? Number(item.price || item.base_price || item.originalPrice || Math.round(discPrice * 1.25))
-      : Number(item.price || item.base_price || 0);
-    const pct = isDiscountedItem && origPrice > discPrice
-      ? Math.round(((origPrice - discPrice) / origPrice) * 100)
-      : 20;
+    const isDiscountedItem = !!(item.is_discounted || isDeal);
+    const origPrice = Number(item.base_price || item.price || item.originalPrice || 0);
+    const discPrice = isDiscountedItem && item.discount_price && Number(item.discount_price) > 0
+      ? Number(item.discount_price)
+      : (item.effective_price ? Number(item.effective_price) : origPrice);
+
+    const finalOrigPrice = (isDiscountedItem && origPrice <= discPrice)
+      ? (discPrice > 0 ? Math.round(discPrice * 1.25) : origPrice)
+      : origPrice;
+
+    const rawPct = item.discount_percentage != null && Number(item.discount_percentage) > 0
+      ? Number(item.discount_percentage)
+      : (isDiscountedItem && finalOrigPrice > discPrice ? ((finalOrigPrice - discPrice) / finalOrigPrice) * 100 : 0);
+
+    const pct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
 
     const rawImg = isSupply ? (item.photo || item.product_detail?.image_url) : (item.image_url || item.photo || item.image);
     const imgUrl = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
@@ -292,7 +300,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               alt={name} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            {isDiscountedItem ? (
+            {isDiscountedItem && Number(pct) > 0 ? (
               <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
                 Save {pct}%
               </span>

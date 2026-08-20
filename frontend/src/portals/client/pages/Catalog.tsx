@@ -533,10 +533,19 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                 const category = isSupply ? prod.product_detail?.category : (prod.category || 'Vegetables');
                 const urgency = isSupply ? prod.product_detail?.urgency : (prod.urgency || 'medium');
                 const unit = prod.unit || (isSupply ? prod.product_detail?.unit : 'kg') || 'kg';
-                const isDiscounted = prod.is_discounted;
-                const price = isDiscounted 
-                  ? (prod.discount_price || prod.base_price || prod.price || 0)
-                  : (prod.base_price || prod.price || 0);
+                const isDiscounted = !!(prod.is_discounted && prod.discount_price && Number(prod.discount_price) > 0);
+                const basePrice = Number(prod.base_price || prod.price || 0);
+                const discPrice = isDiscounted ? Number(prod.discount_price) : basePrice;
+
+                const origPrice = (isDiscounted && basePrice <= discPrice)
+                  ? (discPrice > 0 ? Math.round(discPrice * 1.25) : basePrice)
+                  : basePrice;
+
+                const rawPct = prod.discount_percentage != null && Number(prod.discount_percentage) > 0
+                  ? Number(prod.discount_percentage)
+                  : (isDiscounted && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0);
+
+                const pct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
                 
                 const rawImg = prod.image_url || prod.photo || prod.product_detail?.image_url;
                 const image_url = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
@@ -552,7 +561,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                   category,
                   urgency,
                   unit,
-                  price,
+                  price: isDiscounted ? discPrice : origPrice,
                   image_url,
                   farmer_name: prod.farmer_name || 'Harvest Hill Certified Farm',
                   quantity
@@ -587,9 +596,9 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                           <Package className="w-10 h-10 opacity-40" />
                         </div>
                       )}
-                      {isDiscounted && prod.base_price && Number(prod.base_price) > Number(price) ? (
+                      {isDiscounted && Number(pct) > 0 ? (
                         <span className="absolute top-2.5 right-2.5 text-[9px] font-black text-white bg-[#D9381E] px-2 py-0.5 rounded-md uppercase shadow-sm font-mono tracking-wider">
-                          -{Math.round(((Number(prod.base_price) - Number(price)) / Number(prod.base_price)) * 100)}% OFF
+                          -{pct}% OFF
                         </span>
                       ) : urgencyBadge ? (
                         <span className={`absolute top-2.5 left-2.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-sm ${badgeColor}`}>
@@ -628,18 +637,18 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                         layoutMode === 'grid' ? 'mt-2.5 pt-2' : 'mt-2 pt-2'
                       }`}>
                         <div>
-                          {isDiscounted && prod.base_price && Number(prod.base_price) > Number(price) ? (
+                          {isDiscounted && origPrice > discPrice ? (
                             <div>
                               <span className="line-through text-[10px] text-[#717971] font-bold block">
-                                RWF {Number(prod.base_price).toLocaleString()}
+                                RWF {origPrice.toLocaleString()}
                               </span>
                               <span className="block text-sm font-extrabold text-[#D9381E]">
-                                RWF {parseFloat(product.price || 0).toLocaleString()}
+                                RWF {discPrice.toLocaleString()}
                               </span>
                             </div>
                           ) : (
                             <span className="block text-xs font-bold text-[#144227]">
-                              RWF {parseFloat(product.price || 0).toLocaleString()}
+                              RWF {origPrice.toLocaleString()}
                             </span>
                           )}
                           <span className="block text-[8px] text-[#717971] uppercase font-semibold">

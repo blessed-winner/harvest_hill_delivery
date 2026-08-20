@@ -137,9 +137,21 @@ class Product(models.Model):
     @property
     def effective_price(self):
         """Returns discount_price if is_discounted and valid, else normal price/base_price."""
-        if self.is_discounted and self.discount_price and float(self.discount_price) > 0:
+        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < self.price:
             return float(self.discount_price)
         return float(self.price)
+
+    @property
+    def discount_percentage(self):
+        """Calculates actual discount percentage from Master Product original selling price and active discount price."""
+        if not self.is_discounted or not self.discount_price:
+            return 0.0
+        orig = float(self.price)
+        disc = float(self.discount_price)
+        if orig <= 0 or disc >= orig:
+            return 0.0
+        pct = ((orig - disc) / orig) * 100.0
+        return round(pct, 1) if (pct * 10) % 10 != 0 else round(pct)
 
     @property
     def price(self):

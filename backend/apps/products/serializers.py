@@ -12,6 +12,7 @@ class ProductSerializer(serializers.ModelSerializer):
     total_available_quantity = serializers.SerializerMethodField()
     supplier_count = serializers.IntegerField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
+    discount_percentage = serializers.FloatField(read_only=True)
     sourcing_history_count = serializers.IntegerField(read_only=True)
     sourcing_supplies = serializers.SerializerMethodField()
     price = serializers.FloatField(read_only=True)
@@ -26,7 +27,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
-            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count'
         ]
@@ -162,12 +163,16 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductShortSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
+    price = serializers.FloatField(read_only=True)
+    effective_price = serializers.FloatField(read_only=True)
+    discount_percentage = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url',
-            'pricing_mode', 'offered_price', 'base_price', 'quantity_needed', 'status', 'quality_requirements', 
+            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage',
+            'quantity_needed', 'status', 'quality_requirements', 
             'submission_deadline', 'preferred_harvest_period', 'description'
         ]
 
