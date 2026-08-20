@@ -146,6 +146,9 @@ class OrderSerializer(serializers.ModelSerializer):
         order = Order.objects.create(**validated_data)
 
         for item_data in items_data:
+            prod = item_data.get('product')
+            if ('price' not in item_data or item_data['price'] is None) and prod:
+                item_data['price'] = prod.effective_price
             OrderItem.objects.create(order=order, **item_data)
         
         # Deduct inventory immediately for the created order

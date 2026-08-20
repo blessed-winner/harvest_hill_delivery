@@ -570,25 +570,23 @@ export function UserManagement({ searchTerm = '' }: UserManagementProps) {
                       </td>
                       <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
-                            title={user.is_active ? 'Deactivate User' : 'Activate User'}
-                            className={cn(
-                              "p-2 rounded-lg transition-colors cursor-pointer",
-                              user.is_active 
-                                ? "text-on-surface-variant hover:text-amber-700 hover:bg-amber-100/60" 
-                                : "text-on-surface-variant hover:text-emerald-700 hover:bg-emerald-100/60"
-                            )}
-                          >
-                            <Power className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(user); }}
-                            title="Delete User"
-                            className="p-2 text-on-surface-variant hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {user.is_active ? (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
+                              title="Deactivate User"
+                              className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Power className="w-3.5 h-3.5" /> Deactivate
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
+                              title="Restore User"
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> Restore
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -23,3 +23,11 @@ class OrderViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         if order.status == 'delivered' and old_status != 'delivered':
             from apps.common.utils import log_action
             log_action(self.request, actor=self.request.user, action="order_delivered", target_model="Order", target_id=order.id, target_name=f"Order #{order.order_number}")
+
+    def perform_destroy(self, instance):
+        """Soft-delete (cancel / archive) Order instead of permanent deletion."""
+        instance.status = 'cancelled'
+        instance.is_archived = True
+        instance.save(update_fields=['status', 'is_archived'])
+        from apps.common.utils import log_action
+        log_action(self.request, actor=self.request.user, action="order_cancelled", target_model="Order", target_id=instance.id, target_name=f"Order #{instance.order_number}")

@@ -93,7 +93,15 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 2. Check password
+        # 2. Check if user account is deactivated / archived
+        if not user.is_active or user.status == 'archived':
+            log_action(request, actor=user, action="failed_login_deactivated_user")
+            return Response(
+                {"errors": {"non_field_errors": ["Your account has been deactivated. Please contact support."]}},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # 3. Check password
         if user.check_password(password):
             # Success: reset lockout state
             user.failed_login_attempts = 0
@@ -360,6 +368,9 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(role=role)
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() in ['true', '1'])
+        else:
+            queryset = queryset.filter(is_active=True)
+            
         if search:
             queryset = queryset.filter(
                 Q(email__icontains=search) |
@@ -378,10 +389,26 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         log_action(self.request, actor=self.request.user, action="user_updated", target_model="User", target_id=user.id, target_name=user.get_full_name() or user.username)
 
     def perform_destroy(self, instance):
+        """Soft-delete (deactivate) user instead of permanent deletion."""
+        from django.utils import timezone
         user_id = instance.id
         user_name = instance.get_full_name() or instance.username
-        instance.delete()
-        log_action(self.request, actor=self.request.user, action="user_removed", target_model="User", target_id=user_id, target_name=user_name)
+        instance.is_active = False
+        instance.status = 'archived'
+        instance.archived_at = timezone.now()
+        instance.save(update_fields=['is_active', 'status', 'archived_at'])
+        log_action(self.request, actor=self.request.user, action="user_deactivated", target_model="User", target_id=user_id, target_name=user_name)
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        """Restore a deactivated user back to active status."""
+        user = self.get_object()
+        user.is_active = True
+        user.status = 'active'
+        user.archived_at = None
+        user.save(update_fields=['is_active', 'status', 'archived_at'])
+        log_action(request, actor=request.user, action="user_restored", target_model="User", target_id=user.id, target_name=user.get_full_name() or user.username)
+        return Response({"detail": "User account restored successfully."}, status=status.HTTP_200_OK)
 
 
 class GoogleOAuthView(APIView):

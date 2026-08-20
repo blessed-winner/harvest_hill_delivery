@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.utils import timezone
 
 class Product(models.Model):
     STATUS_CHOICES = [
@@ -42,6 +43,7 @@ class Product(models.Model):
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='PUBLIC')
     target_clients = models.ManyToManyField('accounts.ClientProfile', blank=True, related_name='exclusive_products')
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     # Product Template / Requirement specific fields
@@ -95,6 +97,9 @@ class Product(models.Model):
         if user and hasattr(user, 'is_authenticated') and user.is_authenticated and getattr(user, 'role', '') == 'admin':
             return True
 
+        if self.status == 'archived':
+            return False
+
         if scope in ['HARVEST_HILL_ONLY', 'private_admin']:
             return False
 
@@ -134,23 +139,58 @@ class Product(models.Model):
         """Calculates count of distinct farmers providing accepted active supplies."""
         return self.supplies.filter(is_archived=False, status='accepted').values('farmer').distinct().count()
 
+    def sync_deal_statuses(self):
+        """Automatically updates EXPIRED deals whose ends_at date/time has passed."""
+        from django.utils import timezone
+        now = timezone.now()
+        active_deals = self.fresh_deals.filter(status='ACTIVE')
+        for deal in active_deals:
+            if deal.ends_at and deal.ends_at < now:
+                deal.status = 'EXPIRED'
+                deal.save(update_fields=['status'])
+
+    @property
+    def active_deal(self):
+        """Returns currently active valid FreshDeal for this MasterProduct, if any."""
+        self.sync_deal_statuses()
+        deal = self.fresh_deals.filter(status='ACTIVE').order_by('-created_at').first()
+        if deal and deal.is_currently_valid():
+            return deal
+        return None
+
+    @property
+    def has_active_discount(self):
+        deal = self.active_deal
+        if deal:
+            return True
+        return bool(self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < self.price)
+
     @property
     def effective_price(self):
-        """Returns discount_price if is_discounted and valid, else normal price/base_price."""
-        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < self.price:
+        """Calculates current client price from MasterProduct base price + active FreshDeal."""
+        base = float(self.price)
+        deal = self.active_deal
+        if deal:
+            val = float(deal.discount_value)
+            if deal.discount_type == 'PERCENTAGE':
+                discounted = base * (1.0 - (val / 100.0))
+            else:
+                discounted = base - val
+            return max(0.0, float(discounted))
+        
+        # Fallback to legacy is_discounted if no explicit FreshDeal entity exists
+        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < base:
             return float(self.discount_price)
-        return float(self.price)
+        return base
 
     @property
     def discount_percentage(self):
-        """Calculates actual discount percentage from Master Product original selling price and active discount price."""
-        if not self.is_discounted or not self.discount_price:
-            return 0.0
+        """Calculates actual discount percentage from MasterProduct original selling price and effective price."""
         orig = float(self.price)
-        disc = float(self.discount_price)
-        if orig <= 0 or disc >= orig:
+        eff = float(self.effective_price)
+        if orig <= 0 or eff >= orig:
             return 0.0
-        pct = ((orig - disc) / orig) * 100.0
+        pct = ((orig - eff) / orig) * 100.0
         return round(pct, 1) if (pct * 10) % 10 != 0 else round(pct)
 
     @property
@@ -197,4 +237,42 @@ class ProductRequest(models.Model):
 
     def __str__(self):
         return f"{self.product_name} - {self.status}"
+
+
+class FreshDeal(models.Model):
+    DISCOUNT_TYPE_CHOICES = [
+        ('FIXED', 'Fixed Amount Off'),
+        ('PERCENTAGE', 'Percentage Off'),
+    ]
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('EXPIRED', 'Expired'),
+        ('ABORTED', 'Aborted'),
+        ('ARCHIVED', 'Archived'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    master_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='fresh_deals')
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='FIXED')
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_currently_valid(self):
+        now = timezone.now()
+        if self.status != 'ACTIVE':
+            return False
+        if self.starts_at and self.starts_at > now:
+            return False
+        if self.ends_at and self.ends_at < now:
+            self.status = 'EXPIRED'
+            self.save(update_fields=['status'])
+            return False
+        return True
+
+    def __str__(self):
+        return f"{self.master_product.name} - {self.discount_type} {self.discount_value} ({self.status})"
 

@@ -246,6 +246,22 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             )
         return queryset
 
+    def perform_destroy(self, instance):
+        """Soft-delete (archive) Supply instead of permanent deletion."""
+        from django.utils import timezone
+        instance.is_archived = True
+        instance.archived_at = timezone.now()
+        instance.save(update_fields=['is_archived', 'archived_at'])
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        """Restore an archived supply back to active inventory."""
+        supply = self.get_object()
+        supply.is_archived = False
+        supply.archived_at = None
+        supply.save(update_fields=['is_archived', 'archived_at'])
+        return Response({"detail": f"Supply '{supply.supply_number or supply.id}' restored successfully."}, status=200)
+
     def perform_create(self, serializer):
         # Extract files from request
         images = self.request.FILES.getlist('images')

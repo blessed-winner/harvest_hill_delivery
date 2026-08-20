@@ -1,9 +1,21 @@
 from rest_framework import serializers
-from .models import Product, ProductRequest
+from .models import Product, ProductRequest, FreshDeal
 
 
 def _product_has_image(image):
     return bool(image and getattr(image, 'name', None))
+
+
+class FreshDealSerializer(serializers.ModelSerializer):
+    master_product_name = serializers.CharField(source='master_product.name', read_only=True)
+    master_product_base_price = serializers.FloatField(source='master_product.price', read_only=True)
+
+    class Meta:
+        model = FreshDeal
+        fields = [
+            'id', 'master_product', 'master_product_name', 'master_product_base_price',
+            'discount_type', 'discount_value', 'status', 'starts_at', 'ends_at', 'archived_at', 'created_at'
+        ]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -13,6 +25,13 @@ class ProductSerializer(serializers.ModelSerializer):
     supplier_count = serializers.IntegerField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
     discount_percentage = serializers.FloatField(read_only=True)
+    has_active_discount = serializers.BooleanField(read_only=True)
+    active_deal = FreshDealSerializer(read_only=True)
+    originalPrice = serializers.FloatField(source='price', read_only=True)
+    discountedPrice = serializers.FloatField(source='effective_price', read_only=True)
+    discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
+    hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
+    activeDeal = FreshDealSerializer(source='active_deal', read_only=True)
     sourcing_history_count = serializers.IntegerField(read_only=True)
     sourcing_supplies = serializers.SerializerMethodField()
     price = serializers.FloatField(read_only=True)
@@ -27,9 +46,11 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
-            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 
+            'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
+            'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
-            'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count'
+            'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at'
         ]
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
@@ -166,14 +187,22 @@ class ProductShortSerializer(serializers.ModelSerializer):
     price = serializers.FloatField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
     discount_percentage = serializers.FloatField(read_only=True)
+    has_active_discount = serializers.BooleanField(read_only=True)
+    active_deal = FreshDealSerializer(read_only=True)
+    originalPrice = serializers.FloatField(source='price', read_only=True)
+    discountedPrice = serializers.FloatField(source='effective_price', read_only=True)
+    discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
+    hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
+    activeDeal = FreshDealSerializer(source='active_deal', read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url',
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage',
+            'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
             'quantity_needed', 'status', 'quality_requirements', 
-            'submission_deadline', 'preferred_harvest_period', 'description'
+            'submission_deadline', 'preferred_harvest_period', 'description', 'archived_at'
         ]
 
     def get_image_url(self, obj):
