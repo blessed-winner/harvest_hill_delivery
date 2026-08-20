@@ -501,9 +501,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                     <span className="text-[#D9381E] font-black text-3xl">
                       RWF {Number(product.price).toLocaleString()} / {product.unit || 'kg'}
                     </span>
-                    <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-2.5 py-0.5 rounded shadow-sm font-sans tracking-wide">
-                      SAVE {Number(product.discount_percentage) > 0 ? Math.round(Number(product.discount_percentage)) : Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)}%
-                    </span>
                   </div>
                 </div>
               ) : (
