@@ -199,43 +199,27 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           </button>
         </div>
 
-        {/* Large Dominant Search Bar with Instant Live Search */}
+        {/* Large Dominant Search Bar with Instant Live Search Across All Products */}
         <div className="flex-1 max-w-2xl mx-2 sm:mx-4 flex items-center">
           <div className="flex w-full bg-[#FAF7F0] border border-[#DCD6C8] focus-within:border-[#2D5A3D] focus-within:ring-1 focus-within:ring-[#2D5A3D] rounded-xl overflow-hidden shadow-inner transition-all">
-            <select 
-              value={searchCategory}
-              onChange={(e) => {
-                const cat = e.target.value;
-                setSearchCategory(cat);
-                onNavigate('catalog', cat !== 'all' ? cat : undefined, undefined, topSearchTerm);
-              }}
-              className="hidden md:block bg-transparent text-xs font-bold px-3 text-[#414942] border-r border-[#DCD6C8] outline-none cursor-pointer"
-            >
-              <option value="all">All</option>
-              <option value="Vegetables">Vegetables</option>
-              <option value="Fruits">Fruits</option>
-              <option value="Dairy">Dairy</option>
-              <option value="Grains">Grains</option>
-              <option value="Herbs">Herbs</option>
-            </select>
             <input
               type="text"
               value={topSearchTerm}
               onChange={(e) => {
                 const val = e.target.value;
                 setTopSearchTerm(val);
-                onNavigate('catalog', searchCategory !== 'all' ? searchCategory : undefined, undefined, val);
+                onNavigate('catalog', 'all', undefined, val);
               }}
               placeholder="Search fresh produce, organic dairy, meat, bakery..."
-              className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-[#1C2A1E] focus:outline-none placeholder-[#888888]"
+              className="flex-1 bg-transparent px-3.5 py-2 text-xs sm:text-sm text-[#1C2A1E] focus:outline-none placeholder-[#888888]"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  onNavigate('catalog', searchCategory !== 'all' ? searchCategory : undefined, undefined, topSearchTerm);
+                  onNavigate('catalog', 'all', undefined, topSearchTerm);
                 }
               }}
             />
             <button 
-              onClick={() => onNavigate('catalog', searchCategory !== 'all' ? searchCategory : undefined, undefined, topSearchTerm)}
+              onClick={() => onNavigate('catalog', 'all', undefined, topSearchTerm)}
               className="bg-[#2D5A3D] text-white px-4 py-2 hover:bg-[#1E3E2A] transition-colors cursor-pointer flex items-center justify-center"
               title="Search Catalog"
             >

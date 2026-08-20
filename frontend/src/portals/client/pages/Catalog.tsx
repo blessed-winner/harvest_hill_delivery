@@ -113,6 +113,9 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     }
     if (initialSearch !== undefined) {
       setSearchQuery(initialSearch);
+      if (initialSearch.trim() !== '' && (!initialCategory || initialCategory === 'all')) {
+        setSelectedCategory('all');
+      }
     }
   }, [initialCategory, initialSearch]);
 
