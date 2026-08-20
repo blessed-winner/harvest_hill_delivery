@@ -142,19 +142,48 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             }
           }
 
-          const isDiscountedItem = !!(fetchedSupply.is_discounted && fetchedSupply.discount_price && Number(fetchedSupply.discount_price) > 0);
-          const origPriceVal = Number(fetchedSupply.base_price || fetchedSupply.offered_price || fetchedSupply.price || fetchedSupply.product_detail?.base_price || 0);
-          const discPriceVal = isDiscountedItem ? Number(fetchedSupply.discount_price) : origPriceVal;
+          const hasActiveDeal = !!(
+            fetchedSupply.has_active_discount ||
+            fetchedSupply.hasActiveDiscount ||
+            fetchedSupply.is_discounted ||
+            fetchedSupply.active_deal ||
+            fetchedSupply.activeDeal ||
+            (fetchedSupply.effective_price && Number(fetchedSupply.effective_price) < Number(fetchedSupply.price || fetchedSupply.base_price || 0)) ||
+            (fetchedSupply.discountedPrice && Number(fetchedSupply.discountedPrice) < Number(fetchedSupply.originalPrice || 0))
+          );
+
+          const origPriceVal = Number(
+            fetchedSupply.originalPrice ||
+            fetchedSupply.price ||
+            fetchedSupply.base_price ||
+            fetchedSupply.offered_price ||
+            fetchedSupply.product_detail?.base_price ||
+            fetchedSupply.product_detail?.price ||
+            0
+          );
+
+          const discPriceVal = hasActiveDeal
+            ? Number(
+                fetchedSupply.discountedPrice ||
+                fetchedSupply.effective_price ||
+                fetchedSupply.discount_price ||
+                origPriceVal
+              )
+            : origPriceVal;
+
+          const isDiscountedItem = hasActiveDeal && origPriceVal > discPriceVal;
 
           const finalOrigPrice = (isDiscountedItem && origPriceVal <= discPriceVal)
             ? (discPriceVal > 0 ? Math.round(discPriceVal * 1.25) : origPriceVal)
             : origPriceVal;
 
-          const rawPct = fetchedSupply.discount_percentage != null && Number(fetchedSupply.discount_percentage) > 0
-            ? Number(fetchedSupply.discount_percentage)
-            : (isDiscountedItem && finalOrigPrice > discPriceVal ? ((finalOrigPrice - discPriceVal) / finalOrigPrice) * 100 : 0);
+          const rawPct = fetchedSupply.discountPercentage ?? fetchedSupply.discount_percentage ?? (
+            isDiscountedItem && finalOrigPrice > discPriceVal ? ((finalOrigPrice - discPriceVal) / finalOrigPrice) * 100 : 0
+          );
 
-          const discountPct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
+          const discountPct = Number(rawPct) > 0 
+            ? (Number(rawPct) % 1 !== 0 ? (Math.round(Number(rawPct) * 10) / 10).toString() : Math.round(Number(rawPct)).toString()) 
+            : '0';
 
           const mappedProduct = {
             id: fetchedSupply.id,
@@ -168,6 +197,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             discount_price: discPriceVal,
             discount_percentage: discountPct,
             is_discounted: isDiscountedItem,
+            active_deal: fetchedSupply.active_deal || fetchedSupply.activeDeal,
             status: fetchedSupply.status || 'available',
             image_url: mainImageUrl,
             images: imagesList,
