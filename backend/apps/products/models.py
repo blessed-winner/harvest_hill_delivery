@@ -163,11 +163,17 @@ class Product(models.Model):
         deal = self.active_deal
         if deal:
             return True
-        return bool(self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < self.price)
+        base = float(self.price)
+        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < base:
+            return True
+        disc_supply = self.supplies.filter(is_archived=False, status='accepted', is_discounted=True, discount_price__gt=0).first()
+        if disc_supply and float(disc_supply.discount_price) < base:
+            return True
+        return False
 
     @property
     def effective_price(self):
-        """Calculates current client price from MasterProduct base price + active FreshDeal."""
+        """Calculates current client price from MasterProduct base price + active FreshDeal or underlying supply discount."""
         base = float(self.price)
         deal = self.active_deal
         if deal:
@@ -178,9 +184,15 @@ class Product(models.Model):
                 discounted = base - val
             return max(0.0, float(discounted))
         
-        # Fallback to legacy is_discounted if no explicit FreshDeal entity exists
+        # Fallback to legacy is_discounted if set on MasterProduct
         if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < base:
             return float(self.discount_price)
+
+        # Fallback to underlying accepted supply discount if set
+        disc_supply = self.supplies.filter(is_archived=False, status='accepted', is_discounted=True, discount_price__gt=0).first()
+        if disc_supply and float(disc_supply.discount_price) < base:
+            return float(disc_supply.discount_price)
+
         return base
 
     @property

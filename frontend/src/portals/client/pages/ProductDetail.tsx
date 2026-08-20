@@ -463,9 +463,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           {/* Product header */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              {product.is_discounted && Number(product.discount_percentage) > 0 && (
+              {(product.is_discounted || (product.original_price && Number(product.original_price) > Number(product.price))) && (
                 <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm">
-                  SAVE {product.discount_percentage}% (FRESH DEAL)
+                  SAVE {Number(product.discount_percentage) > 0 ? product.discount_percentage : Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)}% (FRESH DEAL)
                 </span>
               )}
               {product.urgency === 'HIGH' && (
@@ -492,7 +492,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                   <span className="line-through text-[#717971] text-xs font-semibold">RWF {Number(product.original_price || product.price || 0).toLocaleString()} / {product.unit || 'kg'}</span>
                   <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()} / {product.unit || 'kg'}</span>
                 </div>
-              ) : product.is_discounted && product.original_price && Number(product.original_price) > Number(product.price) ? (
+              ) : (product.is_discounted || (product.original_price && Number(product.original_price) > Number(product.price))) ? (
                 <div className="space-y-1">
                   <span className="line-through text-[#717971] text-xs font-bold block">
                     RWF {Number(product.original_price).toLocaleString()} / {product.unit || 'kg'}
@@ -502,7 +502,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                       RWF {Number(product.price).toLocaleString()} / {product.unit || 'kg'}
                     </span>
                     <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-2.5 py-0.5 rounded shadow-sm font-sans tracking-wide">
-                      SAVE {Math.round(Number(product.discount_percentage))}%
+                      SAVE {Number(product.discount_percentage) > 0 ? Math.round(Number(product.discount_percentage)) : Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)}%
                     </span>
                   </div>
                 </div>
