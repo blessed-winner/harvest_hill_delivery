@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -100,6 +100,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [discountIsActive, setDiscountIsActive] = useState(false);
   const [discountPriceInput, setDiscountPriceInput] = useState('');
   const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+
+  // Permanent Delete High-Stakes Warning Modal State
+  const [deleteWarningSupply, setDeleteWarningSupply] = useState<any | null>(null);
+  const [isDeletingPermanently, setIsDeletingPermanently] = useState(false);
+  const [isArchivingInstead, setIsArchivingInstead] = useState(false);
 
   // Visibility & Access Controls Modal State
   const [visibilitySupply, setVisibilitySupply] = useState<any | null>(null);
@@ -922,20 +927,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     <Archive size={14} className="text-on-surface-variant" /> Archive
                   </button>
                   <button 
-                    onClick={async () => {
-                      const confirmed = await showConfirm(
-                        "Delete Supply",
-                        "Are you sure you want to permanently delete this supply?"
-                      );
-                      if (confirmed) {
-                        try {
-                          await api.supplies.delete(selectedSupply.id);
-                          setSelectedSupply(null);
-                          loadSupplies();
-                        } catch (err: any) {
-                          toast(err.message || "Failed to delete supply.", "error");
-                        }
-                      }
+                    onClick={() => {
+                      const sup = selectedSupply;
+                      setDeleteWarningSupply(sup);
                     }}
                     className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                   >
@@ -1859,6 +1853,104 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 <span>{isSavingDiscount ? 'Saving...' : 'Save Discount'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Delete High-Stakes Warning Modal */}
+      {deleteWarningSupply && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-red-200 space-y-5 text-left relative font-sans">
+            
+            {/* Header with warning badge */}
+            <div className="flex items-start gap-4 border-b border-red-100 pb-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center shrink-0 shadow-sm">
+                <AlertTriangle size={26} />
+              </div>
+              <div className="space-y-1">
+                <span className="px-2.5 py-0.5 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-full border border-red-200">
+                  Permanent Database Deletion Warning
+                </span>
+                <h3 className="text-lg font-extrabold text-[#1c1c18]">
+                  Delete this supply permanently?
+                </h3>
+                <p className="text-xs font-mono font-bold text-red-700">
+                  {deleteWarningSupply.supply_number || `SUP-${String(deleteWarningSupply.id).slice(0, 8).toUpperCase()}`} — {deleteWarningSupply.product_detail?.name || deleteWarningSupply.custom_product_name || 'Harvest Supply'} ({deleteWarningSupply.quantity} {deleteWarningSupply.unit || 'kg'})
+                </p>
+              </div>
+            </div>
+
+            {/* Clear Explanation of Stakes in Short Sentences */}
+            <div className="p-4 bg-red-50/80 rounded-2xl border border-red-200/80 space-y-3 text-xs text-red-950">
+              <p className="font-extrabold text-sm text-red-900">
+                High-Stakes Action Details:
+              </p>
+              <ul className="space-y-2 list-disc list-inside leading-relaxed text-[#1c1c18]">
+                <li><strong className="text-red-800">Irreversible:</strong> This supply record will be permanently deleted from the database and cannot be retrieved.</li>
+                <li><strong className="text-red-800">Data Loss:</strong> All historical negotiation logs, batch photos, and sourcing audit trails linked to this harvest will be destroyed.</li>
+                <li><strong className="text-emerald-800">Recommended Option:</strong> If you only want to hide this item from active client marketplace catalog stock, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
+              </ul>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isArchivingInstead || isDeletingPermanently}
+                onClick={async () => {
+                  try {
+                    setIsArchivingInstead(true);
+                    await api.supplies.update(deleteWarningSupply.id, { is_archived: true });
+                    toast("Supply archived successfully. Historical records preserved.", "success");
+                    setDeleteWarningSupply(null);
+                    setSelectedSupply(null);
+                    loadSupplies();
+                  } catch (err: any) {
+                    toast(err.message || "Failed to archive supply.", "error");
+                  } finally {
+                    setIsArchivingInstead(false);
+                  }
+                }}
+                className="flex-1 py-3 px-4 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Archive size={15} />
+                <span>{isArchivingInstead ? 'Archiving...' : 'Archive Instead (Recommended)'}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isArchivingInstead || isDeletingPermanently}
+                onClick={async () => {
+                  try {
+                    setIsDeletingPermanently(true);
+                    await api.supplies.delete(deleteWarningSupply.id);
+                    toast("Supply permanently deleted from database.", "success");
+                    setDeleteWarningSupply(null);
+                    setSelectedSupply(null);
+                    loadSupplies();
+                  } catch (err: any) {
+                    toast(err.message || "Failed to delete supply.", "error");
+                  } finally {
+                    setIsDeletingPermanently(false);
+                  }
+                }}
+                className="py-3 px-4 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 size={15} />
+                <span>{isDeletingPermanently ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteWarningSupply(null)}
+                className="text-xs font-bold text-[#717971] hover:text-[#1c1c18] transition-colors cursor-pointer"
+              >
+                Cancel Action
+              </button>
+            </div>
+
           </div>
         </div>
       )}

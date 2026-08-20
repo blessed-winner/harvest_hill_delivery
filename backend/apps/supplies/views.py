@@ -268,11 +268,8 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         return queryset
 
     def perform_destroy(self, instance):
-        """Soft-delete (archive) Supply instead of permanent deletion."""
-        from django.utils import timezone
-        instance.is_archived = True
-        instance.archived_at = timezone.now()
-        instance.save(update_fields=['is_archived', 'archived_at'])
+        """Permanently delete Supply record from database."""
+        instance.delete()
 
     @action(detail=True, methods=['post'])
     def restore(self, request, pk=None):
