@@ -206,7 +206,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             quantity: fetchedSupply.total_available_quantity ?? fetchedSupply.quantity ?? 0,
             quality_grade: fetchedSupply.quality_grade || 'Grade A',
             notes: fetchedSupply.description || fetchedSupply.notes || 'Fresh wholesale produce sustainably sourced from verified local partner farms.',
-            supplier_notes: (fetchedSupply.notes && fetchedSupply.notes.trim() !== '') ? fetchedSupply.notes.trim() : ((fetchedSupply.description && fetchedSupply.description.trim() !== '') ? fetchedSupply.description.trim() : null),
+            supplier_notes: (fetchedSupply.notes && fetchedSupply.notes.trim() !== '') ? fetchedSupply.notes.trim() : null,
             available_date: fetchedSupply.available_date,
             rating: fetchedSupply.rating || 5.0,
             rating_count: fetchedSupply.rating_count || 1
