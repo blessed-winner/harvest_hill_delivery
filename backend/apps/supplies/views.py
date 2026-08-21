@@ -87,6 +87,14 @@ class SupplySerializer(serializers.ModelSerializer):
 
 
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        notes_val = data.get('notes')
+        if notes_val and '[Admin Terms]:' in str(notes_val):
+            clean_notes = str(notes_val).split('[Admin Terms]:')[0].strip()
+            data['notes'] = clean_notes if clean_notes else ""
+        return data
+
     def get_has_admin_negotiation(self, obj):
         return obj.negotiation_threads.exists()
 
@@ -554,16 +562,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         else:
             return Response({"error": "Agreed farmer price is required and must be greater than zero."}, status=400)
 
-        if admin_notes and str(admin_notes).strip():
-            clean_terms = str(admin_notes).strip()
-            if supply.notes and '[Admin Terms]:' not in supply.notes:
-                supply.notes = f"{supply.notes}\n\n[Admin Terms]: {clean_terms}"
-            elif supply.notes and '[Admin Terms]:' in supply.notes:
-                base_notes = supply.notes.split('[Admin Terms]:')[0].strip()
-                supply.notes = f"{base_notes}\n\n[Admin Terms]: {clean_terms}" if base_notes else f"[Admin Terms]: {clean_terms}"
-            else:
-                supply.notes = f"[Admin Terms]: {clean_terms}"
-
         # Handle master product mapping if provided
         if target_product_id:
             from apps.products.models import Product
@@ -636,17 +634,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 return Response({"error": "Invalid agreed price format."}, status=400)
         else:
             return Response({"error": "Agreed farmer price is required and must be greater than zero."}, status=400)
-
-        admin_notes = request.data.get('admin_notes') or request.data.get('notes') or ''
-        if admin_notes and str(admin_notes).strip():
-            clean_terms = str(admin_notes).strip()
-            if supply.notes and '[Admin Terms]:' not in supply.notes:
-                supply.notes = f"{supply.notes}\n\n[Admin Terms]: {clean_terms}"
-            elif supply.notes and '[Admin Terms]:' in supply.notes:
-                base_notes = supply.notes.split('[Admin Terms]:')[0].strip()
-                supply.notes = f"{base_notes}\n\n[Admin Terms]: {clean_terms}" if base_notes else f"[Admin Terms]: {clean_terms}"
-            else:
-                supply.notes = f"[Admin Terms]: {clean_terms}"
 
         # Handle master product mapping
         if target_product_id:
