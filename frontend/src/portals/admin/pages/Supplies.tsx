@@ -132,6 +132,19 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const isSupplyUnreadAction = (sup: any) => {
+    if (!sup || sup.status === 'accepted' || sup.status === 'rejected') return false;
+    const latest = sup.latest_offer;
+    if (!latest) return false;
+    const isFarmerSender = latest.sender_role === 'farmer' || latest.sender === 'farmer';
+    return isFarmerSender && (latest.offer_status === 'PENDING' || !latest.is_read);
+  };
+
+  const hasUnreadNegotiationAction = (group: any) => {
+    if (!group || !group.supplies) return false;
+    return group.supplies.some((s: any) => isSupplyUnreadAction(s));
+  };
+
   const handleOpenVisibilityModal = (supply: any) => {
     setVisibilitySupply(supply);
     const scope = supply.visibility_scope || 'HARVEST_HILL_ONLY';
@@ -736,11 +749,21 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-sm font-bold text-on-surface">{group.name}</p>
                           {group.displayId && (
                             <span className="text-[9.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
                               {group.displayId}
+                            </span>
+                          )}
+                          {hasUnreadNegotiationAction(group) && (
+                            <span 
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
+                              title="New farmer negotiation message / counter-offer awaiting response"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
+                              <MessageSquare size={10} className="text-amber-800 shrink-0" />
+                              <span>New Message</span>
                             </span>
                           )}
                         </div>
@@ -1114,8 +1137,15 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               {/* Farmer Submission Box */}
               <div className="p-3.5 bg-white rounded-xl border border-outline-variant/50 space-y-2 shadow-2xs">
                 <div className="flex justify-between items-center pb-1.5 border-b border-outline-variant/30">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
                     Farmer Harvest Offer
+                    {isSupplyUnreadAction(selectedSupply) && (
+                      <span className="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
+                        <MessageSquare size={10} className="text-amber-800 shrink-0" />
+                        <span>New Negotiation Message</span>
+                      </span>
+                    )}
                   </span>
                   <span className="text-[10px] font-bold text-on-surface-variant">
                     Submitted by {selectedSupply.farmer_name || 'Partner Farm'}
@@ -1200,9 +1230,15 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         )}
                       >
                         <div>
-                          <p className="font-extrabold text-on-surface flex items-center gap-1.5">
+                          <p className="font-extrabold text-on-surface flex items-center gap-1.5 flex-wrap">
                             <span className="flex items-center gap-1"><UserCheck size={13} className="text-primary" /> {sup.farmer_name || 'Partner Farm'}</span>
                             <span className="text-[9px] font-mono text-on-surface-variant/70">({sup.supply_number || 'SUP-BATCH'})</span>
+                            {isSupplyUnreadAction(sup) && (
+                              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
+                                <span>New Message</span>
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10.5px] font-medium text-on-surface-variant mt-0.5">
                             Acquisition Price: <span className="font-bold font-mono text-primary">{formatCurrency(sup.agreed_price || sup.price)}</span> / {sup.unit}

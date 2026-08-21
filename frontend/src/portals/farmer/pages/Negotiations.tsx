@@ -311,7 +311,7 @@ export default function Negotiations() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Original Proposed Price</span>
+                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Proposed Price</span>
                       <span className="font-extrabold text-[#2D5A3D]">
                         {formatRwf(getOriginalFarmerPrice(neg))}/{neg.supply_detail?.unit || 'kg'}
                       </span>
