@@ -111,9 +111,8 @@ export default function Negotiations() {
     }
   }, [activeNegId, activeThread?.supply_detail?.accepted_quantity, activeThread?.supply_detail?.agreed_price]);
 
-  const getThreadPrice = (thread: any) => {
-    const lastOffer = thread?.offers?.[thread.offers.length - 1];
-    return lastOffer?.price ?? thread?.supply_detail?.proposed_price ?? 0;
+  const getOriginalFarmerPrice = (thread: any) => {
+    return thread?.supply_detail?.proposed_price ?? thread?.supply_detail?.price ?? 0;
   };
 
   const handleDeleteOffer = async (offerId: string | number) => {
@@ -312,9 +311,9 @@ export default function Negotiations() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Proposed Price</span>
+                      <span className="text-[9px] font-extrabold text-[#717971] uppercase tracking-wider block">Original Proposed Price</span>
                       <span className="font-extrabold text-[#2D5A3D]">
-                        {formatRwf(getThreadPrice(neg))}/{neg.supply_detail?.unit || 'kg'}
+                        {formatRwf(getOriginalFarmerPrice(neg))}/{neg.supply_detail?.unit || 'kg'}
                       </span>
                     </div>
                   </div>
