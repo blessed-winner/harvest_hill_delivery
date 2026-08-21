@@ -1169,29 +1169,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     <span className="font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
                   </div>
                 </div>
-
-                {selectedSupply.notes && selectedSupply.notes.trim() !== '' && (
-                  <div className="pt-2 border-t border-outline-variant/30 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
-                        <FileText size={13} className="text-primary shrink-0" /> Supplier Notes
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdminNotesModal(!showAdminNotesModal)}
-                        className="text-[10.5px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
-                      >
-                        {showAdminNotesModal ? 'Hide Notes' : 'View Supplier Notes'}
-                      </button>
-                    </div>
-
-                    {showAdminNotesModal && (
-                      <div className="mt-1.5 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/40 text-on-surface font-medium leading-relaxed whitespace-pre-line text-xs animate-in fade-in duration-200">
-                        {selectedSupply.notes}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
