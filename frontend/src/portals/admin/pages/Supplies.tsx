@@ -1369,7 +1369,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       <div className="p-3.5 bg-white/80 rounded-xl border border-emerald-200/80 text-xs space-y-1">
                         <p className="font-extrabold text-emerald-950">No negotiation started yet for this supply.</p>
                         <p className="text-emerald-900/80 text-[11px] leading-relaxed">
-                          {selectedSupply.notes ? `Farmer Submission Notes: "${selectedSupply.notes}"` : "This supply is pending review and has no active negotiation thread."}
+                          This supply is pending review and has no active negotiation thread.
                         </p>
                       </div>
                     )}
