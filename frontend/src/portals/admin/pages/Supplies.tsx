@@ -1346,8 +1346,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         );
 
         const latestOffer = selectedSupply?.latest_offer;
-        const offerStatus = (latestOffer?.offer_status || '').toUpperCase();
-        const hasPendingNegotiationTerms = latestOffer && offerStatus === 'PENDING' && selectedSupply.status !== 'accepted';
+        const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
+        const hasNegotiationStarted = !!(selectedSupply?.has_admin_negotiation || selectedSupply?.latest_offer);
+        const isNegotiationInProcess = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && selectedSupply?.status !== 'accepted';
         const isAlreadyApproved = selectedSupply && (!!selectedSupply.product || selectedSupply.status === 'accepted');
 
         return (
@@ -1362,11 +1363,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   {/* Custom Submission Specific Actions */}
                   {isCustomCropSubmission && !selectedSupply.is_archived ? (
                     <div className="space-y-2.5 w-full">
-                      {hasPendingNegotiationTerms && (
+                      {isNegotiationInProcess && (
                         <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-start gap-2">
                           <AlertTriangle size={14} className="text-amber-700 shrink-0 mt-0.5" />
                           <span>
-                            A negotiation counter-offer is currently pending. You must reach and agree to concrete negotiation terms before approving this custom submission.
+                            A negotiation is currently in process. You must reach and agree to negotiation terms before approving this custom submission.
                           </span>
                         </div>
                       )}
@@ -1391,19 +1392,20 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         ) : (
                           <button 
                             type="button"
-                            disabled={hasPendingNegotiationTerms}
+                            disabled={isNegotiationInProcess}
                             onClick={() => {
+                              if (isNegotiationInProcess) return;
                               const supToApprove = selectedSupply;
                               setSelectedSupply(null);
                               handleOpenApproveChoiceModal(supToApprove);
                             }}
                             className={cn(
                               "w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm",
-                              hasPendingNegotiationTerms
-                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed"
+                              isNegotiationInProcess
+                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed opacity-60"
                                 : "bg-primary text-white hover:opacity-90 cursor-pointer"
                             )}
-                            title={hasPendingNegotiationTerms ? "Agree to negotiation terms first" : "Approve custom submission"}
+                            title={isNegotiationInProcess ? "Negotiation in process. Agree to terms first." : "Approve custom submission"}
                           >
                             <CheckCircle2 size={14} /> Approve
                           </button>
