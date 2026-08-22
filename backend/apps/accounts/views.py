@@ -111,10 +111,12 @@ class LoginView(APIView):
             # Generate tokens
             refresh = RefreshToken.for_user(user)
             if remember_me:
+                refresh['is_remember_me'] = True
                 refresh.set_exp(lifetime=timedelta(days=30))
                 refresh.access_token.set_exp(lifetime=timedelta(minutes=30))
             else:
-                refresh.set_exp(lifetime=timedelta(minutes=30))
+                refresh['is_remember_me'] = False
+                refresh.set_exp(lifetime=timedelta(days=7))
                 refresh.access_token.set_exp(lifetime=timedelta(minutes=30))
 
             log_action(request, actor=user, action="login_success")

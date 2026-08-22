@@ -204,16 +204,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+from datetime import timedelta
+
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         old_refresh = RefreshToken(attrs['refresh'])
-        old_exp = old_refresh['exp']
+        is_remember_me = old_refresh.get('is_remember_me', False)
         
         data = super().validate(attrs)
         
         if 'refresh' in data:
             new_refresh = RefreshToken(data['refresh'])
-            new_refresh['exp'] = old_exp
+            new_refresh['is_remember_me'] = is_remember_me
+            if is_remember_me:
+                new_refresh.set_exp(lifetime=timedelta(days=30))
+            else:
+                new_refresh.set_exp(lifetime=timedelta(days=7))
             data['refresh'] = str(new_refresh)
             
         return data
