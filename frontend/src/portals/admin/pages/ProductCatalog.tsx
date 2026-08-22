@@ -178,6 +178,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setSelectedProduct("new");
   };
 
+  const pendingRequestsCount = React.useMemo(() => {
+    return (requests || []).filter((r: any) => r.status === 'pending' || !r.status).length;
+  }, [requests]);
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
   useEffect(() => {
     if (activeCategory === 'Client Requests') {
       loadRequests();
@@ -550,20 +558,30 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
             </select>
 
             {/* Category Tabs */}
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                  activeCategory === cat 
-                    ? "bg-white text-primary shadow-sm" 
-                    : "text-on-surface-variant hover:bg-surface-container-high"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const isClientReqTab = cat === 'Client Requests';
+              const label = isClientReqTab
+                ? (pendingRequestsCount > 0 ? `Client Requests (${pendingRequestsCount})` : 'Client Requests')
+                : cat;
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5",
+                    activeCategory === cat 
+                      ? "bg-white text-primary shadow-sm" 
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  )}
+                >
+                  <span>{label}</span>
+                  {isClientReqTab && pendingRequestsCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title={`${pendingRequestsCount} unaddressed client request(s)`} />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
