@@ -1311,7 +1311,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                   if (adminThread?.offers && Array.isArray(adminThread.offers)) {
                     adminThread.offers.forEach((o: any) => {
-                      const txt = (o.terms || o.message || '').trim();
+                      if (o.is_offer === false) return; // Exclude plain chat messages
+                      const txt = (o.terms || '').trim();
                       if (txt && !txt.startsWith('[Admin Terms]') && !txt.toLowerCase().includes('farmer proposed') && !txt.toLowerCase().includes('harvest hill counter')) {
                         const splitItems = txt.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
                         splitItems.forEach((item: string) => {
