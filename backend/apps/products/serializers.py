@@ -117,6 +117,14 @@ class ProductSerializer(serializers.ModelSerializer):
                         urls.append(url)
                 except Exception:
                     pass
+            for extra_img in admin_sup.images.all():
+                if extra_img.image:
+                    try:
+                        url = extra_img.image.url
+                        if url and url not in urls:
+                            urls.append(url)
+                    except Exception:
+                        pass
         return urls
 
     def get_base_price(self, obj):
@@ -345,6 +353,14 @@ class ProductShortSerializer(serializers.ModelSerializer):
                         urls.append(url)
                 except Exception:
                     pass
+            for extra_img in admin_sup.images.all():
+                if extra_img.image:
+                    try:
+                        url = extra_img.image.url
+                        if url and url not in urls:
+                            urls.append(url)
+                    except Exception:
+                        pass
         return urls
 
     class Meta:
