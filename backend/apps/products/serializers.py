@@ -18,8 +18,22 @@ class FreshDealSerializer(serializers.ModelSerializer):
         ]
 
 
+class ProductImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ['id', 'image', 'image_url']
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        return obj.image.url
+
+
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
     total_available_quantity = serializers.SerializerMethodField()
     supplier_count = serializers.IntegerField(read_only=True)
@@ -40,6 +54,23 @@ class ProductSerializer(serializers.ModelSerializer):
     submission_count = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
 
+    def get_images(self, obj):
+        urls = []
+        if obj.image:
+            try:
+                cover_url = obj.image.url
+                if cover_url and cover_url not in urls:
+                    urls.append(cover_url)
+            except Exception:
+                pass
+        for img_obj in obj.gallery_images.all():
+            try:
+                if img_obj.image and img_obj.image.url and img_obj.image.url not in urls:
+                    urls.append(img_obj.image.url)
+            except Exception:
+                pass
+        return urls
+
     def get_base_price(self, obj):
         if obj.base_price and float(obj.base_price) > 0:
             return float(obj.base_price)
@@ -47,8 +78,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_total_available_quantity(self, obj):
         return float(obj.total_available_quantity)
-
-    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -185,54 +214,6 @@ class ProductSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def get_images(self, obj):
-        """Returns all distinct image URLs submitted by Harvest Hill (admin) for this Master Product."""
-        res = []
-        seen_keys = set()
-
-        main_url = self.get_image_url(obj)
-        if main_url:
-            res.append(main_url)
-            seen_keys.add(_normalize_image_key(main_url))
-
-        # Include additional photos from supplies created by Harvest Hill / Admin only
-        admin_supplies = obj.supplies.filter(
-            farmer__user__role='admin'
-        ).exclude(status='rejected').order_by('created_at')
-
-        for s in admin_supplies:
-            if s.photo:
-                try:
-                    photo_name = s.photo.name if hasattr(s.photo, 'name') else str(s.photo)
-                    url = photo_name if (photo_name.startswith('http://') or photo_name.startswith('https://')) else s.photo.url
-                    key = _normalize_image_key(url)
-                    if url and key and key not in seen_keys:
-                        res.append(url)
-                        seen_keys.add(key)
-                except Exception:
-                    pass
-            for img_obj in s.images.all():
-                if img_obj.image:
-                    try:
-                        img_name = img_obj.image.name if hasattr(img_obj.image, 'name') else str(img_obj.image)
-                        url = img_name if (img_name.startswith('http://') or img_name.startswith('https://')) else img_obj.image.url
-                        key = _normalize_image_key(url)
-                        if url and key and key not in seen_keys:
-                            res.append(url)
-                            seen_keys.add(key)
-                    except Exception:
-                        pass
-        return res
-
-
-def _normalize_image_key(url):
-    if not url:
-        return ""
-    clean = str(url).split('?')[0].split('#')[0]
-    if '/' in clean:
-        clean = clean.split('/')[-1]
-    return clean.strip().lower()
-
 
 class ProductShortSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -250,6 +231,23 @@ class ProductShortSerializer(serializers.ModelSerializer):
     discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
     hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
     activeDeal = FreshDealSerializer(source='active_deal', read_only=True)
+
+    def get_images(self, obj):
+        urls = []
+        if obj.image:
+            try:
+                cover_url = obj.image.url
+                if cover_url and cover_url not in urls:
+                    urls.append(cover_url)
+            except Exception:
+                pass
+        for img_obj in obj.gallery_images.all():
+            try:
+                if img_obj.image and img_obj.image.url and img_obj.image.url not in urls:
+                    urls.append(img_obj.image.url)
+            except Exception:
+                pass
+        return urls
 
     class Meta:
         model = Product
@@ -271,44 +269,6 @@ class ProductShortSerializer(serializers.ModelSerializer):
             return obj.image.url
         except Exception:
             return None
-
-    def get_images(self, obj):
-        """Returns all distinct image URLs submitted by Harvest Hill (admin) for this Master Product."""
-        res = []
-        seen_keys = set()
-
-        main_url = self.get_image_url(obj)
-        if main_url:
-            res.append(main_url)
-            seen_keys.add(_normalize_image_key(main_url))
-
-        admin_supplies = obj.supplies.filter(
-            farmer__user__role='admin'
-        ).exclude(status='rejected').order_by('created_at')
-
-        for s in admin_supplies:
-            if s.photo:
-                try:
-                    photo_name = s.photo.name if hasattr(s.photo, 'name') else str(s.photo)
-                    url = photo_name if (photo_name.startswith('http://') or photo_name.startswith('https://')) else s.photo.url
-                    key = _normalize_image_key(url)
-                    if url and key and key not in seen_keys:
-                        res.append(url)
-                        seen_keys.add(key)
-                except Exception:
-                    pass
-            for img_obj in s.images.all():
-                if img_obj.image:
-                    try:
-                        img_name = img_obj.image.name if hasattr(img_obj.image, 'name') else str(img_obj.image)
-                        url = img_name if (img_name.startswith('http://') or img_name.startswith('https://')) else img_obj.image.url
-                        key = _normalize_image_key(url)
-                        if url and key and key not in seen_keys:
-                            res.append(url)
-                            seen_keys.add(key)
-                    except Exception:
-                        pass
-        return res
 
 
 class ProductRequestSerializer(serializers.ModelSerializer):

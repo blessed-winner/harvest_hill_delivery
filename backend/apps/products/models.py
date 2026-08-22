@@ -240,6 +240,16 @@ class Product(models.Model):
         return self.name
 
 
+class ProductImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='gallery_images')
+    image = models.ImageField(upload_to='products/gallery/', max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Gallery image for {self.product.name}"
+
+
 class ProductRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),

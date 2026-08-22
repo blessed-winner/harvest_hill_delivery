@@ -107,37 +107,27 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
         if (fetchedSupply) {
           const prodName = fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce';
-          const prodCat = fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce';
-          const rawImg = fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image || fetchedSupply.image_url || fetchedSupply.image;
-          let mainImageUrl = getFullImageUrl(rawImg);
+          const rawImages: any[] = fetchedSupply.product_detail?.images || fetchedSupply.images || [];
+          const imagesList: string[] = [];
 
-          const getImageKey = (url: string | null | undefined) => {
-            if (!url) return '';
-            const clean = url.split('?')[0].split('#')[0];
-            const parts = clean.split('/');
-            return parts[parts.length - 1].toLowerCase();
-          };
-
-          let imagesList: string[] = [];
-          const seenKeys = new Set<string>();
-
-          if (mainImageUrl) {
-            imagesList.push(mainImageUrl);
-            seenKeys.add(getImageKey(mainImageUrl));
-          }
-
-          const rawImages = fetchedSupply.product_detail?.images || fetchedSupply.images;
-          if (Array.isArray(rawImages) && rawImages.length > 0) {
-            rawImages.forEach((imgObj: any) => {
-              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image));
-              if (url) {
-                const key = getImageKey(url);
-                if (key && !seenKeys.has(key)) {
-                  imagesList.push(url);
-                  seenKeys.add(key);
-                }
+          if (Array.isArray(rawImages)) {
+            rawImages.forEach((imgItem: any) => {
+              const url = getFullImageUrl(typeof imgItem === 'string' ? imgItem : (imgItem.image_url || imgItem.image));
+              if (url && !imagesList.includes(url)) {
+                imagesList.push(url);
               }
             });
+          }
+
+          const mainImageUrl = getFullImageUrl(
+            fetchedSupply.product_detail?.image_url ||
+            fetchedSupply.product_detail?.image ||
+            fetchedSupply.image_url ||
+            fetchedSupply.image
+          );
+
+          if (mainImageUrl && !imagesList.includes(mainImageUrl)) {
+            imagesList.unshift(mainImageUrl);
           }
 
           const hasActiveDeal = !!(
