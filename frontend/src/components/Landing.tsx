@@ -144,7 +144,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       const isDisc = !!(s.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
       const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
 
-      const rawImg = s.product_detail?.image_url || s.product_detail?.image || s.image_url || s.image;
+      const rawImg = s.product_detail?.image_url || s.product_detail?.image;
       let imageUrl = rawImg;
       if (imageUrl && typeof imageUrl === 'string') {
         if (imageUrl.includes('media/http')) imageUrl = 'https://' + imageUrl.split('http')[1];
@@ -158,6 +158,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
         if (!existing.image_url && imageUrl) {
           existing.image_url = imageUrl;
+          existing.photo = imageUrl;
         }
       } else {
         map.set(key, {
@@ -205,7 +206,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         const isDisc = !!(p.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
         const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
 
-        const rawImg = p.image_url || p.photo || p.image;
+        const rawImg = p.image_url || p.image;
         let imageUrl = rawImg;
         if (imageUrl && typeof imageUrl === 'string') {
           if (imageUrl.includes('media/http')) imageUrl = 'https://' + imageUrl.split('http')[1];

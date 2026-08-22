@@ -33,7 +33,7 @@ const getCategoryFallbackImage = (category?: string, name?: string) => {
   if (c.includes('dairy')) return 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=800&q=80';
   if (c.includes('grain')) return 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&q=80';
   
-  return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80';
+  return 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80';
 };
 
 const normalizeUrlPath = (url: string): string => {
@@ -108,25 +108,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         if (fetchedSupply) {
           const prodName = fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce';
           const prodCat = fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce';
-          // Strictly use Harvest Hill Master Product image only (never supplier harvest photos)
           const rawImg = fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image || fetchedSupply.image_url || fetchedSupply.image;
-          
           let mainImageUrl = getFullImageUrl(rawImg);
-          if (!mainImageUrl) {
-            mainImageUrl = getCategoryFallbackImage(prodCat, prodName);
-          }
 
-          const imagesList: string[] = [];
-          if (mainImageUrl) {
-            imagesList.push(mainImageUrl);
-          }
-
-          if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
-            fetchedSupply.images.forEach((imgObj: any) => {
-              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image));
-              if (url && !imagesList.includes(url)) imagesList.push(url);
-            });
-          }
+          const imagesList: string[] = mainImageUrl ? [mainImageUrl] : [];
 
           const hasActiveDeal = !!(
             fetchedSupply.has_active_discount ||
@@ -365,7 +350,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
   const images = product?.images && product.images.length > 0 
     ? product.images 
-    : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
+    : (product?.image_url ? [product.image_url] : []);
 
   if (loading) {
     return (
@@ -414,14 +399,21 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         {/* Left Column: Image Gallery */}
         <div className="space-y-4">
           {(() => {
-            const currentImg = product.images?.[activeImgIndex] || product.image_url || getCategoryFallbackImage(product.category, product.name);
+            const currentImg = product.images?.[activeImgIndex] || product.image_url || null;
             return (
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner">
-                <img 
-                  src={currentImg} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#f6f3ec] border border-[#e5e2db] relative group shadow-inner flex items-center justify-center">
+                {currentImg ? (
+                  <img 
+                    src={currentImg} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#717971] bg-[#FAF7F0] p-6 text-center">
+                    <Package className="w-12 h-12 opacity-30 mb-2 text-[#717971]" />
+                    <span className="text-xs font-semibold">No Product Image</span>
+                  </div>
+                )}
               </div>
             );
           })()}
