@@ -606,15 +606,29 @@ export default function Negotiations() {
               </div>
             </div>
 
-            <div className="flex gap-2 sm:gap-4 pt-1.5">
-              <button 
-                onClick={handleAccept}
-                className="flex-1 h-9 sm:h-11 md:h-12 bg-secondary-container text-on-secondary-container border border-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-3 hover:bg-secondary-container/80 transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <CheckCircle2 size={14} className="sm:size-[18px]" />
-                Accept Offer
-              </button>
-            </div>
+            {(() => {
+              const latestOffer = activeThread?.offers && activeThread.offers.length > 0
+                ? activeThread.offers[activeThread.offers.length - 1]
+                : null;
+
+              const isLatestOfferByMe = latestOffer 
+                ? (latestOffer.sender === 'farmer' || latestOffer.sender_role === 'farmer')
+                : false;
+
+              return (
+                <div className="flex gap-2 sm:gap-4 pt-1.5">
+                  <button 
+                    disabled={isLatestOfferByMe}
+                    onClick={handleAccept}
+                    className="flex-1 h-9 sm:h-11 md:h-12 bg-secondary-container text-on-secondary-container border border-secondary rounded-lg sm:rounded-xl font-bold font-sans text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-3 hover:bg-secondary-container/80 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isLatestOfferByMe ? "Waiting for Harvest Hill Admin to respond to your proposed terms" : "Accept terms and finalize deal"}
+                  >
+                    <CheckCircle2 size={14} className="sm:size-[18px]" />
+                    Accept Offer
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
       </section>

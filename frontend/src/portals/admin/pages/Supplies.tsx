@@ -1626,6 +1626,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     ? adminThread.offers[adminThread.offers.length - 1]
                     : null;
 
+                  const isLatestOfferByMe = latestOffer 
+                    ? (latestOffer.sender === 'admin' || latestOffer.sender_role === 'admin' || latestOffer.sender_role === 'staff')
+                    : false;
+
                   const origQty = latestOffer
                     ? parseFloat(String(latestOffer.quantity))
                     : parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
@@ -1641,6 +1645,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                   const isTermsUpdated = isQtyChanged || isPriceChanged || isNotesEntered || isProductSelected;
                   const isCounterDisabled = isSubmittingAgreement || isInvalid || !isTermsUpdated;
+                  const isAcceptDisabled = isSubmittingAgreement || isInvalid || isLatestOfferByMe || isTermsUpdated;
 
                   return (
                     <div className="flex flex-col sm:flex-row gap-2 pt-1">
@@ -1651,7 +1656,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         title={
                           isInvalid
-                            ? "Accepted quantity and agreed price must both be greater than 0"
+                            ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
                             : !isTermsUpdated
                             ? "Modify price, quantity, custom notes, or target product to enable counter button"
                             : "Send counter-proposal terms to farmer"
@@ -1661,10 +1666,18 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       </button>
                       <button
                         type="button"
-                        disabled={isSubmittingAgreement || isInvalid}
+                        disabled={isAcceptDisabled}
                         onClick={handleAgreeSupply}
                         className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={isInvalid ? "Accepted quantity and agreed price must both be greater than 0" : "Accept terms and finalize harvest into master stock"}
+                        title={
+                          isInvalid
+                            ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
+                            : isTermsUpdated
+                            ? "You modified negotiation terms. Click 'Counter' to propose these terms to the farmer first."
+                            : isLatestOfferByMe
+                            ? "Waiting for the farmer to accept or counter your latest proposal."
+                            : "Accept terms and finalize harvest into master stock"
+                        }
                       >
                         <CheckCircle2 size={15} /> Accept
                       </button>
