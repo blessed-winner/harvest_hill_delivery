@@ -144,7 +144,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       const isDisc = !!(s.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
       const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
 
-      const rawImg = s.product_detail?.image_url || s.image_url || s.photo || s.photo_url;
+      // Use ONLY Master Product image uploaded by Harvest Hill Admin (exclude supplier photos)
+      const rawImg = s.product_detail?.image_url || s.product_detail?.image || s.image_url || s.image || null;
       let imageUrl = rawImg;
       if (imageUrl && typeof imageUrl === 'string') {
         if (imageUrl.includes('media/http')) imageUrl = 'https://' + imageUrl.split('http')[1];

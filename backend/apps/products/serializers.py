@@ -180,8 +180,9 @@ class ProductSerializer(serializers.ModelSerializer):
             if name.startswith('http://') or name.startswith('https://'):
                 return name
             url = obj.image.url
-            if 'localhost' in url or '127.0.0.1' in url:
-                return None
+            request = self.context.get('request')
+            if request and hasattr(request, 'build_absolute_uri'):
+                return request.build_absolute_uri(url)
             return url
         except Exception:
             return None
@@ -221,8 +222,9 @@ class ProductShortSerializer(serializers.ModelSerializer):
             if name.startswith('http://') or name.startswith('https://'):
                 return name
             url = obj.image.url
-            if 'localhost' in url or '127.0.0.1' in url:
-                return None
+            request = self.context.get('request')
+            if request and hasattr(request, 'build_absolute_uri'):
+                return request.build_absolute_uri(url)
             return url
         except Exception:
             return None

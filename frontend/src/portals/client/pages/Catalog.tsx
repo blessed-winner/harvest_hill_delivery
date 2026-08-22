@@ -173,7 +173,8 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             ? Number(item.discount_price || item.effective_price || item.discountedPrice || item.base_price || item.price || 0)
             : Number(item.agreed_price || item.base_price || item.price || 0);
 
-          const rawImg = item.image_url || item.photo || item.product_detail?.image_url;
+          // Use ONLY Master Product image uploaded by Harvest Hill Admin (exclude supplier photos)
+          const rawImg = item.product_detail?.image_url || item.image_url || item.product_detail?.image || item.image || null;
           let image_url = rawImg;
           if (image_url && typeof image_url === 'string') {
             if (image_url.includes('media/http')) image_url = 'https://' + image_url.split('http')[1];
@@ -592,7 +593,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
 
                 const pct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
                 
-                const rawImg = prod.image_url || prod.photo || prod.product_detail?.image_url;
+                const rawImg = prod.product_detail?.image_url || prod.image_url || prod.product_detail?.image || prod.image || null;
                 const image_url = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
                   ? 'https://' + rawImg.split('http')[1]
                   : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);

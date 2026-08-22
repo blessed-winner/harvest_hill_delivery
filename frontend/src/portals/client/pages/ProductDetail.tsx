@@ -33,7 +33,7 @@ const getCategoryFallbackImage = (category?: string, name?: string) => {
   if (c.includes('dairy')) return 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=800&q=80';
   if (c.includes('grain')) return 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&q=80';
   
-  return 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&q=80';
+  return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&q=80';
 };
 
 const normalizeUrlPath = (url: string): string => {
@@ -377,9 +377,10 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     }
   };
 
-  const images = product?.images && product.images.length > 0 
+  const mainImageUrl = product?.image_url || product?.image || null;
+  const images = product?.images && Array.isArray(product.images) && product.images.length > 0 
     ? product.images 
-    : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
+    : (mainImageUrl ? [mainImageUrl] : [getCategoryFallbackImage(product?.category, product?.name)]);
 
   if (loading) {
     return (
