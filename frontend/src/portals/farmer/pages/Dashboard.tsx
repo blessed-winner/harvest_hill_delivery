@@ -170,7 +170,7 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
           apiRequest('/api/farmer/dashboard/summary/'),
           apiRequest(`/api/farmer/dashboard/supply-volume/?range=${range === 'Last year' ? 'year' : '6months'}`),
           apiRequest('/api/farmer/dashboard/earnings-by-category/'),
-          apiRequest('/api/products/?is_currently_needed=true'),
+          apiRequest('/api/products/?status=open'),
           apiRequest('/api/accounts/me/').catch(() => null),
         ]);
 
@@ -214,8 +214,11 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
         const hasEarnings = Array.isArray(categories) && categories.some((c: any) => c.value > 0);
         setPieData(hasEarnings ? categories : []);
 
-        // Demands
-        setDemands(Array.isArray(neededProducts) ? neededProducts : []);
+        // Demands (Filter open requirements)
+        const openDemands = Array.isArray(neededProducts)
+          ? neededProducts.filter((p: any) => (p.status || 'open') === 'open')
+          : [];
+        setDemands(openDemands);
 
         // Farm name
         if (profileData?.farmer_profile?.farm_name) {
@@ -472,7 +475,7 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
           </div>
         ) : (
           <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 custom-scrollbar">
-            {demands.slice(0, 4).map(demand => (
+            {demands.slice(0, 3).map(demand => (
               <motion.div
                 key={demand.id}
                 whileHover={{ y: -2 }}
