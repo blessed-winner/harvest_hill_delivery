@@ -355,7 +355,7 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             crop_title = instance.product.name if instance.product else (instance.suggested_product_name or instance.custom_product_name or "Crop Harvest")
             farmer_title = farmer_profile.farm_name or getattr(self.request.user, 'username', 'Farmer')
             sup_num = instance.supply_number or f"SUP-{str(instance.id)[:6].upper()}"
-            notif_title = f"🌾 New Harvest Submission ({sup_num})"
+            notif_title = f"New Harvest Submission ({sup_num})"
             notif_msg = f"{farmer_title} submitted {instance.quantity} {instance.unit} of '{crop_title}' @ RWF {instance.price}/{instance.unit} for review."
             for adm in admins:
                 send_live_notification(adm, notif_title, notif_msg)

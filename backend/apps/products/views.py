@@ -184,7 +184,7 @@ class ProductRequestViewSet(viewsets.ModelViewSet):
                     for admin in admins:
                         send_live_notification(
                             user=admin,
-                            title="📋 Client Product Requests Need Attention",
+                            title="Client Product Requests Need Attention",
                             message=f"There are currently {pending_count} pending client product requests requiring review and approval in the Product Catalog manager."
                         )
                 except Exception as e:
