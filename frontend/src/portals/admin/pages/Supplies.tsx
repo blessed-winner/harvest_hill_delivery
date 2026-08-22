@@ -241,8 +241,26 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   };
 
   const customSupplies = React.useMemo(() => {
-    return supplies.filter((s: any) => !s.product || s.is_suggested_product || s.custom_product_name || s.suggested_product_name);
+    return supplies.filter((s: any) => 
+      !s.product || 
+      s.product === null || 
+      s.is_suggested_product || 
+      !!s.custom_product_name || 
+      !!s.suggested_product_name ||
+      (s.product_detail && (s.product_detail.is_suggested_product || s.product_detail.isCustom))
+    );
   }, [supplies]);
+
+  const filteredCustomSupplies = React.useMemo(() => {
+    if (!searchTerm || !searchTerm.trim()) return customSupplies;
+    const q = searchTerm.trim().toLowerCase();
+    return customSupplies.filter((sup: any) => {
+      const name = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || '').toLowerCase();
+      const cat = (sup.custom_category || sup.product_detail?.category || '').toLowerCase();
+      const farmer = (sup.farmer_name || sup.farmer?.farm_name || '').toLowerCase();
+      return name.includes(q) || cat.includes(q) || farmer.includes(q);
+    });
+  }, [customSupplies, searchTerm]);
 
   const pendingCustomCount = React.useMemo(() => {
     return customSupplies.filter((s: any) => s.status !== 'accepted' && s.status !== 'rejected').length;
@@ -853,11 +871,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   </p>
                 </div>
                 <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto">
-                  {customSupplies.length} Custom Harvest Proposal{customSupplies.length === 1 ? '' : 's'}
+                  {filteredCustomSupplies.length} Custom Harvest Proposal{filteredCustomSupplies.length === 1 ? '' : 's'}
                 </span>
               </div>
 
-              {customSupplies.length === 0 ? (
+              {filteredCustomSupplies.length === 0 ? (
                 <div className="p-12 text-center text-on-surface-variant space-y-2">
                   <Package className="w-10 h-10 mx-auto opacity-30 text-primary" />
                   <p className="text-sm font-bold">No custom crop submissions found.</p>
@@ -865,7 +883,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {customSupplies.map((sup: any) => {
+                  {filteredCustomSupplies.map((sup: any) => {
                     const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Harvest').trim();
                     const isAccepted = sup.status === 'accepted';
                     const isRejected = sup.status === 'rejected';
