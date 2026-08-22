@@ -76,6 +76,7 @@ class Product(models.Model):
             self.offered_price = None
             if not self.base_price or float(self.base_price) <= 0:
                 if self.pk:
+                    latest_supply = self.supplies.filter(is_archived=False).exclude(status='rejected').order_by('-created_at').first()
                     if latest_supply and (latest_supply.agreed_price or latest_supply.price):
                         self.base_price = latest_supply.agreed_price or latest_supply.price
 
