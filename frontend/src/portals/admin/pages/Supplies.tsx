@@ -865,17 +865,17 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               <p className="text-xs text-on-surface-variant/70 mt-0.5">Fetching latest stock proposals</p>
             </div>
           ) : activeStatusTab === 'Custom Submissions' ? (
-            <div className="p-6">
-              <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/40 pb-4">
+            <div>
+              <div className="p-4 border-b border-outline-variant/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-lowest">
                 <div>
-                  <h3 className="text-lg font-extrabold text-primary flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-600" /> Custom Farmer Harvest Submissions
+                  <h3 className="text-base font-extrabold text-primary flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600" /> Custom Farmer Harvest Submissions
                   </h3>
                   <p className="text-xs text-on-surface-variant font-medium mt-0.5">
                     Proposals submitted by farmers for unlisted/custom crops. Negotiate prices with farmers and convert agreed harvests into official Master Products.
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto">
+                <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 self-start sm:self-auto">
                   {filteredCustomSupplies.length} Custom Harvest Proposal{filteredCustomSupplies.length === 1 ? '' : 's'}
                 </span>
               </div>
@@ -887,96 +887,171 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   <p className="text-xs">When farmers submit harvests for custom crops not listed in active demands, they will appear here.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredCustomSupplies.map((sup: any) => {
-                    const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Harvest').trim();
-                    const isAccepted = sup.status === 'accepted';
-                    const isRejected = sup.status === 'rejected';
-                    const askingPrice = Number(sup.proposed_price || sup.price || 0);
-                    const agreedPrice = Number(sup.agreed_price || 0);
-                    const activePrice = agreedPrice > 0 ? agreedPrice : askingPrice;
-                    const qty = Number(sup.accepted_quantity || sup.quantity || 0);
-                    const totalVal = qty * activePrice;
-                    const farmerName = sup.farmer_name || sup.farmer?.farm_name || 'Farmer Submitter';
-                    const isLinkedToProduct = !!sup.product;
+                <table className="w-full text-left border-collapse font-sans">
+                  <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
+                    <tr className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                      <th className="px-4 py-3 text-center w-10">
+                        <input 
+                          type="checkbox"
+                          checked={filteredCustomSupplies.length > 0 && filteredCustomSupplies.every(s => selectedIds.includes(s.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const ids = filteredCustomSupplies.map(s => s.id);
+                              setSelectedIds(Array.from(new Set([...selectedIds, ...ids])));
+                            } else {
+                              const ids = filteredCustomSupplies.map(s => s.id);
+                              setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+                            }
+                          }}
+                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                        />
+                      </th>
+                      <th className="px-6 py-3">Custom Crop</th>
+                      <th className="px-6 py-3">Farmer Submitter</th>
+                      <th className="px-6 py-3 text-right">Available Stock</th>
+                      <th className="px-6 py-3">Asking / Agreed Price</th>
+                      <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/50">
+                    {filteredCustomSupplies.map((sup: any) => {
+                      const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Crop').trim();
+                      const category = (sup.custom_category || sup.product_detail?.category || 'VEGETABLES').toUpperCase();
+                      const unit = sup.custom_unit || sup.unit || 'kg';
+                      const isAccepted = sup.status === 'accepted';
+                      const isRejected = sup.status === 'rejected';
+                      const askingPrice = Number(sup.proposed_price || sup.price || 0);
+                      const agreedPrice = Number(sup.agreed_price || 0);
+                      const activePrice = agreedPrice > 0 ? agreedPrice : askingPrice;
+                      const qty = Number(sup.accepted_quantity || sup.quantity || 0);
+                      const farmerName = sup.farmer_name || sup.farmer?.farm_name || 'Farmer Submitter';
+                      const photoUrl = sup.photo || sup.photo_url || (sup.images && sup.images[0]?.image) || null;
+                      const isLinkedToProduct = !!sup.product;
 
-                    return (
-                      <div key={sup.id} className="bg-white rounded-2xl border border-outline-variant p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <span className="text-[9.5px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-2 py-0.5 rounded border border-outline-variant/40">
-                                {sup.custom_category || sup.product_detail?.category || 'VEGETABLES'} · {sup.custom_unit || sup.unit || 'KG'}
-                              </span>
-                              <h4 className="text-base font-extrabold text-on-surface mt-1.5 leading-snug">{cropName}</h4>
+                      return (
+                        <tr 
+                          key={sup.id} 
+                          onClick={() => setSelectedSupply(sup)}
+                          className="hover:bg-surface-container-low transition-colors cursor-pointer group"
+                        >
+                          <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                            <input 
+                              type="checkbox"
+                              checked={selectedIds.includes(sup.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds(prev => [...prev, sup.id]);
+                                } else {
+                                  setSelectedIds(prev => prev.filter(id => id !== sup.id));
+                                }
+                              }}
+                              className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                            />
+                          </td>
+
+                          {/* Custom Crop Name & Photo Thumbnail */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              {photoUrl ? (
+                                <img 
+                                  src={photoUrl} 
+                                  alt={cropName} 
+                                  className="w-10 h-10 rounded-xl object-cover border border-outline-variant/60 bg-surface-container-low shrink-0 shadow-2xs" 
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-200/60 flex items-center justify-center shrink-0">
+                                  <Package size={18} />
+                                </div>
+                              )}
+
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-sm font-bold text-on-surface">{cropName}</p>
+                                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-1.5 py-0.5 rounded border border-outline-variant/40 shrink-0">
+                                    {category}
+                                  </span>
+                                  {photoUrl && (
+                                    <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0 flex items-center gap-1">
+                                      📸 Photo
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
+                                  Unit: {unit} · Submitted by Farmer
+                                </p>
+                              </div>
                             </div>
+                          </td>
+
+                          {/* Farmer Submitter */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-on-surface">
+                              <Users size={13} className="text-primary shrink-0" />
+                              <span>{farmerName}</span>
+                            </div>
+                            {sup.available_date && (
+                              <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">
+                                Ready: {sup.available_date}
+                              </p>
+                            )}
+                          </td>
+
+                          {/* Available Stock */}
+                          <td className="px-6 py-4 text-right">
+                            <p className="font-mono text-sm font-black text-on-surface">
+                              {qty.toLocaleString()} {unit}
+                            </p>
+                          </td>
+
+                          {/* Price */}
+                          <td className="px-6 py-4">
+                            <p className="font-mono text-sm font-black text-primary">
+                              {formatCurrency(activePrice)} / {unit}
+                            </p>
+                            {agreedPrice > 0 && (
+                              <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                Negotiated Agreed Price
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Status Badge */}
+                          <td className="px-6 py-4">
                             <span className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0",
+                              "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
                               isAccepted ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
                               isRejected ? "bg-red-100 text-red-900 border-red-300" :
                               "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
                               {isAccepted ? (isLinkedToProduct ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending Review')}
                             </span>
-                          </div>
+                          </td>
 
-                          <div className="space-y-2 bg-surface-container-low/60 p-3.5 rounded-xl border border-outline-variant/30 text-xs">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Farmer Submitter:</span>
-                              <span className="font-bold text-on-surface">{farmerName}</span>
+                          {/* Actions */}
+                          <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setActiveNegotiationSupply(sup)}
+                                className="py-1.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-xl font-bold text-xs transition-all flex items-center gap-1 border border-outline-variant/60 cursor-pointer shadow-2xs"
+                                title="Open Price Negotiation Pane"
+                              >
+                                <Handshake size={13} /> Negotiate
+                              </button>
+                              <button
+                                onClick={() => handleOpenConvertModal(sup)}
+                                className="py-1.5 px-3 bg-primary text-white hover:opacity-90 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                                title="Convert to Official Master Product"
+                              >
+                                <Sparkles size={13} /> Convert
+                              </button>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Available Quantity:</span>
-                              <span className="font-mono font-black text-on-surface">{qty.toLocaleString()} {sup.custom_unit || sup.unit || 'kg'}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Asking / Agreed Price:</span>
-                              <span className="font-mono font-black text-primary">{formatCurrency(activePrice)} / {sup.custom_unit || sup.unit || 'kg'}</span>
-                            </div>
-                            <div className="flex justify-between items-center border-t border-outline-variant/30 pt-2 mt-1">
-                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Total Value:</span>
-                              <span className="font-mono font-black text-secondary">{formatCurrency(totalVal)}</span>
-                            </div>
-                          </div>
-
-                          {sup.notes && (
-                            <p className="text-xs text-on-surface-variant italic bg-surface-container-low/30 p-2.5 rounded-xl border border-outline-variant/20">
-                              "{sup.notes}"
-                            </p>
-                          )}
-
-                          {(sup.photo || sup.photo_url || (sup.images && sup.images.length > 0)) && (
-                            <div className="flex items-center gap-2 pt-1">
-                              <img 
-                                src={sup.photo || sup.photo_url || sup.images[0]?.image} 
-                                alt={cropName} 
-                                className="w-14 h-14 rounded-xl object-cover border border-outline-variant/60 bg-surface-container-low" 
-                              />
-                              <span className="text-[10px] font-bold text-on-surface-variant">Crop Photo Attached</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setActiveNegotiationSupply(sup)}
-                              className="flex-1 py-2 px-3 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border border-outline-variant/60 cursor-pointer"
-                            >
-                              <Handshake size={14} /> Negotiate Price
-                            </button>
-                            <button
-                              onClick={() => handleOpenConvertModal(sup)}
-                              className="flex-1 py-2 px-3 bg-primary text-white hover:opacity-90 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                            >
-                              <Sparkles size={14} /> Convert to Master Product
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
             </div>
           ) : masterProductGroups.length === 0 ? (
