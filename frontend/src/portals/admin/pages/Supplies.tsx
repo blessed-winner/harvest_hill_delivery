@@ -113,6 +113,17 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [visibilitySupply, setVisibilitySupply] = useState<any | null>(null);
   const [visibilityScopeInput, setVisibilityScopeInput] = useState('HARVEST_HILL_ONLY');
   const [discloseFarmerNameInput, setDiscloseFarmerNameInput] = useState(false);
+
+  // Custom Farmer Supply Conversion State
+  const [convertCustomSupply, setConvertCustomSupply] = useState<any | null>(null);
+  const [convertName, setConvertName] = useState('');
+  const [convertCategory, setConvertCategory] = useState('Vegetables');
+  const [convertUnit, setConvertUnit] = useState('kg');
+  const [convertOfferedPrice, setConvertOfferedPrice] = useState('');
+  const [convertQuantityNeeded, setConvertQuantityNeeded] = useState('');
+  const [convertDeadline, setConvertDeadline] = useState('');
+  const [convertNotes, setConvertNotes] = useState('');
+  const [isSubmittingConversion, setIsSubmittingConversion] = useState(false);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
   const [selectedClients, setSelectedClients] = useState<any[]>([]);
   const [availableClients, setAvailableClients] = useState<any[]>([]);
@@ -226,6 +237,96 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       toast(err.message || "Failed to save visibility settings.", "error");
     } finally {
       setIsSavingVisibility(false);
+    }
+  };
+
+  const customSupplies = React.useMemo(() => {
+    return supplies.filter((s: any) => !s.product || s.is_suggested_product || s.custom_product_name || s.suggested_product_name);
+  }, [supplies]);
+
+  const pendingCustomCount = React.useMemo(() => {
+    return customSupplies.filter((s: any) => s.status !== 'accepted' && s.status !== 'rejected').length;
+  }, [customSupplies]);
+
+  const handleOpenConvertModal = (supply: any) => {
+    setConvertCustomSupply(supply);
+    const name = (supply.custom_product_name || supply.suggested_product_name || supply.product_detail?.name || 'Custom Harvest').trim();
+    setConvertName(name);
+    setConvertCategory(supply.custom_category || supply.product_detail?.category || 'Vegetables');
+    setConvertUnit(supply.custom_unit || supply.unit || 'kg');
+    
+    let priceVal = Number(supply.agreed_price || supply.price || supply.proposed_price || 0);
+    if (priceVal > 0 && priceVal < 100) {
+      priceVal = Math.round(priceVal * 1473.97);
+    }
+    setConvertOfferedPrice(priceVal ? String(priceVal) : '');
+    
+    const qtyVal = supply.accepted_quantity || supply.quantity || '';
+    setConvertQuantityNeeded(String(qtyVal));
+    
+    const defaultDeadline = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    setConvertDeadline(defaultDeadline);
+    setConvertNotes(supply.notes || '');
+  };
+
+  const handleSaveConversion = async () => {
+    if (!convertCustomSupply) return;
+    const priceNum = parseFloat(convertOfferedPrice);
+    const qtyNum = parseFloat(convertQuantityNeeded);
+
+    if (!convertName.trim()) {
+      toast("Crop / Product name is required.", "warning");
+      return;
+    }
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast("Please enter a valid offered price per unit.", "warning");
+      return;
+    }
+    if (isNaN(qtyNum) || qtyNum <= 0) {
+      toast("Please enter a valid quantity needed.", "warning");
+      return;
+    }
+
+    try {
+      setIsSubmittingConversion(true);
+
+      const productPayload: Record<string, any> = {
+        name: convertName.trim(),
+        category: convertCategory,
+        unit: convertUnit,
+        pricing_mode: 'harvest_hill_offers',
+        offered_price: priceNum,
+        base_price: priceNum,
+        quantity_needed: qtyNum,
+        status: 'open',
+        submission_deadline: convertDeadline || null,
+        notes: convertNotes,
+      };
+
+      if (convertCustomSupply.photo) {
+        productPayload.image_url = convertCustomSupply.photo;
+      } else if (convertCustomSupply.photo_url) {
+        productPayload.image_url = convertCustomSupply.photo_url;
+      }
+
+      const newProduct = await api.products.create(productPayload);
+      const newProdId = newProduct.id || newProduct.pk;
+
+      await api.supplies.update(convertCustomSupply.id, {
+        product: newProdId,
+        status: 'accepted',
+        agreed_price: priceNum,
+        accepted_quantity: qtyNum,
+      });
+
+      toast(`Master Product "${convertName}" created & harvest supply linked successfully!`, "success");
+      setConvertCustomSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Failed to convert custom supply to master product:", err);
+      toast(err.message || "Failed to create Master Product.", "error");
+    } finally {
+      setIsSubmittingConversion(false);
     }
   };
 
@@ -648,23 +749,58 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               </button>
             )}
           </div>
-
           <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-            {['All', 'Pending Review', 'Active', 'Archived'].map((t) => (
-              <button 
-                key={t} 
-                onClick={() => setActiveStatusTab(t)}
-                className={cn(
-                  "px-4 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap",
-                  activeStatusTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"
-                )}
-              >
-                {t}
-              </button>
-            ))}
+            {['All', 'Pending Review', 'Active', 'Custom Submissions', 'Archived'].map((t) => {
+              const isCustomTab = t === 'Custom Submissions';
+              const label = isCustomTab
+                ? (pendingCustomCount > 0 ? `Custom Submissions (${pendingCustomCount})` : 'Custom Submissions')
+                : t;
+
+              return (
+                <button 
+                  key={t} 
+                  onClick={() => setActiveStatusTab(t)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5",
+                    activeStatusTab === t ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"
+                  )}
+                >
+                  <span>{label}</span>
+                  {isCustomTab && pendingCustomCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title={`${pendingCustomCount} custom harvest submission(s) pending review`} />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* Custom Submissions Top Notification Link Banner */}
+      {pendingCustomCount > 0 && activeStatusTab !== 'Custom Submissions' && (
+        <div className="mb-4 bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-700 shrink-0">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-amber-950">
+                {pendingCustomCount} Custom Farmer Crop Submission{pendingCustomCount > 1 ? 's' : ''} Pending Review
+              </h4>
+              <p className="text-xs text-amber-800 font-medium mt-0.5">
+                Farmers submitted harvest proposals for custom crops not linked to standard requirement templates. Review, negotiate prices, or publish them as Master Products.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveStatusTab('Custom Submissions')}
+            className="px-4 py-2 bg-amber-900 hover:bg-amber-950 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs"
+          >
+            <span>View Custom Submissions</span>
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
@@ -683,7 +819,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             )}
             <button
               onClick={handleBulkDelete}
-              className="px-3.5 py-1.5 bg-[#8a3333] text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:opacity-90 font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-red-600 text-white rounded-lg font-mono text-[10px] uppercase tracking-wider hover:bg-red-700 font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Trash2 size={12} /> Delete
             </button>
@@ -704,6 +840,121 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               <RefreshCw className="w-8 h-8 text-primary animate-spin mb-3 opacity-80" />
               <p className="text-sm font-bold text-primary">Loading supplies...</p>
               <p className="text-xs text-on-surface-variant/70 mt-0.5">Fetching latest stock proposals</p>
+            </div>
+          ) : activeStatusTab === 'Custom Submissions' ? (
+            <div className="p-6">
+              <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/40 pb-4">
+                <div>
+                  <h3 className="text-lg font-extrabold text-primary flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-600" /> Custom Farmer Harvest Submissions
+                  </h3>
+                  <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+                    Proposals submitted by farmers for unlisted/custom crops. Negotiate prices with farmers and convert agreed harvests into official Master Products.
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto">
+                  {customSupplies.length} Custom Harvest Proposal{customSupplies.length === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              {customSupplies.length === 0 ? (
+                <div className="p-12 text-center text-on-surface-variant space-y-2">
+                  <Package className="w-10 h-10 mx-auto opacity-30 text-primary" />
+                  <p className="text-sm font-bold">No custom crop submissions found.</p>
+                  <p className="text-xs">When farmers submit harvests for custom crops not listed in active demands, they will appear here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {customSupplies.map((sup: any) => {
+                    const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Harvest').trim();
+                    const isAccepted = sup.status === 'accepted';
+                    const isRejected = sup.status === 'rejected';
+                    const askingPrice = Number(sup.proposed_price || sup.price || 0);
+                    const agreedPrice = Number(sup.agreed_price || 0);
+                    const activePrice = agreedPrice > 0 ? agreedPrice : askingPrice;
+                    const qty = Number(sup.accepted_quantity || sup.quantity || 0);
+                    const totalVal = qty * activePrice;
+                    const farmerName = sup.farmer_name || sup.farmer?.farm_name || 'Farmer Submitter';
+                    const isLinkedToProduct = !!sup.product;
+
+                    return (
+                      <div key={sup.id} className="bg-white rounded-2xl border border-outline-variant p-5 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[9.5px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-2 py-0.5 rounded border border-outline-variant/40">
+                                {sup.custom_category || sup.product_detail?.category || 'VEGETABLES'} · {sup.custom_unit || sup.unit || 'KG'}
+                              </span>
+                              <h4 className="text-base font-extrabold text-on-surface mt-1.5 leading-snug">{cropName}</h4>
+                            </div>
+                            <span className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0",
+                              isAccepted ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
+                              isRejected ? "bg-red-100 text-red-900 border-red-300" :
+                              "bg-amber-100 text-amber-900 border-amber-300"
+                            )}>
+                              {isAccepted ? (isLinkedToProduct ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending Review')}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 bg-surface-container-low/60 p-3.5 rounded-xl border border-outline-variant/30 text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Farmer Submitter:</span>
+                              <span className="font-bold text-on-surface">{farmerName}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Available Quantity:</span>
+                              <span className="font-mono font-black text-on-surface">{qty.toLocaleString()} {sup.custom_unit || sup.unit || 'kg'}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Asking / Agreed Price:</span>
+                              <span className="font-mono font-black text-primary">{formatCurrency(activePrice)} / {sup.custom_unit || sup.unit || 'kg'}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-t border-outline-variant/30 pt-2 mt-1">
+                              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Total Value:</span>
+                              <span className="font-mono font-black text-secondary">{formatCurrency(totalVal)}</span>
+                            </div>
+                          </div>
+
+                          {sup.notes && (
+                            <p className="text-xs text-on-surface-variant italic bg-surface-container-low/30 p-2.5 rounded-xl border border-outline-variant/20">
+                              "{sup.notes}"
+                            </p>
+                          )}
+
+                          {(sup.photo || sup.photo_url || (sup.images && sup.images.length > 0)) && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <img 
+                                src={sup.photo || sup.photo_url || sup.images[0]?.image} 
+                                alt={cropName} 
+                                className="w-14 h-14 rounded-xl object-cover border border-outline-variant/60 bg-surface-container-low" 
+                              />
+                              <span className="text-[10px] font-bold text-on-surface-variant">Crop Photo Attached</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-outline-variant/30 flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setActiveNegotiationSupply(sup)}
+                              className="flex-1 py-2 px-3 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border border-outline-variant/60 cursor-pointer"
+                            >
+                              <Handshake size={14} /> Negotiate Price
+                            </button>
+                            <button
+                              onClick={() => handleOpenConvertModal(sup)}
+                              className="flex-1 py-2 px-3 bg-primary text-white hover:opacity-90 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            >
+                              <Sparkles size={14} /> Convert to Master Product
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : masterProductGroups.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant">
@@ -2420,6 +2671,137 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               >
                 <Save size={14} />
                 <span>{isSavingVisibility ? 'Saving...' : 'Save Settings'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert Custom Farmer Crop to Master Product Modal */}
+      {convertCustomSupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/50 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-primary">Convert Custom Crop to Master Product</h3>
+                  <p className="text-xs text-on-surface-variant font-medium">Refill requirement specs to publish this crop in official catalog</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setConvertCustomSupply(null)}
+                className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Crop / Product Name</label>
+                <input
+                  type="text"
+                  value={convertName}
+                  onChange={(e) => setConvertName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                  placeholder="e.g. Red Gala Apples"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Category</label>
+                  <select
+                    value={convertCategory}
+                    onChange={(e) => setConvertCategory(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none bg-white"
+                  >
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Herbs">Herbs</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Animal-Based">Animal-Based</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Unit</label>
+                  <input
+                    type="text"
+                    value={convertUnit}
+                    onChange={(e) => setConvertUnit(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                    placeholder="e.g. kg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Offered Price (RWF/{convertUnit})</label>
+                  <input
+                    type="number"
+                    value={convertOfferedPrice}
+                    onChange={(e) => setConvertOfferedPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-black text-xs text-primary focus:border-primary outline-none"
+                    placeholder="e.g. 1200"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Quantity Needed ({convertUnit})</label>
+                  <input
+                    type="number"
+                    value={convertQuantityNeeded}
+                    onChange={(e) => setConvertQuantityNeeded(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                    placeholder="e.g. 500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Submission Deadline</label>
+                <input
+                  type="date"
+                  value={convertDeadline}
+                  onChange={(e) => setConvertDeadline(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Requirement Specs & Notes</label>
+                <textarea
+                  rows={2}
+                  value={convertNotes}
+                  onChange={(e) => setConvertNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-outline-variant text-xs font-medium focus:border-primary outline-none resize-none"
+                  placeholder="Grade A inspection specs, cold storage, etc."
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-outline-variant/40 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConvertCustomSupply(null)}
+                disabled={isSubmittingConversion}
+                className="flex-1 py-2.5 border border-outline-variant text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveConversion}
+                disabled={isSubmittingConversion}
+                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+              >
+                <span>{isSubmittingConversion ? 'Publishing...' : 'Publish Master Product'}</span>
+                <Sparkles size={14} />
               </button>
             </div>
           </div>
