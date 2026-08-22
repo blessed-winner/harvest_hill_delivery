@@ -1047,7 +1047,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       <th className="px-4 py-2.5 text-right">Available Stock</th>
                       <th className="px-4 py-2.5">Asking / Agreed Price</th>
                       <th className="px-4 py-2.5">Status</th>
-                      <th className="px-4 py-2.5 text-right">Actions</th>
+                      <th className="px-4 py-2.5 text-right">Inspection</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/40">
@@ -1063,7 +1063,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       const qty = Number(sup.accepted_quantity || sup.quantity || 0);
                       const farmerName = sup.farmer_name || sup.farmer?.farm_name || 'Farmer Submitter';
                       const photoUrl = sup.photo || sup.photo_url || (sup.images && sup.images[0]?.image) || null;
-                      const isLinkedToProduct = !!sup.product;
 
                       return (
                         <tr 
@@ -1150,34 +1149,20 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               isRejected ? "bg-red-100 text-red-900 border-red-300" :
                               "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
-                              {isAccepted ? (isLinkedToProduct ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending')}
+                              {isAccepted ? (sup.product ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending')}
                             </span>
                           </td>
 
-                          {/* Actions */}
+                          {/* Inspection Link */}
                           <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => setActiveNegotiationSupply(sup)}
-                                className="py-1 px-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 border border-outline-variant/60 cursor-pointer shadow-2xs"
-                                title="Open Price Negotiation Pane"
-                              >
-                                <Handshake size={12} /> Negotiate
-                              </button>
-                              {isLinkedToProduct || isAccepted ? (
-                                <span className="py-1 px-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold text-[10.5px] inline-flex items-center gap-1 shadow-2xs">
-                                  <CheckCircle2 size={12} /> Approved
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => handleOpenApproveChoiceModal(sup)}
-                                  className="py-1 px-2.5 bg-primary text-white hover:opacity-90 rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-                                  title="Approve custom submission and convert to Master Product"
-                                >
-                                  <CheckCircle2 size={13} /> Approve
-                                </button>
-                              )}
-                            </div>
+                            <button
+                              onClick={() => setSelectedSupply(sup)}
+                              className="inline-flex items-center gap-1 py-1 px-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-lg font-bold text-[10.5px] transition-all border border-outline-variant/60 cursor-pointer shadow-2xs group-hover:border-primary/40"
+                              title="Inspect custom crop submission details"
+                            >
+                              <span>Inspect</span>
+                              <ChevronRight size={13} />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -1197,148 +1182,144 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               )}
             </div>
           ) : (
-            <table className="w-full text-left border-collapse font-sans">
-              <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
-                <tr className="text-[9px] font-extrabold text-on-surface-variant uppercase tracking-widest">
-                  <th className="px-3 py-2.5 text-center w-8">
-                    <input 
-                      type="checkbox"
-                      checked={masterProductGroups.length > 0 && masterProductGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          const allIds = masterProductGroups.flatMap(g => g.supplies.map(s => s.id));
-                          setSelectedIds(Array.from(new Set([...selectedIds, ...allIds])));
-                        } else {
-                          const allIds = masterProductGroups.flatMap(g => g.supplies.map(s => s.id));
-                          setSelectedIds(prev => prev.filter(id => !allIds.includes(id)));
-                        }
-                      }}
-                      className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
-                    />
-                  </th>
-                  <th className="px-4 py-2.5">Master Product</th>
-                  <th className="px-4 py-2.5">Suppliers</th>
-                  <th className="px-4 py-2.5 text-right">Available Stock</th>
-                  <th className="px-4 py-2.5">Selling Price</th>
-                  <th className="px-4 py-2.5">Status</th>
-                  <th className="px-4 py-2.5 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/40">
-                {currentGroups.map((group) => (
-                  <tr 
-                    key={group.id} 
-                    onClick={() => setSelectedSupply(group.primarySupply)}
-                    className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
-                  >
-                    <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left font-sans border-collapse">
+                <thead>
+                  <tr className="border-b border-outline-variant/40 bg-surface-container-low text-[9px] font-extrabold uppercase tracking-widest text-on-surface-variant">
+                    <th className="px-3 py-2.5 text-center w-8">
                       <input 
                         type="checkbox"
-                        checked={group.supplies.every(s => selectedIds.includes(s.id))}
+                        checked={currentGroups.length > 0 && currentGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
                         onChange={(e) => {
-                          const ids = group.supplies.map(s => s.id);
                           if (e.target.checked) {
-                            setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+                            const allIds = currentGroups.flatMap(g => g.supplies.map(s => s.id));
+                            setSelectedIds(Array.from(new Set([...selectedIds, ...allIds])));
                           } else {
-                            setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+                            const allIds = currentGroups.flatMap(g => g.supplies.map(s => s.id));
+                            setSelectedIds(prev => prev.filter(id => !allIds.includes(id)));
                           }
                         }}
                         className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
                       />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-xs font-bold text-on-surface">{group.name}</p>
-                          {group.displayId && (
-                            <span className="text-[8.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
-                              {group.displayId}
-                            </span>
-                          )}
-                          {hasUnreadNegotiationAction(group) && (
-                            <span 
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
-                              title="New farmer negotiation message / counter-offer awaiting response"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-amber-600 animate-ping shrink-0" />
-                              <MessageSquare size={9} className="text-amber-800 shrink-0" />
-                              <span>New Message</span>
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[9.5px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
-                          {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 text-xs font-bold text-on-surface">
-                        <Users size={12} className="text-primary shrink-0" />
-                        <span>{group.supplierCount} {group.supplierCount === 1 ? 'Supplier' : 'Suppliers'}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className="font-mono text-xs font-bold text-on-surface">
-                        {group.totalAvailableStock > 0 ? `${group.totalAvailableStock.toLocaleString()} ${group.unit}` : `0 ${group.unit}`}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="space-y-0.5">
-                        {group.isDiscounted && group.discountPrice ? (
-                          <div>
-                            <span className="line-through text-[9px] text-on-surface-variant/70 font-bold block">
-                              {formatCurrency(group.masterSellingPrice)}
-                            </span>
-                            <span className="font-mono text-xs font-black text-orange-700">
-                              {formatCurrency(group.discountPrice)} / {group.unit}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-mono text-xs font-bold text-primary">
-                            {formatCurrency(group.masterSellingPrice)} / {group.unit}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border",
-                        group.totalAvailableStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
-                      )}>
-                        {group.totalAvailableStock > 0 ? 'Active' : 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1 text-[11px] font-bold text-primary group-hover:underline">
-                        <span>Inspect</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-outline group-hover:text-primary transition-colors" />
-                      </div>
-                    </td>
+                    </th>
+                    <th className="px-4 py-2.5">Master Product</th>
+                    <th className="px-4 py-2.5">Suppliers</th>
+                    <th className="px-4 py-2.5 text-right">Available Stock</th>
+                    <th className="px-4 py-2.5">Selling Price</th>
+                    <th className="px-4 py-2.5">Status</th>
+                    <th className="px-4 py-2.5 text-right"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/40">
+                  {currentGroups.map((group) => (
+                    <tr 
+                      key={group.id} 
+                      onClick={() => setSelectedSupply(group.primarySupply)}
+                      className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="checkbox"
+                          checked={group.supplies.every(s => selectedIds.includes(s.id))}
+                          onChange={(e) => {
+                            const ids = group.supplies.map(s => s.id);
+                            if (e.target.checked) {
+                              setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+                            } else {
+                              setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+                            }
+                          }}
+                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-bold text-on-surface">{group.name}</p>
+                            {group.displayId && (
+                              <span className="text-[8.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
+                                {group.displayId}
+                              </span>
+                            )}
+                            {hasUnreadNegotiationAction(group) && (
+                              <span 
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
+                                title="New farmer negotiation message / counter-offer awaiting response"
+                              >
+                                <span className="w-1 h-1 rounded-full bg-amber-600 animate-ping shrink-0" />
+                                <MessageSquare size={9} className="text-amber-800 shrink-0" />
+                                <span>New Message</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[9.5px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
+                            {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-xs text-on-surface font-semibold">
+                          <Users size={12} className="text-primary shrink-0" />
+                          <span>
+                            {showFarmerNames
+                              ? (group.primarySupply.farmer_name || group.primarySupply.farmer?.farm_name || 'Farmer Submitter')
+                              : `${group.supplierCount} supplier${group.supplierCount > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <p className="font-mono text-xs font-bold text-on-surface">
+                          {group.totalAvailableStock.toLocaleString()} {group.unit || 'kg'}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-mono text-xs font-bold text-primary">
+                          {formatCurrency(group.masterSellingPrice)} / {group.unit || 'kg'}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
+                          group.status === 'accepted' ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
+                        )}>
+                          {group.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center gap-1 text-xs font-bold text-primary group-hover:translate-x-0.5 transition-transform">
+                          <span>Inspect</span>
+                          <ChevronRight size={14} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
-        {/* Pagination Footer */}
-        {!isLoading && totalPages > 1 && (
-          <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between shrink-0">
-            <span className="text-xs text-on-surface-variant font-bold">
-              Showing {indexOfFirstGroup + 1}-{Math.min(indexOfLastGroup, masterProductGroups.length)} of {masterProductGroups.length} Master Products
-            </span>
-            <div className="flex gap-2">
+        {/* Dynamic Pagination Bar */}
+        {masterProductGroups.length > 0 && activeStatusTab !== 'Custom Submissions' && (
+          <div className="px-4 sm:px-6 py-3 border-t border-outline-variant/40 bg-surface-container-lowest flex items-center justify-between gap-4 shrink-0">
+            <p className="text-xs font-semibold text-on-surface-variant">
+              Showing <span className="font-bold text-on-surface">{indexOfFirstGroup + 1}</span> to <span className="font-bold text-on-surface">{Math.min(indexOfFirstGroup + groupsPerPage, masterProductGroups.length)}</span> of <span className="font-bold text-on-surface">{masterProductGroups.length}</span> master products
+            </p>
+            <div className="flex items-center gap-1.5">
               <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-2.5 py-1 border border-outline-variant/60 rounded-lg text-xs font-bold text-on-surface hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
               >
                 Previous
               </button>
+              <span className="text-xs font-bold text-primary px-2 font-mono">
+                {currentPage} / {totalPages}
+              </span>
               <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-bold bg-white text-on-surface-variant hover:bg-surface-container-low transition-all disabled:opacity-50 cursor-pointer"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-2.5 py-1 border border-outline-variant/60 rounded-lg text-xs font-bold text-on-surface hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
               >
                 Next
               </button>
@@ -1347,130 +1328,202 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         )}
       </div>
 
+      {/* ── DETAIL DRAWER (Inspection Panel) ───────────────────────────────── */}
       {(() => {
         const isHarvestHillSubmission = selectedSupply && (
           (selectedSupply.farmer_name || '').toLowerCase().includes('harvest hill') ||
           (selectedSupply.farmer?.farm_name || '').toLowerCase().includes('harvest hill') ||
           selectedSupply.farmer?.user?.role === 'admin'
         );
+
+        const isCustomCropSubmission = selectedSupply && (
+          !selectedSupply.product || 
+          selectedSupply.is_suggested_product || 
+          !!selectedSupply.custom_product_name || 
+          !!selectedSupply.suggested_product_name ||
+          !!selectedSupply.client_request ||
+          !!selectedSupply.product_request
+        );
+
+        const latestOffer = selectedSupply?.latest_offer;
+        const offerStatus = (latestOffer?.offer_status || '').toUpperCase();
+        const hasPendingNegotiationTerms = latestOffer && offerStatus === 'PENDING' && selectedSupply.status !== 'accepted';
+        const isAlreadyApproved = selectedSupply && (!!selectedSupply.product || selectedSupply.status === 'accepted');
+
         return (
           <DetailDrawer
             isOpen={!!selectedSupply}
             onClose={() => setSelectedSupply(null)}
-            title={selectedSupply?.product_detail?.name || selectedSupply?.custom_product_name || 'Supply Details'}
+            title={selectedSupply?.product_detail?.name || selectedSupply?.custom_product_name || selectedSupply?.suggested_product_name || 'Supply Details'}
             subtitle="Inbound Supply Manager"
-        footer={
-          selectedSupply && (
-            <div className="space-y-2.5 w-full font-sans text-xs">
-              {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
-                <div>
-                  <button 
-                    onClick={async () => {
-                      const confirmed = await showConfirm("Reject Supply Proposal", "Are you sure you want to reject this supply proposal?");
-                      if (confirmed) {
-                        handleUpdateStatus(selectedSupply.id, 'rejected');
-                      }
-                    }}
-                    className="w-full py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm flex items-center justify-center gap-1.5"
-                  >
-                    <X size={15} /> Reject Proposal
-                  </button>
-                </div>
-              )}
+            footer={
+              selectedSupply && (
+                <div className="space-y-2.5 w-full font-sans text-xs">
+                  {/* Custom Submission Specific Actions */}
+                  {isCustomCropSubmission && !selectedSupply.is_archived ? (
+                    <div className="space-y-2.5 w-full">
+                      {hasPendingNegotiationTerms && (
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-start gap-2">
+                          <AlertTriangle size={14} className="text-amber-700 shrink-0 mt-0.5" />
+                          <span>
+                            A negotiation counter-offer is currently pending. You must reach and agree to concrete negotiation terms before approving this custom submission.
+                          </span>
+                        </div>
+                      )}
 
-              {!selectedSupply.is_archived && (
-                <div className="w-full">
-                  {isHarvestHillSubmission ? (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const supToEdit = selectedSupply;
-                        setSelectedSupply(null);
-                        handleOpenEditModal(supToEdit);
-                      }}
-                      className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
-                    >
-                      <Edit3 size={14} /> Edit Supply
-                    </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const supToNeg = selectedSupply;
+                            setSelectedSupply(null);
+                            setActiveNegotiationSupply(supToNeg);
+                          }}
+                          className="w-full py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary border border-outline-variant/60 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                        >
+                          <Handshake size={14} /> Negotiate
+                        </button>
+
+                        {isAlreadyApproved ? (
+                          <span className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs">
+                            <CheckCircle2 size={14} /> Approved
+                          </span>
+                        ) : (
+                          <button 
+                            type="button"
+                            disabled={hasPendingNegotiationTerms}
+                            onClick={() => {
+                              const supToApprove = selectedSupply;
+                              setSelectedSupply(null);
+                              handleOpenApproveChoiceModal(supToApprove);
+                            }}
+                            className={cn(
+                              "w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm",
+                              hasPendingNegotiationTerms
+                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed"
+                                : "bg-primary text-white hover:opacity-90 cursor-pointer"
+                            )}
+                            title={hasPendingNegotiationTerms ? "Agree to negotiation terms first" : "Approve custom submission"}
+                          >
+                            <CheckCircle2 size={14} /> Approve
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const supToNeg = selectedSupply;
-                        setSelectedSupply(null);
-                        setActiveNegotiationSupply(supToNeg);
-                      }}
-                      className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                    >
-                      <Handshake size={14} /> Contextual Negotiation Pane
-                    </button>
-                  )}
-                </div>
-              )}
+                    /* Standard Supply Log Actions */
+                    <>
+                      {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
+                        <div>
+                          <button 
+                            onClick={async () => {
+                              const confirmed = await showConfirm("Reject Supply Proposal", "Are you sure you want to reject this supply proposal?");
+                              if (confirmed) {
+                                handleUpdateStatus(selectedSupply.id, 'rejected');
+                              }
+                            }}
+                            className="w-full py-2.5 px-3 bg-[#7f1d1d] text-white rounded-xl font-bold hover:bg-red-800 transition-all cursor-pointer text-xs shadow-sm flex items-center justify-center gap-1.5"
+                          >
+                            <X size={15} /> Reject Proposal
+                          </button>
+                        </div>
+                      )}
 
-              {!selectedSupply.is_archived && (
-                <div className={cn("grid gap-2.5", selectedSupply.is_discounted ? "grid-cols-1" : "grid-cols-2")}>
-                  {!selectedSupply.is_discounted && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const sup = selectedSupply;
-                        setSelectedSupply(null);
-                        setDiscountSupply(sup);
-                        setDiscountIsActive(!!sup.is_discounted);
-                        setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
-                      }}
-                      className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
-                    >
-                      <Tag size={13} className="text-orange-700" />
-                      <span>Fresh Deals</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sup = selectedSupply;
-                      setSelectedSupply(null);
-                      setVisibilitySupply(sup);
-                      setVisibilityScopeInput(sup.visibility_scope || 'private_admin');
-                      setDiscloseFarmerNameInput(!!sup.disclose_farmer_name);
-                    }}
-                    className="w-full py-2.5 bg-[#f6f3ec] border border-[#e5e2db] text-[#1c1c18] rounded-xl font-extrabold hover:bg-[#f0eee7] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
-                  >
-                    <Eye size={13} className="text-primary" />
-                    <span>Visibility</span>
-                  </button>
-                </div>
-              )}
+                      {!selectedSupply.is_archived && (
+                        <div className="w-full">
+                          {isHarvestHillSubmission ? (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const supToEdit = selectedSupply;
+                                setSelectedSupply(null);
+                                handleOpenEditModal(supToEdit);
+                              }}
+                              className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                            >
+                              <Edit3 size={14} /> Edit Supply
+                            </button>
+                          ) : (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const supToNeg = selectedSupply;
+                                setSelectedSupply(null);
+                                setActiveNegotiationSupply(supToNeg);
+                              }}
+                              className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                            >
+                              <Handshake size={14} /> Contextual Negotiation Pane
+                            </button>
+                          )}
+                        </div>
+                      )}
 
-              {!selectedSupply.is_archived && (
-                <div className="grid grid-cols-2 gap-2.5">
+                      {!selectedSupply.is_archived && (
+                        <div className={cn("grid gap-2.5", selectedSupply.is_discounted ? "grid-cols-1" : "grid-cols-2")}>
+                          {!selectedSupply.is_discounted && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sup = selectedSupply;
+                                setSelectedSupply(null);
+                                setDiscountSupply(sup);
+                                setDiscountIsActive(!!sup.is_discounted);
+                                setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
+                              }}
+                              className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                            >
+                              <Tag size={13} className="text-orange-700" />
+                              <span>Fresh Deals</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sup = selectedSupply;
+                              setSelectedSupply(null);
+                              setVisibilitySupply(sup);
+                              setVisibilityScopeInput(sup.visibility_scope || 'private_admin');
+                              setDiscloseFarmerNameInput(!!sup.disclose_farmer_name);
+                            }}
+                            className="w-full py-2.5 bg-[#f6f3ec] border border-[#e5e2db] text-[#1c1c18] rounded-xl font-extrabold hover:bg-[#f0eee7] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                          >
+                            <Eye size={13} className="text-primary" />
+                            <span>Visibility</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {!selectedSupply.is_archived && (
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button 
+                        onClick={() => handleArchiveSupply(selectedSupply.id)}
+                        className="w-full py-2.5 bg-white border border-outline-variant/60 text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                      >
+                        <Archive size={14} className="text-on-surface-variant" /> Archive
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const sup = selectedSupply;
+                          setDeleteWarningSupply(sup);
+                        }}
+                        className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    </div>
+                  )}
                   <button 
-                    onClick={() => handleArchiveSupply(selectedSupply.id)}
-                    className="w-full py-2.5 bg-white border border-outline-variant/60 text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                    onClick={() => setSelectedSupply(null)}
+                    className="w-full py-2.5 bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer text-xs"
                   >
-                    <Archive size={14} className="text-on-surface-variant" /> Archive
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const sup = selectedSupply;
-                      setDeleteWarningSupply(sup);
-                    }}
-                    className="w-full py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                  >
-                    <Trash2 size={14} /> Delete
+                    Close
                   </button>
                 </div>
-              )}
-              <button 
-                onClick={() => setSelectedSupply(null)}
-                className="w-full py-2.5 bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer text-xs"
-              >
-                Close
-              </button>
-            </div>
-          )
-        }
+              )
+            }
       >
         {selectedSupply && (
           <div className="space-y-5 font-sans text-xs">
