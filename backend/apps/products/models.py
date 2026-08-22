@@ -221,19 +221,21 @@ class Product(models.Model):
     @property
     def price(self):
         """
-        Returns the official Harvest Hill Master Product Selling Price (base_price),
-        falling back to admin supply price or offered_price if base_price is not set.
+        Returns the official Harvest Hill Master Product Selling Price:
+        1. Price from Harvest Hill admin harvest submission (if admin harvest submitted via Harvest button).
+        2. MasterProduct base_price (if explicitly set and > 0).
+        3. Requirement baseline offered_price (if pricing_mode is harvest_hill_offers).
         Farmer negotiated purchase prices (Supply.agreed_price) do NOT alter the Master Product selling price.
         """
-        if self.base_price and float(self.base_price) > 0:
-            return float(self.base_price)
-
         admin_supply = self.supplies.filter(farmer__user__role='admin', is_archived=False).order_by('-created_at').first()
         if admin_supply:
             if admin_supply.agreed_price and float(admin_supply.agreed_price) > 0:
                 return float(admin_supply.agreed_price)
             if admin_supply.price and float(admin_supply.price) > 0:
                 return float(admin_supply.price)
+
+        if self.base_price and float(self.base_price) > 0:
+            return float(self.base_price)
 
         if self.pricing_mode == 'harvest_hill_offers' and self.offered_price and float(self.offered_price) > 0:
             return float(self.offered_price)
