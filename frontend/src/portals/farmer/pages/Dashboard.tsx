@@ -477,45 +477,61 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
                 key={demand.id}
                 whileHover={{ y: -2 }}
                 onClick={() => onViewChange?.('submit')}
-                className="min-w-[240px] max-w-[280px] bg-white custom-shadow rounded-2xl border border-[#E8E4DA] p-4 group cursor-pointer shrink-0 flex flex-col justify-between hover:shadow-md hover:border-[#2D5A3D] transition-all duration-300"
+                className="min-w-[250px] max-w-[280px] bg-white custom-shadow rounded-2xl border border-[#E8E4DA] p-4 group cursor-pointer shrink-0 flex flex-col justify-between hover:shadow-lg hover:border-[#2D5A3D] transition-all duration-300"
               >
                 <div>
-                  <div className="flex justify-between items-start mb-2 gap-1">
-                    <h4 className="font-extrabold text-sm text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors leading-tight">
-                      {demand.name}
-                    </h4>
-                    <span className="bg-[#FAF7F0] text-[#2D5A3D] px-2.5 py-0.5 rounded-md font-mono text-[9px] uppercase tracking-wider font-extrabold border border-[#E8E4DA] shrink-0">
+                  {/* Top Pill Header */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border border-[#E8E4DA] uppercase tracking-wider">
                       {demand.category || 'Vegetables'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
+                      OPEN
                     </span>
                   </div>
 
-                  {/* Requirement Specifications Box */}
-                  <div className="space-y-2 bg-[#FAF7F0] p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Quantity Needed:</span>
-                      <span className="font-extrabold text-[#1C2A1E]">
-                        {parseFloat(demand.quantity_needed || 0).toLocaleString()} {demand.unit || 'kg'}
-                      </span>
+                  {/* Requirement Title */}
+                  <h4 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors leading-tight mb-2">
+                    {demand.name}
+                  </h4>
+
+                  {/* Requirement Spec Box - Vertical Hierarchy Matching Admin Portal */}
+                  <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
+                      <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
+                        {parseFloat(String(demand.quantity_needed || 0)).toLocaleString()} {demand.unit || 'kg'}
+                      </p>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Reference Price:</span>
-                      <span className="font-extrabold text-[#2D5A3D]">
-                        RWF {parseFloat(demand.base_price || 0).toLocaleString()}/{demand.unit || 'kg'}
-                      </span>
+                    <div className="py-1.5 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing</p>
+                      {demand.pricing_mode === 'farmer_proposes' ? (
+                        <div>
+                          <p className="text-[11px] font-medium text-[#717971]">Farmer proposes</p>
+                          <p className="text-xs font-semibold text-[#4A473D] mt-0.5">Price submitted during submission</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-[11px] font-medium text-[#717971]">Harvest Hill offers</p>
+                          <p className="text-sm font-black text-[#2D5A3D] font-mono mt-0.5">
+                            RWF {parseFloat(String(demand.offered_price || demand.base_price || 0)).toLocaleString()} / {demand.unit || 'kg'}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex justify-between items-center pt-1 border-t border-[#E8E4DA]">
-                      <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Submit By:</span>
-                      <span className="font-bold text-[#D9381E]">
-                        {demand.submission_deadline ? demand.submission_deadline : 'Open'}
-                      </span>
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By</p>
+                      <p className="text-xs font-bold text-[#1C2A1E] mt-0.5">
+                        {demand.submission_deadline ? demand.submission_deadline : 'No deadline'}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-2 pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
+                  <span className="text-xs font-extrabold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
                     Submit Harvest <ChevronRight size={13} />
                   </span>
                 </div>

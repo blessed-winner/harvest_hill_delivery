@@ -19,6 +19,7 @@ type DemandProduct = {
   image_url?: string | null;
   quantity_needed?: string | number | null;
   urgency?: 'high' | 'steady' | string;
+  status?: string;
   description?: string;
   isCustom?: boolean;
   isRequest?: boolean;
@@ -563,54 +564,75 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
               whileHover={{ y: -2 }}
               onClick={() => openProduct(product)}
               className={cn(
-                'bg-white rounded-2xl border p-4 shadow-sm cursor-pointer transition-all duration-300 group flex flex-col justify-between hover:shadow-md hover:border-[#2D5A3D]',
+                'bg-white rounded-2xl border p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] cursor-pointer transition-all duration-300 group flex flex-col justify-between hover:shadow-lg hover:-translate-y-0.5 relative',
                 selectedProduct?.id === product.id
-                  ? 'border-[#2D5A3D] ring-2 ring-[#2D5A3D]/20'
-                  : 'border-[#E8E4DA]'
+                  ? 'border-[#2D5A3D] ring-2 ring-[#2D5A3D]/20 shadow-md'
+                  : 'border-[#E8E4DA] hover:border-[#2D5A3D]'
               )}
             >
               <div>
-                <div className="flex justify-between items-start mb-2 gap-1">
-                  <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors">{product.name}</h3>
-                  <span className="bg-[#FAF7F0] text-[#2D5A3D] px-2.5 py-0.5 rounded-md font-mono text-[9px] uppercase tracking-wider font-extrabold border border-[#E8E4DA]">
+                {/* Top Pill Header */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border border-[#E8E4DA] uppercase tracking-wider">
                     {product.category || 'Vegetables'}
+                  </span>
+
+                  <span className={cn(
+                    "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs",
+                    (product.status || 'open') === 'open' && "bg-emerald-100 text-emerald-900 border-emerald-300",
+                    (product.status || 'open') === 'draft' && "bg-amber-100 text-amber-900 border-amber-300",
+                    (product.status || 'open') === 'closed' && "bg-gray-100 text-gray-700 border-gray-300"
+                  )}>
+                    {product.status || 'open'}
                   </span>
                 </div>
 
-                {/* Requirement Specifications */}
-                <div className="space-y-2 bg-[#FAF7F0] p-3 rounded-xl border border-[#F0ECE1] my-2 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Quantity Needed:</span>
-                    <span className="font-extrabold text-[#1C2A1E]">
-                      {String(product.quantity_needed ?? '0').split(' ')[0]} {product.unit}
-                    </span>
+                {/* Requirement Title */}
+                <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors mb-2 leading-tight">
+                  {product.name}
+                </h3>
+
+                {/* Requirement Spec Box - Vertical Hierarchy Matching Admin Portal */}
+                <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
+                    <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
+                      {parseFloat(String(product.quantity_needed || 0)).toLocaleString()} {product.unit || 'kg'}
+                    </p>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Pricing:</span>
+                  <div className="py-1.5 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing</p>
                     {product.pricing_mode === 'farmer_proposes' ? (
-                      <span className="font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[10px]">
-                        You propose asking price
-                      </span>
+                      <div>
+                        <p className="text-[11px] font-medium text-[#717971]">Farmer proposes</p>
+                        <p className="text-xs font-semibold text-[#4A473D] mt-0.5">
+                          Price submitted during harvest submission
+                        </p>
+                      </div>
                     ) : (
-                      <span className="font-extrabold text-[#2D5A3D]">
-                        Harvest Hill: RWF {parseFloat(String(product.offered_price || product.base_price || 0)).toLocaleString()}/{product.unit}
-                      </span>
+                      <div>
+                        <p className="text-[11px] font-medium text-[#717971]">Harvest Hill offers</p>
+                        <p className="text-base font-black text-[#2D5A3D] font-mono mt-0.5">
+                          RWF {parseFloat(String(product.offered_price || product.base_price || 0)).toLocaleString()} / {product.unit || 'kg'}
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex justify-between items-center pt-1 border-t border-[#E8E4DA]">
-                    <span className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Submit By:</span>
-                    <span className="font-bold text-[#D9381E]">
-                      {(product as any).submission_deadline ? (product as any).submission_deadline : 'Open'}
-                    </span>
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By</p>
+                    <p className="text-xs font-bold text-[#1C2A1E] mt-0.5">
+                      {(product as any).submission_deadline ? (product as any).submission_deadline : 'No deadline'}
+                    </p>
                   </div>
                 </div>
               </div>
 
+              {/* Card Actions / CTA */}
               <div className="mt-2 pt-2 border-t border-[#F0ECE1] flex items-center justify-between">
-                <span className="text-xs font-bold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
-                  View requirements <ArrowRight size={13} />
+                <span className="text-xs font-extrabold text-[#2D5A3D] group-hover:underline flex items-center gap-1">
+                  Submit Harvest Offer <ArrowRight size={13} />
                 </span>
               </div>
             </motion.div>
