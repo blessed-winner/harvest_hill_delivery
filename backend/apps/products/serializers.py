@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductRequest, FreshDeal
+from .models import Product, ProductRequest, FreshDeal, ProductImage
 
 
 def _product_has_image(image):
