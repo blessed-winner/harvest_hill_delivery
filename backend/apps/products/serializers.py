@@ -36,23 +36,62 @@ class ProductSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
     total_available_quantity = serializers.SerializerMethodField()
-    supplier_count = serializers.IntegerField(read_only=True)
-    effective_price = serializers.FloatField(read_only=True)
-    discount_percentage = serializers.FloatField(read_only=True)
-    has_active_discount = serializers.BooleanField(read_only=True)
-    is_discounted = serializers.BooleanField(source='has_active_discount', read_only=True)
-    discount_price = serializers.FloatField(source='effective_price', read_only=True)
-    active_deal = FreshDealSerializer(read_only=True)
-    originalPrice = serializers.FloatField(source='price', read_only=True)
-    discountedPrice = serializers.FloatField(source='effective_price', read_only=True)
-    discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
-    hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
-    activeDeal = FreshDealSerializer(source='active_deal', read_only=True)
-    sourcing_history_count = serializers.IntegerField(read_only=True)
-    sourcing_supplies = serializers.SerializerMethodField()
-    price = serializers.FloatField(read_only=True)
-    submission_count = serializers.SerializerMethodField()
+    effective_price = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+    has_active_discount = serializers.SerializerMethodField()
+    is_discounted = serializers.SerializerMethodField()
+    discount_price = serializers.SerializerMethodField()
+    originalPrice = serializers.SerializerMethodField()
+    discountedPrice = serializers.SerializerMethodField()
+    discountPercentage = serializers.SerializerMethodField()
+    hasActiveDiscount = serializers.SerializerMethodField()
+    active_deal = serializers.SerializerMethodField()
+    activeDeal = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+    sourcing_supplies = serializers.SerializerMethodField()
+    sourcing_history_count = serializers.IntegerField(read_only=True)
+    supplier_count = serializers.IntegerField(read_only=True)
+    submission_count = serializers.SerializerMethodField()
+
+    def get_price(self, obj):
+        return float(obj.price)
+
+    def get_effective_price(self, obj):
+        return float(obj.effective_price)
+
+    def get_discount_percentage(self, obj):
+        return float(obj.discount_percentage)
+
+    def get_has_active_discount(self, obj):
+        return bool(obj.has_active_discount)
+
+    def get_is_discounted(self, obj):
+        return bool(obj.has_active_discount)
+
+    def get_discount_price(self, obj):
+        return float(obj.effective_price)
+
+    def get_originalPrice(self, obj):
+        return float(obj.price)
+
+    def get_discountedPrice(self, obj):
+        return float(obj.effective_price)
+
+    def get_discountPercentage(self, obj):
+        return float(obj.discount_percentage)
+
+    def get_hasActiveDiscount(self, obj):
+        return bool(obj.has_active_discount)
+
+    def get_active_deal(self, obj):
+        deal = obj.active_deal
+        if not deal:
+            return None
+        return FreshDealSerializer(deal, context=self.context).data
+
+    def get_activeDeal(self, obj):
+        return self.get_active_deal(obj)
 
     def get_images(self, obj):
         urls = []
@@ -217,21 +256,61 @@ class ProductShortSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
-    price = serializers.FloatField(read_only=True)
-    effective_price = serializers.FloatField(read_only=True)
-    discount_percentage = serializers.FloatField(read_only=True)
-    has_active_discount = serializers.BooleanField(read_only=True)
-    is_discounted = serializers.BooleanField(source='has_active_discount', read_only=True)
-    discount_price = serializers.FloatField(source='effective_price', read_only=True)
-    active_deal = FreshDealSerializer(read_only=True)
-    originalPrice = serializers.FloatField(source='price', read_only=True)
-    discountedPrice = serializers.FloatField(source='effective_price', read_only=True)
-    discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
-    hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
+    effective_price = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+    has_active_discount = serializers.SerializerMethodField()
+    is_discounted = serializers.SerializerMethodField()
+    discount_price = serializers.SerializerMethodField()
+    originalPrice = serializers.SerializerMethodField()
+    discountedPrice = serializers.SerializerMethodField()
+    discountPercentage = serializers.SerializerMethodField()
+    hasActiveDiscount = serializers.SerializerMethodField()
+    active_deal = serializers.SerializerMethodField()
+    activeDeal = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+
+    def get_price(self, obj):
+        return float(obj.price)
+
+    def get_effective_price(self, obj):
+        return float(obj.effective_price)
+
+    def get_discount_percentage(self, obj):
+        return float(obj.discount_percentage)
+
+    def get_has_active_discount(self, obj):
+        return bool(obj.has_active_discount)
+
+    def get_is_discounted(self, obj):
+        return bool(obj.has_active_discount)
+
+    def get_discount_price(self, obj):
+        return float(obj.effective_price)
+
+    def get_originalPrice(self, obj):
+        return float(obj.price)
+
+    def get_discountedPrice(self, obj):
+        return float(obj.effective_price)
+
+    def get_discountPercentage(self, obj):
+        return float(obj.discount_percentage)
+
+    def get_hasActiveDiscount(self, obj):
+        return bool(obj.has_active_discount)
 
     def get_base_price(self, obj):
         return float(obj.price)
+
+    def get_active_deal(self, obj):
+        deal = obj.active_deal
+        if not deal:
+            return None
+        return FreshDealSerializer(deal, context=self.context).data
+
+    def get_activeDeal(self, obj):
+        return self.get_active_deal(obj)
 
     def get_images(self, obj):
         urls = []
