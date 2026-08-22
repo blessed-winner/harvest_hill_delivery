@@ -475,7 +475,7 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
           </div>
         ) : (
           <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 custom-scrollbar">
-            {demands.slice(0, 3).map(demand => (
+            {demands.slice(0, 4).map(demand => (
               <motion.div
                 key={demand.id}
                 whileHover={{ y: -2 }}
