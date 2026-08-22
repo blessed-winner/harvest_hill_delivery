@@ -111,7 +111,19 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           const rawImg = fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image || fetchedSupply.image_url || fetchedSupply.image;
           let mainImageUrl = getFullImageUrl(rawImg);
 
-          const imagesList: string[] = mainImageUrl ? [mainImageUrl] : [];
+          const rawImages = fetchedSupply.product_detail?.images || fetchedSupply.images;
+          let imagesList: string[] = [];
+
+          if (Array.isArray(rawImages) && rawImages.length > 0) {
+            rawImages.forEach((imgObj: any) => {
+              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image));
+              if (url && !imagesList.includes(url)) imagesList.push(url);
+            });
+          }
+
+          if (imagesList.length === 0 && mainImageUrl) {
+            imagesList.push(mainImageUrl);
+          }
 
           const hasActiveDeal = !!(
             fetchedSupply.has_active_discount ||

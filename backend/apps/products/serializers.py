@@ -48,13 +48,15 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_total_available_quantity(self, obj):
         return float(obj.total_available_quantity)
 
+    images = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
             'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
-            'image', 'image_url', 'quantity_needed', 'total_available_quantity', 
+            'image', 'image_url', 'images', 'quantity_needed', 'total_available_quantity', 
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at'
         ]
@@ -183,9 +185,42 @@ class ProductSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
+    def get_images(self, obj):
+        """Returns all image URLs submitted by Harvest Hill (admin) for this Master Product."""
+        res = []
+        main_url = self.get_image_url(obj)
+        if main_url:
+            res.append(main_url)
+
+        # Include additional photos from supplies created by Harvest Hill / Admin only
+        admin_supplies = obj.supplies.filter(
+            farmer__user__role='admin'
+        ).exclude(status='rejected').order_by('created_at')
+
+        for s in admin_supplies:
+            if s.photo:
+                try:
+                    photo_name = s.photo.name if hasattr(s.photo, 'name') else str(s.photo)
+                    url = photo_name if (photo_name.startswith('http://') or photo_name.startswith('https://')) else s.photo.url
+                    if url and url not in res:
+                        res.append(url)
+                except Exception:
+                    pass
+            for img_obj in s.images.all():
+                if img_obj.image:
+                    try:
+                        img_name = img_obj.image.name if hasattr(img_obj.image, 'name') else str(img_obj.image)
+                        url = img_name if (img_name.startswith('http://') or img_name.startswith('https://')) else img_obj.image.url
+                        if url and url not in res:
+                            res.append(url)
+                    except Exception:
+                        pass
+        return res
+
 
 class ProductShortSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
     price = serializers.FloatField(read_only=True)
     effective_price = serializers.FloatField(read_only=True)
@@ -203,7 +238,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url',
+            'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url', 'images',
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage',
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
             'quantity_needed', 'status', 'quality_requirements', 
@@ -220,6 +255,37 @@ class ProductShortSerializer(serializers.ModelSerializer):
             return obj.image.url
         except Exception:
             return None
+
+    def get_images(self, obj):
+        """Returns all image URLs submitted by Harvest Hill (admin) for this Master Product."""
+        res = []
+        main_url = self.get_image_url(obj)
+        if main_url:
+            res.append(main_url)
+
+        admin_supplies = obj.supplies.filter(
+            farmer__user__role='admin'
+        ).exclude(status='rejected').order_by('created_at')
+
+        for s in admin_supplies:
+            if s.photo:
+                try:
+                    photo_name = s.photo.name if hasattr(s.photo, 'name') else str(s.photo)
+                    url = photo_name if (photo_name.startswith('http://') or photo_name.startswith('https://')) else s.photo.url
+                    if url and url not in res:
+                        res.append(url)
+                except Exception:
+                    pass
+            for img_obj in s.images.all():
+                if img_obj.image:
+                    try:
+                        img_name = img_obj.image.name if hasattr(img_obj.image, 'name') else str(img_obj.image)
+                        url = img_name if (img_name.startswith('http://') or img_name.startswith('https://')) else img_obj.image.url
+                        if url and url not in res:
+                            res.append(url)
+                    except Exception:
+                        pass
+        return res
 
 
 class ProductRequestSerializer(serializers.ModelSerializer):
