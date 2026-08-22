@@ -263,7 +263,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   }, [customSupplies, searchTerm]);
 
   const pendingCustomCount = React.useMemo(() => {
-    return customSupplies.filter((s: any) => s.status !== 'accepted' && s.status !== 'rejected').length;
+    return customSupplies.filter((s: any) => s.status === 'pending' || !s.status).length;
   }, [customSupplies]);
 
   const handleOpenConvertModal = (supply: any) => {
@@ -1065,10 +1065,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               )}
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse font-sans">
               <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
-                <tr className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-                  <th className="px-4 py-3 text-center w-10">
+                <tr className="text-[9px] font-extrabold text-on-surface-variant uppercase tracking-widest">
+                  <th className="px-3 py-2.5 text-center w-8">
                     <input 
                       type="checkbox"
                       checked={masterProductGroups.length > 0 && masterProductGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
@@ -1081,25 +1081,25 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                           setSelectedIds(prev => prev.filter(id => !allIds.includes(id)));
                         }
                       }}
-                      className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                      className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
                     />
                   </th>
-                  <th className="px-6 py-3">Master Product</th>
-                  <th className="px-6 py-3">Suppliers</th>
-                  <th className="px-6 py-3 text-right">Available Stock</th>
-                  <th className="px-6 py-3">Selling Price</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3"></th>
+                  <th className="px-4 py-2.5">Master Product</th>
+                  <th className="px-4 py-2.5">Suppliers</th>
+                  <th className="px-4 py-2.5 text-right">Available Stock</th>
+                  <th className="px-4 py-2.5">Selling Price</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5 text-right"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/50">
+              <tbody className="divide-y divide-outline-variant/40">
                 {currentGroups.map((group) => (
                   <tr 
                     key={group.id} 
                     onClick={() => setSelectedSupply(group.primarySupply)}
-                    className="hover:bg-surface-container-low transition-colors cursor-pointer group"
+                    className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
                   >
-                    <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="checkbox"
                         checked={group.supplies.every(s => selectedIds.includes(s.id))}
@@ -1111,75 +1111,75 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
                           }
                         }}
-                        className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                        className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-bold text-on-surface">{group.name}</p>
+                          <p className="text-xs font-bold text-on-surface">{group.name}</p>
                           {group.displayId && (
-                            <span className="text-[9.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
+                            <span className="text-[8.5px] font-mono font-extrabold bg-[#144227]/10 text-[#144227] px-1.5 py-0.5 rounded border border-[#144227]/20 shrink-0">
                               {group.displayId}
                             </span>
                           )}
                           {hasUnreadNegotiationAction(group) && (
                             <span 
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
                               title="New farmer negotiation message / counter-offer awaiting response"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
-                              <MessageSquare size={10} className="text-amber-800 shrink-0" />
+                              <span className="w-1 h-1 rounded-full bg-amber-600 animate-ping shrink-0" />
+                              <MessageSquare size={9} className="text-amber-800 shrink-0" />
                               <span>New Message</span>
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
+                        <p className="text-[9.5px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
                           {group.category} · {group.batchCount} batch{group.batchCount > 1 ? 'es' : ''}
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-on-surface">
-                        <Users size={13} className="text-primary shrink-0" />
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 text-xs font-bold text-on-surface">
+                        <Users size={12} className="text-primary shrink-0" />
                         <span>{group.supplierCount} {group.supplierCount === 1 ? 'Supplier' : 'Suppliers'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <p className="font-mono text-sm font-black text-on-surface">
+                    <td className="px-4 py-3 text-right">
+                      <p className="font-mono text-xs font-bold text-on-surface">
                         {group.totalAvailableStock > 0 ? `${group.totalAvailableStock.toLocaleString()} ${group.unit}` : `0 ${group.unit}`}
                       </p>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="space-y-0.5">
                         {group.isDiscounted && group.discountPrice ? (
                           <div>
-                            <span className="line-through text-[10px] text-on-surface-variant/70 font-bold block">
+                            <span className="line-through text-[9px] text-on-surface-variant/70 font-bold block">
                               {formatCurrency(group.masterSellingPrice)}
                             </span>
-                            <span className="font-mono text-sm font-black text-orange-700">
+                            <span className="font-mono text-xs font-black text-orange-700">
                               {formatCurrency(group.discountPrice)} / {group.unit}
                             </span>
                           </div>
                         ) : (
-                          <span className="font-mono text-sm font-extrabold text-primary">
+                          <span className="font-mono text-xs font-bold text-primary">
                             {formatCurrency(group.masterSellingPrice)} / {group.unit}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
+                        "px-2 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider border",
                         group.totalAvailableStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
                       )}>
-                        {group.totalAvailableStock > 0 ? 'Active' : 'Pending Review'}
+                        {group.totalAvailableStock > 0 ? 'Active' : 'Pending'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1 text-xs font-bold text-primary group-hover:underline">
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 text-[11px] font-bold text-primary group-hover:underline">
                         <span>Inspect</span>
-                        <ChevronRight className="w-4 h-4 text-outline group-hover:text-primary transition-colors" />
+                        <ChevronRight className="w-3.5 h-3.5 text-outline group-hover:text-primary transition-colors" />
                       </div>
                     </td>
                   </tr>
