@@ -557,7 +557,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   };
 
   const statusMap: Record<string, string> = {
-    'Pending Review': 'pending',
+    'Pending': 'pending',
     'Accepted': 'accepted',
     'Rejected': 'rejected',
   };
@@ -715,7 +715,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         if (!g.isArchived) return false;
       } else if (activeStatusTab === 'Active') {
         if (g.isArchived || g.totalAvailableStock <= 0) return false;
-      } else if (activeStatusTab === 'Pending Review') {
+      } else if (activeStatusTab === 'Pending') {
         if (g.isArchived || g.totalAvailableStock > 0) return false;
       } else {
         // 'All'
@@ -773,7 +773,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             )}
           </div>
           <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-            {['All', 'Pending Review', 'Active', 'Custom Submissions', 'Archived'].map((t) => {
+            {['All', 'Pending', 'Active', 'Custom Submissions', 'Archived'].map((t) => {
               const isCustomTab = t === 'Custom Submissions';
               const label = isCustomTab
                 ? (pendingCustomCount > 0 ? `Custom Submissions (${pendingCustomCount})` : 'Custom Submissions')
@@ -889,8 +889,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               ) : (
                 <table className="w-full text-left border-collapse font-sans">
                   <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
-                    <tr className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-                      <th className="px-4 py-3 text-center w-10">
+                    <tr className="text-[9px] font-extrabold text-on-surface-variant uppercase tracking-widest">
+                      <th className="px-3 py-2.5 text-center w-8">
                         <input 
                           type="checkbox"
                           checked={filteredCustomSupplies.length > 0 && filteredCustomSupplies.every(s => selectedIds.includes(s.id))}
@@ -903,18 +903,18 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
                             }
                           }}
-                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                          className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
                         />
                       </th>
-                      <th className="px-6 py-3">Custom Crop</th>
-                      <th className="px-6 py-3">Farmer Submitter</th>
-                      <th className="px-6 py-3 text-right">Available Stock</th>
-                      <th className="px-6 py-3">Asking / Agreed Price</th>
-                      <th className="px-6 py-3">Status</th>
-                      <th className="px-6 py-3 text-right">Actions</th>
+                      <th className="px-4 py-2.5">Custom Crop</th>
+                      <th className="px-4 py-2.5">Farmer Submitter</th>
+                      <th className="px-4 py-2.5 text-right">Available Stock</th>
+                      <th className="px-4 py-2.5">Asking / Agreed Price</th>
+                      <th className="px-4 py-2.5">Status</th>
+                      <th className="px-4 py-2.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-outline-variant/50">
+                  <tbody className="divide-y divide-outline-variant/40">
                     {filteredCustomSupplies.map((sup: any) => {
                       const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Crop').trim();
                       const category = (sup.custom_category || sup.product_detail?.category || 'VEGETABLES').toUpperCase();
@@ -933,9 +933,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         <tr 
                           key={sup.id} 
                           onClick={() => setSelectedSupply(sup)}
-                          className="hover:bg-surface-container-low transition-colors cursor-pointer group"
+                          className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
                         >
-                          <td className="px-4 py-4 text-center w-10" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
                             <input 
                               type="checkbox"
                               checked={selectedIds.includes(sup.id)}
@@ -946,38 +946,38 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                                   setSelectedIds(prev => prev.filter(id => id !== sup.id));
                                 }
                               }}
-                              className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                              className="rounded border-[#c1c9c0] text-primary focus:ring-primary cursor-pointer w-3.5 h-3.5"
                             />
                           </td>
 
                           {/* Custom Crop Name & Photo Thumbnail */}
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
                               {photoUrl ? (
                                 <img 
                                   src={photoUrl} 
                                   alt={cropName} 
-                                  className="w-10 h-10 rounded-xl object-cover border border-outline-variant/60 bg-surface-container-low shrink-0 shadow-2xs" 
+                                  className="w-8 h-8 rounded-lg object-cover border border-outline-variant/60 bg-surface-container-low shrink-0 shadow-2xs" 
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-200/60 flex items-center justify-center shrink-0">
-                                  <Package size={18} />
+                                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-800 border border-amber-200/60 flex items-center justify-center shrink-0">
+                                  <Package size={15} />
                                 </div>
                               )}
 
                               <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-sm font-bold text-on-surface">{cropName}</p>
-                                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-1.5 py-0.5 rounded border border-outline-variant/40 shrink-0">
+                                  <p className="text-xs font-bold text-on-surface">{cropName}</p>
+                                  <span className="text-[8px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-1.5 py-0.5 rounded border border-outline-variant/30 shrink-0">
                                     {category}
                                   </span>
                                   {photoUrl && (
-                                    <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0 flex items-center gap-1">
+                                    <span className="text-[8px] font-bold text-amber-800 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 shrink-0 flex items-center gap-0.5">
                                       📸 Photo
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
+                                <p className="text-[9.5px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
                                   Unit: {unit} · Submitted by Farmer
                                 </p>
                               </div>
@@ -985,62 +985,62 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                           </td>
 
                           {/* Farmer Submitter */}
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-on-surface">
-                              <Users size={13} className="text-primary shrink-0" />
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 text-xs font-bold text-on-surface">
+                              <Users size={12} className="text-primary shrink-0" />
                               <span>{farmerName}</span>
                             </div>
                             {sup.available_date && (
-                              <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">
+                              <p className="text-[9.5px] text-on-surface-variant font-medium mt-0.5">
                                 Ready: {sup.available_date}
                               </p>
                             )}
                           </td>
 
                           {/* Available Stock */}
-                          <td className="px-6 py-4 text-right">
-                            <p className="font-mono text-sm font-black text-on-surface">
+                          <td className="px-4 py-3 text-right">
+                            <p className="font-mono text-xs font-bold text-on-surface">
                               {qty.toLocaleString()} {unit}
                             </p>
                           </td>
 
                           {/* Price */}
-                          <td className="px-6 py-4">
-                            <p className="font-mono text-sm font-black text-primary">
+                          <td className="px-4 py-3">
+                            <p className="font-mono text-xs font-bold text-primary">
                               {formatCurrency(activePrice)} / {unit}
                             </p>
                             {agreedPrice > 0 && (
-                              <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">
                                 Negotiated Agreed Price
                               </span>
                             )}
                           </td>
 
                           {/* Status Badge */}
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <span className={cn(
-                              "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
+                              "px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
                               isAccepted ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
                               isRejected ? "bg-red-100 text-red-900 border-red-300" :
                               "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
-                              {isAccepted ? (isLinkedToProduct ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending Review')}
+                              {isAccepted ? (isLinkedToProduct ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending')}
                             </span>
                           </td>
 
                           {/* Actions */}
-                          <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => setActiveNegotiationSupply(sup)}
-                                className="py-1.5 px-3 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-xl font-bold text-xs transition-all flex items-center gap-1 border border-outline-variant/60 cursor-pointer shadow-2xs"
+                                className="py-1 px-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 border border-outline-variant/60 cursor-pointer shadow-2xs"
                                 title="Open Price Negotiation Pane"
                               >
-                                <Handshake size={13} /> Negotiate
+                                <Handshake size={12} /> Negotiate
                               </button>
                               <button
                                 onClick={() => handleOpenConvertModal(sup)}
-                                className="py-1.5 px-3 bg-primary text-white hover:opacity-90 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                                className="py-1 px-2.5 bg-primary text-white hover:opacity-90 rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                                 title="Convert to Official Master Product"
                               >
                                 <Sparkles size={13} /> Convert
