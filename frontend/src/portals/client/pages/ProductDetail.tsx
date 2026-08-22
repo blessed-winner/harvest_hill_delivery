@@ -108,7 +108,8 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
         if (fetchedSupply) {
           const prodName = fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce';
           const prodCat = fetchedSupply.category || fetchedSupply.product_detail?.category || 'Produce';
-          const rawImg = fetchedSupply.image_url || fetchedSupply.image || fetchedSupply.photo || fetchedSupply.photo_url || fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image;
+          // Strictly use Harvest Hill Master Product image only (never supplier harvest photos)
+          const rawImg = fetchedSupply.product_detail?.image_url || fetchedSupply.product_detail?.image || fetchedSupply.image_url || fetchedSupply.image;
           
           let mainImageUrl = getFullImageUrl(rawImg);
           if (!mainImageUrl) {
@@ -122,24 +123,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
           if (Array.isArray(fetchedSupply.images) && fetchedSupply.images.length > 0) {
             fetchedSupply.images.forEach((imgObj: any) => {
-              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image || imgObj.photo));
+              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image));
               if (url && !imagesList.includes(url)) imagesList.push(url);
             });
-          }
-
-          if (Array.isArray(fetchedSupply.photos) && fetchedSupply.photos.length > 0) {
-            fetchedSupply.photos.forEach((imgObj: any) => {
-              const url = getFullImageUrl(typeof imgObj === 'string' ? imgObj : (imgObj.image_url || imgObj.image || imgObj.photo));
-              if (url && !imagesList.includes(url)) imagesList.push(url);
-            });
-          }
-
-          // Add complementary quality inspection angle thumbnail if only 1 image exists
-          if (imagesList.length === 1) {
-            const fallbackSec = getCategoryFallbackImage(prodCat, `${prodName} sample`);
-            if (fallbackSec && !imagesList.includes(fallbackSec)) {
-              imagesList.push(fallbackSec);
-            }
           }
 
           const hasActiveDeal = !!(
@@ -377,10 +363,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     }
   };
 
-  const mainImageUrl = product?.image_url || product?.image || null;
-  const images = product?.images && Array.isArray(product.images) && product.images.length > 0 
+  const images = product?.images && product.images.length > 0 
     ? product.images 
-    : (mainImageUrl ? [mainImageUrl] : [getCategoryFallbackImage(product?.category, product?.name)]);
+    : (product?.image_url ? [product.image_url] : ['https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80']);
 
   if (loading) {
     return (

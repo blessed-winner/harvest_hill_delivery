@@ -173,8 +173,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             ? Number(item.discount_price || item.effective_price || item.discountedPrice || item.base_price || item.price || 0)
             : Number(item.agreed_price || item.base_price || item.price || 0);
 
-          // Use ONLY Master Product image uploaded by Harvest Hill Admin (exclude supplier photos)
-          const rawImg = item.product_detail?.image_url || item.image_url || item.product_detail?.image || item.image || null;
+          const rawImg = item.product_detail?.image_url || item.product_detail?.image || item.image_url || item.image;
           let image_url = rawImg;
           if (image_url && typeof image_url === 'string') {
             if (image_url.includes('media/http')) image_url = 'https://' + image_url.split('http')[1];
@@ -186,14 +185,12 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             if (isSupply && existing.isFromProduct) {
               if (!existing.image_url && image_url) {
                 existing.image_url = image_url;
-                existing.photo = image_url;
               }
             } else {
               existing.quantity += qty;
               existing.total_available_quantity += qty;
               if (!existing.image_url && image_url) {
                 existing.image_url = image_url;
-                existing.photo = image_url;
               }
             }
           } else {
@@ -211,7 +208,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
               quantity: qty,
               total_available_quantity: qty,
               image_url,
-              photo: image_url,
               farmer_name: 'Harvest Hill Delivery',
               farmer_location: 'Kigali, Rwanda',
               bulk_min_qty: item.bulk_min_qty ? Number(item.bulk_min_qty) : null,
@@ -593,7 +589,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
 
                 const pct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
                 
-                const rawImg = prod.product_detail?.image_url || prod.image_url || prod.product_detail?.image || prod.image || null;
+                const rawImg = prod.product_detail?.image_url || prod.product_detail?.image || prod.image_url || prod.image;
                 const image_url = rawImg && typeof rawImg === 'string' && rawImg.includes('media/http')
                   ? 'https://' + rawImg.split('http')[1]
                   : (rawImg && typeof rawImg === 'string' && rawImg.includes('media/https') ? 'https://' + rawImg.split('https')[1] : rawImg);
