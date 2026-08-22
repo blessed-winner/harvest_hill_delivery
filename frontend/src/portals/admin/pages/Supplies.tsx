@@ -1726,12 +1726,34 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               </div>
             )}
 
-            <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
-              <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
-              <span className="text-sm font-black text-secondary">
-                {formatCurrency(safeParseFloat(selectedSupply.price || selectedSupply.proposed_price) * safeParseFloat(selectedSupply.quantity))}
-              </span>
-            </div>
+            {(() => {
+              const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
+              const masterPrice = Number(targetMaster?.base_price ?? selectedSupply.product_detail?.base_price ?? selectedSupply.base_price ?? selectedSupply.agreed_price ?? selectedSupply.price ?? 0);
+
+              const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
+              const siblingSupplies = supplies.filter(s => 
+                (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
+              );
+
+              const totalAcceptedStock = siblingSupplies
+                .filter(s => s.status === 'accepted')
+                .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
+
+              const liveAcceptedQty = totalAcceptedStock > 0 
+                ? totalAcceptedStock 
+                : Number(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? 0);
+
+              const totalValuedBatchPrice = liveAcceptedQty * masterPrice;
+
+              return (
+                <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
+                  <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
+                  <span className="text-sm font-black text-secondary">
+                    {formatCurrency(totalValuedBatchPrice)}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         )}
       </DetailDrawer>
