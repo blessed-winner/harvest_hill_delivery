@@ -107,7 +107,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
         if (fetchedSupply) {
           const prodName = fetchedSupply.name || fetchedSupply.product_detail?.name || 'Fresh Produce';
-          const rawImages: any[] = fetchedSupply.product_detail?.images || fetchedSupply.images || [];
+          const rawImages: any[] = fetchedSupply.product_detail?.images || (fetchedSupply.isFromProduct || !fetchedSupply.product_detail ? fetchedSupply.images : []) || [];
           const imagesList: string[] = [];
 
           if (Array.isArray(rawImages)) {
@@ -122,8 +122,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           const mainImageUrl = getFullImageUrl(
             fetchedSupply.product_detail?.image_url ||
             fetchedSupply.product_detail?.image ||
-            fetchedSupply.image_url ||
-            fetchedSupply.image
+            (fetchedSupply.isFromProduct || !fetchedSupply.product_detail ? (fetchedSupply.image_url || fetchedSupply.image) : null)
           );
 
           if (mainImageUrl && !imagesList.includes(mainImageUrl)) {

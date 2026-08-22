@@ -48,7 +48,16 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         from django.utils import timezone
         today = timezone.now().date()
-        product = serializer.save()
+
+        files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        if files:
+            product = serializer.save(image=files[0])
+            from .models import ProductImage
+            for file in files:
+                ProductImage.objects.create(product=product, image=file)
+        else:
+            product = serializer.save()
+
         if product.submission_deadline and product.submission_deadline >= today and product.status == 'closed':
             product.status = 'open'
             product.save(update_fields=['status'])
@@ -58,17 +67,20 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         from django.utils import timezone
         today = timezone.now().date()
+        instance = self.get_object()
 
-        # If a new image is being uploaded, delete the old one from Cloudinary
-        if 'image' in self.request.FILES:
-            instance = self.get_object()
+        files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        if files:
             if instance.image:
                 delete_cloudinary_image(instance.image)
-            instance = serializer.save(image=self.request.FILES['image'])
+            instance = serializer.save(image=files[0])
+            from .models import ProductImage
+            instance.gallery_images.all().delete()
+            for file in files:
+                ProductImage.objects.create(product=instance, image=file)
         else:
             instance = serializer.save()
 
-        # Auto-reopen requirement status to 'open' if submission_deadline is updated to today or a future date
         if instance.submission_deadline and instance.submission_deadline >= today and instance.status == 'closed':
             instance.status = 'open'
             instance.save(update_fields=['status'])
