@@ -325,12 +325,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         instance = serializer.save(farmer=farmer_profile, photo=photo_file, status=initial_status)
 
-        # Propagate submitted price to product base_price and agreed_price
+        # Propagate submitted price to agreed_price and product base_price
         if instance.price and float(instance.price) > 0:
             if not instance.agreed_price:
                 instance.agreed_price = instance.price
                 instance.save(update_fields=['agreed_price'])
-            if instance.product and (not instance.product.base_price or float(instance.product.base_price) <= 0 or instance.product.pricing_mode == 'farmer_proposes'):
+            if instance.product:
                 instance.product.base_price = instance.price
                 instance.product.save(update_fields=['base_price'])
         

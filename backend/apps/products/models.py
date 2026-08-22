@@ -219,17 +219,17 @@ class Product(models.Model):
 
     @property
     def price(self):
-        """Returns offered_price if pricing_mode is harvest_hill_offers, base_price, or falls back to latest supply price."""
-        if self.base_price and float(self.base_price) > 0:
-            return float(self.base_price)
-        if self.pricing_mode == 'harvest_hill_offers' and self.offered_price and float(self.offered_price) > 0:
-            return float(self.offered_price)
+        """Returns latest accepted/active supply price if available (actual MasterProduct inventory price), otherwise base_price or offered_price baseline requirement price."""
         latest_supply = self.supplies.filter(is_archived=False).exclude(status='rejected').order_by('-created_at').first()
         if latest_supply:
             if latest_supply.agreed_price and float(latest_supply.agreed_price) > 0:
                 return float(latest_supply.agreed_price)
             if latest_supply.price and float(latest_supply.price) > 0:
                 return float(latest_supply.price)
+        if self.base_price and float(self.base_price) > 0:
+            return float(self.base_price)
+        if self.pricing_mode == 'harvest_hill_offers' and self.offered_price and float(self.offered_price) > 0:
+            return float(self.offered_price)
         return 0.0
 
     @property
