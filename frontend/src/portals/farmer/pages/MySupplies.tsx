@@ -6,7 +6,6 @@ import { Search, Trash2, Edit3, ChevronLeft, ChevronRight, X, AlertTriangle, Clo
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
 import { useAlert } from '../../../context/AlertContext';
-import { ContextualNegotiationPane } from '../../common/components/ContextualNegotiationPane';
 
 const romaTomatoesImage =
   'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80';
@@ -436,9 +435,15 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
                     <div className="flex items-center justify-center gap-2">
                       {(supply.latest_offer || supply.has_admin_negotiation) && (
                         <button
-                          onClick={() => setActiveNegotiationSupply(supply)}
+                          onClick={() => {
+                            if (onViewChange) {
+                              onViewChange('negotiations', { supply_id: supply.id });
+                            } else if (typeof window !== 'undefined') {
+                              window.location.href = `/farmer?view=negotiations&supply=${supply.id}`;
+                            }
+                          }}
                           className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                          title="View negotiation terms from Harvest Hill Admin"
+                          title="Open negotiations page for this harvest"
                         >
                           <Handshake size={16} /> Negotiate
                         </button>
@@ -821,20 +826,7 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
       </AnimatePresence>
 
 
-      <ContextualNegotiationPane
-        isOpen={!!activeNegotiationSupply}
-        onClose={() => setActiveNegotiationSupply(null)}
-        contextType="FARMER"
-        supply={activeNegotiationSupply}
-        currentUserRole="farmer"
-        onNegotiationUpdated={() => {
-          // Re-fetch supplies to sync accepted quantities/prices
-          fetch('/api/supplies/').then(r => r.json()).then(d => {
-            if (Array.isArray(d)) setSupplies(d);
-            else if (d.results) setSupplies(d.results);
-          }).catch(() => {});
-        }}
-      />
+
 
       {/* Approved Harvest Locked & Read-Only Notice Modal */}
       <AnimatePresence>

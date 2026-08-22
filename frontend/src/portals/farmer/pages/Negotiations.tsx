@@ -75,9 +75,29 @@ export default function Negotiations() {
     setIsLoading(true);
     try {
       const data = await apiRequest("/api/negotiations/threads/");
-      setThreads(data || []);
-      if ((data || []).length > 0 && !activeNegId) {
-        setActiveNegId(data[0].id.toString());
+      const threadList = data || [];
+      setThreads(threadList);
+
+      let targetId = activeNegId;
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetSupplyId = urlParams.get('supply') || urlParams.get('supply_id');
+        if (targetSupplyId && Array.isArray(threadList)) {
+          const match = threadList.find((t: any) => 
+            String(t.supply) === String(targetSupplyId) || 
+            String(t.supply_detail?.id) === String(targetSupplyId)
+          );
+          if (match) {
+            targetId = match.id.toString();
+          }
+        }
+      }
+
+      if (!targetId && threadList.length > 0) {
+        targetId = threadList[0].id.toString();
+      }
+      if (targetId) {
+        setActiveNegId(targetId);
       }
     } catch (err) {
       console.error("Error loading negotiations:", err);

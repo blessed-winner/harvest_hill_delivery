@@ -27,6 +27,10 @@ export function ContextualNegotiationPane({
   currentUserRole = 'farmer',
   onNegotiationUpdated
 }: ContextualNegotiationPaneProps) {
+  if (contextType === 'FARMER' && currentUserRole === 'farmer') {
+    return null;
+  }
+
   const { toast, showConfirm } = useAlert();
   const [thread, setThread] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
