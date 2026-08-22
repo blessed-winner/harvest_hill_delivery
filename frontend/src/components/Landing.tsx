@@ -15,6 +15,7 @@ interface LandingProps {
 export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const [supplies, setSupplies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [popularProduct, setPopularProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [heroSlide, setHeroSlide] = useState(0);
@@ -102,6 +103,16 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         } catch (err) {
           // Optional background supplies fetch
         }
+
+        clientApi.popularProduct().then(popRes => {
+          if (popRes?.product) {
+            setPopularProduct({
+              ...popRes.product,
+              total_purchased: popRes.total_purchased,
+              order_count: popRes.order_count
+            });
+          }
+        }).catch(() => {});
 
         const prodList = prodRes?.results || (Array.isArray(prodRes) ? prodRes : []);
         const suppList = suppRes?.results || (Array.isArray(suppRes) ? suppRes : []);
@@ -301,7 +312,11 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
-      return masterItems;
+      return [...masterItems].sort((a: any, b: any) => {
+        const purA = Number(a.total_purchased || a.sales_count || a.order_count || (a.is_discounted ? 100 : 0));
+        const purB = Number(b.total_purchased || b.sales_count || b.order_count || (b.is_discounted ? 100 : 0));
+        return purB - purA;
+      });
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
@@ -585,6 +600,54 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           ))}
         </div>
       </section>
+
+      {/* SECTION: Popular Product of the Month Banner */}
+      {popularProduct && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-[#1C2A1E] via-[#2D5A3D] to-[#1C2A1E] text-white rounded-[16px] p-5 sm:p-6 shadow-md border border-[#376847] flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              {(popularProduct.image_url || popularProduct.image) ? (
+                <img
+                  src={popularProduct.image_url || popularProduct.image}
+                  alt={popularProduct.name}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover border-2 border-white/20 shadow-md shrink-0 bg-white/10"
+                />
+              ) : (
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border-2 border-white/20">
+                  <Package className="w-10 h-10 text-white/50" />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-2xs">
+                    🔥 POPULAR PRODUCT OF THE MONTH
+                  </span>
+                  {popularProduct.total_purchased > 0 && (
+                    <span className="bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-full">
+                      {popularProduct.total_purchased.toLocaleString()} {popularProduct.unit || 'kg'} purchased
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                  {popularProduct.name}
+                </h3>
+                <p className="text-xs text-white/80 font-medium max-w-xl">
+                  Harvest Hill's #1 ordered item this month based on customer demand fulfillment and market volume.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => onNavigate('catalog', undefined, popularProduct.id, popularProduct.name)}
+              className="bg-white text-[#2D5A3D] hover:bg-[#FAF7F0] font-extrabold text-xs px-5 py-3 rounded-xl transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 self-stretch md:self-auto justify-center"
+            >
+              <span>View Product in Catalog</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* SECTION: Product Section with Dynamic Inventory States */}
       {error ? (

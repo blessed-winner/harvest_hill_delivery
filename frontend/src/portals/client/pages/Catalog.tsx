@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart, Loader2, Package, Handshake } from 'lucide-react';
+import { Grid, List, ChevronRight, ArrowUpDown, ChevronLeft, ArrowRight, ShoppingCart, Loader2, Package, Handshake, Sparkles } from 'lucide-react';
 import { clientApi } from '../lib/api';
 import { ContextualNegotiationPane } from '../../common/components/ContextualNegotiationPane';
 
@@ -31,6 +31,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   const [searchQuery, setSearchQuery] = useState(initialSearch || '');
   const [farmerFilter, setFarmerFilter] = useState<string | null>(null);
   const [topFarmer, setTopFarmer] = useState<any>(null);
+  const [popularProduct, setPopularProduct] = useState<any>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]); // Store all products for category list
   const [activeNegotiationProduct, setActiveNegotiationProduct] = useState<any | null>(null);
 
@@ -79,19 +80,23 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     }
   }, []);
 
-  // Fetch top farmer for Farmer of the Month banner
+  // Fetch popular product of the month
   useEffect(() => {
-    const fetchTopFarmer = async () => {
+    const fetchPopularProduct = async () => {
       try {
-        const farmerResp = await clientApi.dashboardTopFarmer().catch(() => null);
-        if (farmerResp?.farmer) {
-          setTopFarmer(farmerResp.farmer);
+        const resp = await clientApi.popularProduct().catch(() => null);
+        if (resp?.product) {
+          setPopularProduct({
+            ...resp.product,
+            total_purchased: resp.total_purchased,
+            order_count: resp.order_count
+          });
         }
       } catch (err) {
-        // Silence unauthenticated 401 error for guest catalog views
+        // Silence unauthenticated 401 error
       }
     };
-    fetchTopFarmer();
+    fetchPopularProduct();
   }, []);
 
   // Fetch all products pool once for complete category counts and sidebar filters
@@ -458,27 +463,50 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             </div>
           </div>
 
-          {/* Farmer of the Month Card (Visible from 20th of the month onwards) */}
-          {topFarmer && new Date().getDate() >= 20 && (
-            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
-              <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
-                Farmer of the Month
-              </span>
-              <div>
-                <h4 className="text-lg font-bold">{topFarmer.name}</h4>
-                <p className="text-xs text-white/80 leading-relaxed mt-1">
-                  Top performing supplier this month based on demand fulfillment.
-                </p>
+          {/* Popular Product of the Month Card */}
+          {popularProduct && (
+            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-3.5 border border-[#376847]">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1 bg-[#376847] text-[#bceec8] text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full">
+                  <Sparkles size={10} /> Popular Product of the Month
+                </span>
+                {popularProduct.total_purchased > 0 && (
+                  <span className="text-[9.5px] font-mono font-bold text-[#bceec8] bg-black/20 px-2 py-0.5 rounded-md">
+                    {popularProduct.total_purchased.toLocaleString()} {popularProduct.unit || 'kg'} sold
+                  </span>
+                )}
               </div>
+
+              <div className="flex items-center gap-3 bg-white/10 p-2.5 rounded-xl border border-white/10">
+                {(popularProduct.image_url || popularProduct.image) ? (
+                  <img 
+                    src={popularProduct.image_url || popularProduct.image} 
+                    alt={popularProduct.name} 
+                    className="w-12 h-12 rounded-lg object-cover bg-white/20 shrink-0 shadow-2xs"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                    <Package size={20} className="text-white/60" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-white truncate">{popularProduct.name}</h4>
+                  <p className="text-[10px] text-white/80 uppercase tracking-wider font-semibold mt-0.5">
+                    RWF {Number(popularProduct.effective_price || popularProduct.price || 0).toLocaleString()} / {popularProduct.unit || 'kg'}
+                  </p>
+                </div>
+              </div>
+
               <button
                 onClick={() => {
-                  setFarmerFilter(topFarmer.farmer_name);
+                  setSearchQuery(popularProduct.name);
                   setSelectedCategory('all');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="flex items-center gap-1.5 text-xs font-bold text-[#9ed0ab] hover:underline underline-offset-4 cursor-pointer"
+                className="w-full py-2 bg-white text-[#144227] hover:bg-[#FAF7F0] font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
-                Browse Collection <ArrowRight size={14} />
+                <span>Filter & View Product</span>
+                <ArrowRight size={13} />
               </button>
             </div>
           )}

@@ -126,6 +126,7 @@ export const clientApi = {
   volumeByCategory: () => apiRequest('/api/client/dashboard/volume_by_category/'),
   dashboardTopFarmer: () => apiRequest('/api/client/dashboard/top_farmer/'),
   topFarmer: () => apiRequest('/api/client/dashboard/top_farmer/'),
+  popularProduct: () => apiRequest('/api/client/dashboard/popular_product/'),
 
   // ── Supplies / Harvests ───────────────────────────────────────────────────
   supplies: {
