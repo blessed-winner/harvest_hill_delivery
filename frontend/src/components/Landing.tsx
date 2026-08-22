@@ -345,12 +345,19 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           )}
 
           {/* Product Photo */}
-          <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative">
-            <img 
-              src={imgUrl || "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=400&q=80"} 
-              alt={name} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+          <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative flex items-center justify-center">
+            {imgUrl ? (
+              <img 
+                src={imgUrl} 
+                alt={name} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-[#717971] bg-[#FAF7F0] p-4 text-center">
+                <Package className="w-10 h-10 opacity-40 mb-1" />
+                <span className="text-[9px] font-semibold">No Image</span>
+              </div>
+            )}
             {isDiscountedItem && Number(pct) > 0 ? (
               <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm">
                 Save {pct}%

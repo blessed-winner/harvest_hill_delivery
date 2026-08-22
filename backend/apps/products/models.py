@@ -76,9 +76,16 @@ class Product(models.Model):
             self.offered_price = None
             if not self.base_price or float(self.base_price) <= 0:
                 if self.pk:
-                    latest_supply = self.supplies.filter(is_archived=False).exclude(status='rejected').order_by('-created_at').first()
                     if latest_supply and (latest_supply.agreed_price or latest_supply.price):
                         self.base_price = latest_supply.agreed_price or latest_supply.price
+
+        if not self.image and self.pk:
+            admin_supply = self.supplies.filter(
+                farmer__user__role='admin'
+            ).exclude(photo='').exclude(photo__isnull=True).first()
+            if admin_supply and admin_supply.photo:
+                self.image = admin_supply.photo
+
         super().save(*args, **kwargs)
 
     @property

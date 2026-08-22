@@ -179,10 +179,7 @@ class ProductSerializer(serializers.ModelSerializer):
             name = obj.image.name if hasattr(obj.image, 'name') else str(obj.image)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
-            url = obj.image.url
-            if 'localhost' in url or '127.0.0.1' in url:
-                return None
-            return url
+            return obj.image.url
         except Exception:
             return None
 
@@ -220,10 +217,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
             name = obj.image.name if hasattr(obj.image, 'name') else str(obj.image)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
-            url = obj.image.url
-            if 'localhost' in url or '127.0.0.1' in url:
-                return None
-            return url
+            return obj.image.url
         except Exception:
             return None
 
