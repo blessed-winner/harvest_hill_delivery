@@ -143,61 +143,88 @@ export default function ClientRequests({ onViewChange }: ClientRequestsProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRequests.map((req) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {filteredRequests.map((req, i) => (
             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
               key={req.id}
-              whileHover={{ y: -4 }}
-              className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col justify-between custom-shadow relative group"
+              className="group bg-white rounded-2xl p-4 border border-[#E8E4DA] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer relative hover:-translate-y-0.5"
             >
-              <div className="space-y-3">
-                {/* Header info */}
-                <div className="flex justify-between items-start gap-2">
-                  <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">
-                    {req.category || 'Product'}
+              <div>
+                {/* Card Top Pill Header */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border border-[#E8E4DA] uppercase tracking-wider">
+                    {req.category || 'Vegetables'}
                   </span>
-                  <span className="font-mono text-[9px] text-on-surface-variant font-medium">
-                    Requested {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+
+                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs bg-emerald-100 text-emerald-900 border-emerald-300">
+                    Open Demand
                   </span>
                 </div>
 
-                {/* Main details */}
-                <div>
-                  <h3 className="font-sans text-base font-extrabold text-on-surface group-hover:text-primary transition-colors">
-                    {req.product_name}
-                  </h3>
-                  {req.client_name && (
-                    <p className="text-[10px] font-mono uppercase text-[#717971] tracking-wider mt-0.5">
-                      Client: {req.client_name}
-                    </p>
-                  )}
-                </div>
+                {/* Requirement Title */}
+                <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors mb-1 leading-tight">
+                  {req.product_name}
+                </h3>
 
-                <div className="grid grid-cols-2 gap-2 py-1.5 border-y border-outline-variant bg-[#fcf9f2]/40 rounded-lg px-2">
-                  <div>
-                    <span className="block text-[8px] font-bold text-on-surface-variant uppercase tracking-wider">Volume Needed</span>
-                    <span className="font-mono text-xs font-bold text-on-surface">
-                      {parseFloat(String(req.quantity_needed)).toLocaleString()} {req.unit}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[8px] font-bold text-on-surface-variant uppercase tracking-wider">Preferred Price</span>
-                    <span className="font-mono text-xs font-bold text-emerald-700">
-                      {req.preferred_price ? `RWF ${parseFloat(String(req.preferred_price)).toLocaleString()}/${req.unit}` : 'Flexible'}
-                    </span>
-                  </div>
-                </div>
-
-                {req.notes && (
-                  <p className="text-[11px] text-on-surface-variant italic leading-relaxed border-l-2 border-primary/20 pl-2">
-                    "{req.notes}"
+                {req.client_name && (
+                  <p className="text-[10px] font-mono uppercase text-[#717971] tracking-wider mb-2">
+                    Verified Buyer: <strong className="text-[#1C2A1E]">{req.client_name}</strong>
                   </p>
                 )}
+
+                {/* Requirement Spec Box - Vertical Hierarchy */}
+                <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
+                    <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
+                      {parseFloat(String(req.quantity_needed)).toLocaleString()} {req.unit || 'kg'}
+                    </p>
+                  </div>
+
+                  <div className="py-2 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing Model</p>
+                    {req.preferred_price ? (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#717971]">Preferred Target Price</p>
+                        <p className="text-base font-black text-[#2D5A3D] font-mono mt-0.5">
+                          RWF {parseFloat(String(req.preferred_price)).toLocaleString()} / {req.unit || 'kg'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-[11px] font-medium text-[#717971]">Farmer Proposes Price</p>
+                        <p className="text-xs font-semibold text-[#4A473D] mt-0.5">
+                          Open for asking price submission
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Requested Date</p>
+                    <p className="text-xs font-bold text-[#1C2A1E] mt-0.5">
+                      {new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+
+                  {req.notes && (
+                    <div className="pt-1.5 border-t border-[#E8E4DA]">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Buyer Notes</p>
+                      <p className="text-xs font-medium text-[#4A473D] italic mt-0.5 leading-relaxed">
+                        "{req.notes}"
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Action Button */}
-              <div className="pt-4 mt-auto">
+              {/* Card Action CTA */}
+              <div className="pt-3 border-t border-[#F4F1E8] mt-2">
                 <button
+                  type="button"
                   onClick={() => onViewChange('submit', {
                     id: `req-${req.id}`,
                     name: req.product_name,
@@ -206,10 +233,10 @@ export default function ClientRequests({ onViewChange }: ClientRequestsProps) {
                     quantity_needed: req.quantity_needed,
                     base_price: req.preferred_price || undefined,
                   })}
-                  className="w-full bg-[#144227] text-white font-mono text-[10px] font-bold uppercase tracking-wider py-2.5 rounded-xl hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-98"
+                  className="py-2.5 px-4 bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer w-full active:scale-[0.98]"
                 >
-                  Supply This Demand
-                  <ArrowRight size={13} />
+                  <span>Supply This Demand</span>
+                  <ArrowRight size={14} />
                 </button>
               </div>
             </motion.div>
