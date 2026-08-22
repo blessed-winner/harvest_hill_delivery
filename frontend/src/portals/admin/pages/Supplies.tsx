@@ -1343,14 +1343,68 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     ) : adminThread?.offers && adminThread.offers.length > 0 ? (
                       adminThread.offers.map((offer: any, idx: number) => {
                         const isFarmer = offer.sender === 'farmer';
+                        const isPlainMessage = offer.is_offer === false;
+
+                        if (isPlainMessage) {
+                          return (
+                            <div 
+                              key={offer.id || idx}
+                              className={cn(
+                                "flex items-start gap-2.5 max-w-[88%] group relative text-xs font-sans my-1.5",
+                                isFarmer ? "mr-auto" : "ml-auto flex-row-reverse"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shrink-0 shadow-2xs mt-0.5",
+                                isFarmer ? "bg-amber-700" : "bg-[#144227]"
+                              )}>
+                                {isFarmer ? 'FM' : 'HH'}
+                              </div>
+
+                              <div className="relative max-w-[90%]">
+                                <div className={cn(
+                                  "p-3 rounded-2xl text-xs leading-relaxed shadow-2xs border",
+                                  isFarmer 
+                                    ? "bg-amber-50/90 text-amber-950 border-amber-200/90 rounded-tl-none" 
+                                    : "bg-[#144227] text-white border-[#144227] rounded-tr-none"
+                                )}>
+                                  <div className={cn(
+                                    "flex items-center justify-between gap-3 mb-1 text-[9.5px] pb-1 border-b",
+                                    isFarmer ? "border-amber-200/60 text-amber-900/80" : "border-white/20 text-emerald-100"
+                                  )}>
+                                    <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
+                                    <span className="font-mono text-[8.5px] opacity-80">
+                                      {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                    </span>
+                                  </div>
+                                  <p className="font-medium whitespace-pre-line text-xs">
+                                    {offer.message || offer.terms}
+                                  </p>
+                                </div>
+
+                                {/* Hover Trash Delete Option */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOfferTerm(offer.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1 -right-1 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                                  title="Delete message"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        {/* Render Structured Negotiation Offer Card */}
                         return (
                           <div 
                             key={offer.id || idx}
                             className={cn(
-                              "p-3 rounded-xl border text-xs font-sans space-y-1.5 relative group transition-all",
+                              "p-3.5 rounded-2xl border text-xs font-sans space-y-2 relative group transition-all shadow-2xs my-2",
                               isFarmer 
-                                ? "bg-amber-50/90 border-amber-200/90 text-amber-950" 
-                                : "bg-emerald-50/90 border-emerald-200/90 text-emerald-950"
+                                ? "bg-amber-50/90 border-amber-300/80 text-amber-950" 
+                                : "bg-emerald-50/90 border-emerald-300/80 text-emerald-950"
                             )}
                           >
                             {/* Hover Trash Delete Option */}
@@ -1363,9 +1417,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               <Trash2 size={11} />
                             </button>
 
-                            {/* Header Row */}
-                            <div className="flex items-center justify-between border-b border-black/5 pb-1">
-                              <span className="text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                            {/* Card Header Badge */}
+                            <div className="flex items-center justify-between border-b border-black/10 pb-1.5">
+                              <span className="text-[9.5px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
                                 <span className={cn(
                                   "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shadow-2xs",
                                   isFarmer ? "bg-amber-700" : "bg-emerald-800"
@@ -1373,30 +1427,31 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                                   {isFarmer ? 'FM' : 'HH'}
                                 </span>
                                 <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
+                                <span className="px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-white/80 border border-black/10 text-primary">
+                                  {offer.parent_offer ? 'COUNTER PROPOSAL' : 'OFFER TERMS'}
+                                </span>
                               </span>
                               <span className="text-[8px] font-mono opacity-70 pr-5">
                                 {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                               </span>
                             </div>
 
-                            {/* Proposed Specs - Only for structured offers */}
-                            {offer.is_offer !== false && (
-                              <div className="flex items-center gap-4 bg-white/80 p-2 rounded-lg border border-black/5 font-mono text-xs">
-                                <div>
-                                  <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
-                                  <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
-                                </div>
-                                <div className="h-5 w-px bg-black/10" />
-                                <div>
-                                  <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
-                                  <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
-                                </div>
+                            {/* Proposed Specs Grid */}
+                            <div className="flex items-center gap-4 bg-white/90 p-2.5 rounded-xl border border-black/10 font-mono text-xs">
+                              <div>
+                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
+                                <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
                               </div>
-                            )}
+                              <div className="h-6 w-px bg-black/10" />
+                              <div>
+                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
+                                <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
+                              </div>
+                            </div>
 
-                            {/* Custom Terms or Message */}
+                            {/* Custom Terms Note */}
                             {(offer.terms || offer.message) && (
-                              <p className="text-[11px] font-medium leading-relaxed bg-white/60 p-2 rounded-lg border border-black/5 text-emerald-950">
+                              <p className="text-[11px] font-medium leading-relaxed bg-white/70 p-2.5 rounded-xl border border-black/10 text-emerald-950">
                                 {offer.terms || offer.message}
                               </p>
                             )}
