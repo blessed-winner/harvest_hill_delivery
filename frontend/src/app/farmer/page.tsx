@@ -9,7 +9,6 @@ import MySupplies from '../../portals/farmer/pages/MySupplies';
 import Negotiations from '../../portals/farmer/pages/Negotiations';
 import Invoices from '../../portals/farmer/pages/Invoices';
 import Settings from '../../portals/farmer/pages/Settings';
-import ClientRequests from '../../portals/farmer/pages/ClientRequests';
 import { View } from '../../portals/types';
 import { api } from '../../portals/farmer/lib/api';
 
@@ -94,8 +93,6 @@ export default function FarmerPage() {
         return <Invoices />;
       case 'settings':
         return <Settings />;
-      case 'client-requests':
-        return <ClientRequests onViewChange={handleViewChange} />;
       case 'dashboard':
       default:
         return <Dashboard onViewChange={handleViewChange} />;

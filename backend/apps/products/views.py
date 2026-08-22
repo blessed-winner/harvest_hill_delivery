@@ -175,8 +175,6 @@ class ProductRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role == 'admin':
             return ProductRequest.objects.all().order_by('-created_at')
-        elif user.role == 'farmer':
-            return ProductRequest.objects.filter(status='approved').order_by('-created_at')
         elif user.role == 'client':
             return ProductRequest.objects.filter(client=user.client_profile).order_by('-created_at')
         return ProductRequest.objects.none()

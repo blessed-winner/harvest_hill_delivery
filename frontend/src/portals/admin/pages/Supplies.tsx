@@ -1055,12 +1055,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       const cropName = (sup.custom_product_name || sup.suggested_product_name || sup.product_detail?.name || 'Custom Crop').trim();
                       const category = (sup.custom_category || sup.product_detail?.category || 'VEGETABLES').toUpperCase();
                       const unit = sup.custom_unit || sup.unit || 'kg';
-                      const isAlreadyApproved = !!sup.product || sup.status === 'accepted';
-                      const latestOffer = sup.latest_offer;
-                      const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
-                      const hasNegotiationStarted = !!(sup.has_admin_negotiation || sup.latest_offer);
-                      const isNegotiated = (offerStatus === 'ACCEPTED' || sup.status === 'negotiated' || Number(sup.agreed_price) > 0) && !isAlreadyApproved;
-                      const isNegotiating = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && !isAlreadyApproved;
+                      const isAccepted = sup.status === 'accepted';
                       const isRejected = sup.status === 'rejected';
                       const askingPrice = Number(sup.proposed_price || sup.price || 0);
                       const agreedPrice = Number(sup.agreed_price || 0);
@@ -1150,13 +1145,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                           <td className="px-4 py-3">
                             <span className={cn(
                               "px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
-                              isAlreadyApproved ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
-                              isNegotiated ? "bg-blue-100 text-blue-900 border-blue-300" :
-                              isNegotiating ? "bg-amber-100 text-amber-900 border-amber-300" :
+                              isAccepted ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
                               isRejected ? "bg-red-100 text-red-900 border-red-300" :
                               "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
-                              {isAlreadyApproved ? 'Approved' : (isNegotiated ? 'Negotiated' : (isNegotiating ? 'Negotiating' : (isRejected ? 'Rejected' : 'Pending')))}
+                              {isAccepted ? (sup.product ? 'Approved' : 'Negotiated') : (isRejected ? 'Rejected' : 'Pending')}
                             </span>
                           </td>
 

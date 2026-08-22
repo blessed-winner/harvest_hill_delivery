@@ -179,9 +179,12 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.status = 'accepted'
         thread.save()
 
-        # Update Supply model with finalized agreed negotiation terms (keep supply.status pending until admin manually approves)
+        # Update Supply model status and finalized accepted terms
+        thread.supply.status = 'accepted'
         thread.supply.accepted_quantity = quantity
         thread.supply.agreed_price = price
+        if thread.supply.visibility_scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            thread.supply.visibility_scope = 'PUBLIC'
         thread.supply.save()
 
 

@@ -449,13 +449,6 @@ export default function Dashboard({ onViewChange }: { onViewChange?: (view: any)
           <h3 className="font-sans text-base sm:text-lg font-bold text-on-surface">Products currently needed</h3>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => onViewChange?.('client-requests')}
-              className="text-[#144227] font-mono text-xs font-bold flex items-center gap-1 hover:underline cursor-pointer bg-[#bceec8]/35 px-3 py-1 rounded-full border border-[#bceec8]/60"
-            >
-              View Client Requests
-              <ChevronRight size={14} />
-            </button>
-            <button
               onClick={() => onViewChange?.('submit')}
               className="text-primary font-mono text-xs flex items-center gap-1 hover:underline cursor-pointer"
             >
