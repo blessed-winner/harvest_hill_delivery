@@ -108,6 +108,15 @@ class ProductSerializer(serializers.ModelSerializer):
                     urls.append(img_obj.image.url)
             except Exception:
                 pass
+        admin_supplies = obj.supplies.filter(farmer__user__role='admin').order_by('-created_at')
+        for admin_sup in admin_supplies:
+            if admin_sup.photo:
+                try:
+                    url = admin_sup.photo.url
+                    if url and url not in urls:
+                        urls.append(url)
+                except Exception:
+                    pass
         return urls
 
     def get_base_price(self, obj):
@@ -327,6 +336,15 @@ class ProductShortSerializer(serializers.ModelSerializer):
                     urls.append(img_obj.image.url)
             except Exception:
                 pass
+        admin_supplies = obj.supplies.filter(farmer__user__role='admin').order_by('-created_at')
+        for admin_sup in admin_supplies:
+            if admin_sup.photo:
+                try:
+                    url = admin_sup.photo.url
+                    if url and url not in urls:
+                        urls.append(url)
+                except Exception:
+                    pass
         return urls
 
     class Meta:

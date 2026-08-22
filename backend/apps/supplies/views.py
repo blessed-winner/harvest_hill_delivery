@@ -332,7 +332,14 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 instance.save(update_fields=['agreed_price'])
             if instance.product and self.request.user.role == 'admin':
                 instance.product.base_price = instance.price
-                instance.product.save(update_fields=['base_price'])
+                if photo_file:
+                    instance.product.image = photo_file
+                instance.product.save()
+
+                from apps.products.models import ProductImage
+                for img in images:
+                    if not ProductImage.objects.filter(product=instance.product, image=img).exists():
+                        ProductImage.objects.create(product=instance.product, image=img)
         
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
