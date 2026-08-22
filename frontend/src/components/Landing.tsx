@@ -118,8 +118,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     fetchData();
   }, []);
 
-  // Helper to aggregate active accepted supplies into single Master Product cards
-  const aggregateMasterProducts = (suppliesList: any[]) => {
+  // Helper to aggregate active accepted supplies and products into single Master Product cards
+  const aggregateMasterProducts = (suppliesList: any[], productList: any[]) => {
     const map = new Map<string, any>();
 
     for (const s of suppliesList) {
@@ -130,7 +130,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
       const key = prodName.toLowerCase();
 
-      // Accepted quantity calculation: prefer accepted_quantity if set, else quantity
       let qty = 0;
       if (s.accepted_quantity !== undefined && s.accepted_quantity !== null) {
         qty = parseFloat(String(s.accepted_quantity));
@@ -188,10 +187,62 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       }
     }
 
+    for (const p of productList) {
+      const prodName = (p.name || '').trim();
+      if (!prodName) continue;
+
+      const key = prodName.toLowerCase();
+      const qty = parseFloat(String(p.total_available_quantity || p.quantity || 0));
+
+      if (map.has(key)) {
+        const existing = map.get(key);
+        if (qty > existing.total_available_quantity) {
+          existing.quantity = qty;
+          existing.total_available_quantity = qty;
+        }
+      } else if (qty > 0 || (p.status || 'open') === 'open') {
+        const origPrice = parseFloat(String(p.base_price || p.price || p.offered_price || 0));
+        const discPrice = p.is_discounted && p.discount_price ? parseFloat(String(p.discount_price)) : null;
+        const isDisc = !!(p.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
+        const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
+
+        const rawImg = p.image_url || p.photo || p.image;
+        let imageUrl = rawImg;
+        if (imageUrl && typeof imageUrl === 'string') {
+          if (imageUrl.includes('media/http')) imageUrl = 'https://' + imageUrl.split('http')[1];
+          else if (imageUrl.includes('media/https')) imageUrl = 'https://' + imageUrl.split('https')[1];
+        }
+
+        map.set(key, {
+          id: p.id,
+          product_id: p.id,
+          name: prodName,
+          category: p.category || 'Vegetables',
+          urgency: p.urgency || 'medium',
+          unit: p.unit || 'kg',
+          price: origPrice,
+          base_price: origPrice,
+          discount_price: discPrice,
+          effective_price: effectivePrice,
+          discount_percentage: p.discount_percentage || 0,
+          is_discounted: isDisc,
+          quantity: qty,
+          total_available_quantity: qty,
+          image_url: imageUrl,
+          photo: imageUrl,
+          farmer_name: "Harvest Hill Delivery",
+          farmer_location: "Kigali, Rwanda",
+          quality_grade: "Grade A",
+          status: "accepted",
+          raw_item: p
+        });
+      }
+    }
+
     return Array.from(map.values());
   };
 
-  const activeMasterProducts = aggregateMasterProducts(supplies);
+  const activeMasterProducts = aggregateMasterProducts(supplies, products);
   const activeSupplies = activeMasterProducts;
 
   // Helper to resolve unique items for a category

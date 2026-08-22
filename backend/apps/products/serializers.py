@@ -46,9 +46,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return float(obj.price)
 
     def get_total_available_quantity(self, obj):
-        request = self.context.get('request')
-        user = request.user if request and hasattr(request, 'user') else None
-        return obj.get_available_quantity_for_user(user)
+        return float(obj.total_available_quantity)
 
     class Meta:
         model = Product

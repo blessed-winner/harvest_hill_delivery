@@ -667,6 +667,8 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             return Response({"error": "A master product template must be selected or approved to accept this supply into system inventory."}, status=400)
 
         supply.status = 'accepted'
+        if supply.visibility_scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            supply.visibility_scope = 'PUBLIC'
         supply.save()
 
         # Send notification to farmer if farmer exists

@@ -183,6 +183,8 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.supply.status = 'accepted'
         thread.supply.accepted_quantity = quantity
         thread.supply.agreed_price = price
+        if thread.supply.visibility_scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            thread.supply.visibility_scope = 'PUBLIC'
         thread.supply.save()
 
 
