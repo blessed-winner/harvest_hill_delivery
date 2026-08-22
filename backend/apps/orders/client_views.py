@@ -267,31 +267,31 @@ class ClientDashboardViewSet(viewsets.ViewSet):
 
     @extend_schema(
         summary="Get popular product of the month",
-        description="Returns the #1 product with the most completed purchases for the Popular Product of the Month card",
+        description="Returns the #1 product included in the highest number of orders for the Popular Product of the Month card",
         tags=['Client Portal']
     )
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def popular_product(self, request):
-        """Get the popular product of the month based on actual order volumes"""
+        """Get the popular product of the month based on distinct order count"""
         from apps.products.models import Product
         from apps.orders.models import OrderItem
 
         top_item = OrderItem.objects.filter(
             order__status__in=['pending', 'processing', 'shipped', 'delivered']
         ).values('product').annotate(
-            total_purchased=Sum('quantity'),
-            order_count=Count('order', distinct=True)
-        ).order_by('-total_purchased').first()
+            order_count=Count('order', distinct=True),
+            total_purchased=Sum('quantity')
+        ).order_by('-order_count', '-total_purchased').first()
 
-        if not top_item or not top_item['product'] or float(top_item['total_purchased'] or 0) <= 0:
-            return Response({'product': None, 'total_purchased': 0, 'order_count': 0})
+        if not top_item or not top_item['product'] or top_item['order_count'] <= 0:
+            return Response({'product': None, 'order_count': 0, 'total_purchased': 0})
 
         product_obj = Product.objects.filter(pk=top_item['product']).first()
         if not product_obj:
-            return Response({'product': None, 'total_purchased': 0, 'order_count': 0})
+            return Response({'product': None, 'order_count': 0, 'total_purchased': 0})
 
-        total_purchased = float(top_item['total_purchased'] or 0)
         order_count = top_item['order_count']
+        total_purchased = float(top_item['total_purchased'] or 0)
 
         data = ProductSerializer(product_obj, context={'request': request}).data
         return Response({

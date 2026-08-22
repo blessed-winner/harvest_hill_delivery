@@ -463,8 +463,8 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             </div>
           </div>
 
-          {/* Product of the Month Card (Only displayed if actual purchase volume > 0) */}
-          {popularProduct && popularProduct.total_purchased > 0 && (
+          {/* Product of the Month Card (Only displayed if order_count > 0) */}
+          {popularProduct && popularProduct.order_count > 0 && (
             <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
               <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
                 Product of the Month

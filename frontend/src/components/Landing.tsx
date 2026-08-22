@@ -601,8 +601,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </div>
       </section>
 
-      {/* SECTION: Popular Product of the Month Banner (Only rendered if actual purchase volume > 0) */}
-      {popularProduct && popularProduct.total_purchased > 0 && (
+      {/* SECTION: Popular Product of the Month Banner (Only rendered if order_count > 0) */}
+      {popularProduct && popularProduct.order_count > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-r from-[#1C2A1E] via-[#2D5A3D] to-[#1C2A1E] text-white rounded-[16px] p-5 sm:p-6 shadow-md border border-[#376847] flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
