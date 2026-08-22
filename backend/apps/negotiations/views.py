@@ -183,12 +183,6 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         thread.supply.status = 'accepted'
         thread.supply.accepted_quantity = quantity
         thread.supply.agreed_price = price
-        if target_offer and target_offer.terms:
-            clean_terms = str(target_offer.terms).strip()
-            if thread.supply.notes and '[Agreed Terms]:' not in thread.supply.notes:
-                thread.supply.notes = f"{thread.supply.notes}\n\n[Agreed Terms]: {clean_terms}"
-            else:
-                thread.supply.notes = f"[Agreed Terms]: {clean_terms}"
         thread.supply.save()
 
 

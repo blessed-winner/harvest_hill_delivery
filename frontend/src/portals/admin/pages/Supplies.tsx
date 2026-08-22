@@ -1306,12 +1306,49 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   </span>
                 </div>
 
-                {selectedSupply.notes && (
-                  <div className="bg-white/80 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-1">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-800">Finalized Terms & Notes</p>
-                    <p className="leading-relaxed font-medium">{selectedSupply.notes}</p>
-                  </div>
-                )}
+                {(() => {
+                  const agreedTermsList: string[] = [];
+
+                  if (adminThread?.offers && Array.isArray(adminThread.offers)) {
+                    adminThread.offers.forEach((o: any) => {
+                      const txt = (o.terms || o.message || '').trim();
+                      if (txt && !txt.startsWith('[Admin Terms]') && !txt.toLowerCase().includes('farmer proposed') && !txt.toLowerCase().includes('harvest hill counter')) {
+                        const splitItems = txt.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
+                        splitItems.forEach((item: string) => {
+                          if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
+                        });
+                      }
+                    });
+                  }
+
+                  if (selectedSupply.notes && selectedSupply.notes.includes('[Agreed Terms]:')) {
+                    const legacyPart = selectedSupply.notes.split('[Agreed Terms]:')[1]?.trim();
+                    if (legacyPart) {
+                      const legacyItems = legacyPart.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
+                      legacyItems.forEach((item: string) => {
+                        if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
+                      });
+                    }
+                  }
+
+                  if (agreedTermsList.length === 0) return null;
+
+                  return (
+                    <div className="bg-white/80 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-2 font-sans shadow-2xs">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 size={13} className="text-emerald-700 shrink-0" /> Finalized Agreed Terms
+                      </p>
+                      <ul className="space-y-1.5 pl-1">
+                        {agreedTermsList.map((term, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs font-medium text-emerald-950 leading-relaxed">
+                            <span className="text-emerald-700 font-bold text-sm leading-none mt-0.5">•</span>
+                            <span>{term}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
