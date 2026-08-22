@@ -508,28 +508,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }
   };
 
-  const filteredSupplies = supplies.filter(s => {
-    // Archived tab shows only archived items
-    if (activeStatusTab === 'Archived') {
-      if (!s.is_archived) return false;
-    } else if (activeStatusTab === 'All') {
-      if (s.is_archived) return false;
-    } else {
-      // Other tabs show only non-archived items
-      if (s.is_archived) return false;
-      const backendStatus = statusMap[activeStatusTab];
-      if (s.status !== backendStatus) return false;
-    }
-
-    const matchesSearch = searchTerm 
-      ? (s.product_detail?.name || s.custom_product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.product_detail?.displayId || s.product_detail?.display_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.farmer_name || s.farmer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.product_detail?.category || s.custom_category || '').toLowerCase().includes(searchTerm.toLowerCase())
-      : true;
-    return matchesSearch;
-  });
-
   // Group supplies into Master Product entities (1 row per Master Product)
   const masterProductGroups = React.useMemo(() => {
     const map = new Map<string, {
@@ -549,9 +527,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       status: string;
       supplies: any[];
       primarySupply: any;
+      isArchived: boolean;
     }>();
 
-    for (const sup of filteredSupplies) {
+    for (const sup of supplies) {
       const prodName = (sup.product_detail?.name || sup.custom_product_name || sup.suggested_product_name || 'Produce').trim();
       const prodId = sup.product || sup.product_detail?.id || prodName.toLowerCase();
       const displayId = sup.product_detail?.displayId || sup.product_detail?.display_id || sup.displayId || sup.display_id || '';
@@ -583,6 +562,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           status: isAccepted ? 'accepted' : sup.status,
           supplies: [sup],
           primarySupply: sup,
+          isArchived: !!sup.is_archived,
         });
       } else {
         const group = map.get(key)!;
@@ -595,13 +575,42 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           group.totalAvailableStock += qty;
           group.status = 'accepted';
         }
+        if (sup.is_archived) {
+          group.isArchived = true;
+        }
         const distinctFarmers = new Set(group.supplies.map(s => s.farmer_name || s.farmer?.farm_name || 'Partner Farm'));
         group.supplierCount = distinctFarmers.size;
       }
     }
 
-    return Array.from(map.values());
-  }, [filteredSupplies]);
+    const allGroups = Array.from(map.values());
+
+    return allGroups.filter(g => {
+      // 1. Status Filter
+      if (activeStatusTab === 'Archived') {
+        if (!g.isArchived) return false;
+      } else if (activeStatusTab === 'Active') {
+        if (g.isArchived || g.totalAvailableStock <= 0) return false;
+      } else if (activeStatusTab === 'Pending Review') {
+        if (g.isArchived || g.totalAvailableStock > 0) return false;
+      } else {
+        // 'All'
+        if (g.isArchived) return false;
+      }
+
+      // 2. Search Filter
+      if (searchTerm) {
+        const query = searchTerm.toLowerCase();
+        const matchesName = g.name.toLowerCase().includes(query);
+        const matchesDisplayId = (g.displayId || '').toLowerCase().includes(query);
+        const matchesCategory = g.category.toLowerCase().includes(query);
+        const matchesSupplier = g.supplies.some(s => (s.farmer_name || s.farmer || '').toLowerCase().includes(query));
+        return matchesName || matchesDisplayId || matchesCategory || matchesSupplier;
+      }
+
+      return true;
+    });
+  }, [supplies, activeStatusTab, searchTerm]);
 
   // Pagination calculations (operates on Master Product groups)
   const groupsPerPage = 8;
@@ -641,7 +650,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           </div>
 
           <div className="flex bg-surface-container-low p-1 rounded-lg shrink-0 overflow-x-auto">
-            {['All', 'Pending Review', 'Accepted', 'Rejected', 'Archived'].map((t) => (
+            {['All', 'Pending Review', 'Active', 'Archived'].map((t) => (
               <button 
                 key={t} 
                 onClick={() => setActiveStatusTab(t)}
