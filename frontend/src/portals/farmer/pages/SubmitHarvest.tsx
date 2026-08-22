@@ -822,29 +822,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                   </div>
                 </div>
 
-                {selectedProduct.pricing_mode === 'farmer_proposes' ? (
-                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-950 space-y-1">
-                    <div className="flex items-center gap-1.5 font-extrabold text-amber-900">
-                      <Info className="w-4 h-4 text-amber-800 shrink-0" />
-                      <span>You will propose your asking price for this harvest.</span>
-                    </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Harvest Hill Delivery does not publish an offered price for this requirement. Please enter your asking price per {selectedProduct.unit}.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-950 space-y-1">
-                    <div className="flex items-center justify-between font-extrabold text-emerald-900">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                        Harvest Hill Offered Price:
-                      </span>
-                      <span className="text-sm font-black text-emerald-900">
-                        RWF {parseFloat(String(selectedProduct.offered_price || selectedProduct.base_price || 0)).toLocaleString()}/{selectedProduct.unit}
-                      </span>
-                    </div>
-                  </div>
-                )}
+
 
                 <div className="space-y-2 bg-surface-container-low/40 p-3.5 rounded-xl border border-outline-variant/60">
                   <label className="font-mono text-[9px] uppercase tracking-wider text-on-surface-variant font-bold block">
