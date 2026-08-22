@@ -1593,7 +1593,17 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 {(() => {
                   const parsedQty = parseFloat(agreedQtyInput || '0');
                   const parsedPrice = parseFloat(agreedPriceInput || '0');
-                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+                  const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
+                  const isExceedingQty = parsedQty > submittedQty;
+                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
+
+                  if (isExceedingQty) {
+                    return (
+                      <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center animate-in fade-in duration-200">
+                        Accepted quantity ({parsedQty} {selectedSupply.unit}) cannot exceed submitted harvest quantity ({submittedQty} {selectedSupply.unit}).
+                      </div>
+                    );
+                  }
 
                   if (isInvalid) {
                     return (
@@ -1608,7 +1618,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 {(() => {
                   const parsedQty = parseFloat(agreedQtyInput || '0');
                   const parsedPrice = parseFloat(agreedPriceInput || '0');
-                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0;
+                  const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
+                  const isExceedingQty = parsedQty > submittedQty;
+                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
 
                   const latestOffer = adminThread?.offers && adminThread.offers.length > 0
                     ? adminThread.offers[adminThread.offers.length - 1]
