@@ -42,13 +42,15 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                 thread.deleted_by_farmer = False
                 thread.save()
         else:
-            from apps.notifications.utils import send_live_notification
-            prod_name = thread.supply.product.name if thread.supply.product else thread.supply.custom_product_name
-            send_live_notification(
-                user=thread.supply.farmer.user,
-                title="New Negotiation Started",
-                message=f"A buyer ({request.user.email}) has initiated a price negotiation for your supply: {prod_name}."
-            )
+            # Only send notification when a client buyer initiates a negotiation
+            if request.user.role == 'client' and thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
+                from apps.notifications.utils import send_live_notification
+                prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.suggested_product_name or thread.supply.custom_product_name or "Harvest Batch")
+                send_live_notification(
+                    user=thread.supply.farmer.user,
+                    title="New Negotiation Started",
+                    message=f"A buyer ({request.user.email}) initiated price negotiation for your supply: {prod_name}."
+                )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -138,11 +140,16 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         else:
             recipient = thread.supply.farmer.user if (thread.supply.farmer and getattr(thread.supply.farmer, 'user', None)) else (thread.buyer if thread.buyer and thread.buyer != request.user else None)
             if recipient and recipient != request.user:
-                title_text = "New Counter-Offer" if is_offer else "New Negotiation Message"
+                title_text = "Counter-Offer Received" if is_offer else "New Negotiation Message"
+                msg_text = (
+                    f"Counter-offer received for {supply_num} ({prod_name}): {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}."
+                    if is_offer
+                    else f"New negotiation message for {supply_num} ({prod_name}): \"{message or terms}\"."
+                )
                 send_live_notification(
                     user=recipient,
                     title=title_text,
-                    message=f"New {title_text.lower()} received for {supply_num} ({prod_name}): {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}."
+                    message=msg_text
                 )
 
         return Response(NegotiationThreadSerializer(thread, context={'request': request}).data)

@@ -593,7 +593,7 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             terms_summary = f". Terms: {clean_notes[:45]}..." if len(clean_notes) > 45 else (f". Terms: {clean_notes}" if clean_notes else "")
             send_live_notification(
                 user=supply.farmer.user,
-                title="Harvest Hill Proposed Counter-Terms",
+                title="Counter-Offer Received",
                 message=f"Harvest Hill Delivery proposed counter-terms for {supply.supply_number or supply.id} ({prod_name}): {supply.accepted_quantity:g} {unit_str} @ RWF {supply.agreed_price:g}/{unit_str}{terms_summary}"
             )
 
