@@ -1015,11 +1015,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             <p className="font-mono text-xs font-bold text-primary">
                               {formatCurrency(activePrice)} / {unit}
                             </p>
-                            {agreedPrice > 0 && (
-                              <span className="text-[8px] font-extrabold text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200">
-                                Negotiated Agreed Price
-                              </span>
-                            )}
                           </td>
 
                           {/* Status Badge */}
