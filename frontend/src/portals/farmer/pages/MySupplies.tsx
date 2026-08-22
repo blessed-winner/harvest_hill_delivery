@@ -29,7 +29,6 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editSupply, setEditSupply] = useState<any | null>(null);
-  const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
 
 
 
@@ -437,13 +436,11 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
                         <button
                           onClick={() => {
                             if (onViewChange) {
-                              onViewChange('negotiations', { supply_id: supply.id });
-                            } else if (typeof window !== 'undefined') {
-                              window.location.href = `/farmer?view=negotiations&supply=${supply.id}`;
+                              onViewChange('negotiations');
                             }
                           }}
                           className="p-2 text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                          title="Open negotiations page for this harvest"
+                          title="Go to Negotiations page to view and respond to Harvest Hill terms"
                         >
                           <Handshake size={16} /> Negotiate
                         </button>
@@ -824,9 +821,6 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
           </>
         )}
       </AnimatePresence>
-
-
-
 
       {/* Approved Harvest Locked & Read-Only Notice Modal */}
       <AnimatePresence>
