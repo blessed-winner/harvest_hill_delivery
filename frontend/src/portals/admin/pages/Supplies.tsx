@@ -1379,20 +1379,22 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               </span>
                             </div>
 
-                            {/* Proposed Specs */}
-                            <div className="flex items-center gap-4 bg-white/80 p-2 rounded-lg border border-black/5 font-mono text-xs">
-                              <div>
-                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
-                                <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
+                            {/* Proposed Specs - Only for structured offers */}
+                            {offer.is_offer !== false && (
+                              <div className="flex items-center gap-4 bg-white/80 p-2 rounded-lg border border-black/5 font-mono text-xs">
+                                <div>
+                                  <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
+                                  <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
+                                </div>
+                                <div className="h-5 w-px bg-black/10" />
+                                <div>
+                                  <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
+                                  <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
+                                </div>
                               </div>
-                              <div className="h-5 w-px bg-black/10" />
-                              <div>
-                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
-                                <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
-                              </div>
-                            </div>
+                            )}
 
-                            {/* Custom Terms or Notes */}
+                            {/* Custom Terms or Message */}
                             {(offer.terms || offer.message) && (
                               <p className="text-[11px] font-medium leading-relaxed bg-white/60 p-2 rounded-lg border border-black/5 text-emerald-950">
                                 {offer.terms || offer.message}

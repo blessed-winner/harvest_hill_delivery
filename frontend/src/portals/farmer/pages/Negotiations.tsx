@@ -174,15 +174,17 @@ export default function Negotiations() {
     const isClientSender = offer.sender === 'client' || offer.sender_role === 'client';
     const initials = isFarmerSender ? 'FM' : (isClientSender ? 'CL' : 'HH');
     const senderRoleLabel = isFarmerSender ? 'Farmer' : (isClientSender ? 'Client' : 'Harvest Hill Delivery');
+    const isOffer = offer.is_offer !== false;
 
     return {
       id: offer.id,
       sender: isFarmerSender ? 'SELLER' : 'BUYER',
       initials,
-      text: offer.message || (isFarmerSender 
-        ? `Farmer proposed terms: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`
-        : `${senderRoleLabel} proposed terms: ${formatRwf(offer.price)}/${activeThread?.supply_detail?.unit || 'kg'} for ${offer.quantity} ${activeThread?.supply_detail?.unit || 'kg'}.`),
-      price: `${formatRwf(offer.price)} / ${activeThread?.supply_detail?.unit || 'kg'}`,
+      is_offer: isOffer,
+      text: offer.message || (isOffer 
+        ? `${senderRoleLabel} proposed negotiation terms`
+        : ''),
+      price: isOffer ? `${formatRwf(offer.price)} / ${activeThread?.supply_detail?.unit || 'kg'}` : null,
       raw_price: offer.price,
       quantity: offer.quantity,
       message: offer.message,
@@ -487,8 +489,8 @@ export default function Negotiations() {
                       <Trash2 size={12} />
                     </button>
                   )}
-                  <p className="font-sans text-xs sm:text-sm leading-relaxed">{msg.text}</p>
-                  {msg.price && (
+                  <p className="font-sans text-xs sm:text-sm leading-relaxed">{msg.text || msg.message}</p>
+                  {msg.is_offer && msg.price && (
                     <div className={cn(
                       "flex items-center gap-6 pt-3 mt-3 border-t",
                       msg.sender === 'BUYER' ? "border-outline-variant" : "border-white/20"
