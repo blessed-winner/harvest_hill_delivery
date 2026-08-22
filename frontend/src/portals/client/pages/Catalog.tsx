@@ -463,50 +463,27 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             </div>
           </div>
 
-          {/* Popular Product of the Month Card */}
-          {popularProduct && (
-            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-3.5 border border-[#376847]">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 bg-[#376847] text-[#bceec8] text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full">
-                  <Sparkles size={10} /> Popular Product of the Month
-                </span>
-                {popularProduct.total_purchased > 0 && (
-                  <span className="text-[9.5px] font-mono font-bold text-[#bceec8] bg-black/20 px-2 py-0.5 rounded-md">
-                    {popularProduct.total_purchased.toLocaleString()} {popularProduct.unit || 'kg'} sold
-                  </span>
-                )}
+          {/* Product of the Month Card (Only displayed if actual purchase volume > 0) */}
+          {popularProduct && popularProduct.total_purchased > 0 && (
+            <div className="bg-[#144227] text-white rounded-2xl p-5 shadow-sm space-y-4">
+              <span className="inline-block bg-[#376847] text-[#bceec8] text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full">
+                Product of the Month
+              </span>
+              <div>
+                <h4 className="text-lg font-bold">{popularProduct.name}</h4>
+                <p className="text-xs text-white/80 leading-relaxed mt-1">
+                  Top performing product this month based on customer demand fulfillment.
+                </p>
               </div>
-
-              <div className="flex items-center gap-3 bg-white/10 p-2.5 rounded-xl border border-white/10">
-                {(popularProduct.image_url || popularProduct.image) ? (
-                  <img 
-                    src={popularProduct.image_url || popularProduct.image} 
-                    alt={popularProduct.name} 
-                    className="w-12 h-12 rounded-lg object-cover bg-white/20 shrink-0 shadow-2xs"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                    <Package size={20} className="text-white/60" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-white truncate">{popularProduct.name}</h4>
-                  <p className="text-[10px] text-white/80 uppercase tracking-wider font-semibold mt-0.5">
-                    RWF {Number(popularProduct.effective_price || popularProduct.price || 0).toLocaleString()} / {popularProduct.unit || 'kg'}
-                  </p>
-                </div>
-              </div>
-
               <button
                 onClick={() => {
                   setSearchQuery(popularProduct.name);
                   setSelectedCategory('all');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="w-full py-2 bg-white text-[#144227] hover:bg-[#FAF7F0] font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-[#9ed0ab] hover:underline underline-offset-4 cursor-pointer"
               >
-                <span>Filter & View Product</span>
-                <ArrowRight size={13} />
+                Browse Collection <ArrowRight size={14} />
               </button>
             </div>
           )}

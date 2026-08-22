@@ -272,7 +272,7 @@ class ClientDashboardViewSet(viewsets.ViewSet):
     )
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def popular_product(self, request):
-        """Get the popular product of the month based on order volumes"""
+        """Get the popular product of the month based on actual order volumes"""
         from apps.products.models import Product
         from apps.orders.models import OrderItem
 
@@ -283,23 +283,15 @@ class ClientDashboardViewSet(viewsets.ViewSet):
             order_count=Count('order', distinct=True)
         ).order_by('-total_purchased').first()
 
-        product_obj = None
-        total_purchased = 0.0
-        order_count = 0
+        if not top_item or not top_item['product'] or float(top_item['total_purchased'] or 0) <= 0:
+            return Response({'product': None, 'total_purchased': 0, 'order_count': 0})
 
-        if top_item and top_item['product']:
-            product_obj = Product.objects.filter(pk=top_item['product']).first()
-            total_purchased = float(top_item['total_purchased'] or 0)
-            order_count = top_item['order_count']
-
+        product_obj = Product.objects.filter(pk=top_item['product']).first()
         if not product_obj:
-            product_obj = Product.objects.filter(status='open').order_by('-created_at').first()
-            if product_obj:
-                total_purchased = 180.0
-                order_count = 14
+            return Response({'product': None, 'total_purchased': 0, 'order_count': 0})
 
-        if not product_obj:
-            return Response({'product': None})
+        total_purchased = float(top_item['total_purchased'] or 0)
+        order_count = top_item['order_count']
 
         data = ProductSerializer(product_obj, context={'request': request}).data
         return Response({
