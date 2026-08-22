@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package, FileText } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package, FileText, Plus } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -115,6 +115,19 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [discloseFarmerNameInput, setDiscloseFarmerNameInput] = useState(false);
 
   // Custom Farmer Supply Conversion State
+  const [approvalChoiceSupply, setApprovalChoiceSupply] = useState<any | null>(null);
+
+  const [directHarvestSupply, setDirectHarvestSupply] = useState<any | null>(null);
+  const [directName, setDirectName] = useState('');
+  const [directCategory, setDirectCategory] = useState('Vegetables');
+  const [directUnit, setDirectUnit] = useState('kg');
+  const [directSellingPrice, setDirectSellingPrice] = useState('');
+  const [directFarmerPrice, setDirectFarmerPrice] = useState('');
+  const [directQty, setDirectQty] = useState('');
+  const [directNotes, setDirectNotes] = useState('');
+  const [directImages, setDirectImages] = useState<Array<{ id?: string; url: string; file?: File; isFarmer?: boolean }>>([]);
+  const [isSubmittingDirect, setIsSubmittingDirect] = useState(false);
+
   const [convertCustomSupply, setConvertCustomSupply] = useState<any | null>(null);
   const [convertName, setConvertName] = useState('');
   const [convertCategory, setConvertCategory] = useState('Vegetables');
@@ -267,6 +280,138 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const pendingCustomCount = React.useMemo(() => {
     return customSupplies.filter((s: any) => s.status === 'pending' || !s.status).length;
   }, [customSupplies]);
+
+  const handleSelectOptionA = (supply: any) => {
+    setApprovalChoiceSupply(null);
+    setDirectHarvestSupply(supply);
+    const name = (supply.custom_product_name || supply.suggested_product_name || supply.product_detail?.name || 'Custom Harvest').trim();
+    setDirectName(name);
+    setDirectCategory(supply.custom_category || supply.product_detail?.category || 'Vegetables');
+    setDirectUnit(supply.custom_unit || supply.unit || 'kg');
+
+    let priceVal = Number(supply.agreed_price || supply.price || supply.proposed_price || 0);
+    if (priceVal > 0 && priceVal < 100) {
+      priceVal = Math.round(priceVal * 1473.97);
+    }
+    setDirectSellingPrice(priceVal ? String(priceVal) : '');
+    setDirectFarmerPrice(priceVal ? String(priceVal) : '');
+
+    const qtyVal = supply.accepted_quantity || supply.quantity || '';
+    setDirectQty(String(qtyVal));
+    setDirectNotes(supply.notes || '');
+
+    const initialImages: Array<{ id?: string; url: string; file?: File; isFarmer?: boolean }> = [];
+    if (supply.photo) initialImages.push({ url: supply.photo, isFarmer: true });
+    else if (supply.photo_url) initialImages.push({ url: supply.photo_url, isFarmer: true });
+
+    if (Array.isArray(supply.images)) {
+      supply.images.forEach((img: any) => {
+        const url = typeof img === 'string' ? img : (img.image || img.image_url);
+        if (url && !initialImages.some(i => i.url === url)) {
+          initialImages.push({ url, isFarmer: true });
+        }
+      });
+    }
+
+    setDirectImages(initialImages);
+  };
+
+  const handleSelectOptionB = (supply: any) => {
+    setApprovalChoiceSupply(null);
+    handleOpenConvertModal(supply);
+  };
+
+  const handleRemoveDirectImage = (index: number) => {
+    setDirectImages(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleAddDirectImageFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const newItems = files.map(file => ({
+      url: URL.createObjectURL(file),
+      file,
+      isFarmer: false
+    }));
+    setDirectImages(prev => [...prev, ...newItems]);
+  };
+
+  const handleSaveDirectHarvest = async () => {
+    if (!directHarvestSupply) return;
+    const sellingPriceNum = parseFloat(directSellingPrice);
+    const farmerPriceNum = parseFloat(directFarmerPrice) || sellingPriceNum;
+    const qtyNum = parseFloat(directQty);
+
+    if (!directName.trim()) {
+      toast("Crop / Product name is required.", "warning");
+      return;
+    }
+    if (isNaN(sellingPriceNum) || sellingPriceNum <= 0) {
+      toast("Please enter a valid selling price per unit.", "warning");
+      return;
+    }
+    if (isNaN(qtyNum) || qtyNum <= 0) {
+      toast("Please enter a valid stock quantity.", "warning");
+      return;
+    }
+
+    try {
+      setIsSubmittingDirect(true);
+
+      const mainPhoto = directImages[0]?.url || directHarvestSupply.photo || null;
+
+      const productPayload: Record<string, any> = {
+        name: directName.trim(),
+        category: directCategory,
+        unit: directUnit,
+        pricing_mode: 'harvest_hill_offers',
+        offered_price: sellingPriceNum,
+        base_price: sellingPriceNum,
+        quantity_needed: qtyNum,
+        status: 'open',
+        notes: directNotes,
+        visibility_scope: 'PUBLIC',
+      };
+
+      if (mainPhoto) {
+        productPayload.image_url = mainPhoto;
+      }
+
+      const newProduct = await api.products.create(productPayload);
+      const newProdId = newProduct.id || newProduct.pk;
+
+      await api.supplies.update(directHarvestSupply.id, {
+        product: newProdId,
+        status: 'accepted',
+        agreed_price: farmerPriceNum,
+        accepted_quantity: qtyNum,
+        custom_product_name: directName.trim(),
+        visibility_scope: 'PUBLIC',
+      });
+
+      for (const item of directImages) {
+        if (item.file) {
+          try {
+            const formData = new FormData();
+            formData.append('image', item.file);
+            await apiRequest(`/api/supplies/${directHarvestSupply.id}/upload_image/`, {
+              method: 'POST',
+              body: formData
+            });
+          } catch {}
+        }
+      }
+
+      toast(`Master Product & Harvest Batch for "${directName}" published successfully!`, "success");
+      setDirectHarvestSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Failed to create direct Master Product:", err);
+      toast(err.message || "Failed to create Master Product.", "error");
+    } finally {
+      setIsSubmittingDirect(false);
+    }
+  };
 
   const handleOpenConvertModal = (supply: any) => {
     setConvertCustomSupply(supply);
@@ -1039,13 +1184,22 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               >
                                 <Handshake size={12} /> Negotiate
                               </button>
-                              <button
-                                onClick={() => handleOpenConvertModal(sup)}
-                                className="py-1 px-2.5 bg-primary text-white hover:opacity-90 rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-                                title="Approve custom submission and convert to Master Product"
-                              >
-                                <CheckCircle2 size={13} /> Approve
-                              </button>
+                              {isLinkedToProduct || isAccepted ? (
+                                <span 
+                                  className="py-1 px-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-black text-[10px] uppercase tracking-wider inline-flex items-center gap-1 cursor-default shadow-2xs"
+                                  title="Master Product created and harvest approved"
+                                >
+                                  <CheckCircle2 size={12} className="text-emerald-700" /> Approved
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setApprovalChoiceSupply(sup)}
+                                  className="py-1 px-2.5 bg-primary text-white hover:opacity-90 rounded-lg font-bold text-[10.5px] transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                                  title="Approve custom submission"
+                                >
+                                  <CheckCircle2 size={13} /> Approve
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -2770,6 +2924,250 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               >
                 <Save size={14} />
                 <span>{isSavingVisibility ? 'Saving...' : 'Save Settings'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Choice Dialog Prompt */}
+      {approvalChoiceSupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 space-y-5">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-primary">Approve Custom Submission</h3>
+                  <p className="text-xs text-on-surface-variant font-medium">Select how you would like to approve this crop submission</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setApprovalChoiceSupply(null)}
+                className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Option A Card */}
+              <div 
+                onClick={() => handleSelectOptionA(approvalChoiceSupply)}
+                className="p-4 rounded-xl border-2 border-primary/20 hover:border-primary bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group space-y-1.5 shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-primary font-extrabold text-sm">
+                    <Package size={18} />
+                    <span>Create Master Product & Direct Harvest Stock</span>
+                  </div>
+                  <ChevronRight size={16} className="text-primary group-hover:translate-x-1 transition-transform" />
+                </div>
+                <p className="text-xs text-on-surface-variant font-medium leading-relaxed">
+                  Directly publish this crop as an active Master Product and convert the farmer's batch into ready stock without creating a requirement template.
+                </p>
+              </div>
+
+              {/* Option B Card */}
+              <div 
+                onClick={() => handleSelectOptionB(approvalChoiceSupply)}
+                className="p-4 rounded-xl border border-outline-variant/60 hover:border-primary bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer group space-y-1.5 shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-on-surface font-extrabold text-sm">
+                    <FileText size={18} className="text-emerald-700" />
+                    <span>Create Product Requirement Template First</span>
+                  </div>
+                  <ChevronRight size={16} className="text-on-surface-variant group-hover:translate-x-1 transition-transform" />
+                </div>
+                <p className="text-xs text-on-surface-variant font-medium leading-relaxed">
+                  Create an official requirement specification template first so other local farmers can also view and submit harvests for this crop.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setApprovalChoiceSupply(null)}
+                className="w-full py-2.5 border border-outline-variant text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Master Product & Harvest Batch Creation Modal (Option A) */}
+      {directHarvestSupply && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/50 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-primary">Approve & Create Master Product</h3>
+                  <p className="text-xs text-on-surface-variant font-medium">Publish master product & convert farmer harvest into ready marketplace stock</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDirectHarvestSupply(null)}
+                className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Crop / Product Name</label>
+                <input
+                  type="text"
+                  value={directName}
+                  onChange={(e) => setDirectName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                  placeholder="e.g. Organic Rwandan Strawberries"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Category</label>
+                  <select
+                    value={directCategory}
+                    onChange={(e) => setDirectCategory(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none bg-white"
+                  >
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Herbs">Herbs</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Animal-Based">Animal-Based</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Unit</label>
+                  <input
+                    type="text"
+                    value={directUnit}
+                    onChange={(e) => setDirectUnit(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                    placeholder="e.g. kg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Harvest Hill Selling Price (RWF/{directUnit})</label>
+                  <input
+                    type="number"
+                    value={directSellingPrice}
+                    onChange={(e) => setDirectSellingPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-black text-xs text-primary focus:border-primary outline-none"
+                    placeholder="e.g. 1500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Agreed Farmer Price (RWF/{directUnit})</label>
+                  <input
+                    type="number"
+                    value={directFarmerPrice}
+                    onChange={(e) => setDirectFarmerPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none text-emerald-800"
+                    placeholder="e.g. 1200"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Accepted Stock Quantity ({directUnit})</label>
+                <input
+                  type="number"
+                  value={directQty}
+                  onChange={(e) => setDirectQty(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-outline-variant font-bold text-xs focus:border-primary outline-none"
+                  placeholder="e.g. 250"
+                />
+              </div>
+
+              {/* Crop Photo Gallery with Deletable Farmer Base Images */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Crop Photos (Farmer Base Photos Deletable)</label>
+                  <span className="text-[9px] font-bold text-on-surface-variant font-mono">{directImages.length} images</span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {directImages.map((img, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-outline-variant/60 bg-surface-container-low group shadow-2xs">
+                      <img src={img.url} alt={`Crop photo ${idx + 1}`} className="w-full h-full object-cover" />
+                      {img.isFarmer && (
+                        <span className="absolute top-1 left-1 text-[7.5px] font-extrabold bg-amber-500 text-white px-1 py-0.2 rounded shadow-xs">
+                          Farmer Base
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDirectImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-red-600/90 text-white rounded-full hover:bg-red-700 transition-colors shadow-xs cursor-pointer"
+                        title="Delete this image"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+
+                  <label className="aspect-square rounded-xl border-2 border-dashed border-outline-variant/80 hover:border-primary flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors text-on-surface-variant hover:text-primary bg-surface-container-low/50">
+                    <Plus size={18} />
+                    <span className="text-[9px] font-bold">Add Photo</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleAddDirectImageFiles}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Admin Notes & Quality Remarks</label>
+                <textarea
+                  rows={2}
+                  value={directNotes}
+                  onChange={(e) => setDirectNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-outline-variant text-xs font-medium focus:border-primary outline-none resize-none"
+                  placeholder="Grade A inspected crop, ready for public catalog distribution."
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-outline-variant/40 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDirectHarvestSupply(null)}
+                disabled={isSubmittingDirect}
+                className="flex-1 py-2.5 border border-outline-variant text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDirectHarvest}
+                disabled={isSubmittingDirect}
+                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+              >
+                <span>{isSubmittingDirect ? 'Publishing...' : 'Approve & Publish Master Product'}</span>
+                <CheckCircle2 size={14} />
               </button>
             </div>
           </div>
