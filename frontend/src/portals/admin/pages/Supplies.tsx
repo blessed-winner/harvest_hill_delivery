@@ -815,7 +815,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter border",
                         group.totalAvailableStock > 0 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-800 border-amber-200"
                       )}>
-                        {group.totalAvailableStock > 0 ? 'Active stock' : 'Pending Review'}
+                        {group.totalAvailableStock > 0 ? 'Active' : 'Pending Review'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
