@@ -1534,7 +1534,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       type="number" 
                       value={agreedQtyInput} 
                       onChange={(e) => setAgreedQtyInput(e.target.value)}
-                      placeholder={`e.g. ${selectedSupply.quantity}`}
+                      placeholder={`e.g. ${selectedSupply.quantity || 100}`}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
                     />
                   </div>

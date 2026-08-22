@@ -860,7 +860,11 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         validationErrors.askingPrice ? "border-error focus:ring-error" : "border-outline-variant/60"
                       )}
                       type="text"
-                      placeholder={selectedProduct.pricing_mode === 'farmer_proposes' ? "Enter your asking price..." : `e.g. ${selectedProduct.offered_price || selectedProduct.base_price}`}
+                      placeholder={
+                        (selectedProduct.pricing_mode === 'farmer_proposes' || !(selectedProduct.offered_price || selectedProduct.base_price))
+                          ? "Enter your asking price..."
+                          : `e.g. ${selectedProduct.offered_price || selectedProduct.base_price}`
+                      }
                       value={form.askingPrice}
                       onChange={(event) => {
                         const val = event.target.value;

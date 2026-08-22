@@ -591,7 +591,7 @@ export function ContextualNegotiationPane({
                             type="number"
                             value={offerQty}
                             onChange={(e) => setOfferQty(e.target.value)}
-                            placeholder={`e.g. ${availableQty}`}
+                            placeholder={`e.g. ${availableQty || 100}`}
                             className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-bold text-xs text-emerald-950 outline-none focus:border-emerald-700"
                           />
                         </div>
