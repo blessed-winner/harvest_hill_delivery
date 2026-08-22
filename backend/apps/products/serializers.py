@@ -72,8 +72,6 @@ class ProductSerializer(serializers.ModelSerializer):
         return urls
 
     def get_base_price(self, obj):
-        if obj.base_price and float(obj.base_price) > 0:
-            return float(obj.base_price)
         return float(obj.price)
 
     def get_total_available_quantity(self, obj):
@@ -230,7 +228,10 @@ class ProductShortSerializer(serializers.ModelSerializer):
     discountedPrice = serializers.FloatField(source='effective_price', read_only=True)
     discountPercentage = serializers.FloatField(source='discount_percentage', read_only=True)
     hasActiveDiscount = serializers.BooleanField(source='has_active_discount', read_only=True)
-    activeDeal = FreshDealSerializer(source='active_deal', read_only=True)
+    base_price = serializers.SerializerMethodField()
+
+    def get_base_price(self, obj):
+        return float(obj.price)
 
     def get_images(self, obj):
         urls = []

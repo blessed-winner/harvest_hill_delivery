@@ -539,7 +539,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       const isAccepted = sup.status === 'accepted';
       const qty = isAccepted ? Number(sup.accepted_quantity ?? sup.quantity ?? 0) : 0;
       
-      const masterPrice = Number(sup.product_detail?.base_price || sup.product_detail?.offered_price || sup.base_price || sup.agreed_price || sup.price || 0);
+      const masterPrice = Number(sup.product_detail?.price || sup.product_detail?.base_price || sup.product_detail?.offered_price || sup.agreed_price || sup.price || 0);
       const isDisc = !!(sup.product_detail?.is_discounted || sup.is_discounted);
       const discPrice = (sup.product_detail?.discount_price || sup.discount_price) ? Number(sup.product_detail?.discount_price || sup.discount_price) : null;
       const effPrice = isDisc && discPrice ? discPrice : masterPrice;

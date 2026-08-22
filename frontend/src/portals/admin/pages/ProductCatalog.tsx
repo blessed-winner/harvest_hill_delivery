@@ -1469,7 +1469,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-emerald-200/60 text-emerald-900">
                 <div>
                   <span className="text-[9px] uppercase font-bold text-emerald-800 block">Master Selling Price</span>
-                  <span className="font-extrabold text-sm text-primary">{formatPrice(historyProduct.base_price)} / {historyProduct.unit}</span>
+                  <span className="font-extrabold text-sm text-primary">{formatPrice(historyProduct.price || historyProduct.base_price || historyProduct.offered_price)} / {historyProduct.unit}</span>
                 </div>
                 <div>
                   <span className="text-[9px] uppercase font-bold text-emerald-800 block">Contributing Farmers</span>
