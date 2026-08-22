@@ -650,7 +650,12 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }>();
 
     for (const sup of supplies) {
-      const prodName = (sup.product_detail?.name || sup.custom_product_name || sup.suggested_product_name || 'Produce').trim();
+      const isCustomSupply = !sup.product || sup.is_suggested_product || !!sup.custom_product_name || !!sup.suggested_product_name || (sup.product_detail && (sup.product_detail.is_suggested_product || sup.product_detail.isCustom));
+      if (isCustomSupply) {
+        continue;
+      }
+
+      const prodName = (sup.product_detail?.name || 'Produce').trim();
       const prodId = sup.product || sup.product_detail?.id || prodName.toLowerCase();
       const displayId = sup.product_detail?.displayId || sup.product_detail?.display_id || sup.displayId || sup.display_id || '';
       const key = String(prodId);
