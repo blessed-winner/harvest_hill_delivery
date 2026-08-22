@@ -139,9 +139,23 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         qty = parseFloat(String(s.total_available_quantity));
       }
 
-      const origPrice = parseFloat(String(s.product_detail?.base_price || s.product_detail?.price || s.base_price || s.price || s.offered_price || 0));
-      const discPrice = s.is_discounted && s.discount_price ? parseFloat(String(s.discount_price)) : null;
-      const isDisc = !!(s.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
+      const hasActiveDeal = !!(
+        s.is_discounted ||
+        s.has_active_discount ||
+        s.hasActiveDiscount ||
+        s.active_deal ||
+        s.activeDeal ||
+        s.product_detail?.is_discounted ||
+        s.product_detail?.has_active_discount ||
+        s.product_detail?.hasActiveDiscount ||
+        s.product_detail?.active_deal ||
+        s.product_detail?.activeDeal
+      );
+
+      const origPrice = parseFloat(String(s.product_detail?.price || s.product_detail?.base_price || s.price || s.base_price || s.offered_price || 0));
+      const discPriceVal = parseFloat(String(s.product_detail?.effective_price || s.product_detail?.discount_price || s.effective_price || s.discount_price || s.discountedPrice || 0));
+      const isDisc = hasActiveDeal || (discPriceVal > 0 && origPrice > 0 && discPriceVal < origPrice);
+      const discPrice = isDisc ? (discPriceVal > 0 ? discPriceVal : origPrice) : null;
       const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
 
       const rawImg = s.product_detail?.image_url || s.product_detail?.image;
@@ -155,6 +169,14 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         const existing = map.get(key);
         existing.quantity += qty;
         existing.total_available_quantity += qty;
+
+        if (!existing.is_discounted && isDisc) {
+          existing.is_discounted = true;
+          existing.has_active_discount = true;
+          existing.discount_price = discPrice;
+          existing.effective_price = effectivePrice;
+          existing.discount_percentage = s.discount_percentage || (isDisc && discPrice !== null && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0);
+        }
 
         if (!existing.image_url && imageUrl) {
           existing.image_url = imageUrl;
@@ -172,8 +194,9 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           base_price: origPrice,
           discount_price: discPrice,
           effective_price: effectivePrice,
-          discount_percentage: s.discount_percentage || (isDisc && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0),
+          discount_percentage: s.discount_percentage || (isDisc && discPrice !== null && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0),
           is_discounted: isDisc,
+          has_active_discount: isDisc,
           quantity: qty,
           total_available_quantity: qty,
           image_url: imageUrl,
@@ -194,18 +217,34 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       const key = prodName.toLowerCase();
       const qty = parseFloat(String(p.total_available_quantity || p.quantity || 0));
 
+      const hasActiveDeal = !!(
+        p.is_discounted ||
+        p.has_active_discount ||
+        p.hasActiveDiscount ||
+        p.active_deal ||
+        p.activeDeal
+      );
+
+      const origPrice = parseFloat(String(p.price || p.base_price || p.offered_price || 0));
+      const discPriceVal = parseFloat(String(p.effective_price || p.discount_price || p.discountedPrice || 0));
+      const isDisc = hasActiveDeal || (discPriceVal > 0 && origPrice > 0 && discPriceVal < origPrice);
+      const discPrice = isDisc ? (discPriceVal > 0 ? discPriceVal : origPrice) : null;
+      const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
+
       if (map.has(key)) {
         const existing = map.get(key);
         if (qty > existing.total_available_quantity) {
           existing.quantity = qty;
           existing.total_available_quantity = qty;
         }
+        if (!existing.is_discounted && isDisc) {
+          existing.is_discounted = true;
+          existing.has_active_discount = true;
+          existing.discount_price = discPrice;
+          existing.effective_price = effectivePrice;
+          existing.discount_percentage = p.discount_percentage || (isDisc && discPrice !== null && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0);
+        }
       } else if (qty > 0 || (p.status || 'open') === 'open') {
-        const origPrice = parseFloat(String(p.base_price || p.price || p.offered_price || 0));
-        const discPrice = p.is_discounted && p.discount_price ? parseFloat(String(p.discount_price)) : null;
-        const isDisc = !!(p.is_discounted && discPrice && discPrice > 0 && (origPrice <= 0 || discPrice < origPrice));
-        const effectivePrice = isDisc && discPrice ? discPrice : origPrice;
-
         const rawImg = p.image_url || p.image;
         let imageUrl = rawImg;
         if (imageUrl && typeof imageUrl === 'string') {
@@ -224,8 +263,9 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           base_price: origPrice,
           discount_price: discPrice,
           effective_price: effectivePrice,
-          discount_percentage: p.discount_percentage || 0,
+          discount_percentage: p.discount_percentage || (isDisc && discPrice !== null && origPrice > discPrice ? ((origPrice - discPrice) / origPrice) * 100 : 0),
           is_discounted: isDisc,
+          has_active_discount: isDisc,
           quantity: qty,
           total_available_quantity: qty,
           image_url: imageUrl,
@@ -255,7 +295,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     if (targetLower === 'deals') {
-      const matchedDeals = masterItems.filter((s: any) => s.is_discounted);
+      const matchedDeals = masterItems.filter((s: any) => s.is_discounted || s.has_active_discount || s.hasActiveDiscount);
       if (matchedDeals.length > 0) return matchedDeals;
       return [];
     }
@@ -301,11 +341,18 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     const name = isSupply ? item.product_detail?.name : item.name;
     const farm = isSupply ? (item.farmer_name || 'Harvest Hill Partner Farm') : 'Harvest Hill Certified Partner Farm';
     
-    const isDiscountedItem = !!(item.is_discounted || isDeal);
+    const isDiscountedItem = !!(
+      item.is_discounted ||
+      item.has_active_discount ||
+      item.hasActiveDiscount ||
+      item.active_deal ||
+      item.activeDeal ||
+      isDeal
+    );
     const origPrice = Number(item.base_price || item.price || item.originalPrice || 0);
-    const discPrice = isDiscountedItem && item.discount_price && Number(item.discount_price) > 0
-      ? Number(item.discount_price)
-      : (item.effective_price ? Number(item.effective_price) : origPrice);
+    const discPrice = isDiscountedItem
+      ? Number(item.discount_price || item.effective_price || item.discountedPrice || (origPrice > 0 ? origPrice : 0))
+      : origPrice;
 
     const finalOrigPrice = (isDiscountedItem && origPrice <= discPrice)
       ? (discPrice > 0 ? Math.round(discPrice * 1.25) : origPrice)
