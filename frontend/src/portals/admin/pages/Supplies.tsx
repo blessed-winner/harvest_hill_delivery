@@ -982,11 +982,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                                   <span className="text-[8px] font-extrabold uppercase tracking-wider bg-surface-container-high text-primary px-1.5 py-0.5 rounded border border-outline-variant/30 shrink-0">
                                     {category}
                                   </span>
-                                  {photoUrl && (
-                                    <span className="text-[8px] font-bold text-amber-800 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 shrink-0 flex items-center gap-0.5">
-                                      📸 Photo
-                                    </span>
-                                  )}
                                 </div>
                                 <p className="text-[9.5px] font-medium text-on-surface-variant uppercase tracking-wider mt-0.5">
                                   Unit: {unit} · Submitted by Farmer
