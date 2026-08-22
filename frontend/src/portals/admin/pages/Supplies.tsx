@@ -1149,7 +1149,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               isRejected ? "bg-red-100 text-red-900 border-red-300" :
                               "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
-                              {isAccepted ? (sup.product ? 'Master Product Created' : 'Negotiation Agreed') : (isRejected ? 'Rejected' : 'Pending')}
+                              {isAccepted ? (sup.product ? 'Approved' : 'Negotiated') : (isRejected ? 'Rejected' : 'Pending')}
                             </span>
                           </td>
 
