@@ -57,7 +57,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             product = serializer.save(image=files[0])
             from .models import ProductImage
             for file in files:
-                ProductImage.objects.create(product=product, image=file)
+                try:
+                    ProductImage.objects.create(product=product, image=file)
+                except Exception as img_err:
+                    print(f"Failed to create ProductImage during create: {img_err}")
         elif image_url and isinstance(image_url, str):
             clean_path = image_url
             if '/media/' in clean_path:
@@ -65,7 +68,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             product = serializer.save(image=clean_path)
             from .models import ProductImage
             if not product.gallery_images.exists():
-                ProductImage.objects.create(product=product, image=clean_path)
+                try:
+                    ProductImage.objects.create(product=product, image=clean_path)
+                except Exception as img_err:
+                    print(f"Failed to create ProductImage from url: {img_err}")
         else:
             product = serializer.save()
 
@@ -86,12 +92,18 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         if files:
             if instance.image:
-                delete_cloudinary_image(instance.image)
+                try:
+                    delete_cloudinary_image(instance.image)
+                except Exception:
+                    pass
             instance = serializer.save(image=files[0])
             from .models import ProductImage
             instance.gallery_images.all().delete()
             for file in files:
-                ProductImage.objects.create(product=instance, image=file)
+                try:
+                    ProductImage.objects.create(product=instance, image=file)
+                except Exception as img_err:
+                    print(f"Failed to create ProductImage during update: {img_err}")
         elif image_url and isinstance(image_url, str):
             clean_path = image_url
             if '/media/' in clean_path:
@@ -99,7 +111,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance = serializer.save(image=clean_path)
             from .models import ProductImage
             if not instance.gallery_images.exists():
-                ProductImage.objects.create(product=instance, image=clean_path)
+                try:
+                    ProductImage.objects.create(product=instance, image=clean_path)
+                except Exception as img_err:
+                    print(f"Failed to create ProductImage from url: {img_err}")
         else:
             instance = serializer.save()
 
