@@ -233,7 +233,11 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
       try {
         const threads = await apiRequest('/api/negotiations/threads/').catch(() => null);
         if (Array.isArray(threads)) {
-          const thread = threads.find((t: any) => t.supply_detail?.id === Number(productId));
+          const thread = threads.find((t: any) => 
+            String(t.supply_detail?.id) === String(productId) ||
+            String(t.supply_detail?.product_detail?.id) === String(productId) ||
+            String(t.supply) === String(productId)
+          );
           if (thread && thread.status === 'accepted') {
             const lastOffer = thread.offers?.[thread.offers.length - 1];
             const price = lastOffer ? lastOffer.price : thread.supply_detail?.proposed_price;
@@ -293,8 +297,13 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
     if (!product?.id) return;
     setLoadingThread(true);
     try {
-      const threads = await apiRequest('/api/negotiations/threads/');
-      let thread = threads.find((t: any) => t.supply_detail?.id === product.id);
+      const threads = await apiRequest(`/api/negotiations/threads/?product_id=${product.id}`).catch(() => []);
+      let thread = Array.isArray(threads) ? threads.find((t: any) => 
+        String(t.supply_detail?.id) === String(product.id) || 
+        String(t.supply_detail?.product_detail?.id) === String(product.id) ||
+        String(t.supply) === String(product.id)
+      ) : null;
+
       if (!thread) {
         thread = await apiRequest('/api/negotiations/threads/', {
           method: 'POST',

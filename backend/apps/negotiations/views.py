@@ -13,9 +13,15 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        supply_id = self.request.query_params.get('supply_id') or self.request.query_params.get('supply')
+        supply_id = self.request.query_params.get('supply_id') or self.request.query_params.get('supply') or self.request.query_params.get('product_id') or self.request.query_params.get('product')
         if supply_id:
-            queryset = queryset.filter(supply_id=supply_id)
+            from apps.supplies.models import Supply
+            s_obj = Supply.objects.filter(id=supply_id).first()
+            if s_obj:
+                queryset = queryset.filter(supply=s_obj)
+            else:
+                queryset = queryset.filter(supply__product_id=supply_id)
+
         if self.request.user.role == 'farmer':
             try:
                 profile = self.request.user.farmer_profile
@@ -27,13 +33,37 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        supply_id = request.data.get('supply')
-        if not supply_id:
-            return Response({"error": "Supply ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        supply_param = request.data.get('supply') or request.data.get('product')
+        if not supply_param:
+            return Response({"error": "Supply ID or Product ID is required"}, status=status.HTTP_400_BAD_REQUEST)
         
+        target_supply = Supply.objects.filter(id=supply_param).first()
+        if not target_supply:
+            from apps.products.models import Product
+            prod = Product.objects.filter(id=supply_param).first()
+            if prod:
+                target_supply = Supply.objects.filter(product=prod, status='accepted').first()
+                if not target_supply:
+                    target_supply = Supply.objects.filter(product=prod).first()
+                if not target_supply:
+                    from apps.accounts.models import FarmerProfile
+                    admin_profile = FarmerProfile.objects.filter(user__role='admin').first()
+                    if not admin_profile:
+                        admin_profile = FarmerProfile.objects.first()
+                    target_supply = Supply.objects.create(
+                        farmer=admin_profile,
+                        product=prod,
+                        quantity=1000,
+                        price=prod.base_price or 0,
+                        status='accepted'
+                    )
+
+        if not target_supply:
+            return Response({"error": "Target produce supply not found"}, status=status.HTTP_404_NOT_FOUND)
+
         # Get or create thread specifically for THIS buyer user and THIS supply
         thread, created = NegotiationThread.objects.get_or_create(
-            supply_id=supply_id,
+            supply=target_supply,
             buyer=request.user
         )
         if not created:
