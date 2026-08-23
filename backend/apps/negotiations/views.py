@@ -157,8 +157,8 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         thread = self.get_object()
-        if thread.status == 'accepted':
-            return Response({"error": "Negotiation is already finalized"}, status=status.HTTP_400_BAD_REQUEST)
+        if thread.status in ['accepted', 'bypassed', 'BYPASSED'] or (thread.supply and thread.supply.status == 'accepted'):
+            return Response({"error": "Cannot finalize a negotiation for a harvest submission that has already been approved or bypassed."}, status=status.HTTP_400_BAD_REQUEST)
 
         offer_id = request.data.get('offer_id')
         target_offer = None

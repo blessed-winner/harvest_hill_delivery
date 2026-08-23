@@ -119,6 +119,37 @@ class Supply(models.Model):
             return self.product.unit
         return self.custom_unit or "kg"
 
+    @property
+    def submission_type(self):
+        """
+        Returns 'REQUIREMENT_BASED' if this harvest submission was originally submitted against an existing Product Requirement template.
+        Returns 'CUSTOM' if it was submitted independently by the farmer without a requirement template.
+        Note: Assigning a MasterProduct upon approval does not retroactively change a CUSTOM submission type.
+        """
+        if self.custom_product_name or self.is_suggested_product or self.suggested_product_name or not self.product_id:
+            return 'CUSTOM'
+        return 'REQUIREMENT_BASED'
+
+    @property
+    def negotiation_status(self):
+        """
+        Derives the explicit negotiation state of this harvest submission:
+        - 'FINALIZED': An offer in negotiation thread has offer_status == 'ACCEPTED' or thread status is 'accepted'.
+        - 'IN_PROGRESS': An active negotiation thread with pending/countered offers exists.
+        - 'DECLINED': Thread status is 'DECLINED'.
+        - 'NO_NEGOTIATION': No negotiation thread exists or thread is bypassed.
+        """
+        thread = self.negotiation_threads.all().order_by('created_at').last()
+        if not thread or thread.status in ['bypassed', 'BYPASSED']:
+            return 'NO_NEGOTIATION'
+        if thread.status == 'accepted' or thread.offers.filter(offer_status='ACCEPTED').exists():
+            return 'FINALIZED'
+        if thread.status == 'DECLINED':
+            return 'DECLINED'
+        if thread.offers.exists():
+            return 'IN_PROGRESS'
+        return 'NO_NEGOTIATION'
+
     def __str__(self):
         name = self.product.name if self.product else (self.suggested_product_name or self.custom_product_name)
         return f"{self.supply_number or self.id} - {name} - {self.effective_quantity} ({self.status})"

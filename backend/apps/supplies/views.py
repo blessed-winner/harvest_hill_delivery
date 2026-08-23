@@ -65,14 +65,21 @@ class SupplySerializer(serializers.ModelSerializer):
 
     supply_number = serializers.CharField(read_only=True)
     supplyNumber = serializers.CharField(source='supply_number', read_only=True)
+    submission_type = serializers.CharField(read_only=True)
+    submissionType = serializers.CharField(source='submission_type', read_only=True)
+    negotiation_status = serializers.CharField(read_only=True)
+    negotiationStatus = serializers.CharField(source='negotiation_status', read_only=True)
+    original_quantity = serializers.DecimalField(source='quantity', max_digits=10, decimal_places=2, read_only=True)
+    original_price = serializers.DecimalField(source='price', max_digits=10, decimal_places=2, read_only=True)
     latest_offer = serializers.SerializerMethodField()
     has_admin_negotiation = serializers.SerializerMethodField()
 
     class Meta:
         model = Supply
         fields = [
-            'id', 'supply_number', 'supplyNumber', 'product', 'product_detail', 'quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
-            'price', 'proposed_price', 'agreed_price', 'base_price', 
+            'id', 'supply_number', 'supplyNumber', 'submission_type', 'submissionType', 'negotiation_status', 'negotiationStatus',
+            'product', 'product_detail', 'quantity', 'original_quantity', 'accepted_quantity', 'effective_quantity', 'unit', 
+            'price', 'proposed_price', 'original_price', 'agreed_price', 'base_price', 
             'status', 'visibility_scope', 'target_clients', 'target_clients_detail', 'is_suggested_product', 'suggested_product_name', 'disclose_farmer_name',
             'available_date', 'quality_grade', 'notes', 'photo', 'images', 'created_at',
             'farmer_name', 'farmer_location', 'is_archived', 'is_discounted', 'discount_price', 
@@ -438,27 +445,17 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         new_status = instance.status
         
-        # Send notification to farmer when admin updates or approves their harvest
+        # Send notification to farmer when admin updates their harvest (only if farmer is not an admin and not the acting user)
         if self.request.user.role == 'admin' and instance.farmer and instance.farmer.user:
             target_user = instance.farmer.user
             if target_user != self.request.user and target_user.role != 'admin':
                 from apps.notifications.models import Notification
-                from apps.notifications.utils import send_live_notification
-                prod_name = instance.product.name if instance.product else (instance.custom_product_name or instance.suggested_product_name or "Harvest Produce")
-                unit_str = instance.unit or 'kg'
-                final_qty = instance.accepted_quantity if (instance.accepted_quantity is not None and float(instance.accepted_quantity) > 0) else instance.quantity
-                final_price = instance.agreed_price if (instance.agreed_price is not None and float(instance.agreed_price) > 0) else instance.price
-
-                if old_status != 'accepted' and new_status == 'accepted':
-                    notif_title = "Harvest Submission Approved"
-                    notif_msg = f"Your harvest submission for '{prod_name}' has been approved into master stock. Final Agreed Terms: {float(final_qty):g} {unit_str} @ RWF {float(final_price):g}/{unit_str}."
-                    send_live_notification(target_user, notif_title, notif_msg)
-                else:
-                    Notification.objects.create(
-                        user=target_user,
-                        title="Harvest Updated",
-                        message=f"Your harvest submission for '{prod_name}' has been updated by admin."
-                    )
+                prod_name = instance.product.name if instance.product else (instance.custom_product_name or "Harvest Produce")
+                Notification.objects.create(
+                    user=target_user,
+                    title="Harvest Updated",
+                    message=f"Your harvest submission for {prod_name} has been updated by admin."
+                )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
         if old_status != 'accepted' and new_status == 'accepted':
@@ -711,6 +708,105 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 title="Harvest Agreed & Accepted",
                 message=f"Harvest Hill Delivery has agreed and accepted {supply.effective_quantity:g} {supply.product.unit} of your {prod_name} harvest submission."
             )
+
+        serializer = self.get_serializer(supply)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='approve-supply')
+    def approve_supply(self, request, pk=None):
+        if not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return Response({"error": "Only Harvest Hill Delivery (admin) can approve harvest submissions."}, status=403)
+
+        supply = self.get_object()
+        sub_type = supply.submission_type
+        neg_status = supply.negotiation_status
+
+        # 1. Determine Authoritative Approval Values
+        if sub_type == 'CUSTOM' and neg_status == 'FINALIZED':
+            # Retrieve finalized accepted offer from thread
+            thread = supply.negotiation_threads.all().order_by('created_at').last()
+            accepted_offer = thread.offers.filter(offer_status='ACCEPTED').last() if thread else None
+            
+            if accepted_offer:
+                approved_price = float(accepted_offer.price)
+                approved_qty = float(accepted_offer.quantity)
+            else:
+                approved_price = float(supply.agreed_price) if (supply.agreed_price and float(supply.agreed_price) > 0) else float(supply.price)
+                approved_qty = float(supply.accepted_quantity) if (supply.accepted_quantity and float(supply.accepted_quantity) > 0) else float(supply.quantity)
+        else:
+            # For REQUIREMENT_BASED or CUSTOM (NO_NEGOTIATION / IN_PROGRESS direct approval):
+            req_qty = request.data.get('accepted_quantity') or request.data.get('quantity')
+            req_price = request.data.get('agreed_price') or request.data.get('price')
+            
+            approved_qty = float(req_qty) if (req_qty is not None and float(req_qty) > 0) else float(supply.quantity)
+            approved_price = float(req_price) if (req_price is not None and float(req_price) > 0) else float(supply.price)
+
+        # 2. If CUSTOM + IN_PROGRESS direct approval: explicitly bypass/close active negotiation thread
+        if sub_type == 'CUSTOM' and neg_status == 'IN_PROGRESS':
+            thread = supply.negotiation_threads.all().order_by('created_at').last()
+            if thread:
+                thread.status = 'bypassed'
+                thread.save()
+                thread.offers.filter(offer_status='PENDING').update(offer_status='WITHDRAWN')
+
+        # 3. Associate with Master Product if provided or required
+        target_product_id = request.data.get('product_id')
+        if target_product_id:
+            from apps.products.models import Product
+            try:
+                master_prod = Product.objects.get(id=target_product_id)
+                supply.product = master_prod
+            except Product.DoesNotExist:
+                return Response({"error": "Target Master Product not found."}, status=404)
+        elif not supply.product:
+            from apps.products.models import Product
+            p_name = (supply.suggested_product_name or supply.custom_product_name or "New Product").strip()
+            p_cat = supply.custom_category or "Vegetables"
+            p_unit = supply.custom_unit or "kg"
+            
+            existing = Product.objects.filter(name__iexact=p_name).first()
+            if existing:
+                master_prod = existing
+            else:
+                master_prod = Product.objects.create(
+                    name=p_name,
+                    category=p_cat,
+                    unit=p_unit,
+                    base_price=approved_price,
+                    status='closed',
+                    is_currently_needed=False,
+                    image=supply.photo if supply.photo else None
+                )
+            supply.product = master_prod
+
+        # 4. Save Master Stock Approval Values
+        supply.agreed_price = approved_price
+        supply.accepted_quantity = approved_qty
+        supply.status = 'accepted'
+        if supply.visibility_scope in ['HARVEST_HILL_ONLY', 'private_admin']:
+            supply.visibility_scope = 'PUBLIC'
+        supply.save()
+
+        # 5. Requirement-based workflow: deduct from quantity_needed if requirement-based
+        if sub_type == 'REQUIREMENT_BASED' and supply.product:
+            from decimal import Decimal
+            supply.product.quantity_needed = max(Decimal('0'), supply.product.quantity_needed - Decimal(str(approved_qty)))
+            if supply.product.quantity_needed <= Decimal('0'):
+                supply.product.is_currently_needed = False
+            supply.product.save()
+
+        # 6. Send live notification to farmer
+        if supply.farmer and getattr(supply.farmer, 'user', None):
+            from apps.notifications.utils import send_live_notification
+            prod_name = supply.product.name if supply.product else (supply.custom_product_name or supply.suggested_product_name or "Harvest Batch")
+            unit_str = supply.unit or 'kg'
+            
+            if sub_type == 'CUSTOM' and neg_status == 'FINALIZED':
+                notif_msg = f"Your harvest submission for '{prod_name}' has been approved into master stock. Final Agreed Terms: {approved_qty:g} {unit_str} @ RWF {approved_price:g}/{unit_str}."
+            else:
+                notif_msg = f"Your harvest submission for '{prod_name}' has been approved into master stock ({approved_qty:g} {unit_str} @ RWF {approved_price:g}/{unit_str})."
+                
+            send_live_notification(supply.farmer.user, "Harvest Submission Approved", notif_msg)
 
         serializer = self.get_serializer(supply)
         return Response(serializer.data)

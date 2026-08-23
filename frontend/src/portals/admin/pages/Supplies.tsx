@@ -56,7 +56,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       if (res && res.show_farmer_names_to_clients !== undefined) {
         setShowFarmerNames(!!res.show_farmer_names_to_clients);
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // Pagination state
@@ -184,7 +184,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     const scope = supply.visibility_scope || 'HARVEST_HILL_ONLY';
     setVisibilityScopeInput(scope);
     setDiscloseFarmerNameInput(!!supply.disclose_farmer_name);
-    
+
     // Load existing target clients if any
     const existingTargets = supply.target_clients_detail || supply.target_clients || [];
     setSelectedClients(existingTargets);
@@ -255,14 +255,14 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   };
 
   const customSupplies = React.useMemo(() => {
-    return supplies.filter((s: any) => 
+    return supplies.filter((s: any) =>
       (!s.product || s.product === null) &&
-      (s.is_suggested_product || 
-       !!s.custom_product_name || 
-       !!s.suggested_product_name ||
-       !!s.client_request ||
-       !!s.product_request ||
-       (s.product_detail && (s.product_detail.is_suggested_product || s.product_detail.isCustom || s.product_detail.isRequest)))
+      (s.is_suggested_product ||
+        !!s.custom_product_name ||
+        !!s.suggested_product_name ||
+        !!s.client_request ||
+        !!s.product_request ||
+        (s.product_detail && (s.product_detail.is_suggested_product || s.product_detail.isCustom || s.product_detail.isRequest)))
     );
   }, [supplies]);
 
@@ -308,15 +308,21 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     setDirectCategory(supply.custom_category || supply.product_detail?.category || 'Vegetables');
     setDirectUnit(supply.custom_unit || supply.unit || 'kg');
 
-    const hasAgreedPrice = supply.agreed_price !== null && supply.agreed_price !== undefined && Number(supply.agreed_price) > 0;
-    const hasAcceptedQty = supply.accepted_quantity !== null && supply.accepted_quantity !== undefined && Number(supply.accepted_quantity) > 0;
+    const isFinalized = (supply.negotiation_status || supply.negotiationStatus) === 'FINALIZED';
+    let priceVal = isFinalized 
+      ? Number(supply.agreed_price || supply.price || 0)
+      : Number(supply.price || supply.proposed_price || 0);
 
-    let priceVal = hasAgreedPrice ? Number(supply.agreed_price) : Number(supply.price || supply.proposed_price || 0);
     if (priceVal > 0 && priceVal < 100) {
       priceVal = Math.round(priceVal * 1473.97);
     }
     setDirectPrice(priceVal ? String(priceVal) : '');
-    setDirectQuantity(hasAcceptedQty ? String(supply.accepted_quantity) : String(supply.quantity || ''));
+
+    const qtyVal = isFinalized
+      ? String(supply.accepted_quantity || supply.quantity || '')
+      : String(supply.quantity || '');
+
+    setDirectQuantity(qtyVal);
     setDirectNotes(supply.notes || '');
 
     const imgs: Array<{ id: string; url: string; isFarmer?: boolean; file?: File }> = [];
@@ -463,12 +469,14 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         }
       }
 
-      // 3. Link harvest supply to the Master Product and set status to accepted
-      await api.supplies.update(approveChoiceSupply.id, {
-        product: targetProductId,
-        status: 'accepted',
+      // 3. Execute authoritative backend approval operation
+      await api.supplies.approveSupply(approveChoiceSupply.id, {
+        product_id: targetProductId,
+        price: priceNum,
+        quantity: qtyNum,
         agreed_price: priceNum,
         accepted_quantity: qtyNum,
+        approve_suggested: true,
       });
 
       toast(`Master Product "${targetProductName}" published & harvest supply approved!`, "success");
@@ -510,7 +518,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         unit: reqUnit,
         pricing_mode: 'harvest_hill_offers',
         offered_price: priceNum,
- base_price: priceNum,
+        base_price: priceNum,
         quantity_needed: qtyNum,
         status: 'open',
         submission_deadline: reqDeadline || null,
@@ -649,7 +657,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   }, [selectedSupply?.id]);
 
   useEffect(() => {
-    api.products.list().then(res => setMasterProducts(res || [])).catch(() => {});
+    api.products.list().then(res => setMasterProducts(res || [])).catch(() => { });
   }, []);
 
   const handleCounterSupply = async () => {
@@ -859,7 +867,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
       const isAccepted = sup.status === 'accepted';
       const qty = isAccepted ? Number(sup.accepted_quantity ?? sup.quantity ?? 0) : 0;
-      
+
       const masterPrice = Number(sup.product_detail?.price || sup.product_detail?.base_price || sup.product_detail?.offered_price || sup.agreed_price || sup.price || 0);
       const isDisc = !!(sup.product_detail?.is_discounted || sup.is_discounted);
       const discPrice = (sup.product_detail?.discount_price || sup.discount_price) ? Number(sup.product_detail?.discount_price || sup.discount_price) : null;
@@ -977,8 +985,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 : t;
 
               return (
-                <button 
-                  key={t} 
+                <button
+                  key={t}
                   onClick={() => setActiveStatusTab(t)}
                   className={cn(
                     "px-3.5 py-1.5 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5",
@@ -1088,7 +1096,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   <thead className="border-b border-outline-variant bg-surface-container-low sticky top-0 z-10">
                     <tr className="text-[9px] font-extrabold text-on-surface-variant uppercase tracking-widest">
                       <th className="px-3 py-2.5 text-center w-8">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={filteredCustomSupplies.length > 0 && filteredCustomSupplies.every(s => selectedIds.includes(s.id))}
                           onChange={(e) => {
@@ -1126,13 +1134,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       const photoUrl = sup.photo || sup.photo_url || (sup.images && sup.images[0]?.image) || null;
 
                       return (
-                        <tr 
-                          key={sup.id} 
+                        <tr
+                          key={sup.id}
                           onClick={() => setSelectedSupply(sup)}
                           className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
                         >
                           <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
-                            <input 
+                            <input
                               type="checkbox"
                               checked={selectedIds.includes(sup.id)}
                               onChange={(e) => {
@@ -1150,10 +1158,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2.5">
                               {photoUrl ? (
-                                <img 
-                                  src={photoUrl} 
-                                  alt={cropName} 
-                                  className="w-8 h-8 rounded-lg object-cover border border-outline-variant/60 bg-surface-container-low shrink-0 shadow-2xs" 
+                                <img
+                                  src={photoUrl}
+                                  alt={cropName}
+                                  className="w-8 h-8 rounded-lg object-cover border border-outline-variant/60 bg-surface-container-low shrink-0 shadow-2xs"
                                 />
                               ) : (
                                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-800 border border-amber-200/60 flex items-center justify-center shrink-0">
@@ -1207,8 +1215,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             <span className={cn(
                               "px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
                               isAccepted ? "bg-emerald-100 text-emerald-900 border-emerald-300" :
-                              isRejected ? "bg-red-100 text-red-900 border-red-300" :
-                              "bg-amber-100 text-amber-900 border-amber-300"
+                                isRejected ? "bg-red-100 text-red-900 border-red-300" :
+                                  "bg-amber-100 text-amber-900 border-amber-300"
                             )}>
                               {isAccepted ? (sup.product ? 'Approved' : 'Negotiated') : (isRejected ? 'Rejected' : 'Pending')}
                             </span>
@@ -1248,7 +1256,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 <thead>
                   <tr className="border-b border-outline-variant/40 bg-surface-container-low text-[9px] font-extrabold uppercase tracking-widest text-on-surface-variant">
                     <th className="px-3 py-2.5 text-center w-8">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={currentGroups.length > 0 && currentGroups.every(g => g.supplies.every(s => selectedIds.includes(s.id)))}
                         onChange={(e) => {
@@ -1273,13 +1281,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 </thead>
                 <tbody className="divide-y divide-outline-variant/40">
                   {currentGroups.map((group) => (
-                    <tr 
-                      key={group.id} 
+                    <tr
+                      key={group.id}
                       onClick={() => setSelectedSupply(group.primarySupply)}
                       className="hover:bg-surface-container-low/70 transition-colors cursor-pointer group"
                     >
                       <td className="px-3 py-3 text-center w-8" onClick={(e) => e.stopPropagation()}>
-                        <input 
+                        <input
                           type="checkbox"
                           checked={group.supplies.every(s => selectedIds.includes(s.id))}
                           onChange={(e) => {
@@ -1303,7 +1311,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               </span>
                             )}
                             {hasUnreadNegotiationAction(group) && (
-                              <span 
+                              <span
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse shrink-0"
                                 title="New farmer negotiation message / counter-offer awaiting response"
                               >
@@ -1398,9 +1406,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         );
 
         const isCustomCropSubmission = selectedSupply && (
-          !selectedSupply.product || 
-          selectedSupply.is_suggested_product || 
-          !!selectedSupply.custom_product_name || 
+          !selectedSupply.product ||
+          selectedSupply.is_suggested_product ||
+          !!selectedSupply.custom_product_name ||
           !!selectedSupply.suggested_product_name ||
           !!selectedSupply.client_request ||
           !!selectedSupply.product_request
@@ -1425,7 +1433,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   {/* Custom Submission Specific Actions */}
                   {isCustomCropSubmission && !selectedSupply.is_archived ? (
                     <div className="space-y-2.5 w-full">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           const supToNeg = selectedSupply;
@@ -1447,7 +1455,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         </span>
                       ) : (
                         <div className="grid grid-cols-2 gap-2">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const supToApprove = selectedSupply;
@@ -1460,7 +1468,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             <CheckCircle2 size={14} /> Approve
                           </button>
 
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const supToReject = selectedSupply;
@@ -1479,7 +1487,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     <>
                       {selectedSupply.status === 'pending' && !selectedSupply.is_archived && (
                         <div>
-                          <button 
+                          <button
                             onClick={async () => {
                               const confirmed = await showConfirm("Reject Supply Proposal", "Are you sure you want to reject this supply proposal?");
                               if (confirmed) {
@@ -1496,7 +1504,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       {!selectedSupply.is_archived && (
                         <div className="w-full">
                           {isHarvestHillSubmission ? (
-                            <button 
+                            <button
                               type="button"
                               onClick={() => {
                                 const supToEdit = selectedSupply;
@@ -1508,7 +1516,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               <Edit3 size={14} /> Edit Supply
                             </button>
                           ) : (
-                            <button 
+                            <button
                               type="button"
                               onClick={() => {
                                 const supToNeg = selectedSupply;
@@ -1562,13 +1570,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                   {!selectedSupply.is_archived && (
                     <div className="grid grid-cols-2 gap-2.5">
-                      <button 
+                      <button
                         onClick={() => handleArchiveSupply(selectedSupply.id)}
                         className="w-full py-2.5 bg-white border border-outline-variant/60 text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                       >
                         <Archive size={14} className="text-on-surface-variant" /> Archive
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const sup = selectedSupply;
                           setDeleteWarningSupply(sup);
@@ -1579,7 +1587,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       </button>
                     </div>
                   )}
-                  <button 
+                  <button
                     onClick={() => setSelectedSupply(null)}
                     className="w-full py-2.5 bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold hover:bg-surface-container-high transition-all cursor-pointer text-xs"
                   >
@@ -1588,877 +1596,892 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 </div>
               )
             }
-      >
-        {selectedSupply && (
-          <div className="space-y-5 font-sans text-xs">
-            {/* Multi-Image Gallery Selector */}
-            {(() => {
-              const galleryImages: string[] = [];
-              const seen = new Set<string>();
-
-              const getFullImageUrl = (url?: string | null) => {
-                if (!url) return '';
-                if (url.startsWith('http://') || url.startsWith('https://')) return url;
-                const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
-              };
-
-              const addImg = (url?: string | null) => {
-                if (!url) return;
-                const fullUrl = getFullImageUrl(url);
-                if (fullUrl && !seen.has(fullUrl)) {
-                  seen.add(fullUrl);
-                  galleryImages.push(fullUrl);
-                }
-              };
-
-              // Prioritize custom batch photo
-              addImg(selectedSupply.photo);
-
-              // Add additional uploaded batch photos
-              if (Array.isArray(selectedSupply.images) && selectedSupply.images.length > 0) {
-                selectedSupply.images.forEach((imgObj: any) => {
-                  addImg(imgObj.image_url || imgObj.image);
-                });
-              }
-
-              // Fall back to catalog template image ONLY if no batch photos exist
-              if (galleryImages.length === 0) {
-                addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
-              }
-
-              if (galleryImages.length === 0) return null;
-
-              const activeImg = galleryImages[activeImageIndex] || galleryImages[0];
-
-              return (
-                <div className="space-y-2.5">
-                  <div className="flex justify-between items-center px-0.5">
-                    <h4 className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-widest">
-                      Harvest Photos ({galleryImages.length})
-                    </h4>
-                    {galleryImages.length > 1 && (
-                      <span className="text-[10px] text-on-surface-variant/70 font-mono">
-                        {activeImageIndex + 1} of {galleryImages.length}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Main Active Image Display */}
-                  <div className="h-56 w-full rounded-2xl overflow-hidden border border-outline-variant/30 bg-surface-container-low shadow-sm relative group">
-                    <img 
-                      src={activeImg} 
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                      alt="Selected harvest batch" 
-                    />
-                  </div>
-
-                  {/* Interactive Thumbnail Gallery Selector */}
-                  {galleryImages.length > 1 && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {galleryImages.map((imgUrl, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => setActiveImageIndex(index)}
-                          className={cn(
-                            "w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0 bg-surface-container-low",
-                            activeImageIndex === index 
-                              ? "border-primary ring-2 ring-primary/20 scale-105 shadow-sm" 
-                              : "border-outline-variant/40 opacity-70 hover:opacity-100 hover:border-outline"
-                          )}
-                        >
-                          <img src={imgUrl} className="w-full h-full object-cover" alt={`Thumbnail ${index + 1}`} />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Custom Crop Notice Banner */}
-            {!selectedSupply.product && (
-              <div className="p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-xl space-y-1">
-                <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                  <AlertCircle size={14} className="text-amber-700" /> Custom Crop Proposal
-                </p>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  This harvest was submitted as a custom proposal. You can review all details and photos above before approving or rejecting.
-                </p>
-              </div>
-            )}
-
-            {/* Side-by-Side / Stacked Requirement vs Farmer Submission Comparison */}
-            <div className="space-y-3 font-sans">
-              {/* Requirement Box */}
-              {(selectedSupply.product_detail || selectedSupply.custom_product_name) && (
-                <div className="p-3.5 bg-[#FAF7F0] rounded-xl border border-[#E8E4DA] space-y-2.5">
-                  <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E4DA]">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2D5A3D]">
-                      Harvest Hill Requirement
-                    </span>
-                    <span className="text-[10px] font-bold text-[#717971]">
-                      Deadline: {selectedSupply.product_detail?.submission_deadline || 'Open'}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-                    {/* Left Side: Crop Requirement & Target Price */}
-                    <div className="space-y-3 min-w-0 pr-1">
-                      <div>
-                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Crop Requirement</span>
-                        <span className="font-extrabold text-[#1C2A1E] leading-snug block break-words">
-                          {selectedSupply.product_detail?.name || selectedSupply.custom_product_name}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Reference Target Price</span>
-                        <span className="font-extrabold text-[#2D5A3D] block">
-                          {formatCurrency(selectedSupply.product_detail?.base_price || selectedSupply.base_price || selectedSupply.price)} / {selectedSupply.unit}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Right Side: Quantity Needed & Category (Separated with border-l divider) */}
-                    <div className="space-y-3 min-w-0 pl-3.5 border-l border-[#E8E4DA]">
-                      <div>
-                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Quantity Needed</span>
-                        <span className="font-extrabold text-[#1C2A1E] block">
-                          {(() => {
-                            const templateQty = parseFloat(selectedSupply.product_detail?.quantity_needed || 0);
-                            const displayQty = templateQty > 0 ? templateQty : parseFloat(selectedSupply.quantity || 0);
-                            return `${displayQty.toLocaleString()} ${selectedSupply.unit}`;
-                          })()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Category</span>
-                        <span className="font-bold text-[#1C2A1E] block">
-                          {selectedSupply.product_detail?.category || selectedSupply.custom_category || 'Vegetables'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedSupply.product_detail?.quality_requirements && (
-                    <div className="pt-2 border-t border-[#E8E4DA] text-[11px] text-[#414942]">
-                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#717971] block mb-1">Quality Requirements</span>
-                      <p className="whitespace-pre-line font-mono text-[10.5px] bg-white p-2.5 rounded-lg border border-[#E8E4DA]">{selectedSupply.product_detail?.quality_requirements}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Farmer Submission Box */}
-              <div className="p-3.5 bg-white rounded-xl border border-outline-variant/50 space-y-2 shadow-2xs">
-                <div className="flex justify-between items-center pb-1.5 border-b border-outline-variant/30">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    Farmer Harvest Offer
-                    {isSupplyUnreadAction(selectedSupply) && (
-                      <span className="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
-                        <MessageSquare size={10} className="text-amber-800 shrink-0" />
-                        <span>New Negotiation Message</span>
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[10px] font-bold text-on-surface-variant">
-                    Submitted by {selectedSupply.farmer_name || 'Partner Farm'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Available Quantity</span>
-                    <span className="font-extrabold text-on-surface">{selectedSupply.quantity} {selectedSupply.unit}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farmer Asking Price</span>
-                    <span className="font-extrabold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Harvest Date</span>
-                    <span className="font-bold text-on-surface">{selectedSupply.available_date || 'Freshly Harvested'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farm Location</span>
-                    <span className="font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
-                  </div>
-                </div>
-
+          >
+            {selectedSupply && (
+              <div className="space-y-5 font-sans text-xs">
+                {/* Multi-Image Gallery Selector */}
                 {(() => {
-                  const cleanNotes = getCleanFarmerNotes(selectedSupply);
-                  if (!cleanNotes) return null;
+                  const galleryImages: string[] = [];
+                  const seen = new Set<string>();
+
+                  const getFullImageUrl = (url?: string | null) => {
+                    if (!url) return '';
+                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+                  };
+
+                  const addImg = (url?: string | null) => {
+                    if (!url) return;
+                    const fullUrl = getFullImageUrl(url);
+                    if (fullUrl && !seen.has(fullUrl)) {
+                      seen.add(fullUrl);
+                      galleryImages.push(fullUrl);
+                    }
+                  };
+
+                  // Prioritize custom batch photo
+                  addImg(selectedSupply.photo);
+
+                  // Add additional uploaded batch photos
+                  if (Array.isArray(selectedSupply.images) && selectedSupply.images.length > 0) {
+                    selectedSupply.images.forEach((imgObj: any) => {
+                      addImg(imgObj.image_url || imgObj.image);
+                    });
+                  }
+
+                  // Fall back to catalog template image ONLY if no batch photos exist
+                  if (galleryImages.length === 0) {
+                    addImg(selectedSupply.product_detail?.image_url || selectedSupply.product_detail?.image);
+                  }
+
+                  if (galleryImages.length === 0) return null;
+
+                  const activeImg = galleryImages[activeImageIndex] || galleryImages[0];
+
                   return (
-                    <div className="pt-2 border-t border-outline-variant/30 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
-                          <FileText size={13} className="text-primary shrink-0" /> Supplier Notes
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowAdminNotesModal(!showAdminNotesModal)}
-                          className="text-[10.5px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          {showAdminNotesModal ? 'Hide Notes' : 'View Supplier Notes'}
-                        </button>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center px-0.5">
+                        <h4 className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-widest">
+                          Harvest Photos ({galleryImages.length})
+                        </h4>
+                        {galleryImages.length > 1 && (
+                          <span className="text-[10px] text-on-surface-variant/70 font-mono">
+                            {activeImageIndex + 1} of {galleryImages.length}
+                          </span>
+                        )}
                       </div>
 
-                      {showAdminNotesModal && (
-                        <div className="mt-1.5 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/40 text-on-surface font-medium leading-relaxed whitespace-pre-line text-xs animate-in fade-in duration-200">
-                          {cleanNotes}
+                      {/* Main Active Image Display */}
+                      <div className="h-56 w-full rounded-2xl overflow-hidden border border-outline-variant/30 bg-surface-container-low shadow-sm relative group">
+                        <img
+                          src={activeImg}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          alt="Selected harvest batch"
+                        />
+                      </div>
+
+                      {/* Interactive Thumbnail Gallery Selector */}
+                      {galleryImages.length > 1 && (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                          {galleryImages.map((imgUrl, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setActiveImageIndex(index)}
+                              className={cn(
+                                "w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0 bg-surface-container-low",
+                                activeImageIndex === index
+                                  ? "border-primary ring-2 ring-primary/20 scale-105 shadow-sm"
+                                  : "border-outline-variant/40 opacity-70 hover:opacity-100 hover:border-outline"
+                              )}
+                            >
+                              <img src={imgUrl} className="w-full h-full object-cover" alt={`Thumbnail ${index + 1}`} />
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
                   );
                 })()}
-              </div>
 
-              {/* Final Agreed Negotiation Terms Summary (Authoritative Source of Truth) */}
-              {((selectedSupply.agreed_price !== null && selectedSupply.agreed_price !== undefined && Number(selectedSupply.agreed_price) > 0) || 
-                (selectedSupply.accepted_quantity !== null && selectedSupply.accepted_quantity !== undefined && Number(selectedSupply.accepted_quantity) > 0) ||
-                selectedSupply.status === 'accepted') && (
-                <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2 shadow-2xs">
-                  <div className="flex justify-between items-center pb-1.5 border-b border-emerald-200">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
-                      <CheckCircle2 size={14} className="text-emerald-700" /> Final Agreed Negotiation Terms
-                    </span>
-                    <span className="text-[8.5px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                      Authoritative Terms
-                    </span>
+                {/* Custom Crop Notice Banner */}
+                {!selectedSupply.product && (
+                  <div className="p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-xl space-y-1">
+                    <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                      <AlertCircle size={14} className="text-amber-700" /> Custom Crop Proposal
+                    </p>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      This harvest was submitted as a custom proposal. You can review all details and photos above before approving or rejecting.
+                    </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Quantity</span>
-                      <span className="font-extrabold text-emerald-950 font-mono">
-                        {selectedSupply.accepted_quantity ?? selectedSupply.quantity} {selectedSupply.unit}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Price</span>
-                      <span className="font-extrabold text-emerald-950 font-mono">
-                        {formatCurrency(selectedSupply.agreed_price ?? selectedSupply.price)} / {selectedSupply.unit}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Master Product Supply Composition Breakdown Card */}
-            {(() => {
-              const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
-              const siblingSupplies = supplies.filter(s => 
-                (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
-              );
+                {/* Side-by-Side / Stacked Requirement vs Farmer Submission Comparison */}
+                <div className="space-y-3 font-sans">
+                  {/* Requirement Box */}
+                  {(selectedSupply.product_detail || selectedSupply.custom_product_name) && (
+                    <div className="p-3.5 bg-[#FAF7F0] rounded-xl border border-[#E8E4DA] space-y-2.5">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E4DA]">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2D5A3D]">
+                          Harvest Hill Requirement
+                        </span>
+                        <span className="text-[10px] font-bold text-[#717971]">
+                          Deadline: {selectedSupply.product_detail?.submission_deadline || 'Open'}
+                        </span>
+                      </div>
 
-              const totalAcceptedStock = siblingSupplies
-                .filter(s => s.status === 'accepted')
-                .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
-
-              return (
-                <div className="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/60 space-y-3 font-sans shadow-2xs">
-                  <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
-                    <div>
-                      <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-primary flex items-center gap-1.5">
-                        <Package size={14} /> Master Product Inventory Composition
-                      </h4>
-                      <p className="text-[10.5px] text-on-surface-variant font-medium mt-0.5">
-                        {siblingSupplies.length} Supply Batch{siblingSupplies.length > 1 ? 'es' : ''} • {totalAcceptedStock.toLocaleString()} {selectedSupply.unit} Total Stock
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                    {siblingSupplies.map((sup, idx) => (
-                      <div 
-                        key={sup.id || idx} 
-                        onClick={() => setSelectedSupply(sup)}
-                        className={cn(
-                          "p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer",
-                          selectedSupply.id === sup.id ? "bg-primary/10 border-primary shadow-2xs" : "bg-white border-outline-variant/40 hover:bg-surface-container-high"
-                        )}
-                      >
-                        <div>
-                          <p className="font-extrabold text-on-surface flex items-center gap-1.5 flex-wrap">
-                            <span className="flex items-center gap-1"><UserCheck size={13} className="text-primary" /> {sup.farmer_name || 'Partner Farm'}</span>
-                            <span className="text-[9px] font-mono text-on-surface-variant/70">({sup.supply_number || 'SUP-BATCH'})</span>
-                            {isSupplyUnreadAction(sup) && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
-                                <span>New Message</span>
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-[10.5px] font-medium text-on-surface-variant mt-0.5">
-                            Acquisition Price: <span className="font-bold font-mono text-primary">{formatCurrency(sup.agreed_price || sup.price)}</span> / {sup.unit}
-                          </p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                        {/* Left Side: Crop Requirement & Target Price */}
+                        <div className="space-y-3 min-w-0 pr-1">
+                          <div>
+                            <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Crop Requirement</span>
+                            <span className="font-extrabold text-[#1C2A1E] leading-snug block break-words">
+                              {selectedSupply.product_detail?.name || selectedSupply.custom_product_name}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Reference Target Price</span>
+                            <span className="font-extrabold text-[#2D5A3D] block">
+                              {formatCurrency(selectedSupply.product_detail?.base_price || selectedSupply.base_price || selectedSupply.price)} / {selectedSupply.unit}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-mono font-black text-xs block text-on-surface">
-                            {Number(sup.accepted_quantity ?? sup.quantity ?? 0).toLocaleString()} {sup.unit}
+
+                        {/* Right Side: Quantity Needed & Category (Separated with border-l divider) */}
+                        <div className="space-y-3 min-w-0 pl-3.5 border-l border-[#E8E4DA]">
+                          <div>
+                            <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Quantity Needed</span>
+                            <span className="font-extrabold text-[#1C2A1E] block">
+                              {(() => {
+                                const templateQty = parseFloat(selectedSupply.product_detail?.quantity_needed || 0);
+                                const displayQty = templateQty > 0 ? templateQty : parseFloat(selectedSupply.quantity || 0);
+                                return `${displayQty.toLocaleString()} ${selectedSupply.unit}`;
+                              })()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[9.5px] text-[#717971] font-bold block uppercase tracking-wider mb-0.5">Category</span>
+                            <span className="font-bold text-[#1C2A1E] block">
+                              {selectedSupply.product_detail?.category || selectedSupply.custom_category || 'Vegetables'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {selectedSupply.product_detail?.quality_requirements && (
+                        <div className="pt-2 border-t border-[#E8E4DA] text-[11px] text-[#414942]">
+                          <span className="text-[9.5px] font-bold uppercase tracking-wider text-[#717971] block mb-1">Quality Requirements</span>
+                          <p className="whitespace-pre-line font-mono text-[10.5px] bg-white p-2.5 rounded-lg border border-[#E8E4DA]">{selectedSupply.product_detail?.quality_requirements}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Farmer Submission Box */}
+                  <div className="p-3.5 bg-white rounded-xl border border-outline-variant/50 space-y-2 shadow-2xs">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-outline-variant/30">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        Farmer Harvest Offer
+                        {isSupplyUnreadAction(selectedSupply) && (
+                          <span className="px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
+                            <MessageSquare size={10} className="text-amber-800 shrink-0" />
+                            <span>New Negotiation Message</span>
                           </span>
-                          <span className={cn(
-                            "text-[9px] font-extrabold px-2 py-0.5 rounded uppercase mt-0.5 inline-block",
-                            sup.status === 'accepted' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                          )}>
-                            {sup.status}
+                        )}
+                      </span>
+                      <span className="text-[10px] font-bold text-on-surface-variant">
+                        Submitted by {selectedSupply.farmer_name || 'Partner Farm'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Available Quantity</span>
+                        <span className="font-extrabold text-on-surface">{selectedSupply.quantity} {selectedSupply.unit}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farmer Asking Price</span>
+                        <span className="font-extrabold text-primary">{formatCurrency(selectedSupply.price || selectedSupply.proposed_price)} / {selectedSupply.unit}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Harvest Date</span>
+                        <span className="font-bold text-on-surface">{selectedSupply.available_date || 'Freshly Harvested'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] text-on-surface-variant font-bold block uppercase tracking-wider">Farm Location</span>
+                        <span className="font-medium text-on-surface-variant">{selectedSupply.farmer_location || 'Rwanda'}</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const cleanNotes = getCleanFarmerNotes(selectedSupply);
+                      if (!cleanNotes) return null;
+                      return (
+                        <div className="pt-2 border-t border-outline-variant/30 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-primary flex items-center gap-1">
+                              <FileText size={13} className="text-primary shrink-0" /> Supplier Notes
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowAdminNotesModal(!showAdminNotesModal)}
+                              className="text-[10.5px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              {showAdminNotesModal ? 'Hide Notes' : 'View Supplier Notes'}
+                            </button>
+                          </div>
+
+                          {showAdminNotesModal && (
+                            <div className="mt-1.5 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/40 text-on-surface font-medium leading-relaxed whitespace-pre-line text-xs animate-in fade-in duration-200">
+                              {cleanNotes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Final Agreed Negotiation Terms Summary (Authoritative Source of Truth) */}
+                  {(selectedSupply.negotiation_status === 'FINALIZED' || selectedSupply.negotiationStatus === 'FINALIZED') && (
+                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2 shadow-2xs">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-emerald-200">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                          <CheckCircle2 size={14} className="text-emerald-700" /> Final Agreed Negotiation Terms
+                        </span>
+                        <span className="text-[8.5px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                          Authoritative Terms
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Quantity</span>
+                          <span className="font-extrabold text-emerald-950 font-mono">
+                            {selectedSupply.accepted_quantity ?? selectedSupply.quantity} {selectedSupply.unit}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Price</span>
+                          <span className="font-extrabold text-emerald-950 font-mono">
+                            {formatCurrency(selectedSupply.agreed_price ?? selectedSupply.price)} / {selectedSupply.unit}
                           </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
+                    </div>
+                  )}
 
-            {/* B2B Term Agreement Form vs Finalized Stats Display */}
-            {isHarvestHillSubmission ? null : selectedSupply.status === 'accepted' ? (
-              <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-3 font-sans shadow-xs">
-                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                    <CheckCircle2 size={15} className="text-emerald-700" /> Finalized B2B Terms & Stock Aggregated
-                  </span>
-                  <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase">
-                    Deal Closed
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
-                    <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Accepted Quantity</p>
-                    <p className="text-sm font-extrabold text-emerald-950 mt-0.5">{selectedSupply.accepted_quantity || selectedSupply.quantity} {selectedSupply.unit}</p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
-                    <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Agreed Farmer Price</p>
-                    <p className="text-sm font-extrabold text-primary mt-0.5">{formatCurrency(selectedSupply.agreed_price || selectedSupply.price)} / {selectedSupply.unit}</p>
-                  </div>
+                  {/* Pending Negotiation Offer Banner (Unconfirmed Intermediate Offer) */}
+                  {(selectedSupply.negotiation_status === 'IN_PROGRESS' || selectedSupply.negotiationStatus === 'IN_PROGRESS') && (
+                    <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-300 space-y-2 shadow-2xs">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-amber-200">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                          <MessageSquare size={14} className="text-amber-700" /> Negotiation In Progress (Pending Offer)
+                        </span>
+                        <span className="text-[8.5px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                          Unconfirmed Offer
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
+                        Counter-offers are currently being exchanged. Intermediate offers are NOT final agreed terms until explicitly accepted.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-white p-3 rounded-xl border border-emerald-200 flex justify-between items-center shadow-2xs">
-                  <span className="text-xs font-bold text-emerald-900">Total Batch Payout Value</span>
-                  <span className="text-sm font-black text-secondary">
-                    {formatCurrency((selectedSupply.accepted_quantity || selectedSupply.quantity) * (selectedSupply.agreed_price || selectedSupply.price))}
-                  </span>
-                </div>
-
+                {/* Master Product Supply Composition Breakdown Card */}
                 {(() => {
-                  const agreedTermsList: string[] = [];
+                  const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
+                  const siblingSupplies = supplies.filter(s =>
+                    (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
+                  );
 
-                  if (adminThread?.offers && Array.isArray(adminThread.offers)) {
-                    adminThread.offers.forEach((o: any) => {
-                      if (o.is_offer === false) return; // Exclude plain chat messages
-                      const txt = (o.terms || '').trim();
-                      if (txt && !txt.startsWith('[Admin Terms]') && !txt.toLowerCase().includes('farmer proposed') && !txt.toLowerCase().includes('harvest hill counter')) {
-                        const splitItems = txt.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
-                        splitItems.forEach((item: string) => {
-                          if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
-                        });
-                      }
-                    });
-                  }
-
-                  if (selectedSupply.notes && selectedSupply.notes.includes('[Agreed Terms]:')) {
-                    const legacyPart = selectedSupply.notes.split('[Agreed Terms]:')[1]?.trim();
-                    if (legacyPart) {
-                      const legacyItems = legacyPart.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
-                      legacyItems.forEach((item: string) => {
-                        if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
-                      });
-                    }
-                  }
-
-                  if (agreedTermsList.length === 0) return null;
+                  const totalAcceptedStock = siblingSupplies
+                    .filter(s => s.status === 'accepted')
+                    .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
 
                   return (
-                    <div className="bg-white/80 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-2 font-sans shadow-2xs">
-                      <p className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                        <CheckCircle2 size={13} className="text-emerald-700 shrink-0" /> Finalized Agreed Terms
-                      </p>
-                      <ul className="space-y-1.5 pl-1">
-                        {agreedTermsList.map((term, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs font-medium text-emerald-950 leading-relaxed">
-                            <span className="text-emerald-700 font-bold text-sm leading-none mt-0.5">•</span>
-                            <span>{term}</span>
-                          </li>
+                    <div className="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/60 space-y-3 font-sans shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+                        <div>
+                          <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-primary flex items-center gap-1.5">
+                            <Package size={14} /> Master Product Inventory Composition
+                          </h4>
+                          <p className="text-[10.5px] text-on-surface-variant font-medium mt-0.5">
+                            {siblingSupplies.length} Supply Batch{siblingSupplies.length > 1 ? 'es' : ''} • {totalAcceptedStock.toLocaleString()} {selectedSupply.unit} Total Stock
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                        {siblingSupplies.map((sup, idx) => (
+                          <div
+                            key={sup.id || idx}
+                            onClick={() => setSelectedSupply(sup)}
+                            className={cn(
+                              "p-2.5 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer",
+                              selectedSupply.id === sup.id ? "bg-primary/10 border-primary shadow-2xs" : "bg-white border-outline-variant/40 hover:bg-surface-container-high"
+                            )}
+                          >
+                            <div>
+                              <p className="font-extrabold text-on-surface flex items-center gap-1.5 flex-wrap">
+                                <span className="flex items-center gap-1"><UserCheck size={13} className="text-primary" /> {sup.farmer_name || 'Partner Farm'}</span>
+                                <span className="text-[9px] font-mono text-on-surface-variant/70">({sup.supply_number || 'SUP-BATCH'})</span>
+                                {isSupplyUnreadAction(sup) && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping shrink-0" />
+                                    <span>New Message</span>
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[10.5px] font-medium text-on-surface-variant mt-0.5">
+                                Acquisition Price: <span className="font-bold font-mono text-primary">{formatCurrency(sup.agreed_price || sup.price)}</span> / {sup.unit}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-mono font-black text-xs block text-on-surface">
+                                {Number(sup.accepted_quantity ?? sup.quantity ?? 0).toLocaleString()} {sup.unit}
+                              </span>
+                              <span className={cn(
+                                "text-[9px] font-extrabold px-2 py-0.5 rounded uppercase mt-0.5 inline-block",
+                                sup.status === 'accepted' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                              )}>
+                                {sup.status}
+                              </span>
+                            </div>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   );
                 })()}
-              </div>
-            ) : (
-              <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
-                <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                    <Handshake size={14} className="text-emerald-700" /> Negotiate Terms & Aggregate Inventory
-                  </span>
-                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    Harvest Hill Admin Tool
-                  </span>
-                </div>
 
-                {/* Interactive Admin Negotiation Chat & Terms History Window */}
-                <div className="space-y-2 font-sans">
-                  <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
-                      <MessageSquare size={13} className="text-emerald-700" /> Negotiation Chat & Terms History
-                    </span>
-                    <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      {adminThread?.offers?.length || 0} Message{(adminThread?.offers?.length || 0) === 1 ? '' : 's'}
-                    </span>
-                  </div>
+                {/* B2B Term Agreement Form vs Finalized Stats Display */}
+                {isHarvestHillSubmission ? null : selectedSupply.status === 'accepted' ? (
+                  <div className="p-4 bg-emerald-50/90 rounded-2xl border border-emerald-300/80 space-y-3 font-sans shadow-xs">
+                    <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 size={15} className="text-emerald-700" /> Finalized B2B Terms & Stock Aggregated
+                      </span>
+                      <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase">
+                        Deal Closed
+                      </span>
+                    </div>
 
-                  <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-3 bg-white/95 rounded-xl border border-emerald-300/80 space-y-2.5 shadow-2xs">
-                    {isLoadingThread ? (
-                      <div className="py-6 text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-2">
-                        <RefreshCw size={14} className="animate-spin text-emerald-700" /> Loading negotiation chat...
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
+                        <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Accepted Quantity</p>
+                        <p className="text-sm font-extrabold text-emerald-950 mt-0.5">{selectedSupply.accepted_quantity || selectedSupply.quantity} {selectedSupply.unit}</p>
                       </div>
-                    ) : adminThread?.offers && adminThread.offers.length > 0 ? (
-                      adminThread.offers.map((offer: any, idx: number) => {
-                        const isFarmer = offer.sender === 'farmer';
-                        const isPlainMessage = offer.is_offer === false;
 
-                        if (isPlainMessage) {
-                          return (
-                            <div 
-                              key={offer.id || idx}
-                              className={cn(
-                                "flex items-start gap-2.5 max-w-[88%] group relative text-xs font-sans my-1.5",
-                                isFarmer ? "mr-auto" : "ml-auto flex-row-reverse"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shrink-0 shadow-2xs mt-0.5",
-                                isFarmer ? "bg-amber-700" : "bg-[#144227]"
-                              )}>
-                                {isFarmer ? 'FM' : 'HH'}
-                              </div>
+                      <div className="bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
+                        <p className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Agreed Farmer Price</p>
+                        <p className="text-sm font-extrabold text-primary mt-0.5">{formatCurrency(selectedSupply.agreed_price || selectedSupply.price)} / {selectedSupply.unit}</p>
+                      </div>
+                    </div>
 
-                              <div className="relative max-w-[90%]">
-                                <div className={cn(
-                                  "p-3 rounded-2xl text-xs leading-relaxed shadow-2xs border",
-                                  isFarmer 
-                                    ? "bg-amber-50/90 text-amber-950 border-amber-200/90 rounded-tl-none" 
-                                    : "bg-[#144227] text-white border-[#144227] rounded-tr-none"
-                                )}>
+                    <div className="bg-white p-3 rounded-xl border border-emerald-200 flex justify-between items-center shadow-2xs">
+                      <span className="text-xs font-bold text-emerald-900">Total Batch Payout Value</span>
+                      <span className="text-sm font-black text-secondary">
+                        {formatCurrency((selectedSupply.accepted_quantity || selectedSupply.quantity) * (selectedSupply.agreed_price || selectedSupply.price))}
+                      </span>
+                    </div>
+
+                    {(() => {
+                      const agreedTermsList: string[] = [];
+
+                      if (adminThread?.offers && Array.isArray(adminThread.offers)) {
+                        adminThread.offers.forEach((o: any) => {
+                          if (o.is_offer === false) return; // Exclude plain chat messages
+                          const txt = (o.terms || '').trim();
+                          if (txt && !txt.startsWith('[Admin Terms]') && !txt.toLowerCase().includes('farmer proposed') && !txt.toLowerCase().includes('harvest hill counter')) {
+                            const splitItems = txt.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
+                            splitItems.forEach((item: string) => {
+                              if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
+                            });
+                          }
+                        });
+                      }
+
+                      if (selectedSupply.notes && selectedSupply.notes.includes('[Agreed Terms]:')) {
+                        const legacyPart = selectedSupply.notes.split('[Agreed Terms]:')[1]?.trim();
+                        if (legacyPart) {
+                          const legacyItems = legacyPart.split(/\r?\n|;/).map((s: string) => s.trim()).filter(Boolean);
+                          legacyItems.forEach((item: string) => {
+                            if (!agreedTermsList.includes(item)) agreedTermsList.push(item);
+                          });
+                        }
+                      }
+
+                      if (agreedTermsList.length === 0) return null;
+
+                      return (
+                        <div className="bg-white/80 p-3.5 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-2 font-sans shadow-2xs">
+                          <p className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                            <CheckCircle2 size={13} className="text-emerald-700 shrink-0" /> Finalized Agreed Terms
+                          </p>
+                          <ul className="space-y-1.5 pl-1">
+                            {agreedTermsList.map((term, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs font-medium text-emerald-950 leading-relaxed">
+                                <span className="text-emerald-700 font-bold text-sm leading-none mt-0.5">•</span>
+                                <span>{term}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3 font-sans">
+                    <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                        <Handshake size={14} className="text-emerald-700" /> Negotiate Terms & Aggregate Inventory
+                      </span>
+                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Harvest Hill Admin Tool
+                      </span>
+                    </div>
+
+                    {/* Interactive Admin Negotiation Chat & Terms History Window */}
+                    <div className="space-y-2 font-sans">
+                      <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                          <MessageSquare size={13} className="text-emerald-700" /> Negotiation Chat & Terms History
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          {adminThread?.offers?.length || 0} Message{(adminThread?.offers?.length || 0) === 1 ? '' : 's'}
+                        </span>
+                      </div>
+
+                      <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-3 bg-white/95 rounded-xl border border-emerald-300/80 space-y-2.5 shadow-2xs">
+                        {isLoadingThread ? (
+                          <div className="py-6 text-center text-xs font-bold text-emerald-800 flex items-center justify-center gap-2">
+                            <RefreshCw size={14} className="animate-spin text-emerald-700" /> Loading negotiation chat...
+                          </div>
+                        ) : adminThread?.offers && adminThread.offers.length > 0 ? (
+                          adminThread.offers.map((offer: any, idx: number) => {
+                            const isFarmer = offer.sender === 'farmer';
+                            const isPlainMessage = offer.is_offer === false;
+
+                            if (isPlainMessage) {
+                              return (
+                                <div
+                                  key={offer.id || idx}
+                                  className={cn(
+                                    "flex items-start gap-2.5 max-w-[88%] group relative text-xs font-sans my-1.5",
+                                    isFarmer ? "mr-auto" : "ml-auto flex-row-reverse"
+                                  )}
+                                >
                                   <div className={cn(
-                                    "flex items-center justify-between gap-3 mb-1 text-[9.5px] pb-1 border-b",
-                                    isFarmer ? "border-amber-200/60 text-amber-900/80" : "border-white/20 text-emerald-100"
+                                    "w-7 h-7 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shrink-0 shadow-2xs mt-0.5",
+                                    isFarmer ? "bg-amber-700" : "bg-[#144227]"
                                   )}>
-                                    <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
-                                    <span className="font-mono text-[8.5px] opacity-80">
-                                      {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                    </span>
+                                    {isFarmer ? 'FM' : 'HH'}
                                   </div>
-                                  <p className="font-medium whitespace-pre-line text-xs">
-                                    {offer.message || offer.terms}
-                                  </p>
-                                </div>
 
+                                  <div className="relative max-w-[90%]">
+                                    <div className={cn(
+                                      "p-3 rounded-2xl text-xs leading-relaxed shadow-2xs border",
+                                      isFarmer
+                                        ? "bg-amber-50/90 text-amber-950 border-amber-200/90 rounded-tl-none"
+                                        : "bg-[#144227] text-white border-[#144227] rounded-tr-none"
+                                    )}>
+                                      <div className={cn(
+                                        "flex items-center justify-between gap-3 mb-1 text-[9.5px] pb-1 border-b",
+                                        isFarmer ? "border-amber-200/60 text-amber-900/80" : "border-white/20 text-emerald-100"
+                                      )}>
+                                        <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
+                                        <span className="font-mono text-[8.5px] opacity-80">
+                                          {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                        </span>
+                                      </div>
+                                      <p className="font-medium whitespace-pre-line text-xs">
+                                        {offer.message || offer.terms}
+                                      </p>
+                                    </div>
+
+                                    {/* Hover Trash Delete Option */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteOfferTerm(offer.id)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1 -right-1 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                                      title="Delete message"
+                                    >
+                                      <Trash2 size={10} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            {/* Render Structured Negotiation Offer Card */ }
+                            return (
+                              <div
+                                key={offer.id || idx}
+                                className={cn(
+                                  "p-3.5 rounded-2xl border text-xs font-sans space-y-2 relative group transition-all shadow-2xs my-2",
+                                  isFarmer
+                                    ? "bg-amber-50/90 border-amber-300/80 text-amber-950"
+                                    : "bg-emerald-50/90 border-emerald-300/80 text-emerald-950"
+                                )}
+                              >
                                 {/* Hover Trash Delete Option */}
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteOfferTerm(offer.id)}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1 -right-1 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
-                                  title="Delete message"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
+                                  title="Delete negotiation term"
                                 >
-                                  <Trash2 size={10} />
+                                  <Trash2 size={11} />
                                 </button>
-                              </div>
-                            </div>
-                          );
-                        }
 
-                        {/* Render Structured Negotiation Offer Card */}
+                                {/* Card Header Badge */}
+                                <div className="flex items-center justify-between border-b border-black/10 pb-1.5">
+                                  <span className="text-[9.5px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className={cn(
+                                      "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shadow-2xs",
+                                      isFarmer ? "bg-amber-700" : "bg-emerald-800"
+                                    )}>
+                                      {isFarmer ? 'FM' : 'HH'}
+                                    </span>
+                                    <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-white/80 border border-black/10 text-primary">
+                                      {offer.parent_offer ? 'COUNTER PROPOSAL' : 'OFFER TERMS'}
+                                    </span>
+                                  </span>
+                                  <span className="text-[8px] font-mono opacity-70 pr-5">
+                                    {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                  </span>
+                                </div>
+
+                                {/* Proposed Specs Grid */}
+                                <div className="flex items-center gap-4 bg-white/90 p-2.5 rounded-xl border border-black/10 font-mono text-xs">
+                                  <div>
+                                    <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
+                                    <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
+                                  </div>
+                                  <div className="h-6 w-px bg-black/10" />
+                                  <div>
+                                    <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
+                                    <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
+                                  </div>
+                                </div>
+
+                                {/* Custom Terms Note */}
+                                {(offer.terms || offer.message) && (
+                                  <p className="text-[11px] font-medium leading-relaxed bg-white/70 p-2.5 rounded-xl border border-black/10 text-emerald-950">
+                                    {offer.terms || offer.message}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="p-3.5 bg-white/80 rounded-xl border border-emerald-200/80 text-xs space-y-1">
+                            <p className="font-extrabold text-emerald-950">No negotiation started yet for this supply.</p>
+                            <p className="text-emerald-900/80 text-[11px] leading-relaxed">
+                              This supply is pending review and has no active negotiation thread.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                          Submitted Qty ({selectedSupply.unit})
+                        </label>
+                        <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                          {selectedSupply.quantity} {selectedSupply.unit}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                          Agreed Accepted Qty ({selectedSupply.unit})
+                        </label>
+                        <input
+                          type="number"
+                          value={agreedQtyInput}
+                          onChange={(e) => setAgreedQtyInput(e.target.value)}
+                          placeholder={`e.g. ${selectedSupply.quantity || 100}`}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                          Proposed Price
+                        </label>
+                        <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
+                          {formatCurrency(selectedSupply.price)}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                          Agreed Farmer Price (RWF)
+                        </label>
+                        <input
+                          type="number"
+                          value={agreedPriceInput}
+                          onChange={(e) => setAgreedPriceInput(e.target.value)}
+                          placeholder="e.g. 1000"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 pt-1">
+                      <label className="text-[9px] font-extrabold uppercase text-emerald-950">Target Master Product</label>
+                      <select
+                        value={targetProductId}
+                        onChange={(e) => setTargetProductId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950 cursor-pointer"
+                      >
+                        <option value="">
+                          {selectedSupply.is_suggested_product || !selectedSupply.product
+                            ? `[Approve Suggested Master Product: "${selectedSupply.suggested_product_name || selectedSupply.custom_product_name}"]`
+                            : `-- Select Existing Master Product Template --`}
+                        </option>
+                        {masterProducts.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.category} - {formatCurrency(p.base_price)}/{p.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Optional Custom Terms / Admin Notes Text Field */}
+                    <div className="space-y-1 pt-1">
+                      <label className="text-[9px] font-extrabold uppercase text-emerald-950">
+                        Optional Custom Terms / Notes
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={adminNotesInput}
+                        onChange={(e) => setAdminNotesInput(e.target.value)}
+                        placeholder="Add optional delivery or payment terms..."
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
+                      />
+                    </div>
+
+                    {/* Validation Warning Feedback */}
+                    {(() => {
+                      const parsedQty = parseFloat(agreedQtyInput || '0');
+                      const parsedPrice = parseFloat(agreedPriceInput || '0');
+                      const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
+                      const isExceedingQty = parsedQty > submittedQty;
+                      const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
+
+                      if (isExceedingQty) {
                         return (
-                          <div 
-                            key={offer.id || idx}
-                            className={cn(
-                              "p-3.5 rounded-2xl border text-xs font-sans space-y-2 relative group transition-all shadow-2xs my-2",
-                              isFarmer 
-                                ? "bg-amber-50/90 border-amber-300/80 text-amber-950" 
-                                : "bg-emerald-50/90 border-emerald-300/80 text-emerald-950"
-                            )}
+                          <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center animate-in fade-in duration-200">
+                            Accepted quantity ({parsedQty} {selectedSupply.unit}) cannot exceed submitted harvest quantity ({submittedQty} {selectedSupply.unit}).
+                          </div>
+                        );
+                      }
+
+                      if (isInvalid) {
+                        return (
+                          <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center">
+                            Accepted quantity and agreed farmer price must both be greater than 0.
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {(() => {
+                      const parsedQty = parseFloat(agreedQtyInput || '0');
+                      const parsedPrice = parseFloat(agreedPriceInput || '0');
+                      const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
+                      const isExceedingQty = parsedQty > submittedQty;
+                      const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
+
+                      const latestOffer = adminThread?.offers && adminThread.offers.length > 0
+                        ? adminThread.offers[adminThread.offers.length - 1]
+                        : null;
+
+                      const isLatestOfferByMe = latestOffer
+                        ? (latestOffer.sender === 'admin' || latestOffer.sender_role === 'admin' || latestOffer.sender_role === 'staff')
+                        : false;
+
+                      const origQty = latestOffer
+                        ? parseFloat(String(latestOffer.quantity))
+                        : parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
+
+                      const origPrice = latestOffer
+                        ? parseFloat(String(latestOffer.price))
+                        : parseFloat(String(selectedSupply.agreed_price ?? (selectedSupply.proposed_price || selectedSupply.price || '0')));
+
+                      const isQtyChanged = Math.abs(parsedQty - origQty) > 0.001;
+                      const isPriceChanged = Math.abs(parsedPrice - origPrice) > 0.001;
+                      const isNotesEntered = adminNotesInput.trim().length > 0;
+                      const isProductSelected = !!targetProductId && String(targetProductId) !== String(selectedSupply.product || '');
+
+                      const isTermsUpdated = isQtyChanged || isPriceChanged || isNotesEntered || isProductSelected;
+                      const isCounterDisabled = isSubmittingAgreement || isInvalid || !isTermsUpdated;
+                      const isAcceptDisabled = isSubmittingAgreement || isInvalid || isLatestOfferByMe || isTermsUpdated;
+
+                      return (
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                          <button
+                            type="button"
+                            disabled={isCounterDisabled}
+                            onClick={handleCounterSupply}
+                            className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={
+                              isInvalid
+                                ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
+                                : !isTermsUpdated
+                                  ? "Modify price, quantity, custom notes, or target product to enable counter button"
+                                  : "Send counter-proposal terms to farmer"
+                            }
                           >
-                            {/* Hover Trash Delete Option */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteOfferTerm(offer.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 z-30 p-1 bg-red-100 text-red-700 rounded-full border border-red-200 hover:bg-red-200 cursor-pointer shadow-md"
-                              title="Delete negotiation term"
-                            >
-                              <Trash2 size={11} />
-                            </button>
+                            <Send size={15} /> Counter
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isAcceptDisabled}
+                            onClick={handleAgreeSupply}
+                            className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={
+                              isInvalid
+                                ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
+                                : isTermsUpdated
+                                  ? "You modified negotiation terms. Click 'Counter' to propose these terms to the farmer first."
+                                  : isLatestOfferByMe
+                                    ? "Waiting for the farmer to accept or counter your latest proposal."
+                                    : "Accept terms and finalize harvest into master stock"
+                            }
+                          >
+                            <CheckCircle2 size={15} /> Accept
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
-                            {/* Card Header Badge */}
-                            <div className="flex items-center justify-between border-b border-black/10 pb-1.5">
-                              <span className="text-[9.5px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                                <span className={cn(
-                                  "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono font-bold text-white shadow-2xs",
-                                  isFarmer ? "bg-amber-700" : "bg-emerald-800"
-                                )}>
-                                  {isFarmer ? 'FM' : 'HH'}
-                                </span>
-                                <span className="font-extrabold">{isFarmer ? (offer.sender_name || 'Farmer') : 'Harvest Hill Delivery'}</span>
-                                <span className="px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-white/80 border border-black/10 text-primary">
-                                  {offer.parent_offer ? 'COUNTER PROPOSAL' : 'OFFER TERMS'}
-                                </span>
+                {/* Active Fresh Deal Banner (Rendered right below finalized negotiation terms when supply is discounted) */}
+                {selectedSupply.is_discounted && (
+                  <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                          <Tag size={15} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-xs text-orange-950">Active Fresh Deal</span>
+                            {selectedSupply.discount_price && (
+                              <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
+                                {(() => {
+                                  const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
+                                  const discP = parseFloat(selectedSupply.discount_price);
+                                  if (stdP > 0 && discP < stdP) {
+                                    return `${Math.round(((stdP - discP) / stdP) * 100)}% OFF`;
+                                  }
+                                  return 'Active';
+                                })()}
                               </span>
-                              <span className="text-[8px] font-mono opacity-70 pr-5">
-                                {offer.created_at ? new Date(offer.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                              </span>
-                            </div>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
+                            Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(selectedSupply.discount_price)}</span> / {selectedSupply.unit || 'kg'}
+                            <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
+                              (Standard: {formatCurrency(selectedSupply.agreed_price || selectedSupply.price)})
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                            {/* Proposed Specs Grid */}
-                            <div className="flex items-center gap-4 bg-white/90 p-2.5 rounded-xl border border-black/10 font-mono text-xs">
-                              <div>
-                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Price</p>
-                                <p className="font-black text-emerald-950">{formatCurrency(offer.price)} / {selectedSupply.unit}</p>
-                              </div>
-                              <div className="h-6 w-px bg-black/10" />
-                              <div>
-                                <p className="text-[8px] font-extrabold text-emerald-900 uppercase">Proposed Qty</p>
-                                <p className="font-black text-emerald-950">{offer.quantity} {selectedSupply.unit}</p>
-                              </div>
-                            </div>
+                    {/* Total Deal Payout Price & Savings Box */}
+                    {selectedSupply.discount_price && (
+                      (() => {
+                        const qty = parseFloat(selectedSupply.accepted_quantity || selectedSupply.quantity || 0);
+                        const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
+                        const discP = parseFloat(selectedSupply.discount_price);
+                        const discTotal = qty * discP;
+                        const stdTotal = qty * stdP;
+                        const savedBatchRwf = stdTotal - discTotal;
 
-                            {/* Custom Terms Note */}
-                            {(offer.terms || offer.message) && (
-                              <p className="text-[11px] font-medium leading-relaxed bg-white/70 p-2.5 rounded-xl border border-black/10 text-emerald-950">
-                                {offer.terms || offer.message}
+                        return (
+                          <div className="bg-white/90 p-2.5 rounded-xl border border-orange-200/80 flex items-center justify-between text-xs shadow-2xs">
+                            <div>
+                              <p className="text-[9.5px] font-extrabold text-orange-900 uppercase tracking-wider">Total Deal Price ({qty} {selectedSupply.unit || 'kg'})</p>
+                              <p className="text-sm font-black text-orange-950 font-mono mt-0.5">
+                                {formatCurrency(discTotal)}
                               </p>
+                            </div>
+                            {savedBatchRwf > 0 && (
+                              <div className="text-right">
+                                <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Total Batch Savings</p>
+                                <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
+                                  Save {formatCurrency(savedBatchRwf)}
+                                </p>
+                              </div>
                             )}
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="p-3.5 bg-white/80 rounded-xl border border-emerald-200/80 text-xs space-y-1">
-                        <p className="font-extrabold text-emerald-950">No negotiation started yet for this supply.</p>
-                        <p className="text-emerald-900/80 text-[11px] leading-relaxed">
-                          This supply is pending review and has no active negotiation thread.
-                        </p>
-                      </div>
+                      })()
                     )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                      Submitted Qty ({selectedSupply.unit})
-                    </label>
-                    <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
-                      {selectedSupply.quantity} {selectedSupply.unit}
+                    {/* Actions: Edit Fresh Deal vs Abort Deal */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const sup = selectedSupply;
+                          setSelectedSupply(null);
+                          setDiscountSupply(sup);
+                          setDiscountIsActive(true);
+                          setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
+                        }}
+                        className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Edit3 size={13} className="text-orange-800" />
+                        <span>Edit Deal</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmed = await showConfirm(
+                            "Abort Fresh Deal?",
+                            `Are you sure you want to abort the fresh deal discount for ${selectedSupply.product_detail?.name || selectedSupply.custom_product_name || 'this supply'}? Price will revert back to standard (${formatCurrency(selectedSupply.agreed_price || selectedSupply.price)}).`
+                          );
+                          if (confirmed) {
+                            handleAbortDiscount(selectedSupply);
+                          }
+                        }}
+                        className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <X size={13} />
+                        <span>Abort Deal</span>
+                      </button>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                      Agreed Accepted Qty ({selectedSupply.unit})
-                    </label>
-                    <input 
-                      type="number" 
-                      value={agreedQtyInput} 
-                      onChange={(e) => setAgreedQtyInput(e.target.value)}
-                      placeholder={`e.g. ${selectedSupply.quantity || 100}`}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                      Proposed Price
-                    </label>
-                    <div className="px-3 py-2 bg-emerald-100/50 rounded-xl font-bold text-xs text-emerald-950 border border-emerald-200">
-                      {formatCurrency(selectedSupply.price)}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                      Agreed Farmer Price (RWF)
-                    </label>
-                    <input 
-                      type="number" 
-                      value={agreedPriceInput} 
-                      onChange={(e) => setAgreedPriceInput(e.target.value)}
-                      placeholder="e.g. 1000"
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1 pt-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">Target Master Product</label>
-                  <select
-                    value={targetProductId}
-                    onChange={(e) => setTargetProductId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 font-bold text-xs outline-none focus:border-emerald-700 text-emerald-950 cursor-pointer"
-                  >
-                    <option value="">
-                      {selectedSupply.is_suggested_product || !selectedSupply.product
-                        ? `[Approve Suggested Master Product: "${selectedSupply.suggested_product_name || selectedSupply.custom_product_name}"]`
-                        : `-- Select Existing Master Product Template --`}
-                    </option>
-                    {masterProducts.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.category} - {formatCurrency(p.base_price)}/{p.unit})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Optional Custom Terms / Admin Notes Text Field */}
-                <div className="space-y-1 pt-1">
-                  <label className="text-[9px] font-extrabold uppercase text-emerald-950">
-                    Optional Custom Terms / Notes
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={adminNotesInput}
-                    onChange={(e) => setAdminNotesInput(e.target.value)}
-                    placeholder="Add optional delivery or payment terms..."
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-medium outline-none focus:border-emerald-700 text-emerald-950 resize-none placeholder:text-emerald-900/40"
-                  />
-                </div>
-
-                {/* Validation Warning Feedback */}
-                {(() => {
-                  const parsedQty = parseFloat(agreedQtyInput || '0');
-                  const parsedPrice = parseFloat(agreedPriceInput || '0');
-                  const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
-                  const isExceedingQty = parsedQty > submittedQty;
-                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
-
-                  if (isExceedingQty) {
-                    return (
-                      <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center animate-in fade-in duration-200">
-                        Accepted quantity ({parsedQty} {selectedSupply.unit}) cannot exceed submitted harvest quantity ({submittedQty} {selectedSupply.unit}).
-                      </div>
-                    );
-                  }
-
-                  if (isInvalid) {
-                    return (
-                      <div className="p-2 rounded-lg bg-red-100 border border-red-300 text-[10px] font-bold text-red-800 text-center">
-                        Accepted quantity and agreed farmer price must both be greater than 0.
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                )}
 
                 {(() => {
-                  const parsedQty = parseFloat(agreedQtyInput || '0');
-                  const parsedPrice = parseFloat(agreedPriceInput || '0');
-                  const submittedQty = parseFloat(String(selectedSupply.quantity || '0'));
-                  const isExceedingQty = parsedQty > submittedQty;
-                  const isInvalid = isNaN(parsedQty) || parsedQty <= 0 || isNaN(parsedPrice) || parsedPrice <= 0 || isExceedingQty;
+                  const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
+                  const masterPrice = Number(targetMaster?.base_price ?? selectedSupply.product_detail?.base_price ?? selectedSupply.base_price ?? selectedSupply.agreed_price ?? selectedSupply.price ?? 0);
 
-                  const latestOffer = adminThread?.offers && adminThread.offers.length > 0
-                    ? adminThread.offers[adminThread.offers.length - 1]
-                    : null;
+                  const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
+                  const siblingSupplies = supplies.filter(s =>
+                    (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
+                  );
 
-                  const isLatestOfferByMe = latestOffer 
-                    ? (latestOffer.sender === 'admin' || latestOffer.sender_role === 'admin' || latestOffer.sender_role === 'staff')
-                    : false;
+                  const totalAcceptedStock = siblingSupplies
+                    .filter(s => s.status === 'accepted')
+                    .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
 
-                  const origQty = latestOffer
-                    ? parseFloat(String(latestOffer.quantity))
-                    : parseFloat(String(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? '0'));
+                  const liveAcceptedQty = totalAcceptedStock > 0
+                    ? totalAcceptedStock
+                    : Number(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? 0);
 
-                  const origPrice = latestOffer
-                    ? parseFloat(String(latestOffer.price))
-                    : parseFloat(String(selectedSupply.agreed_price ?? (selectedSupply.proposed_price || selectedSupply.price || '0')));
-
-                  const isQtyChanged = Math.abs(parsedQty - origQty) > 0.001;
-                  const isPriceChanged = Math.abs(parsedPrice - origPrice) > 0.001;
-                  const isNotesEntered = adminNotesInput.trim().length > 0;
-                  const isProductSelected = !!targetProductId && String(targetProductId) !== String(selectedSupply.product || '');
-
-                  const isTermsUpdated = isQtyChanged || isPriceChanged || isNotesEntered || isProductSelected;
-                  const isCounterDisabled = isSubmittingAgreement || isInvalid || !isTermsUpdated;
-                  const isAcceptDisabled = isSubmittingAgreement || isInvalid || isLatestOfferByMe || isTermsUpdated;
+                  const totalValuedBatchPrice = liveAcceptedQty * masterPrice;
 
                   return (
-                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                      <button
-                        type="button"
-                        disabled={isCounterDisabled}
-                        onClick={handleCounterSupply}
-                        className="flex-1 py-3 bg-[#2c5234] hover:bg-[#1e3a29] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={
-                          isInvalid
-                            ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
-                            : !isTermsUpdated
-                            ? "Modify price, quantity, custom notes, or target product to enable counter button"
-                            : "Send counter-proposal terms to farmer"
-                        }
-                      >
-                        <Send size={15} /> Counter
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isAcceptDisabled}
-                        onClick={handleAgreeSupply}
-                        className="flex-1 py-3 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={
-                          isInvalid
-                            ? (isExceedingQty ? "Accepted quantity cannot exceed submitted quantity" : "Accepted quantity and agreed price must both be greater than 0")
-                            : isTermsUpdated
-                            ? "You modified negotiation terms. Click 'Counter' to propose these terms to the farmer first."
-                            : isLatestOfferByMe
-                            ? "Waiting for the farmer to accept or counter your latest proposal."
-                            : "Accept terms and finalize harvest into master stock"
-                        }
-                      >
-                        <CheckCircle2 size={15} /> Accept
-                      </button>
+                    <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
+                      <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
+                      <span className="text-sm font-black text-secondary">
+                        {formatCurrency(totalValuedBatchPrice)}
+                      </span>
                     </div>
                   );
                 })()}
               </div>
             )}
-
-            {/* Active Fresh Deal Banner (Rendered right below finalized negotiation terms when supply is discounted) */}
-            {selectedSupply.is_discounted && (
-              <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
-                      <Tag size={15} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-xs text-orange-950">Active Fresh Deal</span>
-                        {selectedSupply.discount_price && (
-                          <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
-                            {(() => {
-                              const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
-                              const discP = parseFloat(selectedSupply.discount_price);
-                              if (stdP > 0 && discP < stdP) {
-                                return `${Math.round(((stdP - discP) / stdP) * 100)}% OFF`;
-                              }
-                              return 'Active';
-                            })()}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
-                        Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(selectedSupply.discount_price)}</span> / {selectedSupply.unit || 'kg'}
-                        <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
-                          (Standard: {formatCurrency(selectedSupply.agreed_price || selectedSupply.price)})
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Total Deal Payout Price & Savings Box */}
-                {selectedSupply.discount_price && (
-                  (() => {
-                    const qty = parseFloat(selectedSupply.accepted_quantity || selectedSupply.quantity || 0);
-                    const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
-                    const discP = parseFloat(selectedSupply.discount_price);
-                    const discTotal = qty * discP;
-                    const stdTotal = qty * stdP;
-                    const savedBatchRwf = stdTotal - discTotal;
-
-                    return (
-                      <div className="bg-white/90 p-2.5 rounded-xl border border-orange-200/80 flex items-center justify-between text-xs shadow-2xs">
-                        <div>
-                          <p className="text-[9.5px] font-extrabold text-orange-900 uppercase tracking-wider">Total Deal Price ({qty} {selectedSupply.unit || 'kg'})</p>
-                          <p className="text-sm font-black text-orange-950 font-mono mt-0.5">
-                            {formatCurrency(discTotal)}
-                          </p>
-                        </div>
-                        {savedBatchRwf > 0 && (
-                          <div className="text-right">
-                            <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Total Batch Savings</p>
-                            <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
-                              Save {formatCurrency(savedBatchRwf)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()
-                )}
-
-                {/* Actions: Edit Fresh Deal vs Abort Deal */}
-                <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sup = selectedSupply;
-                      setSelectedSupply(null);
-                      setDiscountSupply(sup);
-                      setDiscountIsActive(true);
-                      setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
-                    }}
-                    className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                  >
-                    <Edit3 size={13} className="text-orange-800" />
-                    <span>Edit Deal</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const confirmed = await showConfirm(
-                        "Abort Fresh Deal?",
-                        `Are you sure you want to abort the fresh deal discount for ${selectedSupply.product_detail?.name || selectedSupply.custom_product_name || 'this supply'}? Price will revert back to standard (${formatCurrency(selectedSupply.agreed_price || selectedSupply.price)}).`
-                      );
-                      if (confirmed) {
-                        handleAbortDiscount(selectedSupply);
-                      }
-                    }}
-                    className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                  >
-                    <X size={13} />
-                    <span>Abort Deal</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {(() => {
-              const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
-              const masterPrice = Number(targetMaster?.base_price ?? selectedSupply.product_detail?.base_price ?? selectedSupply.base_price ?? selectedSupply.agreed_price ?? selectedSupply.price ?? 0);
-
-              const currentProdName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name;
-              const siblingSupplies = supplies.filter(s => 
-                (s.product_detail?.name || s.custom_product_name || s.suggested_product_name) === currentProdName
-              );
-
-              const totalAcceptedStock = siblingSupplies
-                .filter(s => s.status === 'accepted')
-                .reduce((sum, s) => sum + Number(s.accepted_quantity ?? s.quantity ?? 0), 0);
-
-              const liveAcceptedQty = totalAcceptedStock > 0 
-                ? totalAcceptedStock 
-                : Number(selectedSupply.accepted_quantity ?? selectedSupply.quantity ?? 0);
-
-              const totalValuedBatchPrice = liveAcceptedQty * masterPrice;
-
-              return (
-                <div className="flex justify-between items-center pt-2 border-t border-outline-variant/20">
-                  <span className="text-xs text-on-surface-variant font-bold">Total Valued Batch Price</span>
-                  <span className="text-sm font-black text-secondary">
-                    {formatCurrency(totalValuedBatchPrice)}
-                  </span>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-      </DetailDrawer>
-    );
-  })()}
+          </DetailDrawer>
+        );
+      })()}
 
       {/* Success Modal Pop-up */}
       {successModal.isOpen && (
@@ -2715,7 +2738,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       {deleteWarningSupply && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-red-200 space-y-5 text-left relative font-sans">
-            
+
             {/* Header with warning badge */}
             <div className="flex items-start gap-4 border-b border-red-100 pb-4">
               <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center shrink-0 shadow-sm">
@@ -2860,26 +2883,24 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     const isSelected = visibilityScopeInput === item.id || (
                       item.id === 'HARVEST_HILL_ONLY' && visibilityScopeInput === 'private_admin'
                     ) || (
-                      item.id === 'SPECIFIC_CLIENTS' && visibilityScopeInput === 'specific_clients'
-                    ) || (
-                      item.id === 'REGISTERED_CLIENTS' && visibilityScopeInput === 'all_clients'
-                    ) || (
-                      item.id === 'PUBLIC' && visibilityScopeInput === 'public'
-                    );
+                        item.id === 'SPECIFIC_CLIENTS' && visibilityScopeInput === 'specific_clients'
+                      ) || (
+                        item.id === 'REGISTERED_CLIENTS' && visibilityScopeInput === 'all_clients'
+                      ) || (
+                        item.id === 'PUBLIC' && visibilityScopeInput === 'public'
+                      );
                     const IconComp = item.icon;
                     return (
                       <label
                         key={item.id}
                         onClick={() => setVisibilityScopeInput(item.id)}
-                        className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
-                          isSelected
+                        className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${isSelected
                             ? 'bg-[#144227]/5 border-[#144227] shadow-xs'
                             : 'bg-white border-[#e5e2db] hover:bg-[#f6f3ec]/40'
-                        }`}
+                          }`}
                       >
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                          isSelected ? 'bg-[#144227] text-white' : 'bg-[#f0eee7] text-[#717971]'
-                        }`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isSelected ? 'bg-[#144227] text-white' : 'bg-[#f0eee7] text-[#717971]'
+                          }`}>
                           <IconComp size={16} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2915,15 +2936,15 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                   {/* Client Search Input */}
                   <div className="relative">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Search username or email..."
                       value={clientSearchQuery}
                       onChange={(e) => setClientSearchQuery(e.target.value)}
                       className="w-full pl-3 pr-8 py-2 rounded-xl border border-amber-300 bg-white text-xs font-medium text-[#1c1c18] outline-none focus:ring-2 focus:ring-amber-500"
                     />
                     {clientSearchQuery && (
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setClientSearchQuery('')}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-800 hover:text-amber-950 text-xs font-bold"
@@ -2950,8 +2971,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                           const displayName = c.client_profile?.business_name || c.username || c.email;
 
                           return (
-                            <div 
-                              key={c.id} 
+                            <div
+                              key={c.id}
                               onClick={() => {
                                 if (!isAlreadySelected) {
                                   setSelectedClients(prev => [...prev, {
@@ -2963,20 +2984,18 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                                   setClientSearchQuery('');
                                 }
                               }}
-                              className={`p-2 px-3 text-xs flex items-center justify-between transition-colors ${
-                                isAlreadySelected ? 'bg-amber-50 opacity-60 cursor-not-allowed' : 'hover:bg-amber-100/60 cursor-pointer'
-                              }`}
+                              className={`p-2 px-3 text-xs flex items-center justify-between transition-colors ${isAlreadySelected ? 'bg-amber-50 opacity-60 cursor-not-allowed' : 'hover:bg-amber-100/60 cursor-pointer'
+                                }`}
                             >
                               <div>
                                 <p className="font-extrabold text-amber-950">{displayName}</p>
                                 <p className="text-[10px] text-amber-800 font-mono">{c.email}</p>
                               </div>
-                              <button 
+                              <button
                                 type="button"
                                 disabled={isAlreadySelected}
-                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  isAlreadySelected ? 'bg-amber-200 text-amber-800' : 'bg-primary text-white hover:opacity-90'
-                                }`}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${isAlreadySelected ? 'bg-amber-200 text-amber-800' : 'bg-primary text-white hover:opacity-90'
+                                  }`}
                               >
                                 {isAlreadySelected ? 'Added' : '+ Add'}
                               </button>
@@ -2994,12 +3013,12 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     ) : (
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {selectedClients.map((c, idx) => (
-                          <span 
-                            key={c.id || idx} 
+                          <span
+                            key={c.id || idx}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-950 shadow-2xs"
                           >
                             <span>{c.email || c.username || c.name}</span>
-                            <button 
+                            <button
                               type="button"
                               onClick={() => setSelectedClients(prev => prev.filter((_, i) => i !== idx))}
                               className="w-4 h-4 rounded-full bg-amber-100 text-amber-900 hover:bg-amber-200 flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors"

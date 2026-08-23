@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, Send, Handshake, CheckCircle2, AlertCircle, ArrowLeft, 
+import {
+  X, Send, Handshake, CheckCircle2, AlertCircle, ArrowLeft,
   Trash2, Plus, CornerDownRight, ShieldCheck, Sparkles, Clock, RefreshCw, FileText
 } from 'lucide-react';
 import { cn } from '../../admin/lib/utils';
@@ -31,7 +31,7 @@ export function ContextualNegotiationPane({
   const [thread, setThread] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
-  
+
   // Offer Form Expander State
   const [showOfferForm, setShowOfferForm] = useState(false);
   const [counterTargetOffer, setCounterTargetOffer] = useState<any | null>(null);
@@ -99,7 +99,7 @@ export function ContextualNegotiationPane({
       const activeOffer = getActiveOffer(thread);
       const defaultQty = activeOffer ? activeOffer.quantity : (supply?.accepted_quantity || supply?.quantity || '');
       const defaultPrice = activeOffer ? activeOffer.price : (supply?.agreed_price || supply?.price || supply?.proposed_price || '');
-      
+
       let normPrice = Number(defaultPrice);
       if (normPrice > 0 && normPrice < 100) {
         normPrice = Math.round(normPrice * 1473.97);
@@ -314,7 +314,7 @@ export function ContextualNegotiationPane({
             <div className="flex items-center gap-2">
               <Handshake size={15} className="text-emerald-300" />
               <span>
-                {contextType === 'FARMER' 
+                {contextType === 'FARMER'
                   ? `Procurement Negotiation: Harvest Hill ↔ Farmer (${farmerName})`
                   : `Sales Negotiation: Client ↔ Harvest Hill Delivery`}
               </span>
@@ -343,44 +343,37 @@ export function ContextualNegotiationPane({
           )}
 
           {/* Agreement Reached Banner */}
-          {isAccepted && (() => {
-            const acceptedOfferInThread = thread?.offers?.find((o: any) => o.offer_status === 'ACCEPTED');
-            const agreedQtyVal = acceptedOfferInThread?.quantity ?? supply?.accepted_quantity ?? activeOffer?.quantity ?? availableQty;
-            const agreedPriceVal = acceptedOfferInThread?.price ?? supply?.agreed_price ?? activeOffer?.price ?? askingPrice;
-            const totalPayoutVal = Number(agreedQtyVal) * Number(agreedPriceVal);
-
-            return (
-              <div className="p-4 bg-emerald-900 text-white space-y-2 shrink-0 font-sans shadow-md">
-                <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 size={16} className="text-emerald-400" /> AGREEMENT REACHED
-                  </span>
-                  <span className="text-[10px] font-bold uppercase bg-emerald-800 border border-emerald-700 px-2.5 py-0.5 rounded-full">
-                    Verified Deal
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center pt-1">
-                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Qty</p>
-                    <p className="text-sm font-extrabold text-white mt-0.5">{agreedQtyVal} {unit}</p>
-                  </div>
-                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Price</p>
-                    <p className="text-sm font-extrabold text-white mt-0.5">{formatCurrency(agreedPriceVal)} / {unit}</p>
-                  </div>
-                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Total Payout</p>
-                    <p className="text-sm font-extrabold text-secondary mt-0.5">
-                      {formatCurrency(totalPayoutVal)}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-[11px] text-emerald-200 text-center font-medium">
-                  Agreed by Harvest Hill Delivery and {contextType === 'FARMER' ? farmerName : 'Client'}.
-                </p>
+          {isAccepted && (
+            <div className="p-4 bg-emerald-900 text-white space-y-2 shrink-0 font-sans shadow-md">
+              <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 size={16} className="text-emerald-400" /> AGREEMENT REACHED
+                </span>
+                <span className="text-[10px] font-bold uppercase bg-emerald-800 border border-emerald-700 px-2.5 py-0.5 rounded-full">
+                  Verified Deal
+                </span>
               </div>
-            );
-          })()}
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Qty</p>
+                  <p className="text-sm font-extrabold text-white mt-0.5">{supply?.accepted_quantity || (activeOffer ? activeOffer.quantity : availableQty)} {unit}</p>
+                </div>
+                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Price</p>
+                  <p className="text-sm font-extrabold text-white mt-0.5">{formatCurrency(supply?.agreed_price || (activeOffer ? activeOffer.price : askingPrice))} / {unit}</p>
+                </div>
+                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Total Payout</p>
+                  <p className="text-sm font-extrabold text-secondary mt-0.5">
+                    {formatCurrency((supply?.accepted_quantity || availableQty) * (supply?.agreed_price || askingPrice))}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-emerald-200 text-center font-medium">
+                Agreed by Harvest Hill Delivery and {contextType === 'FARMER' ? farmerName : 'Client'}.
+              </p>
+            </div>
+          )}
 
           {/* Conversation & Structured Offers Timeline */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-surface-container-lowest">
@@ -401,8 +394,8 @@ export function ContextualNegotiationPane({
             ) : (
               thread.offers.map((item: any, idx: number) => {
                 const isMe = (currentUserRole === 'farmer' && item.sender === 'farmer') ||
-                             (currentUserRole === 'admin' && item.sender === 'admin') ||
-                             (currentUserRole === 'client' && item.sender === 'client');
+                  (currentUserRole === 'admin' && item.sender === 'admin') ||
+                  (currentUserRole === 'client' && item.sender === 'client');
 
                 // Render Lightweight Text Message
                 if (!item.is_offer) {
@@ -460,9 +453,9 @@ export function ContextualNegotiationPane({
                     <div className={cn(
                       "p-4 rounded-2xl border shadow-md space-y-3 relative",
                       item.offer_status === 'ACCEPTED' ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/20" :
-                      item.offer_status === 'DECLINED' ? "bg-red-50/80 border-red-200" :
-                      item.offer_status === 'COUNTERED' ? "bg-amber-50/80 border-amber-200/80" :
-                      "bg-white border-primary/30"
+                        item.offer_status === 'DECLINED' ? "bg-red-50/80 border-red-200" :
+                          item.offer_status === 'COUNTERED' ? "bg-amber-50/80 border-amber-200/80" :
+                            "bg-white border-primary/30"
                     )}>
                       {/* Card Header */}
                       <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
@@ -472,9 +465,9 @@ export function ContextualNegotiationPane({
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border",
                           item.offer_status === 'ACCEPTED' ? "bg-emerald-100 text-emerald-800 border-emerald-300" :
-                          item.offer_status === 'DECLINED' ? "bg-red-100 text-red-800 border-red-300" :
-                          item.offer_status === 'COUNTERED' ? "bg-amber-100 text-amber-800 border-amber-300" :
-                          "bg-primary/10 text-primary border-primary/20"
+                            item.offer_status === 'DECLINED' ? "bg-red-100 text-red-800 border-red-300" :
+                              item.offer_status === 'COUNTERED' ? "bg-amber-100 text-amber-800 border-amber-300" :
+                                "bg-primary/10 text-primary border-primary/20"
                         )}>
                           {item.offer_status || 'PENDING'}
                         </span>
