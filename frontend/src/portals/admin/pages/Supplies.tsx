@@ -283,14 +283,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   }, [customSupplies]);
 
   const handleOpenApproveChoiceModal = (supply: any) => {
-    const latestOffer = supply?.latest_offer;
-    const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
-    const hasNegotiationStarted = !!(supply?.has_admin_negotiation || supply?.latest_offer || supply?.status === 'in_negotiation' || supply?.status === 'counter_offered');
-    const isNegotiationInProcess = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && supply?.status !== 'accepted';
-    if (isNegotiationInProcess) {
-      toast("A negotiation is currently in process. You must reach and agree on negotiation terms before approving.", "warning");
-      return;
-    }
     setApproveChoiceSupply(supply);
     setupDirectHarvestForm(supply);
   };
@@ -1388,15 +1380,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   {/* Custom Submission Specific Actions */}
                   {isCustomCropSubmission && !selectedSupply.is_archived ? (
                     <div className="space-y-2.5 w-full">
-                      {isNegotiationInProcess && (
-                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-start gap-2">
-                          <AlertTriangle size={14} className="text-amber-700 shrink-0 mt-0.5" />
-                          <span>
-                            A negotiation is currently in process. You must reach and agree to negotiation terms before approving this custom submission.
-                          </span>
-                        </div>
-                      )}
-
                       <button 
                         type="button"
                         onClick={() => {
@@ -1421,20 +1404,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         <div className="grid grid-cols-2 gap-2">
                           <button 
                             type="button"
-                            disabled={isNegotiationInProcess}
                             onClick={() => {
-                              if (isNegotiationInProcess) return;
                               const supToApprove = selectedSupply;
                               setSelectedSupply(null);
                               handleOpenApproveChoiceModal(supToApprove);
                             }}
-                            className={cn(
-                              "w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm",
-                              isNegotiationInProcess
-                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed opacity-60 pointer-events-none"
-                                : "bg-primary text-white hover:opacity-90 cursor-pointer"
-                            )}
-                            title={isNegotiationInProcess ? "Negotiation in process. Agree to terms first." : "Approve custom submission"}
+                            className="w-full py-2.5 bg-primary text-white hover:opacity-90 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                            title="Approve custom submission"
                           >
                             <CheckCircle2 size={14} /> Approve
                           </button>
