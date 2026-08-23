@@ -532,6 +532,31 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             </div>
 
             <div className="space-y-4">
+              {/* Shipped Items Produce Summary */}
+              <div className="bg-[#f6f3ec]/70 p-3.5 rounded-xl border border-[#e5e2db] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">
+                    Shipped Order Produce ({(selectedItem.order?.items || selectedItem.note?.order_detail?.items || []).length || 1})
+                  </span>
+                  <span className="text-[10px] font-bold text-[#144227] bg-[#144227]/10 px-2 py-0.5 rounded-full">
+                    Verify Package Contents
+                  </span>
+                </div>
+                <div className="divide-y divide-[#e5e2db] max-h-36 overflow-y-auto pr-1">
+                  {(selectedItem.order?.items || selectedItem.note?.order_detail?.items || []).map((it: any, i: number) => (
+                    <div key={i} className="py-2 flex justify-between items-center text-xs">
+                      <span className="font-bold text-[#1c1c18]">{it.product_detail?.name || it.product_name || it.name || `Produce Item #${i+1}`}</span>
+                      <span className="font-extrabold text-[#144227] bg-white border border-[#c1c9c0]/50 px-2 py-0.5 rounded-lg text-[11px]">
+                        {it.quantity} {it.product_detail?.unit || it.unit || 'pcs'}
+                      </span>
+                    </div>
+                  ))}
+                  {!(selectedItem.order?.items?.length || selectedItem.note?.order_detail?.items?.length) && (
+                    <div className="py-2 text-xs font-semibold text-[#414942]">Fresh Produce Package</div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[10px] uppercase font-extrabold tracking-wider text-[#717971] mb-1">
                   Recipient Name <span className="text-[#ba1a1a]">*</span>
