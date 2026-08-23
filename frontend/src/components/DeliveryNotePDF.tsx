@@ -35,6 +35,7 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
     const element = printRef.current;
     if (!element || downloading) return;
 
+    let iframe: HTMLIFrameElement | null = null;
     try {
       setDownloading(true);
 
@@ -50,6 +51,47 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
         html2pdf = (window as any).html2pdf;
       }
 
+      // Create isolated sandbox iframe to guarantee zero lab() / oklch() color variable pollution from main page stylesheets
+      iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = '794px';
+      iframe.style.height = '1123px';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Could not access PDF sandbox window');
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <style>
+              body {
+                font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                color: #111827;
+                background-color: #ffffff;
+                margin: 0;
+                padding: 24px;
+                box-sizing: border-box;
+              }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+              th { background-color: #f3f4f6; color: #374151; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 10px 12px; }
+              td { border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px; padding: 12px; }
+            </style>
+          </head>
+          <body>
+            ${element.outerHTML}
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      const targetEl = (iframeDoc.body.firstElementChild as HTMLElement) || iframeDoc.body;
       const filename = `Delivery_Note_${noteId}.pdf`;
       const opt = {
         margin: [10, 10, 10, 10],
@@ -58,24 +100,18 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
         html2canvas: {
           scale: 2,
           useCORS: true,
-          logging: false,
-          onclone: (clonedDoc: Document) => {
-            // Remove style/link tags with modern lab()/oklch() definitions that crash html2canvas
-            const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
-            styles.forEach(s => {
-              if (s.textContent?.includes('lab(') || s.textContent?.includes('oklch(')) {
-                s.remove();
-              }
-            });
-          }
+          logging: false
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      await html2pdf().set(opt).from(element).save();
+      await html2pdf().set(opt).from(targetEl).save();
     } catch (err) {
       console.error('PDF export failed:', err);
     } finally {
+      if (iframe && iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
       setDownloading(false);
     }
   };
