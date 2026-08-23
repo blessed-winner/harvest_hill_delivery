@@ -283,6 +283,14 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   }, [customSupplies]);
 
   const handleOpenApproveChoiceModal = (supply: any) => {
+    const latestOffer = supply?.latest_offer;
+    const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
+    const hasNegotiationStarted = !!(supply?.has_admin_negotiation || supply?.latest_offer || supply?.status === 'in_negotiation' || supply?.status === 'counter_offered');
+    const isNegotiationInProcess = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && supply?.status !== 'accepted';
+    if (isNegotiationInProcess) {
+      toast("A negotiation is currently in process. You must reach and agree on negotiation terms before approving.", "warning");
+      return;
+    }
     setApproveChoiceSupply(supply);
     setApprovalMode('choice');
   };
@@ -1347,7 +1355,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
         const latestOffer = selectedSupply?.latest_offer;
         const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
-        const hasNegotiationStarted = !!(selectedSupply?.has_admin_negotiation || selectedSupply?.latest_offer);
+        const hasNegotiationStarted = !!(selectedSupply?.has_admin_negotiation || selectedSupply?.latest_offer || selectedSupply?.status === 'in_negotiation' || selectedSupply?.status === 'counter_offered');
         const isNegotiationInProcess = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && selectedSupply?.status !== 'accepted';
         const isAlreadyApproved = selectedSupply && (!!selectedSupply.product || selectedSupply.status === 'accepted');
 
