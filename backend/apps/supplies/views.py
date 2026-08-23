@@ -56,10 +56,7 @@ class SupplySerializer(serializers.ModelSerializer):
             name = obj.photo.name if hasattr(obj.photo, 'name') else str(obj.photo)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
-            url = obj.photo.url
-            if 'localhost' in url or '127.0.0.1' in url:
-                return None
-            return url
+            return obj.photo.url
         except Exception:
             return None
 
