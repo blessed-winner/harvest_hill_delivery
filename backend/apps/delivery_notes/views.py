@@ -12,6 +12,16 @@ class DeliveryNoteViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
         
+        search_str = self.request.query_params.get('search', '').strip()
+        if search_str:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(display_id__icontains=search_str) |
+                Q(order__order_number__icontains=search_str) |
+                Q(details__icontains=search_str) |
+                Q(signed_by__icontains=search_str)
+            )
+
         if user.role == 'admin':
             return queryset
         elif user.role == 'farmer':

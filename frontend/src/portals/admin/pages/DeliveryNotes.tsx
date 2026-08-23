@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
-import { api, formatOrderNumber } from '../lib/api';
+import { api, formatOrderNumber, formatDeliveryNoteNumber } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { useAlert } from '../../../context/AlertContext';
 import { DeliveryNotePDF } from '../../../components/DeliveryNotePDF';
@@ -96,11 +96,13 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
     }
   };
 
-  const handleDeleteNotePrompt = (noteId: number | string) => {
+  const handleDeleteNotePrompt = (note: any) => {
+    const noteId = typeof note === 'object' ? note.id : note;
+    const noteNum = formatDeliveryNoteNumber(note);
     setConfirmState({
       isOpen: true,
       title: "Delete Delivery Note",
-      message: `Are you sure you want to delete delivery note #DLV-${noteId}? This will remove it permanently from the database.`,
+      message: `Are you sure you want to delete delivery note #${noteNum}? This will remove it permanently from the database.`,
       action: async () => {
         try {
           await api.deliveryNotes.delete(noteId);
@@ -127,7 +129,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
           loadNotes();
         } catch (err: any) {
           toast("Error performing bulk deletion.", "error");
-        } fontally: () => {
+        } finally {
           setIsProcessingBulk(false);
         }
       }
@@ -157,7 +159,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
       matchesTab = !n.is_archived && getFrontendStatus(n) === activeTab;
     }
     const matchesSearch = searchTerm 
-      ? String(n.id).includes(searchTerm) || 
+      ? String(n.display_id || n.displayId || n.id).toLowerCase().includes(searchTerm.toLowerCase()) || 
         String(n.order || '').includes(searchTerm) || 
         String(n.supply || '').includes(searchTerm) || 
         (n.details || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -296,7 +298,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                           {isSelected ? <CheckSquare size={16} className="text-primary" /> : <Square size={16} />}
                         </button>
                       </td>
-                      <td className="px-6 py-4 font-mono text-sm font-bold">#DLV-{note.id}</td>
+                      <td className="px-6 py-4 font-mono text-sm font-bold">{formatDeliveryNoteNumber(note)}</td>
                       <td className="px-6 py-4 font-mono text-sm text-primary font-bold">
                         {note.order ? formatOrderNumber(note.order_detail || note.order) : (note.supply ? `#${note.supply}` : '—')}
                       </td>
@@ -332,7 +334,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                             <Archive size={16} />
                           </button>
                           <button
-                            onClick={() => handleDeleteNotePrompt(note.id)}
+                            onClick={() => handleDeleteNotePrompt(note)}
                             title="Delete"
                             className="p-1.5 text-on-surface-variant hover:text-red-600 transition-colors cursor-pointer rounded"
                           >
@@ -378,7 +380,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
       <DetailDrawer
         isOpen={!!selectedNote}
         onClose={() => setSelectedNote(null)}
-        title={selectedNote ? `Delivery Note #DLV-${selectedNote.id}` : ''}
+        title={selectedNote ? `Delivery Note #${formatDeliveryNoteNumber(selectedNote)}` : ''}
         subtitle={selectedNote ? `Linked to ${selectedNote.order ? 'Order ' + formatOrderNumber(selectedNote.order_detail || selectedNote.order) : 'Supply Batch #' + selectedNote.supply}` : ''}
         footer={
           selectedNote && (
@@ -407,7 +409,7 @@ export function DeliveryNotes({ searchTerm = '' }: DeliveryNotesProps) {
                   <Archive className="w-4 h-4" /> {selectedNote.is_archived ? 'Unarchive' : 'Archive'}
                 </button>
                 <button 
-                  onClick={() => handleDeleteNotePrompt(selectedNote.id)}
+                  onClick={() => handleDeleteNotePrompt(selectedNote)}
                   className="py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-lg font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <Trash2 className="w-4 h-4" /> Delete

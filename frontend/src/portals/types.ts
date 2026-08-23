@@ -40,6 +40,8 @@ export interface Order {
 
 export interface DeliveryNote {
   id: string;
+  display_id?: string;
+  displayId?: string;
   orderId: string;
   client: string;
   items: string;

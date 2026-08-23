@@ -27,7 +27,7 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
     clientInfo?.delivery_address || 
     'Ellington, United Kingdom';
 
-  const noteId = note?.id ? String(note.id).padStart(3, '0') : (order?.id ? String(order.id).padStart(3, '0') : '001');
+  const noteId = note?.display_id || note?.displayId || (note?.id ? (String(note.id).startsWith('DLV-') ? note.id : `DLV-${note.id}`) : (order?.id ? `DLV-${order.id}` : 'DLV-000001'));
   const issueDate = note?.created_at ? new Date(note.created_at).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
 
   const handlePrint = () => {

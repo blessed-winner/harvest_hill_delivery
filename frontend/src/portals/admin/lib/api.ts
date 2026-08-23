@@ -360,3 +360,19 @@ export function formatOrderNumber(order: any): string {
   }
   return String(typeof order === 'object' ? order.id || '' : order || '');
 }
+
+export function formatDeliveryNoteNumber(note: any): string {
+  if (!note) return '';
+  if (typeof note === 'object') {
+    if (note.display_id) return note.display_id;
+    if (note.displayId) return note.displayId;
+    if (note.delivery_note_number) return note.delivery_note_number;
+  }
+  const idNum = typeof note === 'object' ? Number(note.id) : Number(note);
+  if (!isNaN(idNum) && idNum > 0) {
+    return `DLV-${String(idNum).padStart(6, '0')}`;
+  }
+  const str = String(typeof note === 'object' ? note.id || '' : note || '');
+  if (str.startsWith('DLV-')) return str;
+  return str ? `DLV-${str}` : '';
+}

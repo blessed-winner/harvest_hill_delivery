@@ -10,6 +10,7 @@ class DeliveryNote(models.Model):
         ('discrepancy', 'Discrepancy')
     ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    display_id = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_notes')
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_notes')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -21,5 +22,11 @@ class DeliveryNote(models.Model):
     is_deleted_by_client = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.display_id:
+            from apps.common.utils import generate_next_display_id
+            self.display_id = generate_next_display_id('delivery_note', 'DLV', 6)
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Delivery Note #{self.id} ({self.status})"
+        return f"Delivery Note {self.display_id or self.id} ({self.status})"
