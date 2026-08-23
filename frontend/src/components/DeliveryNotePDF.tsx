@@ -42,122 +42,76 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
       <html>
         <head>
           <title>Delivery Note #${noteId}</title>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+            
+            @page {
+              size: A4 portrait;
+              margin: 10mm 12mm;
+            }
+            
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              box-sizing: border-box;
+            }
+
             body {
-              font-family: 'Inter', sans-serif;
-              color: #111827;
-              margin: 0;
-              padding: 40px;
-              background-color: #ffffff;
+              font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+              color: #111827 !important;
+              margin: 0 !important;
+              padding: 24px !important;
+              background-color: #ffffff !important;
+              font-size: 11px !important;
+              line-height: 1.4 !important;
             }
-            .note-container {
-              max-w-3xl;
+
+            .print-container {
+              max-width: 780px;
               margin: 0 auto;
+              background: #ffffff;
             }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 40px;
+
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
             }
-            .title {
-              font-size: 24px;
-              font-weight: 800;
-              letter-spacing: 0.05em;
-              color: #1a1a1a;
+
+            th {
+              background-color: #f3f4f6 !important;
+              font-size: 9px !important;
+              letter-spacing: 0.05em !important;
+              padding: 8px 12px !important;
             }
-            .brand {
-              text-align: right;
+
+            td {
+              border-bottom: 1px solid #e5e7eb !important;
+              padding: 10px 12px !important;
+              font-size: 11px !important;
             }
-            .brand-logo {
-              font-size: 18px;
-              font-weight: 800;
-              letter-spacing: 0.1em;
-              display: flex;
-              align-items: center;
-              justify-content: flex-end;
-              gap: 6px;
+
+            img {
+              max-height: 48px !important;
+              object-fit: contain !important;
             }
-            .brand-sub {
-              font-size: 10px;
-              letter-spacing: 0.15em;
-              color: #4b5563;
-              text-transform: uppercase;
-            }
-            .company-address {
-              font-size: 10px;
-              color: #6b7280;
-              margin-bottom: 30px;
-            }
-            .details-grid {
-              display: flex;
-              justify-content: space-between;
-              font-size: 11px;
-              margin-bottom: 30px;
-              line-height: 1.5;
-            }
-            .for-label {
-              font-weight: 700;
-              font-size: 10px;
-              text-transform: uppercase;
-              margin-bottom: 4px;
-            }
-            .items-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 60px;
-            }
-            .items-table th {
-              background-color: #f3f4f6;
-              padding: 10px 14px;
-              text-align: left;
-              font-size: 10px;
-              font-weight: 800;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-              color: #374151;
-            }
-            .items-table th.qty-col {
-              text-align: right;
-            }
-            .items-table td {
-              padding: 14px;
-              border-bottom: 1px solid #e5e7eb;
-              font-size: 12px;
-              color: #1f2937;
-            }
-            .items-table td.qty-col {
-              text-align: right;
-              font-weight: 600;
-            }
-            .signature-section {
-              text-align: right;
-              margin-top: 40px;
-            }
-            .signature-label {
-              font-size: 10px;
-              font-weight: 700;
-              color: #374151;
-            }
-            .signature-img {
-              max-height: 50px;
-              margin-top: 8px;
-            }
-            .signature-text {
-              font-family: 'Brush Script MT', 'Segoe Script', cursive, sans-serif;
-              font-size: 26px;
-              color: #1f2937;
-              margin-top: 4px;
-            }
+
             @media print {
-              body { padding: 0; }
-              .no-print { display: none; }
+              body {
+                padding: 0 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
             }
           </style>
         </head>
         <body>
-          ${content.innerHTML}
+          <div class="print-container">
+            ${content.innerHTML}
+          </div>
         </body>
       </html>
     `);
@@ -165,7 +119,7 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
-    }, 250);
+    }, 450);
   };
 
   return (
