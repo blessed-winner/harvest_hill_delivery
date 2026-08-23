@@ -93,6 +93,20 @@ class SupplySerializer(serializers.ModelSerializer):
         if notes_val and '[Admin Terms]:' in str(notes_val):
             clean_notes = str(notes_val).split('[Admin Terms]:')[0].strip()
             data['notes'] = clean_notes if clean_notes else ""
+
+        if not data.get('product_detail') or not data['product_detail'].get('name'):
+            custom_name = instance.custom_product_name or instance.suggested_product_name or "Custom Crop Submission"
+            photo_url = data.get('photo')
+            data['product_detail'] = {
+                'id': None,
+                'name': custom_name,
+                'category': instance.custom_category or 'Vegetables',
+                'unit': instance.custom_unit or instance.unit or 'kg',
+                'base_price': float(instance.agreed_price or instance.price or 0),
+                'offered_price': float(instance.price or 0),
+                'image_url': photo_url,
+                'image': photo_url,
+            }
         return data
 
     def get_has_admin_negotiation(self, obj):

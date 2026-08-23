@@ -48,9 +48,13 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
     price?: string;
   }>({});
 
+  const getSupplyProductName = (supply: any) => {
+    return supply?.product_detail?.name || supply?.custom_product_name || supply?.suggested_product_name || 'Custom Harvest';
+  };
+
   const getSupplyImage = (supply: any) => {
     if (supply?.photo) return supply.photo;
-    const name = String(supply?.product_detail?.name || '').trim().toLowerCase();
+    const name = String(getSupplyProductName(supply)).trim().toLowerCase();
     if (name.includes('roma') || name.includes('tomato')) {
       return romaTomatoesImage;
     }
@@ -60,13 +64,21 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
   async function loadSupplies() {
     try {
       const data = await api.supplies();
-      setSupplies((data || []).map((item: any) => ({
-        ...item,
-        product_detail: {
-          ...item.product_detail,
-          image: getSupplyImage(item),
-        },
-      })));
+      setSupplies((data || []).map((item: any) => {
+        const prodName = getSupplyProductName(item);
+        const imgUrl = getSupplyImage(item);
+        return {
+          ...item,
+          product_detail: {
+            ...item.product_detail,
+            name: prodName,
+            category: item.product_detail?.category || item.custom_category || 'Other',
+            unit: item.product_detail?.unit || item.custom_unit || item.unit || 'kg',
+            image: imgUrl,
+            image_url: imgUrl,
+          },
+        };
+      }));
     } catch (err) {
       console.error("Error loading supplies:", err);
       setSupplies([]);
@@ -253,7 +265,7 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
 
   // Filter supply array
   const filteredSupplies = supplies.filter(item => {
-    const name = item.product_detail?.name || '';
+    const name = item.product_detail?.name || item.custom_product_name || item.suggested_product_name || '';
     const sNum = item.supply_number || item.supplyNumber || '';
     const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           sNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -262,7 +274,7 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
     const matchesStatus = statusFilter === 'All Statuses' || item.status.toLowerCase() === statusFilter.toLowerCase();
     
     // Use actual product category from the data
-    const category = item.product_detail?.category || 'Other';
+    const category = item.product_detail?.category || item.custom_category || 'Other';
     
     const matchesCategory = categoryFilter === 'All Categories' || category === categoryFilter;
     
