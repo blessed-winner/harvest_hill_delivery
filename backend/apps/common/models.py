@@ -13,3 +13,11 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.actor_email or 'System'} - {self.action} at {self.timestamp}"
+
+
+class DisplaySequenceCounter(models.Model):
+    key = models.CharField(max_length=50, primary_key=True)
+    last_value = models.BigIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.key}: {self.last_value}"

@@ -61,13 +61,8 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.display_id:
-            existing_count = Product.objects.count() + 1
-            num_str = f"{existing_count:06d}"
-            self.display_id = f"MST-{num_str}"
-            while Product.objects.filter(display_id=self.display_id).exclude(pk=self.pk).exists():
-                existing_count += 1
-                num_str = f"{existing_count:06d}"
-                self.display_id = f"MST-{num_str}"
+            from apps.common.utils import generate_next_display_id
+            self.display_id = generate_next_display_id('master_product', 'MST', 6)
 
         if self.pricing_mode == 'harvest_hill_offers':
             if not self.base_price or float(self.base_price) <= 0:

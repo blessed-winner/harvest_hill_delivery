@@ -1,4 +1,24 @@
-from .models import AuditLog
+from django.db import transaction, connection
+from .models import AuditLog, DisplaySequenceCounter
+
+def generate_next_display_id(key: str, prefix: str, padding: int = 6) -> str:
+    """
+    Generates a permanent, non-reusable display ID in a thread-safe and transaction-safe manner.
+    Uses select_for_update() row-level locking on DisplaySequenceCounter inside an atomic transaction.
+    """
+    with transaction.atomic():
+        if connection.features.has_select_for_update:
+            try:
+                counter, _ = DisplaySequenceCounter.objects.select_for_update().get_or_create(key=key)
+            except Exception:
+                counter, _ = DisplaySequenceCounter.objects.get_or_create(key=key)
+        else:
+            counter, _ = DisplaySequenceCounter.objects.get_or_create(key=key)
+
+        counter.last_value += 1
+        counter.save(update_fields=['last_value'])
+        num_str = f"{counter.last_value:0{padding}d}"
+        return f"{prefix}-{num_str}"
 
 def log_action(request=None, actor=None, action="", target_model="", target_id="", target_name="", ip_address=None):
     if request:

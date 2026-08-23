@@ -101,13 +101,8 @@ class Supply(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.supply_number:
-            existing_count = Supply.objects.count() + 1
-            num_str = f"{existing_count:06d}"
-            self.supply_number = f"SUP-{num_str}"
-            while Supply.objects.filter(supply_number=self.supply_number).exclude(pk=self.pk).exists():
-                existing_count += 1
-                num_str = f"{existing_count:06d}"
-                self.supply_number = f"SUP-{num_str}"
+            from apps.common.utils import generate_next_display_id
+            self.supply_number = generate_next_display_id('farmer_supply', 'SUP', 6)
         super().save(*args, **kwargs)
 
     @property

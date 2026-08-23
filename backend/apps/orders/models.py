@@ -32,17 +32,8 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            max_num = 0
-            for o in Order.objects.exclude(order_number__isnull=True).values_list('order_number', flat=True):
-                if o and o.startswith('ORD-'):
-                    try:
-                        num = int(o.replace('ORD-', ''))
-                        if num > max_num:
-                            max_num = num
-                    except ValueError:
-                        pass
-            next_num = max_num + 1
-            self.order_number = f"ORD-{next_num:06d}"
+            from apps.common.utils import generate_next_display_id
+            self.order_number = generate_next_display_id('order', 'ORD', 6)
         super().save(*args, **kwargs)
 
     def __str__(self):
