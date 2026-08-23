@@ -256,14 +256,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
   const customSupplies = React.useMemo(() => {
     return supplies.filter((s: any) => 
-      !s.product || 
-      s.product === null || 
-      s.is_suggested_product || 
-      !!s.custom_product_name || 
-      !!s.suggested_product_name ||
-      !!s.client_request ||
-      !!s.product_request ||
-      (s.product_detail && (s.product_detail.is_suggested_product || s.product_detail.isCustom || s.product_detail.isRequest))
+      (!s.product || s.product === null) &&
+      (s.is_suggested_product || 
+       !!s.custom_product_name || 
+       !!s.suggested_product_name ||
+       !!s.client_request ||
+       !!s.product_request ||
+       (s.product_detail && (s.product_detail.is_suggested_product || s.product_detail.isCustom || s.product_detail.isRequest)))
     );
   }, [supplies]);
 
@@ -818,17 +817,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }>();
 
     for (const sup of supplies) {
-      const isCustomSupply = 
-        !sup.product || 
-        sup.product === null || 
-        sup.is_suggested_product || 
-        !!sup.custom_product_name || 
-        !!sup.suggested_product_name ||
-        !!sup.client_request ||
-        !!sup.product_request ||
-        (sup.product_detail && (sup.product_detail.is_suggested_product || sup.product_detail.isCustom || sup.product_detail.isRequest));
+      const isUnlinkedCustomSupply = (!sup.product || sup.product === null);
 
-      if (isCustomSupply) {
+      if (isUnlinkedCustomSupply) {
         continue;
       }
 
