@@ -38,22 +38,16 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
     try {
       setDownloading(true);
 
-      let html2pdf: any = (window as any).html2pdf;
+      let html2pdf = (window as any).html2pdf;
       if (!html2pdf) {
-        try {
-          // @ts-ignore
-          const mod = await import('html2pdf.js');
-          html2pdf = mod.default || mod;
-        } catch {
-          await new Promise<void>((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error('Failed to load PDF generator library'));
-            document.head.appendChild(script);
-          });
-          html2pdf = (window as any).html2pdf;
-        }
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load PDF generator library'));
+          document.head.appendChild(script);
+        });
+        html2pdf = (window as any).html2pdf;
       }
 
       const filename = `Delivery_Note_${noteId}.pdf`;
@@ -61,7 +55,20 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
         margin: [10, 10, 10, 10],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          onclone: (clonedDoc: Document) => {
+            // Remove style/link tags with modern lab()/oklch() definitions that crash html2canvas
+            const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+            styles.forEach(s => {
+              if (s.textContent?.includes('lab(') || s.textContent?.includes('oklch(')) {
+                s.remove();
+              }
+            });
+          }
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
@@ -108,56 +115,62 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
         </div>
 
         {/* Printable Delivery Note Area */}
-        <div ref={printRef} className="bg-white p-6 sm:p-10 font-sans text-gray-900 leading-relaxed border border-gray-100 shadow-sm rounded-xl">
+        <div 
+          ref={printRef} 
+          className="bg-white p-6 sm:p-10 font-sans text-gray-900 leading-relaxed border border-gray-100 shadow-sm rounded-xl"
+          style={{ backgroundColor: '#ffffff', color: '#111827', padding: '32px', fontFamily: 'sans-serif' }}
+        >
           
           {/* Header */}
-          <div className="flex justify-between items-start mb-8">
-            <h1 className="text-2xl font-extrabold tracking-wider text-gray-900 uppercase">DELIVERY NOTE</h1>
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1 text-gray-900 font-extrabold text-lg tracking-wider">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '0.05em', color: '#111827', margin: 0, textTransform: 'uppercase' }}>
+              DELIVERY NOTE
+            </h1>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px', color: '#111827', fontWeight: '800', fontSize: '18px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M12 3L2 12h3v8h14v-8h3L12 3z" />
                 </svg>
                 HARVEST HILL
               </div>
-              <p className="text-[9px] uppercase tracking-widest text-gray-500 font-semibold">FRESH LOGISTICS</p>
+              <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6b7280', fontWeight: '600', margin: '2px 0 0 0' }}>FRESH LOGISTICS</p>
             </div>
           </div>
 
-          <p className="text-[11px] text-gray-500 mb-8">
+          <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '24px' }}>
             Harvest Hill Logistics Ltd, KG 7 Ave, Kigali, Rwanda
           </p>
 
           {/* FOR & Note Info Grid */}
-          <div className="flex justify-between items-start text-xs mb-8">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', marginBottom: '24px' }}>
             <div>
-              <p className="font-extrabold text-[10px] uppercase tracking-wider text-gray-900 mb-1">FOR</p>
-              <p className="font-semibold text-gray-800">{recipientName}</p>
-              <p className="text-gray-600 max-w-xs whitespace-pre-line">{recipientAddress}</p>
+              <p style={{ fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111827', marginBottom: '4px' }}>FOR</p>
+              <p style={{ fontWeight: '600', color: '#1f2937', margin: 0 }}>{recipientName}</p>
+              <p style={{ color: '#4b5563', maxWidth: '280px', margin: '2px 0 0 0', whiteSpace: 'pre-line' }}>{recipientAddress}</p>
             </div>
-            <div className="text-right space-y-1">
-              <div className="flex gap-4 justify-end text-xs">
-                <span className="text-gray-500">Delivery note No:</span>
-                <span className="font-bold text-gray-900">{noteId}</span>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', fontSize: '12px', marginBottom: '4px' }}>
+                <span style={{ color: '#6b7280' }}>Delivery note No:</span>
+                <span style={{ fontWeight: '700', color: '#111827' }}>{noteId}</span>
               </div>
-              <div className="flex gap-4 justify-end text-xs">
-                <span className="text-gray-500">Issue date:</span>
-                <span className="font-bold text-gray-900">{issueDate}</span>
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', fontSize: '12px' }}>
+                <span style={{ color: '#6b7280' }}>Issue date:</span>
+                <span style={{ fontWeight: '700', color: '#111827' }}>{issueDate}</span>
               </div>
             </div>
           </div>
 
           {/* Goods Table */}
-          <table className="w-full text-left border-collapse mb-8">
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
             <thead>
-              <tr className="bg-gray-100 text-[10px] font-extrabold uppercase tracking-wider text-gray-700">
-                <th className="py-3 px-4">PRODUCT NAME</th>
-                <th className="py-3 px-4 text-center">QUANTITY</th>
-                <th className="py-3 px-4 text-right">UNIT PRICE</th>
-                <th className="py-3 px-4 text-right">TOTAL PRICE</th>
+              <tr style={{ backgroundColor: '#f3f4f6', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#374151' }}>
+                <th style={{ padding: '10px 12px', textAlign: 'left' }}>PRODUCT NAME</th>
+                <th style={{ padding: '10px 12px', textAlign: 'center' }}>QUANTITY</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right' }}>UNIT PRICE</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right' }}>TOTAL PRICE</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 text-xs">
+            <tbody style={{ fontSize: '11px' }}>
               {orderItems.length > 0 ? (
                 orderItems.map((item: any, idx: number) => {
                   const prodName = item.product_detail?.name || item.product_name || item.name || `Item #${idx + 1}`;
@@ -166,30 +179,30 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
                   const price = Number(item.price || item.unit_price || 0);
                   const itemTotal = qty * price;
                   return (
-                    <tr key={idx}>
-                      <td className="py-3.5 px-4 font-medium text-gray-800">{prodName}</td>
-                      <td className="py-3.5 px-4 text-center font-semibold text-gray-900">{qty} {unit}</td>
-                      <td className="py-3.5 px-4 text-right text-gray-700">RWF {price.toLocaleString()}</td>
-                      <td className="py-3.5 px-4 text-right font-bold text-gray-900">RWF {itemTotal.toLocaleString()}</td>
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>{prodName}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>{qty} {unit}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: '#374151' }}>RWF {price.toLocaleString()}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#111827' }}>RWF {itemTotal.toLocaleString()}</td>
                     </tr>
                   );
                 })
               ) : (
-                <tr>
-                  <td className="py-3.5 px-4 font-medium text-gray-800">
+                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>
                     {note?.details || order?.delivery_address || 'Fresh Harvest Produce Dispatch'}
                   </td>
-                  <td className="py-3.5 px-4 text-center font-semibold text-gray-900">1 pkg</td>
-                  <td className="py-3.5 px-4 text-right text-gray-700">RWF 0</td>
-                  <td className="py-3.5 px-4 text-right font-bold text-gray-900">RWF 0</td>
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>1 pkg</td>
+                  <td style={{ padding: '12px', textAlign: 'right', color: '#374151' }}>RWF 0</td>
+                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: '#111827' }}>RWF 0</td>
                 </tr>
               )}
             </tbody>
             {orderItems.length > 0 && (
               <tfoot>
-                <tr className="border-t-2 border-gray-300 font-bold text-xs bg-gray-50">
-                  <td colSpan={3} className="py-3 px-4 text-right uppercase tracking-wider text-gray-900">Total Cost:</td>
-                  <td className="py-3 px-4 text-right font-extrabold text-emerald-900 text-sm">
+                <tr style={{ borderTop: '2px solid #d1d5db', fontWeight: '700', fontSize: '11px', backgroundColor: '#f9fafb' }}>
+                  <td colSpan={3} style={{ padding: '10px 12px', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111827' }}>Total Cost:</td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '800', color: '#064e3b', fontSize: '13px' }}>
                     RWF {orderItems.reduce((sum: number, item: any) => sum + (Number(item.quantity || 1) * Number(item.price || item.unit_price || 0)), 0).toLocaleString()}
                   </td>
                 </tr>
@@ -198,13 +211,13 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
           </table>
 
           {/* Signature Footer */}
-          <div className="flex justify-end pt-4">
-            <div className="text-right">
-              <p className="text-[10px] font-extrabold text-gray-900 uppercase">Issued by, signature:</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '10px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>Issued by, signature:</p>
               {note?.signature_data ? (
-                <img src={note.signature_data} alt="Signature" className="max-h-12 object-contain ml-auto mt-2" />
+                <img src={note.signature_data} alt="Signature" style={{ maxHeight: '48px', objectFit: 'contain', marginLeft: 'auto', marginTop: '8px' }} />
               ) : (
-                <p className="font-serif italic text-xl text-gray-800 mt-2">
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '20px', color: '#1f2937', margin: '8px 0 0 0' }}>
                   {recipientName}
                 </p>
               )}
