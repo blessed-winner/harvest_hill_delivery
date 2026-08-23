@@ -414,6 +414,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           minReqQty = Math.max(qtyNum, 5);
         }
 
+        const mainImg = directImages.find(img => img.url)?.url || null;
+        const newFiles = directImages.filter(img => img.file).map(img => img.file!);
+
         const productPayload: Record<string, any> = {
           name: targetProductName,
           category: directCategory,
@@ -430,8 +433,30 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           productPayload.image_url = mainImg;
         }
 
-        const newProduct = await api.products.create(productPayload);
-        targetProductId = newProduct.id || newProduct.pk;
+        if (newFiles.length > 0) {
+          const formData = new FormData();
+          Object.entries(productPayload).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) formData.append(k, String(v));
+          });
+          newFiles.forEach(f => formData.append('images', f));
+          const newProduct = await api.products.create(formData);
+          targetProductId = newProduct.id || newProduct.pk;
+        } else {
+          const newProduct = await api.products.create(productPayload);
+          targetProductId = newProduct.id || newProduct.pk;
+        }
+      } else {
+        // If reusing existing Master Product, ensure its primary cover image is updated to approved harvest image
+        const mainImg = directImages.find(img => img.url)?.url || null;
+        const newFiles = directImages.filter(img => img.file).map(img => img.file!);
+
+        if (newFiles.length > 0) {
+          const formData = new FormData();
+          newFiles.forEach(f => formData.append('images', f));
+          await api.products.update(targetProductId, formData);
+        } else if (mainImg) {
+          await api.products.update(targetProductId, { image_url: mainImg });
+        }
       }
 
       // 3. Link harvest supply to the Master Product and set status to accepted

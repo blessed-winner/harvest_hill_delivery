@@ -50,11 +50,21 @@ class ProductViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
 
         files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
+
         if files:
             product = serializer.save(image=files[0])
             from .models import ProductImage
             for file in files:
                 ProductImage.objects.create(product=product, image=file)
+        elif image_url and isinstance(image_url, str):
+            clean_path = image_url
+            if '/media/' in clean_path:
+                clean_path = clean_path.split('/media/')[-1]
+            product = serializer.save(image=clean_path)
+            from .models import ProductImage
+            if not product.gallery_images.exists():
+                ProductImage.objects.create(product=product, image=clean_path)
         else:
             product = serializer.save()
 
@@ -70,6 +80,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
+
         if files:
             if instance.image:
                 delete_cloudinary_image(instance.image)
@@ -78,6 +90,14 @@ class ProductViewSet(viewsets.ModelViewSet):
             instance.gallery_images.all().delete()
             for file in files:
                 ProductImage.objects.create(product=instance, image=file)
+        elif image_url and isinstance(image_url, str):
+            clean_path = image_url
+            if '/media/' in clean_path:
+                clean_path = clean_path.split('/media/')[-1]
+            instance = serializer.save(image=clean_path)
+            from .models import ProductImage
+            if not instance.gallery_images.exists():
+                ProductImage.objects.create(product=instance, image=clean_path)
         else:
             instance = serializer.save()
 
