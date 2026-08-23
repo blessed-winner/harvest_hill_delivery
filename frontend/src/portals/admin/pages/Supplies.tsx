@@ -1356,14 +1356,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       <td className="px-4 py-3">
                         {group.isDiscounted && group.discountPrice && group.discountPrice < group.masterSellingPrice ? (
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-mono text-xs font-black text-orange-600">
-                                {formatCurrency(group.discountPrice)} / {group.unit || 'kg'}
-                              </span>
-                              <span className="text-[8px] font-black uppercase tracking-wider bg-orange-100 text-orange-900 border border-orange-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5 shadow-2xs">
-                                <Tag size={9} className="text-orange-700" /> Fresh Deal
-                              </span>
-                            </div>
+                            <span className="font-mono text-xs font-black text-orange-600 block">
+                              {formatCurrency(group.discountPrice)} / {group.unit || 'kg'}
+                            </span>
                             <p className="font-mono text-[10px] text-on-surface-variant/60 line-through">
                               {formatCurrency(group.masterSellingPrice)} / {group.unit || 'kg'}
                             </p>
