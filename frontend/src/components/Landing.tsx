@@ -308,7 +308,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     if (targetLower === 'deals') {
       const matchedDeals = masterItems.filter((s: any) => s.is_discounted || s.has_active_discount || s.hasActiveDiscount);
       if (matchedDeals.length > 0) return matchedDeals;
-      return [];
+      return masterItems;
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
@@ -320,23 +320,36 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
-      return masterItems.filter((p: any) => {
+      const res = masterItems.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
         return cat.includes('vegetable') || cat.includes('herb');
       });
+      if (res.length > 0) return res;
     }
 
     if (targetLower.includes('dairy') || targetLower.includes('animal')) {
-      return masterItems.filter((p: any) => {
+      const res = masterItems.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
         return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
       });
+      if (res.length > 0) return res;
     }
 
-    return masterItems.filter((p: any) => {
+    if (targetLower.includes('fruit')) {
+      const res = masterItems.filter((p: any) => {
+        const cat = (p.category || '').toLowerCase();
+        return cat.includes('fruit');
+      });
+      if (res.length > 0) return res;
+    }
+
+    const matched = masterItems.filter((p: any) => {
       const cat = (p.category || '').toLowerCase();
       return cat.includes(targetLower);
     });
+
+    if (matched.length > 0) return matched;
+    return masterItems;
   };
 
   if (loading) {
