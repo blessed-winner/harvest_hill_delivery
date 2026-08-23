@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef } from 'react';
-import { X, Printer, Download } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { X, Download, Loader2 } from 'lucide-react';
 
 interface DeliveryNotePDFProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface DeliveryNotePDFProps {
 
 export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePDFProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -30,96 +31,46 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
   const noteId = note?.display_id || note?.displayId || (note?.id ? (String(note.id).startsWith('DLV-') ? note.id : `DLV-${note.id}`) : (order?.id ? `DLV-${order.id}` : 'DLV-000001'));
   const issueDate = note?.created_at ? new Date(note.created_at).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
 
-  const handlePrint = () => {
-    const content = printRef.current;
-    if (!content) return;
+  const handleDownloadPDF = async () => {
+    const element = printRef.current;
+    if (!element || downloading) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    try {
+      setDownloading(true);
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Delivery Note #${noteId}</title>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-            
-            @page {
-              size: A4 portrait;
-              margin: 10mm 12mm;
-            }
-            
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              box-sizing: border-box;
-            }
+      let html2pdf: any = (window as any).html2pdf;
+      if (!html2pdf) {
+        try {
+          // @ts-ignore
+          const mod = await import('html2pdf.js');
+          html2pdf = mod.default || mod;
+        } catch {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load PDF generator library'));
+            document.head.appendChild(script);
+          });
+          html2pdf = (window as any).html2pdf;
+        }
+      }
 
-            body {
-              font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-              color: #111827 !important;
-              margin: 0 !important;
-              padding: 24px !important;
-              background-color: #ffffff !important;
-              font-size: 11px !important;
-              line-height: 1.4 !important;
-            }
+      const filename = `Delivery_Note_${noteId}.pdf`;
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
 
-            .print-container {
-              max-width: 780px;
-              margin: 0 auto;
-              background: #ffffff;
-            }
-
-            table {
-              width: 100% !important;
-              border-collapse: collapse !important;
-            }
-
-            th {
-              background-color: #f3f4f6 !important;
-              font-size: 9px !important;
-              letter-spacing: 0.05em !important;
-              padding: 8px 12px !important;
-            }
-
-            td {
-              border-bottom: 1px solid #e5e7eb !important;
-              padding: 10px 12px !important;
-              font-size: 11px !important;
-            }
-
-            img {
-              max-height: 48px !important;
-              object-fit: contain !important;
-            }
-
-            @media print {
-              body {
-                padding: 0 !important;
-              }
-              .no-print {
-                display: none !important;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="print-container">
-            ${content.innerHTML}
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 450);
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -133,10 +84,19 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-900 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60"
             >
-              <Printer size={15} /> Print / Export PDF
+              {downloading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" /> Downloading PDF...
+                </>
+              ) : (
+                <>
+                  <Download size={15} /> Export PDF
+                </>
+              )}
             </button>
             <button
               onClick={onClose}
