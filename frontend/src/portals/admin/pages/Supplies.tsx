@@ -292,7 +292,23 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       return;
     }
     setApproveChoiceSupply(supply);
-    setApprovalMode('choice');
+    setupDirectHarvestForm(supply);
+  };
+
+  const handleRejectCustomSubmission = async (supply: any) => {
+    if (!supply) return;
+    if (!window.confirm(`Are you sure you want to reject the custom submission for "${supply.custom_product_name || supply.suggested_product_name || 'Crop Harvest'}"?`)) {
+      return;
+    }
+    try {
+      await api.supplies.update(supply.id, { status: 'rejected' });
+      toast("Custom crop submission rejected.", "info");
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Failed to reject submission:", err);
+      toast(err.message || "Failed to reject custom submission.", "error");
+    }
   };
 
   const setupDirectHarvestForm = (supply: any) => {
@@ -1357,7 +1373,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         const offerStatus = (latestOffer?.offer_status || latestOffer?.status || '').toUpperCase();
         const hasNegotiationStarted = !!(selectedSupply?.has_admin_negotiation || selectedSupply?.latest_offer || selectedSupply?.status === 'in_negotiation' || selectedSupply?.status === 'counter_offered');
         const isNegotiationInProcess = hasNegotiationStarted && offerStatus !== 'ACCEPTED' && selectedSupply?.status !== 'accepted';
-        const isAlreadyApproved = selectedSupply && (!!selectedSupply.product || selectedSupply.status === 'accepted');
+        const isAlreadyApproved = selectedSupply && (!!selectedSupply.product || (selectedSupply.status === 'accepted' && !!selectedSupply.product));
+        const isRejected = selectedSupply && selectedSupply.status === 'rejected';
 
         return (
           <DetailDrawer
@@ -1380,24 +1397,28 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const supToNeg = selectedSupply;
-                            setSelectedSupply(null);
-                            setActiveNegotiationSupply(supToNeg);
-                          }}
-                          className="w-full py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary border border-outline-variant/60 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
-                        >
-                          <Handshake size={14} /> Negotiate
-                        </button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const supToNeg = selectedSupply;
+                          setSelectedSupply(null);
+                          setActiveNegotiationSupply(supToNeg);
+                        }}
+                        className="w-full py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary border border-outline-variant/60 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                      >
+                        <Handshake size={14} /> Negotiate
+                      </button>
 
-                        {isAlreadyApproved ? (
-                          <span className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs">
-                            <CheckCircle2 size={14} /> Approved
-                          </span>
-                        ) : (
+                      {isAlreadyApproved ? (
+                        <span className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs select-none">
+                          <CheckCircle2 size={14} /> Approved
+                        </span>
+                      ) : isRejected ? (
+                        <span className="w-full py-2.5 bg-red-100 text-red-900 border border-red-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs select-none">
+                          <X size={14} /> Rejected
+                        </span>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
                           <button 
                             type="button"
                             disabled={isNegotiationInProcess}
@@ -1410,15 +1431,27 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             className={cn(
                               "w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm",
                               isNegotiationInProcess
-                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed opacity-60"
+                                ? "bg-outline-variant/40 text-on-surface-variant/50 border border-outline-variant/40 cursor-not-allowed opacity-60 pointer-events-none"
                                 : "bg-primary text-white hover:opacity-90 cursor-pointer"
                             )}
                             title={isNegotiationInProcess ? "Negotiation in process. Agree to terms first." : "Approve custom submission"}
                           >
                             <CheckCircle2 size={14} /> Approve
                           </button>
-                        )}
-                      </div>
+
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const supToReject = selectedSupply;
+                              handleRejectCustomSubmission(supToReject);
+                            }}
+                            className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
+                            title="Reject custom submission"
+                          >
+                            <X size={14} /> Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     /* Standard Supply Log Actions */
@@ -2970,84 +3003,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         </div>
       )}
 
-      {/* Approval Choice Modal */}
-      {approveChoiceSupply && approvalMode === 'choice' && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/50 space-y-4">
-            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-primary">Approve Custom Submission</h3>
-                  <p className="text-xs text-on-surface-variant font-medium">Select how you want to publish this crop submission</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setApproveChoiceSupply(null);
-                  setApprovalMode(null);
-                }}
-                className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 pt-1">
-              <button
-                type="button"
-                onClick={() => setupDirectHarvestForm(approveChoiceSupply)}
-                className="w-full text-left p-4 rounded-xl border border-outline-variant/80 hover:border-primary bg-surface-container-lowest hover:bg-surface-container-low transition-all cursor-pointer group shadow-2xs space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-primary font-extrabold text-sm">
-                    <Package size={18} />
-                    <span>Direct Master Product Listing</span>
-                  </div>
-                  <ChevronRight size={16} className="text-primary group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Approve and list this harvest directly into Master Product inventory (no public requirement template).
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setupRequirementForm(approveChoiceSupply)}
-                className="w-full text-left p-4 rounded-xl border border-outline-variant/80 hover:border-primary bg-surface-container-lowest hover:bg-surface-container-low transition-all cursor-pointer group shadow-2xs space-y-1.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-primary font-extrabold text-sm">
-                    <FileText size={18} />
-                    <span>Create Product Requirement Template</span>
-                  </div>
-                  <ChevronRight size={16} className="text-primary group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Create a public Product Requirement template so other local farmers can also view and submit harvest batches.
-                </p>
-              </button>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setApproveChoiceSupply(null);
-                  setApprovalMode(null);
-                }}
-                className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Direct Harvest Listing Modal (Option A) */}
+      {/* Direct Master Product Listing Modal */}
       {approveChoiceSupply && approvalMode === 'direct' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/50 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -3186,10 +3142,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             <div className="pt-3 border-t border-outline-variant/40 flex gap-2">
               <button
                 type="button"
-                onClick={() => setApprovalMode('choice')}
+                onClick={() => {
+                  setApproveChoiceSupply(null);
+                  setApprovalMode(null);
+                }}
                 className="py-2.5 px-4 border border-outline-variant text-on-surface-variant rounded-xl font-bold text-xs hover:bg-surface-container-high transition-all cursor-pointer"
               >
-                Back
+                Cancel
               </button>
               <button
                 type="button"
