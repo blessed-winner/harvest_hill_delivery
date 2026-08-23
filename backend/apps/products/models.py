@@ -76,13 +76,6 @@ class Product(models.Model):
                     if admin_supply and (admin_supply.agreed_price or admin_supply.price):
                         self.base_price = admin_supply.agreed_price or admin_supply.price
 
-        if self.pk:
-            admin_supply = self.supplies.filter(
-                farmer__user__role='admin'
-            ).exclude(photo='').exclude(photo__isnull=True).order_by('-created_at').first()
-            if admin_supply and admin_supply.photo:
-                self.image = admin_supply.photo
-
         super().save(*args, **kwargs)
 
     @property

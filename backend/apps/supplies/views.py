@@ -787,6 +787,113 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             supply.visibility_scope = 'PUBLIC'
         supply.save()
 
+        # 5. Process Authoritative Master Product Image Adoption
+        master_prod = supply.product
+        if master_prod:
+            if 'keep_images' in request.data:
+                keep_images = request.data.getlist('keep_images') if hasattr(request.data, 'getlist') else request.data.get('keep_images')
+                if isinstance(keep_images, str):
+                    import json
+                    try:
+                        keep_images = json.loads(keep_images)
+                    except Exception:
+                        keep_images = [keep_images] if keep_images else []
+            else:
+                keep_images = None
+
+            cover_image_ref = request.data.get('cover_image')
+            image_selection_modified = (request.data.get('image_selection_modified') in [True, 'true', '1']) or (keep_images is not None)
+
+            raw_uploaded = request.FILES.getlist('images') or request.FILES.getlist('image')
+            uploaded_files = [f for f in raw_uploaded if f and getattr(f, 'size', 0) > 0]
+            if uploaded_files:
+                image_selection_modified = True
+
+            from apps.products.models import ProductImage
+
+            supply_photo_objs = []
+            if supply.photo:
+                supply_photo_objs.append(supply.photo)
+            for extra_img in supply.images.all():
+                if extra_img.image:
+                    supply_photo_objs.append(extra_img.image)
+
+            # Scenario A: Custom submission with no admin image changes -> Auto-adopt farmer photos
+            if not image_selection_modified and sub_type == 'CUSTOM':
+                if supply_photo_objs:
+                    if not master_prod.image and supply.photo:
+                        master_prod.image.name = supply.photo.name
+                        master_prod.save(update_fields=['image'])
+                    
+                    for p_obj in supply_photo_objs:
+                        try:
+                            url_str = p_obj.url if hasattr(p_obj, 'url') else str(p_obj)
+                            img_name = getattr(p_obj, 'name', None) or str(p_obj)
+                            already = False
+                            for pi in master_prod.gallery_images.all():
+                                pi_url = pi.image.url if (pi.image and hasattr(pi.image, 'url')) else str(pi.image)
+                                if pi.image and (pi.image.name == img_name or pi_url == url_str):
+                                    already = True
+                                    break
+                            if not already:
+                                pi = ProductImage(product=master_prod)
+                                pi.image.name = img_name
+                                pi.save()
+                        except Exception as img_err:
+                            print("Auto-adopt image error:", img_err)
+
+            # Scenario B: Admin explicitly modified images during approval
+            elif image_selection_modified:
+                retained_urls = keep_images if keep_images is not None else []
+                
+                current_gallery = list(master_prod.gallery_images.all())
+                for pi in current_gallery:
+                    pi_url = pi.image.url if (pi.image and hasattr(pi.image, 'url')) else str(pi.image)
+                    if pi_url and not any(r in pi_url or pi_url in r for r in retained_urls):
+                        try:
+                            pi.delete()
+                        except Exception:
+                            pass
+
+                # Attach retained supply photos if not already in gallery
+                existing_urls = [pi.image.url for pi in master_prod.gallery_images.all() if pi.image and hasattr(pi.image, 'url')]
+                for p_obj in supply_photo_objs:
+                    p_url = p_obj.url if hasattr(p_obj, 'url') else str(p_obj)
+                    if any(r in p_url or p_url in r for r in retained_urls):
+                        if not any(p_url in eu or eu in p_url for eu in existing_urls):
+                            try:
+                                pi = ProductImage(product=master_prod)
+                                pi.image.name = getattr(p_obj, 'name', None) or str(p_obj)
+                                pi.save()
+                            except Exception as e:
+                                print("Retained supply photo attach error:", e)
+
+                new_pi_objs = []
+                for uf in uploaded_files:
+                    try:
+                        pi = ProductImage.objects.create(product=master_prod, image=uf)
+                        new_pi_objs.append(pi)
+                    except Exception as img_err:
+                        print("Approval upload image error:", img_err)
+
+                if cover_image_ref:
+                    matched_pi = master_prod.gallery_images.first()
+                    for pi in master_prod.gallery_images.all():
+                        pi_url = pi.image.url if (pi.image and hasattr(pi.image, 'url')) else str(pi.image)
+                        if cover_image_ref in pi_url or pi_url in cover_image_ref:
+                            matched_pi = pi
+                            break
+                    if matched_pi and matched_pi.image:
+                        master_prod.image = matched_pi.image
+                        master_prod.save(update_fields=['image'])
+                else:
+                    current_cover_url = master_prod.image.url if (master_prod.image and hasattr(master_prod.image, 'url')) else ''
+                    is_cover_retained = current_cover_url and any(r in current_cover_url or current_cover_url in r for r in retained_urls)
+                    if not is_cover_retained:
+                        first_pi = new_pi_objs[0] if new_pi_objs else master_prod.gallery_images.first()
+                        master_prod.image = first_pi.image if (first_pi and first_pi.image) else None
+                        master_prod.save(update_fields=['image'])
+
         # 5. Requirement-based workflow: deduct from quantity_needed if requirement-based
         if sub_type == 'REQUIREMENT_BASED' and supply.product:
             from decimal import Decimal

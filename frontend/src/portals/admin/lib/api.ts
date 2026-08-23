@@ -251,8 +251,40 @@ export const api = {
     },
     agreeSupply: (id: string | number, payload: any) => 
       apiRequest(`/api/supplies/${id}/agree-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
-    approveSupply: (id: string | number, payload: any) => 
-      apiRequest(`/api/supplies/${id}/approve-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
+    approveSupply: (id: string | number, payload: any) => {
+      if (payload instanceof FormData) {
+        return apiRequest(`/api/supplies/${id}/approve-supply/`, { method: 'POST', body: payload });
+      }
+      const hasFiles = payload && typeof payload === 'object' && Object.values(payload).some(val => 
+        val instanceof File || (Array.isArray(val) && val.some(item => item instanceof File))
+      );
+      if (hasFiles) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, val]) => {
+          if (val !== null && val !== undefined) {
+            if (key === 'images' || key === 'additionalPhotos') {
+              if (Array.isArray(val)) {
+                val.forEach((file: any) => {
+                  if (file instanceof File) {
+                    formData.append('images', file);
+                  }
+                });
+              }
+            } else if (key === 'keep_images') {
+              if (Array.isArray(val)) {
+                val.forEach((item: any) => formData.append('keep_images', String(item)));
+              } else {
+                formData.append('keep_images', String(val));
+              }
+            } else {
+              formData.append(key, String(val));
+            }
+          }
+        });
+        return apiRequest(`/api/supplies/${id}/approve-supply/`, { method: 'POST', body: formData });
+      }
+      return apiRequest(`/api/supplies/${id}/approve-supply/`, { method: 'POST', body: JSON.stringify(payload) });
+    },
     counterSupply: (id: string | number, payload: any) => 
       apiRequest(`/api/supplies/${id}/counter-supply/`, { method: 'POST', body: JSON.stringify(payload) }),
     delete: (id: string | number) => apiRequest(`/api/supplies/${id}/`, { method: 'DELETE' }),

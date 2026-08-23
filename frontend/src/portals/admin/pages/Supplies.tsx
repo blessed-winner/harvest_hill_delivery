@@ -482,14 +482,27 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       }
 
       // 3. Execute authoritative backend approval operation
-      await api.supplies.approveSupply(approveChoiceSupply.id, {
+      const keepImageUrls = directImages.filter(img => !img.file && img.url).map(img => img.url);
+      const newFiles = directImages.filter(img => img.file).map(img => img.file!);
+      const coverImageRef = directImages[0]?.url || null;
+
+      const approvePayload: Record<string, any> = {
         product_id: targetProductId,
         price: priceNum,
         quantity: qtyNum,
         agreed_price: priceNum,
         accepted_quantity: qtyNum,
         approve_suggested: true,
-      });
+        keep_images: keepImageUrls,
+        cover_image: coverImageRef,
+        image_selection_modified: true,
+      };
+
+      if (newFiles.length > 0) {
+        approvePayload.images = newFiles;
+      }
+
+      await api.supplies.approveSupply(approveChoiceSupply.id, approvePayload);
 
       toast(`Master Product "${targetProductName}" published & harvest supply approved!`, "success");
       setApproveChoiceSupply(null);
@@ -566,11 +579,35 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
   const handleOpenEditModal = (supply: any) => {
     setEditSupply(supply);
-    setEditQty(String(supply.quantity || ''));
-    setEditPrice(String(supply.price || supply.proposed_price || ''));
+    setEditQty(String(supply.accepted_quantity != null ? supply.accepted_quantity : (supply.quantity || '')));
+    setEditPrice(String(supply.agreed_price != null ? supply.agreed_price : (supply.price || supply.proposed_price || '')));
     setEditUnit(supply.unit || 'kg');
     setEditNotes(supply.notes || '');
   };
+
+  const isEditSupplyChanged = React.useMemo(() => {
+    if (!editSupply) return false;
+    const origQty = String(editSupply.accepted_quantity != null ? editSupply.accepted_quantity : (editSupply.quantity || '')).trim();
+    const origPrice = String(editSupply.agreed_price != null ? editSupply.agreed_price : (editSupply.price || editSupply.proposed_price || '')).trim();
+    const origUnit = String(editSupply.unit || 'kg').trim();
+    const origNotes = String(editSupply.notes || '').trim();
+
+    const currentQty = editQty.trim();
+    const currentPrice = editPrice.trim();
+    const currentUnit = editUnit.trim();
+    const currentNotes = editNotes.trim();
+
+    const hasChange = (
+      currentQty !== origQty ||
+      currentPrice !== origPrice ||
+      currentUnit !== origUnit ||
+      currentNotes !== origNotes
+    );
+
+    const parsedQ = parseFloat(currentQty);
+    const parsedP = parseFloat(currentPrice);
+    return hasChange && !isNaN(parsedQ) && parsedQ > 0 && !isNaN(parsedP) && parsedP > 0;
+  }, [editSupply, editQty, editPrice, editUnit, editNotes]);
 
   const handleSaveAdminEdit = async () => {
     if (!editSupply) return;
@@ -1528,32 +1565,29 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       )}
 
                       {!selectedSupply.is_archived && (
-                        <div className="w-full">
-                          {isHarvestHillSubmission ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const supToEdit = selectedSupply;
-                                setSelectedSupply(null);
-                                handleOpenEditModal(supToEdit);
-                              }}
-                              className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
-                            >
-                              <Edit3 size={14} /> Edit Supply
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const supToNeg = selectedSupply;
-                                setSelectedSupply(null);
-                                setActiveNegotiationSupply(supToNeg);
-                              }}
-                              className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                            >
-                              <Handshake size={14} /> Contextual Negotiation Pane
-                            </button>
-                          )}
+                        <div className="w-full grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const supToEdit = selectedSupply;
+                              setSelectedSupply(null);
+                              handleOpenEditModal(supToEdit);
+                            }}
+                            className="w-full py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-[#376847] transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                          >
+                            <Edit3 size={14} /> Edit Supply
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const supToNeg = selectedSupply;
+                              setSelectedSupply(null);
+                              setActiveNegotiationSupply(supToNeg);
+                            }}
+                            className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold hover:bg-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                          >
+                            <Handshake size={14} /> Negotiation
+                          </button>
                         </div>
                       )}
 
@@ -2599,7 +2633,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
               <button
                 type="button"
-                disabled={isSavingEdit}
+                disabled={isSavingEdit || !isEditSupplyChanged}
                 onClick={handleSaveAdminEdit}
                 className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-xs hover:bg-[#376847] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
               >
