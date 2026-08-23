@@ -1856,33 +1856,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     })()}
                   </div>
 
-                  {/* Final Agreed Negotiation Terms Summary (Authoritative Source of Truth) */}
-                  {(selectedSupply.negotiation_status === 'FINALIZED' || selectedSupply.negotiationStatus === 'FINALIZED') && (
-                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2 shadow-2xs">
-                      <div className="flex justify-between items-center pb-1.5 border-b border-emerald-200">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
-                          <CheckCircle2 size={14} className="text-emerald-700" /> Final Agreed Negotiation Terms
-                        </span>
-                        <span className="text-[8.5px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                          Authoritative Terms
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Quantity</span>
-                          <span className="font-extrabold text-emerald-950 font-mono">
-                            {selectedSupply.accepted_quantity ?? selectedSupply.quantity} {selectedSupply.unit}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Price</span>
-                          <span className="font-extrabold text-emerald-950 font-mono">
-                            {formatCurrency(selectedSupply.agreed_price ?? selectedSupply.price)} / {selectedSupply.unit}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
 
                   {/* Pending Negotiation Offer Banner (Unconfirmed Intermediate Offer) */}
                   {(selectedSupply.negotiation_status === 'IN_PROGRESS' || selectedSupply.negotiationStatus === 'IN_PROGRESS') && (
