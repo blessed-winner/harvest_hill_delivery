@@ -72,14 +72,30 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                 thread.deleted_by_farmer = False
                 thread.save()
         else:
-            # Only send notification when a client buyer initiates a negotiation
-            if request.user.role == 'client' and thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
-                from apps.notifications.utils import send_live_notification
-                prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.suggested_product_name or thread.supply.custom_product_name or "Harvest Batch")
+            from apps.notifications.utils import send_live_notification
+            from apps.accounts.models import User
+            from django.db.models import Q
+
+            prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.suggested_product_name or thread.supply.custom_product_name or "Harvest Produce")
+
+            if request.user.role == 'client':
+                # Notify Harvest Hill Admins of new client negotiation deal
+                client_name = getattr(request.user, 'get_full_name', lambda: '')() or request.user.username or request.user.email
+                if hasattr(request.user, 'client_profile') and getattr(request.user.client_profile, 'business_name', None):
+                    client_name = f"{client_name} ({request.user.client_profile.business_name})"
+
+                admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
+                for admin_user in admins:
+                    send_live_notification(
+                        user=admin_user,
+                        title="New Client Negotiation Deal",
+                        message=f"Client {client_name} initiated price deal proposal for: {prod_name}."
+                    )
+            elif request.user.role == 'farmer' and thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
                 send_live_notification(
                     user=thread.supply.farmer.user,
                     title="New Negotiation Started",
-                    message=f"A buyer ({request.user.email}) initiated price negotiation for your supply: {prod_name}."
+                    message=f"A user ({request.user.email}) initiated price negotiation for your supply: {prod_name}."
                 )
         serializer = self.get_serializer(thread)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
@@ -154,11 +170,12 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.custom_product_name or "Harvest Batch")
         supply_num = thread.supply.supply_number or f"SUP-{thread.supply.id}"
         unit_str = thread.supply.unit or 'kg'
+        clean_msg = str(message or terms).strip()
 
-        if request.user.role == 'farmer':
+        sender_role = getattr(request.user, 'role', '')
+        if sender_role == 'farmer':
             farmer_name = request.user.farmer_profile.farm_name if hasattr(request.user, 'farmer_profile') and request.user.farmer_profile.farm_name else (request.user.get_full_name() or request.user.username or "Farmer")
-            clean_notes = str(terms or message).strip() if (terms or message) else ''
-            terms_summary = f". Terms: {clean_notes[:45]}..." if len(clean_notes) > 45 else (f". Terms: {clean_notes}" if clean_notes else "")
+            terms_summary = f". Terms: {clean_msg[:45]}..." if len(clean_msg) > 45 else (f". Terms: {clean_msg}" if clean_msg else "")
             
             admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
             for admin_user in admins:
@@ -167,17 +184,45 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                     title="Farmer Counter-Terms Submitted",
                     message=f"{farmer_name} submitted counter-terms for {supply_num} ({prod_name}): {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}{terms_summary}"
                 )
+        elif sender_role == 'client':
+            # Client submitting counter-offer -> Notify Harvest Hill Admins
+            client_name = request.user.get_full_name() or request.user.username or request.user.email
+            if hasattr(request.user, 'client_profile') and getattr(request.user.client_profile, 'business_name', None):
+                client_name = f"{client_name} ({request.user.client_profile.business_name})"
+
+            title_text = "Client Counter-Offer Received" if is_offer else "Client Negotiation Message"
+            msg_summary = f": \"{clean_msg}\"" if clean_msg else ""
+            
+            admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
+            for admin_user in admins:
+                send_live_notification(
+                    user=admin_user,
+                    title=title_text,
+                    message=f"{client_name} submitted proposal for {prod_name}: {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}{msg_summary}"
+                )
         else:
-            recipient = thread.supply.farmer.user if (thread.supply.farmer and getattr(thread.supply.farmer, 'user', None)) else (thread.buyer if thread.buyer and thread.buyer != request.user else None)
-            if recipient and recipient != request.user:
+            # Harvest Hill Admin submitting counter-offer -> Notify Client buyer or Farmer
+            if thread.buyer and thread.buyer != request.user:
+                title_text = "Harvest Hill Counter-Offer" if is_offer else "Harvest Hill Negotiation Message"
+                msg_text = (
+                    f"Harvest Hill Delivery submitted a counter-offer for {prod_name}: {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}."
+                    if is_offer
+                    else f"New message from Harvest Hill Delivery for {prod_name}: \"{clean_msg}\"."
+                )
+                send_live_notification(
+                    user=thread.buyer,
+                    title=title_text,
+                    message=msg_text
+                )
+            elif thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
                 title_text = "Counter-Offer Received" if is_offer else "New Negotiation Message"
                 msg_text = (
                     f"Counter-offer received for {supply_num} ({prod_name}): {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}."
                     if is_offer
-                    else f"New negotiation message for {supply_num} ({prod_name}): \"{message or terms}\"."
+                    else f"New negotiation message for {supply_num} ({prod_name}): \"{clean_msg}\"."
                 )
                 send_live_notification(
-                    user=recipient,
+                    user=thread.supply.farmer.user,
                     title=title_text,
                     message=msg_text
                 )
@@ -219,8 +264,6 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
             thread.supply.visibility_scope = 'PUBLIC'
         thread.supply.save()
 
-
-
         # Automatically generate a pending invoice upon acceptance for this buyer
         from apps.invoices.models import Invoice
         Invoice.objects.get_or_create(
@@ -240,7 +283,8 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
         supply_num = thread.supply.supply_number or f"SUP-{thread.supply.id}"
         unit_str = thread.supply.unit or 'kg'
 
-        if request.user.role == 'farmer':
+        acceptor_role = getattr(request.user, 'role', '')
+        if acceptor_role == 'farmer':
             farmer_name = request.user.farmer_profile.farm_name if hasattr(request.user, 'farmer_profile') and request.user.farmer_profile.farm_name else (request.user.get_full_name() or request.user.username or "Farmer")
             admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
             for admin_user in admins:
@@ -249,7 +293,25 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
                     title="Farmer Agreed & Accepted Terms",
                     message=f"{farmer_name} accepted negotiation terms for {supply_num} ({prod_name}): {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}. Harvest is finalized into master stock."
                 )
+        elif acceptor_role == 'client':
+            client_name = request.user.get_full_name() or request.user.username or request.user.email
+            if hasattr(request.user, 'client_profile') and getattr(request.user.client_profile, 'business_name', None):
+                client_name = f"{client_name} ({request.user.client_profile.business_name})"
+
+            admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
+            for admin_user in admins:
+                send_live_notification(
+                    user=admin_user,
+                    title="Client Agreed & Accepted Deal",
+                    message=f"{client_name} accepted negotiation deal terms for {prod_name}: {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}. Deal agreement finalized!"
+                )
         else:
+            if thread.buyer:
+                send_live_notification(
+                    user=thread.buyer,
+                    title="Deal Agreement Finalized",
+                    message=f"Harvest Hill Delivery accepted your negotiation terms for {prod_name}: {float(quantity):g} {unit_str} @ RWF {float(price):g}/{unit_str}."
+                )
             if thread.supply.farmer and getattr(thread.supply.farmer, 'user', None):
                 send_live_notification(
                     user=thread.supply.farmer.user,
@@ -275,6 +337,29 @@ class NegotiationThreadViewSet(viewsets.ModelViewSet):
 
         thread.status = 'DECLINED'
         thread.save()
+
+        from apps.notifications.utils import send_live_notification
+        from apps.accounts.models import User
+        from django.db.models import Q
+
+        prod_name = thread.supply.product.name if thread.supply.product else (thread.supply.custom_product_name or "Harvest Produce")
+        decliner_role = getattr(request.user, 'role', '')
+        if decliner_role == 'client':
+            client_name = request.user.get_full_name() or request.user.username or request.user.email
+            admins = User.objects.filter(Q(role='admin') | Q(is_staff=True)).distinct()
+            for admin_user in admins:
+                send_live_notification(
+                    user=admin_user,
+                    title="Client Declined Proposal",
+                    message=f"Client {client_name} declined the price negotiation for {prod_name}."
+                )
+        else:
+            if thread.buyer:
+                send_live_notification(
+                    user=thread.buyer,
+                    title="Negotiation Declined",
+                    message=f"Harvest Hill Delivery declined the price negotiation for {prod_name}."
+                )
 
         return Response(NegotiationThreadSerializer(thread, context={'request': request}).data)
 
