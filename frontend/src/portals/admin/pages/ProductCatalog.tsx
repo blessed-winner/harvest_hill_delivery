@@ -161,7 +161,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     }
   };
 
+  // Source Product Request ID when creating a requirement from client request
+  const [sourceRequestId, setSourceRequestId] = useState<number | string | null>(null);
+
   const handleCreateProductFromRequest = (req: any) => {
+    setSourceRequestId(req.id);
     setFormName(req.product_name);
     setFormCategory(req.category || 'Vegetables');
     setFormUnit(req.unit || 'kg');
@@ -221,6 +225,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const handleOpenAddProduct = () => {
+    setSourceRequestId(null);
     setFormName("");
     setFormCategory("Vegetables");
     setFormUnit("kg");
@@ -442,6 +447,17 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       if (selectedProduct === 'new') {
         await api.products.create(payload);
         toast(`Requirement for "${formName}" created successfully!`, "success");
+
+        if (sourceRequestId) {
+          try {
+            await api.productRequests.update(sourceRequestId, { status: 'requirement_created' });
+            loadRequests();
+          } catch (e) {
+            console.error("Failed to update source request status:", e);
+          } finally {
+            setSourceRequestId(null);
+          }
+        }
       } else {
         await api.products.update(selectedProduct.id, payload);
         toast(`Requirement for "${formName}" updated successfully!`, "success");
@@ -623,12 +639,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-xs">
                         <span className={cn(
                           "px-2.5 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-wider font-extrabold border shadow-sm inline-block",
-                          req.status === 'approved' && "bg-[#bceec8] text-[#00210f] border-[#bceec8]",
+                          (req.status === 'approved' || req.status === 'requirement_created') && "bg-[#bceec8] text-[#00210f] border-[#bceec8]",
                           req.status === 'pending' && "bg-amber-100 text-amber-800 border-amber-200",
                           req.status === 'fulfilled' && "bg-blue-100 text-blue-800 border-blue-200",
                           req.status === 'rejected' && "bg-red-100 text-red-800 border-red-200"
                         )}>
-                          {req.status}
+                          {req.status === 'requirement_created' ? 'Requirement Created' : req.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-xs font-bold space-x-2">
@@ -655,6 +671,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                           >
                             <Plus size={11} className="mr-1" /> Create Requirement
                           </button>
+                        )}
+                        {(req.status === 'requirement_created' || req.status === 'fulfilled') && (
+                          <span className="px-2.5 py-1.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-extrabold inline-flex items-center gap-1 shadow-2xs">
+                            <CheckCircle2 size={13} /> Requirement Created
+                          </span>
                         )}
                         <button
                           onClick={() => handleDeleteRequest(req.id)}
