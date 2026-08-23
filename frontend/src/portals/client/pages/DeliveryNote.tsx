@@ -522,7 +522,9 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             <div className="flex items-center justify-between border-b border-[#e5e2db] pb-3">
               <div className="flex items-center gap-2 text-[#144227]">
                 <PenTool size={20} />
-                <h3 className="text-base font-bold text-[#1c1c18]">Sign Delivery Note #{selectedItem.order?.id}</h3>
+                <h3 className="text-base font-bold text-[#1c1c18]">
+                  Sign Delivery Note #{selectedItem.note ? formatDeliveryNoteNumber(selectedItem.note) : formatOrderNumber(selectedItem.order)}
+                </h3>
               </div>
               <button onClick={closeModal} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
                 <X size={20} />
@@ -626,7 +628,9 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             <div className="flex items-center justify-between border-b border-[#e5e2db] pb-3">
               <div className="flex items-center gap-2 text-[#ba1a1a]">
                 <AlertTriangle size={20} />
-                <h3 className="text-base font-bold text-[#1c1c18]">Raise Dispute for Order #{selectedItem.order?.id}</h3>
+                <h3 className="text-base font-bold text-[#1c1c18]">
+                  Raise Dispute for Order #{formatOrderNumber(selectedItem.order || selectedItem.note?.order_detail)}
+                </h3>
               </div>
               <button onClick={closeModal} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
                 <X size={20} />
@@ -694,7 +698,9 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             <div className="flex items-center justify-between border-b border-[#e5e2db] pb-3">
               <div className="flex items-center gap-2 text-[#144227]">
                 <FileText size={20} />
-                <h3 className="text-base font-bold text-[#1c1c18]">Delivery Note Details #{selectedItem.note?.display_id || selectedItem.note?.displayId || selectedItem.note?.id || selectedItem.order?.id}</h3>
+                <h3 className="text-base font-bold text-[#1c1c18]">
+                  Delivery Note Details #{selectedItem.note ? formatDeliveryNoteNumber(selectedItem.note) : formatOrderNumber(selectedItem.order)}
+                </h3>
               </div>
               <button onClick={closeModal} className="text-[#717971] hover:text-[#1c1c18] cursor-pointer">
                 <X size={20} />
