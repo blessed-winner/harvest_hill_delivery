@@ -19,7 +19,7 @@ def send_live_notification(user, title, message):
                 group_name,
                 {
                     "type": "send_notification",
-                    "id": notification.id,
+                    "id": str(notification.id),
                     "title": notification.title,
                     "message": notification.message,
                     "created_at": notification.created_at.strftime('%Y-%m-%dT%H:%M:%SZ'),

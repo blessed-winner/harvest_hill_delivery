@@ -49,7 +49,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         today = timezone.now().date()
 
-        files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        raw_files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
         if files:
@@ -79,7 +80,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
         instance = self.get_object()
 
-        files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        raw_files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
         if files:

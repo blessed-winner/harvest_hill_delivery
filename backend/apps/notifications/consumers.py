@@ -50,10 +50,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
     # Receive message from user group
     async def send_notification(self, event):
-        await self.send(text_data=json.dumps({
-            "id": event["id"],
-            "title": event["title"],
-            "message": event["message"],
-            "created_at": event["created_at"],
-            "is_read": event["is_read"],
-        }))
+        payload = {
+            "id": str(event["id"]) if event.get("id") else None,
+            "title": event.get("title", ""),
+            "message": event.get("message", ""),
+            "created_at": str(event.get("created_at", "")),
+            "is_read": bool(event.get("is_read", False)),
+        }
+        await self.send(text_data=json.dumps(payload, default=str))
