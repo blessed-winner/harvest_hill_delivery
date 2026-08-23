@@ -5,7 +5,7 @@ import {
   ChevronRight, Calendar, AlertCircle, Loader2, Package, 
   PenTool, RotateCcw, X, Check, FileText, AlertTriangle, ShieldCheck, Eye, Trash2, CloudUpload, Clock, Lock, Printer 
 } from 'lucide-react';
-import { clientApi } from '../lib/api';
+import { clientApi, formatOrderNumber, formatDeliveryNoteNumber } from '../lib/api';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { useAlert } from '../../../context/AlertContext';
 import { DeliveryNotePDF } from '../../../components/DeliveryNotePDF';
@@ -370,7 +370,7 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#f6f3ec]/60 border-b border-[#e5e2db] text-[9px] uppercase font-extrabold tracking-wider text-[#717971]">
-                  <th className="px-6 py-4">Order ID</th>
+                  <th className="px-6 py-4">Delivery ID</th>
                   <th className="px-6 py-4">Delivery Date</th>
                   <th className="px-6 py-4">Items</th>
                   <th className="px-6 py-4">Status</th>
@@ -383,56 +383,60 @@ export default function DeliveryNote({ onNavigate }: DeliveryNoteProps) {
                   const status = note?.status || 'pending';
                   const isConfirmed = status === 'confirmed';
                   const isDisputed = status === 'discrepancy';
+                  const displayId = note ? formatDeliveryNoteNumber(note) : formatOrderNumber(order || note?.order_detail);
+
+                  let noteDetails = note?.details || 'Awaiting delivery confirmation';
+                  noteDetails = noteDetails.replace(/#[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, `#${formatOrderNumber(order)}`);
 
                   return (
                     <tr key={note?.id || order?.id || idx} className="hover:bg-[#f2efe7]/40 transition-colors">
-                      <td className="px-6 py-4 font-extrabold text-[#1c1c18]">
-                        #{order?.id || note?.order || 'N/A'}
+                      <td className="px-6 py-4 font-mono font-extrabold text-[#1c1c18] whitespace-nowrap">
+                        {displayId}
                       </td>
-                      <td className="px-6 py-4 text-[#414942] font-medium">
+                      <td className="px-6 py-4 text-[#414942] font-medium whitespace-nowrap">
                         {order?.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
                         }) : (note?.created_at ? new Date(note.created_at).toLocaleDateString('en-US') : 'N/A')}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-semibold text-[#1c1c18]">{order?.items?.length || 1} item(s)</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {isConfirmed && (
-                          <span className="inline-flex items-center gap-1.5 bg-[#bceec8] text-[#00210f] text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
-                            <ShieldCheck size={12} /> Confirmed & Signed
+                          <span className="inline-flex items-center gap-1.5 bg-[#bceec8] text-[#00210f] text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-full uppercase whitespace-nowrap">
+                            <ShieldCheck size={12} /> Confirmed
                           </span>
                         )}
                         {isDisputed && (
-                          <span className="inline-flex items-center gap-1.5 bg-[#ffdad6] text-[#93000a] text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
+                          <span className="inline-flex items-center gap-1.5 bg-[#ffdad6] text-[#93000a] text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-full uppercase whitespace-nowrap">
                             <AlertTriangle size={12} /> Disputed
                           </span>
                         )}
                         {!isConfirmed && !isDisputed && order?.status !== 'delivered' && order?.status !== 'shipped' && (
-                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
-                            <Clock size={12} /> In Preparation
+                          <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-full uppercase whitespace-nowrap">
+                            <Clock size={12} /> Preparing
                           </span>
                         )}
                         {!isConfirmed && !isDisputed && order?.status === 'delivered' && (
-                          <span className="inline-flex items-center gap-1.5 bg-[#fff8e1] text-[#b78103] text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full uppercase">
-                            <PenTool size={12} /> Pending Signature
+                          <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-900 border border-blue-300 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-full uppercase whitespace-nowrap">
+                            <PenTool size={12} /> Unsigned
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 max-w-xs truncate text-[#717971]">
                         {note?.signed_by && <span className="font-bold text-[#1c1c18] block">Signed by: {note.signed_by}</span>}
                         {note?.dispute_reason && <span className="font-semibold text-[#ba1a1a] block truncate">Reason: {note.dispute_reason}</span>}
-                        {!note?.signed_by && !note?.dispute_reason && (note?.details || 'Awaiting delivery confirmation')}
+                        {!note?.signed_by && !note?.dispute_reason && noteDetails}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
                           {/* LOCKED: note exists but order not yet delivered */}
                           {order?.status !== 'delivered' && order?.status !== 'shipped' && note ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 font-bold rounded-lg text-xs">
-                              <Lock size={13} />
-                              Available on delivery
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50/80 border border-amber-200/80 text-amber-800 font-extrabold rounded-xl text-xs whitespace-nowrap shadow-2xs">
+                              <Lock size={13} className="text-amber-700" />
+                              Locked (Preparing)
                             </span>
                           ) : isConfirmed || isDisputed ? (
                             <button
