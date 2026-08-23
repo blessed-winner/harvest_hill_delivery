@@ -2408,107 +2408,96 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   </div>
                 )}
 
-                {/* Active Fresh Deal Banner (Rendered right below finalized negotiation terms when supply is discounted) */}
-                {selectedSupply.is_discounted && (
-                  <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
-                          <Tag size={15} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-xs text-orange-950">Active Fresh Deal</span>
-                            {selectedSupply.discount_price && (
-                              <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
-                                {(() => {
-                                  const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
-                                  const discP = parseFloat(selectedSupply.discount_price);
-                                  if (stdP > 0 && discP < stdP) {
-                                    return `${Math.round(((stdP - discP) / stdP) * 100)}% OFF`;
-                                  }
-                                  return 'Active';
-                                })()}
-                              </span>
-                            )}
+                {/* Active Master Product Fresh Deal Banner (Rendered whenever Master Product has an active Fresh Deal) */}
+                {(() => {
+                  const masterDetail = selectedSupply.product_detail;
+                  const isDisc = !!(masterDetail?.is_discounted || masterDetail?.has_active_discount || masterDetail?.hasActiveDiscount || selectedSupply.is_discounted);
+                  const stdP = Number(masterDetail?.price || masterDetail?.base_price || selectedSupply.agreed_price || selectedSupply.price || 0);
+                  const discP = Number(masterDetail?.discount_price || masterDetail?.effective_price || selectedSupply.discount_price || 0);
+
+                  if (!isDisc || !discP || discP >= stdP || stdP <= 0) return null;
+
+                  const savedRwfPerUnit = stdP - discP;
+                  const savedPercent = Math.round((savedRwfPerUnit / stdP) * 100);
+
+                  return (
+                    <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                            <Tag size={15} />
                           </div>
-                          <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
-                            Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(selectedSupply.discount_price)}</span> / {selectedSupply.unit || 'kg'}
-                            <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
-                              (Standard: {formatCurrency(selectedSupply.agreed_price || selectedSupply.price)})
-                            </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-orange-950">Active Master Product Fresh Deal</span>
+                              <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
+                                {savedPercent}% OFF
+                              </span>
+                            </div>
+                            <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
+                              Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(discP)}</span> / {selectedSupply.unit || 'kg'}
+                              <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
+                                (Standard: {formatCurrency(stdP)})
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Unit Savings</p>
+                          <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
+                            Save {formatCurrency(savedRwfPerUnit)} / {selectedSupply.unit || 'kg'}
                           </p>
                         </div>
                       </div>
+
+                      {/* Actions: Edit Fresh Deal vs Abort Deal */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const targetProd = masterDetail || {
+                              id: selectedSupply.product,
+                              productId: selectedSupply.product,
+                              name: selectedSupply.product_detail?.name || selectedSupply.custom_product_name,
+                              masterSellingPrice: stdP,
+                              isDiscounted: true,
+                              discountPrice: discP,
+                            };
+                            setSelectedSupply(null);
+                            handleOpenDiscountModal(targetProd);
+                          }}
+                          className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Edit3 size={13} className="text-orange-800" />
+                          <span>Edit Deal</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const confirmed = await showConfirm(
+                              "Abort Fresh Deal?",
+                              `Are you sure you want to abort the fresh deal discount for ${masterDetail?.name || selectedSupply.custom_product_name || 'this Master Product'}? Price will revert back to standard (${formatCurrency(stdP)}).`
+                            );
+                            if (confirmed) {
+                              const targetProd = masterDetail || {
+                                id: selectedSupply.product,
+                                productId: selectedSupply.product,
+                                masterSellingPrice: stdP,
+                              };
+                              handleAbortDiscount(targetProd);
+                            }
+                          }}
+                          className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <X size={13} />
+                          <span>Abort Deal</span>
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Total Deal Payout Price & Savings Box */}
-                    {selectedSupply.discount_price && (
-                      (() => {
-                        const qty = parseFloat(selectedSupply.accepted_quantity || selectedSupply.quantity || 0);
-                        const stdP = parseFloat(selectedSupply.agreed_price || selectedSupply.price || selectedSupply.base_price || 0);
-                        const discP = parseFloat(selectedSupply.discount_price);
-                        const discTotal = qty * discP;
-                        const stdTotal = qty * stdP;
-                        const savedBatchRwf = stdTotal - discTotal;
-
-                        return (
-                          <div className="bg-white/90 p-2.5 rounded-xl border border-orange-200/80 flex items-center justify-between text-xs shadow-2xs">
-                            <div>
-                              <p className="text-[9.5px] font-extrabold text-orange-900 uppercase tracking-wider">Total Deal Price ({qty} {selectedSupply.unit || 'kg'})</p>
-                              <p className="text-sm font-black text-orange-950 font-mono mt-0.5">
-                                {formatCurrency(discTotal)}
-                              </p>
-                            </div>
-                            {savedBatchRwf > 0 && (
-                              <div className="text-right">
-                                <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Total Batch Savings</p>
-                                <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
-                                  Save {formatCurrency(savedBatchRwf)}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()
-                    )}
-
-                    {/* Actions: Edit Fresh Deal vs Abort Deal */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const sup = selectedSupply;
-                          setSelectedSupply(null);
-                          setDiscountSupply(sup);
-                          setDiscountIsActive(true);
-                          setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
-                        }}
-                        className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <Edit3 size={13} className="text-orange-800" />
-                        <span>Edit Deal</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const confirmed = await showConfirm(
-                            "Abort Fresh Deal?",
-                            `Are you sure you want to abort the fresh deal discount for ${selectedSupply.product_detail?.name || selectedSupply.custom_product_name || 'this supply'}? Price will revert back to standard (${formatCurrency(selectedSupply.agreed_price || selectedSupply.price)}).`
-                          );
-                          if (confirmed) {
-                            handleAbortDiscount(selectedSupply);
-                          }
-                        }}
-                        className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <X size={13} />
-                        <span>Abort Deal</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {(() => {
                   const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
