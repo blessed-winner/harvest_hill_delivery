@@ -885,6 +885,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       const discPrice = (sup.product_detail?.discount_price || sup.discount_price) ? Number(sup.product_detail?.discount_price || sup.discount_price) : null;
       const effPrice = isDisc && discPrice ? discPrice : masterPrice;
 
+      const isArchived = !!(sup.is_archived || sup.product_detail?.status === 'archived');
+
       if (!map.has(key)) {
         map.set(key, {
           id: key,
@@ -900,10 +902,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           isDiscounted: isDisc,
           discountPrice: discPrice,
           effectivePrice: effPrice,
-          status: isAccepted ? 'accepted' : sup.status,
+          status: isArchived ? 'Archived' : (qty > 0 ? 'Active' : 'Pending'),
           supplies: [sup],
           primarySupply: sup,
-          isArchived: !!sup.is_archived,
+          isArchived: isArchived,
         });
       } else {
         const group = map.get(key)!;
@@ -914,11 +916,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         group.batchCount += 1;
         if (isAccepted) {
           group.totalAvailableStock += qty;
-          group.status = 'accepted';
         }
-        if (sup.is_archived) {
+        if (isArchived) {
           group.isArchived = true;
         }
+        group.status = group.isArchived ? 'Archived' : (group.totalAvailableStock > 0 ? 'Active' : 'Pending');
         const distinctFarmers = new Set(group.supplies.map(s => s.farmer_name || s.farmer?.farm_name || 'Partner Farm'));
         group.supplierCount = distinctFarmers.size;
       }
@@ -1372,7 +1374,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       <td className="px-4 py-3">
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border inline-flex items-center gap-1",
-                          group.status === 'accepted' ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
+                          group.status === 'Active'
+                            ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                            : group.status === 'Archived'
+                              ? "bg-stone-100 text-stone-700 border-stone-300"
+                              : "bg-amber-100 text-amber-900 border-amber-300"
                         )}>
                           {group.status}
                         </span>
