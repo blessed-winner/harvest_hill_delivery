@@ -32,7 +32,7 @@ const navItems = [
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'deliveries', label: 'Delivery Notes', icon: Truck },
   { id: 'invoices', label: 'Invoices', icon: Receipt },
-  { id: 'supplies', label: 'Supplies (Farmer)', icon: Warehouse },
+  { id: 'supplies', label: 'Supplies', icon: Warehouse },
   { id: 'client-negotiations', label: 'Client Deals', icon: Handshake },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
 ] as const;
