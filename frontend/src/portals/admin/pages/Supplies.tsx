@@ -1494,7 +1494,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               selectedSupply && (
                 <div className="space-y-2.5 w-full font-sans text-xs">
                   {/* Custom Submission Specific Actions */}
-                  {isCustomCropSubmission && !selectedSupply.is_archived ? (
+                  {isCustomCropSubmission && !isAlreadyApproved && !selectedSupply.is_archived ? (
                     <div className="space-y-2.5 w-full">
                       <button
                         type="button"
@@ -1508,11 +1508,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         <Handshake size={14} /> Negotiate
                       </button>
 
-                      {isAlreadyApproved ? (
-                        <span className="w-full py-2.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs select-none">
-                          <CheckCircle2 size={14} /> Approved
-                        </span>
-                      ) : isRejected ? (
+                      {isRejected ? (
                         <span className="w-full py-2.5 bg-red-100 text-red-900 border border-red-300 rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-2xs select-none">
                           <X size={14} /> Rejected
                         </span>
