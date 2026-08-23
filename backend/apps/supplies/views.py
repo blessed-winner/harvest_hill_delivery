@@ -438,17 +438,27 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         new_status = instance.status
         
-        # Send notification to farmer when admin updates their harvest (only if farmer is not an admin and not the acting user)
+        # Send notification to farmer when admin updates or approves their harvest
         if self.request.user.role == 'admin' and instance.farmer and instance.farmer.user:
             target_user = instance.farmer.user
             if target_user != self.request.user and target_user.role != 'admin':
                 from apps.notifications.models import Notification
-                prod_name = instance.product.name if instance.product else (instance.custom_product_name or "Harvest Produce")
-                Notification.objects.create(
-                    user=target_user,
-                    title="Harvest Updated",
-                    message=f"Your harvest submission for {prod_name} has been updated by admin."
-                )
+                from apps.notifications.utils import send_live_notification
+                prod_name = instance.product.name if instance.product else (instance.custom_product_name or instance.suggested_product_name or "Harvest Produce")
+                unit_str = instance.unit or 'kg'
+                final_qty = instance.accepted_quantity if (instance.accepted_quantity is not None and float(instance.accepted_quantity) > 0) else instance.quantity
+                final_price = instance.agreed_price if (instance.agreed_price is not None and float(instance.agreed_price) > 0) else instance.price
+
+                if old_status != 'accepted' and new_status == 'accepted':
+                    notif_title = "Harvest Submission Approved"
+                    notif_msg = f"Your harvest submission for '{prod_name}' has been approved into master stock. Final Agreed Terms: {float(final_qty):g} {unit_str} @ RWF {float(final_price):g}/{unit_str}."
+                    send_live_notification(target_user, notif_title, notif_msg)
+                else:
+                    Notification.objects.create(
+                        user=target_user,
+                        title="Harvest Updated",
+                        message=f"Your harvest submission for '{prod_name}' has been updated by admin."
+                    )
         
         # When supply is accepted, subtract quantity from demand quantity_needed
         if old_status != 'accepted' and new_status == 'accepted':

@@ -343,37 +343,44 @@ export function ContextualNegotiationPane({
           )}
 
           {/* Agreement Reached Banner */}
-          {isAccepted && (
-            <div className="p-4 bg-emerald-900 text-white space-y-2 shrink-0 font-sans shadow-md">
-              <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                  <CheckCircle2 size={16} className="text-emerald-400" /> AGREEMENT REACHED
-                </span>
-                <span className="text-[10px] font-bold uppercase bg-emerald-800 border border-emerald-700 px-2.5 py-0.5 rounded-full">
-                  Verified Deal
-                </span>
+          {isAccepted && (() => {
+            const acceptedOfferInThread = thread?.offers?.find((o: any) => o.offer_status === 'ACCEPTED');
+            const agreedQtyVal = acceptedOfferInThread?.quantity ?? supply?.accepted_quantity ?? activeOffer?.quantity ?? availableQty;
+            const agreedPriceVal = acceptedOfferInThread?.price ?? supply?.agreed_price ?? activeOffer?.price ?? askingPrice;
+            const totalPayoutVal = Number(agreedQtyVal) * Number(agreedPriceVal);
+
+            return (
+              <div className="p-4 bg-emerald-900 text-white space-y-2 shrink-0 font-sans shadow-md">
+                <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                    <CheckCircle2 size={16} className="text-emerald-400" /> AGREEMENT REACHED
+                  </span>
+                  <span className="text-[10px] font-bold uppercase bg-emerald-800 border border-emerald-700 px-2.5 py-0.5 rounded-full">
+                    Verified Deal
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Qty</p>
+                    <p className="text-sm font-extrabold text-white mt-0.5">{agreedQtyVal} {unit}</p>
+                  </div>
+                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Price</p>
+                    <p className="text-sm font-extrabold text-white mt-0.5">{formatCurrency(agreedPriceVal)} / {unit}</p>
+                  </div>
+                  <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                    <p className="text-[9px] text-emerald-300 font-bold uppercase">Total Payout</p>
+                    <p className="text-sm font-extrabold text-secondary mt-0.5">
+                      {formatCurrency(totalPayoutVal)}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-emerald-200 text-center font-medium">
+                  Agreed by Harvest Hill Delivery and {contextType === 'FARMER' ? farmerName : 'Client'}.
+                </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center pt-1">
-                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Qty</p>
-                  <p className="text-sm font-extrabold text-white mt-0.5">{supply?.accepted_quantity || (activeOffer ? activeOffer.quantity : availableQty)} {unit}</p>
-                </div>
-                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Agreed Price</p>
-                  <p className="text-sm font-extrabold text-white mt-0.5">{formatCurrency(supply?.agreed_price || (activeOffer ? activeOffer.price : askingPrice))} / {unit}</p>
-                </div>
-                <div className="bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
-                  <p className="text-[9px] text-emerald-300 font-bold uppercase">Total Payout</p>
-                  <p className="text-sm font-extrabold text-secondary mt-0.5">
-                    {formatCurrency((supply?.accepted_quantity || availableQty) * (supply?.agreed_price || askingPrice))}
-                  </p>
-                </div>
-              </div>
-              <p className="text-[11px] text-emerald-200 text-center font-medium">
-                Agreed by Harvest Hill Delivery and {contextType === 'FARMER' ? farmerName : 'Client'}.
-              </p>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Conversation & Structured Offers Timeline */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-surface-container-lowest">

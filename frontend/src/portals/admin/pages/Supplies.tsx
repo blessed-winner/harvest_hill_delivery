@@ -308,12 +308,15 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     setDirectCategory(supply.custom_category || supply.product_detail?.category || 'Vegetables');
     setDirectUnit(supply.custom_unit || supply.unit || 'kg');
 
-    let priceVal = Number(supply.agreed_price || supply.price || supply.proposed_price || 0);
+    const hasAgreedPrice = supply.agreed_price !== null && supply.agreed_price !== undefined && Number(supply.agreed_price) > 0;
+    const hasAcceptedQty = supply.accepted_quantity !== null && supply.accepted_quantity !== undefined && Number(supply.accepted_quantity) > 0;
+
+    let priceVal = hasAgreedPrice ? Number(supply.agreed_price) : Number(supply.price || supply.proposed_price || 0);
     if (priceVal > 0 && priceVal < 100) {
       priceVal = Math.round(priceVal * 1473.97);
     }
     setDirectPrice(priceVal ? String(priceVal) : '');
-    setDirectQuantity(String(supply.accepted_quantity || supply.quantity || ''));
+    setDirectQuantity(hasAcceptedQty ? String(supply.accepted_quantity) : String(supply.quantity || ''));
     setDirectNotes(supply.notes || '');
 
     const imgs: Array<{ id: string; url: string; isFarmer?: boolean; file?: File }> = [];
@@ -1810,6 +1813,36 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   );
                 })()}
               </div>
+
+              {/* Final Agreed Negotiation Terms Summary (Authoritative Source of Truth) */}
+              {((selectedSupply.agreed_price !== null && selectedSupply.agreed_price !== undefined && Number(selectedSupply.agreed_price) > 0) || 
+                (selectedSupply.accepted_quantity !== null && selectedSupply.accepted_quantity !== undefined && Number(selectedSupply.accepted_quantity) > 0) ||
+                selectedSupply.status === 'accepted') && (
+                <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2 shadow-2xs">
+                  <div className="flex justify-between items-center pb-1.5 border-b border-emerald-200">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                      <CheckCircle2 size={14} className="text-emerald-700" /> Final Agreed Negotiation Terms
+                    </span>
+                    <span className="text-[8.5px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                      Authoritative Terms
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Quantity</span>
+                      <span className="font-extrabold text-emerald-950 font-mono">
+                        {selectedSupply.accepted_quantity ?? selectedSupply.quantity} {selectedSupply.unit}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">Agreed Price</span>
+                      <span className="font-extrabold text-emerald-950 font-mono">
+                        {formatCurrency(selectedSupply.agreed_price ?? selectedSupply.price)} / {selectedSupply.unit}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Master Product Supply Composition Breakdown Card */}
