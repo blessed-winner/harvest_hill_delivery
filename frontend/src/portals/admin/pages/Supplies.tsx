@@ -391,39 +391,64 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       setIsSubmittingApproval(true);
 
       const mainImg = directImages.find(img => img.url)?.url || null;
+      const targetProductName = directName.trim();
+      let targetProductId: string | null = null;
 
-      const productPayload: Record<string, any> = {
-        name: directName.trim(),
-        category: directCategory,
-        unit: directUnit,
-        pricing_mode: 'harvest_hill_offers',
-        offered_price: priceNum,
-        base_price: priceNum,
-        quantity_needed: qtyNum,
-        status: 'open',
-        notes: directNotes,
-      };
-
-      if (mainImg) {
-        productPayload.image_url = mainImg;
+      // 1. Check if a Master Product with this exact name already exists in the catalog
+      try {
+        const existingProducts = await api.products.list({ search: targetProductName });
+        const match = (existingProducts || []).find((p: any) => p.name.toLowerCase() === targetProductName.toLowerCase());
+        if (match) {
+          targetProductId = match.id || match.pk;
+        }
+      } catch (e) {
+        console.warn("Could not check existing products:", e);
       }
 
-      const newProduct = await api.products.create(productPayload);
-      const newProdId = newProduct.id || newProduct.pk;
+      // 2. If it does not exist, create a new Master Product with valid unit quantities
+      if (!targetProductId) {
+        const u = directUnit.toLowerCase();
+        let minReqQty = qtyNum;
+        if (u.includes('kg') || u.includes('litre') || u.includes('liter') || u === 'l') {
+          minReqQty = Math.max(qtyNum, 10);
+        } else if (u.includes('crate') || u.includes('jar') || u.includes('bundle')) {
+          minReqQty = Math.max(qtyNum, 5);
+        }
 
+        const productPayload: Record<string, any> = {
+          name: targetProductName,
+          category: directCategory,
+          unit: directUnit,
+          pricing_mode: 'harvest_hill_offers',
+          offered_price: priceNum,
+          base_price: priceNum,
+          quantity_needed: minReqQty,
+          status: 'open',
+          notes: directNotes,
+        };
+
+        if (mainImg) {
+          productPayload.image_url = mainImg;
+        }
+
+        const newProduct = await api.products.create(productPayload);
+        targetProductId = newProduct.id || newProduct.pk;
+      }
+
+      // 3. Link harvest supply to the Master Product and set status to accepted
       await api.supplies.update(approveChoiceSupply.id, {
-        product: newProdId,
+        product: targetProductId,
         status: 'accepted',
         agreed_price: priceNum,
         accepted_quantity: qtyNum,
       });
 
-      toast(`Master Product "${directName}" created directly & harvest supply approved!`, "success");
+      toast(`Master Product "${targetProductName}" published & harvest supply approved!`, "success");
       setApproveChoiceSupply(null);
       setApprovalMode(null);
       loadSupplies();
     } catch (err: any) {
-      console.error("Failed to create master product directly:", err);
+      console.error("Failed to publish master product:", err);
       toast(err.message || "Failed to publish Master Product.", "error");
     } finally {
       setIsSubmittingApproval(false);
