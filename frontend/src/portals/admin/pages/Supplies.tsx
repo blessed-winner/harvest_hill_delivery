@@ -424,8 +424,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           pricing_mode: 'harvest_hill_offers',
           offered_price: priceNum,
           base_price: priceNum,
-          quantity_needed: minReqQty,
-          status: 'open',
+          quantity_needed: 0,
+          status: 'closed',
+          is_currently_needed: false,
           notes: directNotes,
         };
 

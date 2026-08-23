@@ -212,29 +212,31 @@ class ProductSerializer(serializers.ModelSerializer):
             attrs['offered_price'] = None
             attrs['base_price'] = 0.00
 
-        # 2. Dynamic unit-based quantity check
-        unit = attrs.get('unit', instance.unit if instance else 'kg').lower()
-        min_qty = 1
-        min_msg = "Quantity needed must be greater than zero."
-        
-        if 'kg' in unit:
-            min_qty = 10
-            min_msg = "Quantity needed must be at least 10 kg."
-        elif 'litre' in unit or 'liter' in unit or unit == 'l':
-            min_qty = 10
-            min_msg = "Quantity needed must be at least 10 litres."
-        elif 'crate' in unit:
-            min_qty = 5
-            min_msg = "Quantity needed must be at least 5 crates."
-        elif 'jar' in unit:
-            min_qty = 5
-            min_msg = "Quantity needed must be at least 5 jars."
-        elif 'bundle' in unit:
-            min_qty = 5
-            min_msg = "Quantity needed must be at least 5 bundles."
+        # 2. Dynamic unit-based quantity check (only for OPEN active requirements)
+        status_val = attrs.get('status', instance.status if instance else 'open')
+        if status_val == 'open':
+            unit = attrs.get('unit', instance.unit if instance else 'kg').lower()
+            min_qty = 1
+            min_msg = "Quantity needed must be greater than zero."
+            
+            if 'kg' in unit:
+                min_qty = 10
+                min_msg = "Quantity needed must be at least 10 kg."
+            elif 'litre' in unit or 'liter' in unit or unit == 'l':
+                min_qty = 10
+                min_msg = "Quantity needed must be at least 10 litres."
+            elif 'crate' in unit:
+                min_qty = 5
+                min_msg = "Quantity needed must be at least 5 crates."
+            elif 'jar' in unit:
+                min_qty = 5
+                min_msg = "Quantity needed must be at least 5 jars."
+            elif 'bundle' in unit:
+                min_qty = 5
+                min_msg = "Quantity needed must be at least 5 bundles."
 
-        if float(quantity_needed) < min_qty:
-            raise serializers.ValidationError({"quantity_needed": min_msg})
+            if float(quantity_needed) < min_qty:
+                raise serializers.ValidationError({"quantity_needed": min_msg})
 
         # 3. Submission deadline validation for OPEN status
         status_val = attrs.get('status', instance.status if instance else 'open')
