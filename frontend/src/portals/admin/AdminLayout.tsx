@@ -10,6 +10,7 @@ import { OrdersManagement } from './pages/OrdersManagement';
 import { DeliveryNotes } from './pages/DeliveryNotes';
 import { Invoices } from './pages/Invoices';
 import { Supplies } from './pages/Supplies';
+import { ClientNegotiations } from './pages/ClientNegotiations';
 import { Reports } from './pages/Reports';
 import { SettingsPage } from './pages/Settings';
 import { HomepageCustomizer } from './pages/HomepageCustomizer';
@@ -74,6 +75,8 @@ export default function AdminLayout() {
         return <Invoices />;
       case 'supplies':
         return <Supplies />;
+      case 'client-negotiations':
+        return <ClientNegotiations />;
       case 'reports':
         return <Reports />;
       case 'settings':

@@ -14,6 +14,7 @@ export type ViewType =
   | 'deliveries'
   | 'invoices'
   | 'supplies'
+  | 'client-negotiations'
   | 'reports'
   | 'settings'
   | 'homepage';

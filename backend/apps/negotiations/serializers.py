@@ -54,13 +54,30 @@ class SupplyDetailSerializer(serializers.ModelSerializer):
 
 class NegotiationThreadSerializer(serializers.ModelSerializer):
     supply_detail = SupplyDetailSerializer(source='supply', read_only=True)
+    buyer_detail = serializers.SerializerMethodField()
     offers = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
 
     class Meta:
         model = NegotiationThread
-        fields = ['id', 'status', 'price', 'supply_detail', 'offers', 'supply']
+        fields = ['id', 'status', 'price', 'supply_detail', 'buyer_detail', 'offers', 'supply', 'created_at']
+
+    def get_buyer_detail(self, obj):
+        if not obj.buyer:
+            return None
+        buyer = obj.buyer
+        name = buyer.get_full_name() or buyer.username or buyer.email
+        company = ''
+        if hasattr(buyer, 'client_profile') and buyer.client_profile:
+            company = getattr(buyer.client_profile, 'company_name', '') or getattr(buyer.client_profile, 'business_name', '')
+        return {
+            'id': str(buyer.id),
+            'email': buyer.email,
+            'name': name,
+            'role': getattr(buyer, 'role', 'client'),
+            'company': company
+        }
 
     def get_offers(self, obj):
         request = self.context.get('request')
