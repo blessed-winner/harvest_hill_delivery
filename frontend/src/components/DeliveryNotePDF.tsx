@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
-import { X, Download, Loader2 } from 'lucide-react';
+import React, { useRef } from 'react';
+import { X, Printer } from 'lucide-react';
 
 interface DeliveryNotePDFProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface DeliveryNotePDFProps {
 
 export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePDFProps) {
   const printRef = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -31,93 +30,43 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
   const noteId = note?.display_id || note?.displayId || (note?.id ? (String(note.id).startsWith('DLV-') ? note.id : `DLV-${note.id}`) : (order?.id ? `DLV-${order.id}` : 'DLV-000001'));
   const issueDate = note?.created_at ? new Date(note.created_at).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
 
-  const handleDownloadPDF = async () => {
-    const element = printRef.current;
-    if (!element || downloading) return;
-
-    let iframe: HTMLIFrameElement | null = null;
-    try {
-      setDownloading(true);
-
-      let html2pdf = (window as any).html2pdf;
-      if (!html2pdf) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load PDF generator library'));
-          document.head.appendChild(script);
-        });
-        html2pdf = (window as any).html2pdf;
-      }
-
-      // Create isolated sandbox iframe to guarantee zero lab() / oklch() color variable pollution from main page stylesheets
-      iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.style.width = '794px';
-      iframe.style.height = '1123px';
-      iframe.style.border = 'none';
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) throw new Error('Could not access PDF sandbox window');
-
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <style>
-              body {
-                font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                color: #111827;
-                background-color: #ffffff;
-                margin: 0;
-                padding: 24px;
-                box-sizing: border-box;
-              }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-              th { background-color: #f3f4f6; color: #374151; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 10px 12px; }
-              td { border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px; padding: 12px; }
-            </style>
-          </head>
-          <body>
-            ${element.outerHTML}
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-
-      const targetEl = (iframeDoc.body.firstElementChild as HTMLElement) || iframeDoc.body;
-      const filename = `Delivery_Note_${noteId}.pdf`;
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      await html2pdf().set(opt).from(targetEl).save();
-    } catch (err) {
-      console.error('PDF export failed:', err);
-    } finally {
-      if (iframe && iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
-      }
-      setDownloading(false);
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
     }
   };
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          #delivery-note-printable, #delivery-note-printable * {
+            visibility: visible !important;
+          }
+          #delivery-note-printable {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
       <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border border-gray-200 relative my-8">
         
         {/* Top Control Bar */}
@@ -127,19 +76,10 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleDownloadPDF}
-              disabled={downloading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60"
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-4 py-2 bg-[#144227] hover:bg-[#376847] text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
             >
-              {downloading ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" /> Downloading PDF...
-                </>
-              ) : (
-                <>
-                  <Download size={15} /> Export PDF
-                </>
-              )}
+              <Printer size={15} /> Save / Print PDF
             </button>
             <button
               onClick={onClose}
@@ -152,6 +92,7 @@ export function DeliveryNotePDF({ isOpen, onClose, note, order }: DeliveryNotePD
 
         {/* Printable Delivery Note Area */}
         <div 
+          id="delivery-note-printable"
           ref={printRef} 
           className="bg-white p-6 sm:p-10 font-sans text-gray-900 leading-relaxed border border-gray-100 shadow-sm rounded-xl"
           style={{ backgroundColor: '#ffffff', color: '#111827', padding: '32px', fontFamily: 'sans-serif' }}
