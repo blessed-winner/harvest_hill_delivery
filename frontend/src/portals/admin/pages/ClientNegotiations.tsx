@@ -4,28 +4,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Handshake, 
   Search, 
-  Filter, 
-  MessageSquare, 
-  Check, 
   X, 
   Send, 
   Clock, 
-  DollarSign, 
   Package, 
-  User as UserIcon, 
-  Building2, 
   CheckCircle2, 
   AlertCircle, 
   Loader2, 
   Trash2,
   RefreshCw,
-  LayoutGrid,
-  List,
-  TrendingDown,
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Calendar
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiRequest } from '../lib/api';
@@ -41,9 +29,6 @@ export function ClientNegotiations() {
   const [threads, setThreads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // View mode: 'GRID' or 'TABLE'
-  const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,15 +90,6 @@ export function ClientNegotiations() {
       return matchesSearch && matchesStatus;
     });
   }, [threads, searchQuery, statusFilter]);
-
-  // Statistics calculation
-  const stats = useMemo(() => {
-    const total = threads.length;
-    const active = threads.filter(t => t.status !== 'accepted' && t.status !== 'DECLINED').length;
-    const accepted = threads.filter(t => t.status === 'accepted').length;
-    const declined = threads.filter(t => t.status === 'DECLINED').length;
-    return { total, active, accepted, declined };
-  }, [threads]);
 
   // Open negotiation modal
   const handleOpenModal = (thread: any) => {
@@ -243,68 +219,23 @@ export function ClientNegotiations() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
       
-      {/* Intentional Header Banner */}
-      <div className="bg-gradient-to-r from-primary via-[#1e4d30] to-[#143820] text-white p-6 rounded-3xl shadow-lg border border-white/10 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="relative z-10 space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-wider text-emerald-200">
-            <Sparkles size={12} className="text-emerald-300" /> B2B Wholesale Commerce
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">Client Deals & Price Negotiations</h1>
-          <p className="text-xs text-white/80 max-w-xl leading-relaxed font-medium">
-            Review wholesale price proposals, calculate contract valuations, submit counter-offers, and finalize custom B2B pricing with registered clients.
-          </p>
+      {/* Clean, Simple Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-outline-variant/50 shadow-2xs">
+        <div>
+          <h1 className="text-xl font-extrabold text-on-surface">Client B2B Deals</h1>
+          <p className="text-xs text-on-surface-variant font-medium mt-0.5">Review and respond to client price negotiation proposals for wholesale produce</p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-3 self-stretch sm:self-auto">
-          <button
-            onClick={fetchClientNegotiations}
-            className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/25 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer backdrop-blur-md shadow-sm"
-          >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-          </button>
-        </div>
-
-        {/* Ambient background glow pattern */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-white/10 to-transparent pointer-events-none" />
+        <button
+          onClick={fetchClientNegotiations}
+          className="px-3.5 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant/60 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Deals
+        </button>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-outline-variant/40 shadow-2xs space-y-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant block">Total Client Deals</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-on-surface">{stats.total}</span>
-            <span className="text-[11px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">All Time</span>
-          </div>
-        </div>
-
-        <div className="bg-amber-50/70 p-5 rounded-2xl border border-amber-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 block">Active Negotiations</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-950">{stats.active}</span>
-            <span className="text-[11px] font-extrabold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full animate-pulse">In Progress</span>
-          </div>
-        </div>
-
-        <div className="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 block">Finalized Agreements</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-emerald-950">{stats.accepted}</span>
-            <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded-full">Agreed</span>
-          </div>
-        </div>
-
-        <div className="bg-red-50/70 p-5 rounded-2xl border border-red-200 shadow-2xs space-y-1">
-          <span className="text-[10px] font-black uppercase tracking-wider text-red-900 block">Declined Proposals</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-red-950">{stats.declined}</span>
-            <span className="text-[11px] font-extrabold text-red-800 bg-red-200/60 px-2 py-0.5 rounded-full">Closed</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Toolbar: Search, Status Filter & View Toggle */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-4 rounded-2xl border border-outline-variant/40 shadow-2xs">
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-4 rounded-xl border border-outline-variant/40 shadow-2xs">
         <div className="relative flex-1 w-full">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant opacity-60" />
           <input
@@ -316,201 +247,43 @@ export function ClientNegotiations() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/30">
-            {(['ALL', 'ACTIVE', 'ACCEPTED', 'DECLINED'] as const).map(st => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
-                  statusFilter === st 
-                    ? 'bg-white text-primary shadow-xs' 
-                    : 'text-on-surface-variant hover:bg-surface-container-high'
-                }`}
-              >
-                {st === 'ALL' ? 'All' : st === 'ACTIVE' ? 'Active' : st === 'ACCEPTED' ? 'Agreed' : 'Declined'}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/30">
+        <div className="flex items-center gap-1.5 bg-surface-container-low p-1 rounded-xl border border-outline-variant/30 w-full sm:w-auto overflow-x-auto">
+          {(['ALL', 'ACTIVE', 'ACCEPTED', 'DECLINED'] as const).map(st => (
             <button
-              onClick={() => setViewMode('GRID')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'GRID' ? 'bg-white text-primary shadow-xs' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
-              title="Card Grid View"
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                statusFilter === st 
+                  ? 'bg-primary text-white shadow-2xs' 
+                  : 'text-on-surface-variant hover:bg-surface-container-high'
+              }`}
             >
-              <LayoutGrid size={16} />
+              {st === 'ALL' ? 'All Deals' : st === 'ACTIVE' ? 'Active' : st === 'ACCEPTED' ? 'Agreed' : 'Declined'}
             </button>
-            <button
-              onClick={() => setViewMode('TABLE')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'TABLE' ? 'bg-white text-primary shadow-xs' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
-              title="Table List View"
-            >
-              <List size={16} />
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="py-20 text-center bg-white rounded-3xl border border-outline-variant/40 shadow-2xs">
-          <Loader2 size={36} className="text-primary animate-spin mx-auto mb-3" />
-          <p className="text-xs text-on-surface-variant font-medium">Loading client B2B negotiation deals...</p>
-        </div>
-      ) : error ? (
-        <div className="py-16 text-center bg-white rounded-3xl border border-outline-variant/40 shadow-2xs">
-          <AlertCircle size={36} className="text-red-500 mx-auto mb-3" />
-          <p className="text-xs text-red-600 font-bold mb-2">{error}</p>
-          <button onClick={fetchClientNegotiations} className="text-xs font-bold text-primary hover:underline">Retry</button>
-        </div>
-      ) : filteredThreads.length === 0 ? (
-        <div className="py-20 text-center bg-white rounded-3xl border border-outline-variant/40 shadow-2xs space-y-2">
-          <Handshake size={42} className="text-on-surface-variant opacity-30 mx-auto mb-2" />
-          <h3 className="text-base font-extrabold text-on-surface">No Client Deals Found</h3>
-          <p className="text-xs text-on-surface-variant max-w-sm mx-auto">There are no client B2B negotiation proposals matching your search or filter options.</p>
-        </div>
-      ) : viewMode === 'GRID' ? (
-
-        /* ── INTENTIONAL CARD GRID VIEW ──────────────────────────────────── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredThreads.map((thread) => {
-            const buyer = thread.buyer_detail || {};
-            const prod = thread.supply_detail?.product_detail || {};
-            const lastOffer = thread.offers?.[thread.offers.length - 1];
-
-            const clientPrice = lastOffer ? lastOffer.price : (thread.price || thread.supply_detail?.proposed_price || 0);
-            const clientQty = lastOffer ? lastOffer.quantity : (thread.supply_detail?.quantity || 0);
-            const unitStr = thread.supply_detail?.unit || prod.unit || 'kg';
-            const masterPrice = Number(prod.price || prod.base_price || thread.supply_detail?.base_price || 0);
-
-            const totalContractValue = Number(clientPrice) * Number(clientQty);
-            const isAccepted = thread.status === 'accepted';
-            const isDeclined = thread.status === 'DECLINED';
-            const hasUnread = lastOffer && lastOffer.sender === 'client' && !isAccepted && !isDeclined;
-
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={thread.id}
-                onClick={() => handleOpenModal(thread)}
-                className="bg-white rounded-3xl border border-outline-variant/50 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group cursor-pointer border-t-4 border-t-primary"
-              >
-                <div>
-                  
-                  {/* Card Header: Client Info & Status Badge */}
-                  <div className="p-4 bg-surface-container-low/60 border-b border-outline-variant/30 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-[#143820] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
-                        {buyer.name ? buyer.name.charAt(0).toUpperCase() : 'C'}
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="font-extrabold text-xs text-on-surface truncate">{buyer.name || 'Client Buyer'}</h4>
-                        <p className="text-[10px] text-on-surface-variant font-medium truncate">{buyer.company || buyer.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0">
-                      {isAccepted ? (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-950 border border-emerald-300 flex items-center gap-1 shadow-2xs">
-                          <CheckCircle2 size={11} className="text-emerald-700" /> AGREED
-                        </span>
-                      ) : isDeclined ? (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-950 border border-red-300 flex items-center gap-1 shadow-2xs">
-                          <X size={11} className="text-red-700" /> DECLINED
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-1 shadow-2xs animate-pulse">
-                          <Clock size={11} className="text-amber-800" /> ACTIVE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Target Product Banner */}
-                  <div className="p-4 flex items-center gap-3 border-b border-outline-variant/30">
-                    {prod.image_url || prod.image ? (
-                      <img src={prod.image_url || prod.image} alt={prod.name} className="w-12 h-12 rounded-2xl object-cover border border-outline-variant/40 shrink-0 shadow-2xs" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-surface-container-high flex items-center justify-center text-on-surface-variant shrink-0 border border-outline-variant/40">
-                        <Package size={20} />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md inline-block mb-0.5">
-                        {prod.category || 'Produce'}
-                      </span>
-                      <h3 className="font-extrabold text-sm text-on-surface truncate group-hover:text-primary transition-colors">
-                        {prod.name || thread.supply_detail?.custom_product_name || 'Produce Item'}
-                      </h3>
-                      <p className="text-[10.5px] text-on-surface-variant font-medium">
-                        Master Catalog Price: <span className="font-bold text-on-surface">{formatCurrency(masterPrice)} / {unitStr}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Deal Terms Breakdown Box */}
-                  <div className="p-4 space-y-3">
-                    <div className="p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/40 space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Asking Price</span>
-                        <span className="font-extrabold text-emerald-800 text-sm font-mono">{formatCurrency(clientPrice)} / {unitStr}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs border-t border-outline-variant/30 pt-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-on-surface-variant">Target Volume</span>
-                        <span className="font-extrabold text-on-surface font-mono">{Number(clientQty).toLocaleString()} {unitStr}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs border-t border-outline-variant/30 pt-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">Contract Value</span>
-                        <span className="font-black text-primary font-mono text-sm">{formatCurrency(totalContractValue)}</span>
-                      </div>
-                    </div>
-
-                    {/* Latest Message Snippet */}
-                    {lastOffer?.message && (
-                      <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 flex items-start gap-2">
-                        <MessageSquare size={13} className="text-amber-700 shrink-0 mt-0.5" />
-                        <p className="font-medium line-clamp-2 italic">"{lastOffer.message}"</p>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-
-                {/* Card Footer Actions */}
-                <div className="p-4 bg-surface-container-low/40 border-t border-outline-variant/30 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenModal(thread);
-                    }}
-                    className="flex-1 py-2.5 bg-primary hover:bg-[#376847] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
-                  >
-                    <Handshake size={14} /> Respond & Manage
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteThread(thread.id, e)}
-                    className="p-2.5 text-on-surface-variant hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border border-outline-variant/40"
-                    title="Delete Thread"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-
-              </motion.div>
-            );
-          })}
-        </div>
-      ) : (
-
-        /* ── TABLE LIST VIEW ─────────────────────────────────────────────── */
-        <div className="bg-white rounded-3xl border border-outline-variant/50 overflow-hidden shadow-2xs">
+      {/* Client Negotiations Table Display */}
+      <div className="bg-white rounded-2xl border border-outline-variant/50 overflow-hidden shadow-2xs">
+        {loading ? (
+          <div className="py-16 text-center">
+            <Loader2 size={32} className="text-primary animate-spin mx-auto mb-3" />
+            <p className="text-xs text-on-surface-variant font-medium">Loading B2B client negotiations...</p>
+          </div>
+        ) : error ? (
+          <div className="py-16 text-center">
+            <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
+            <p className="text-xs text-red-600 font-bold mb-2">{error}</p>
+            <button onClick={fetchClientNegotiations} className="text-xs font-bold text-primary hover:underline">Retry</button>
+          </div>
+        ) : filteredThreads.length === 0 ? (
+          <div className="py-16 text-center">
+            <Handshake size={36} className="text-on-surface-variant opacity-30 mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-on-surface">No Client Deals Found</h3>
+            <p className="text-xs text-on-surface-variant mt-1">There are no client B2B negotiation proposals matching your filter.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -538,6 +311,8 @@ export function ClientNegotiations() {
 
                   return (
                     <tr key={thread.id} className="hover:bg-surface-container-low/50 transition-colors">
+                      
+                      {/* Client info */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
@@ -550,6 +325,7 @@ export function ClientNegotiations() {
                         </div>
                       </td>
 
+                      {/* Product info */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           {prod.image_url || prod.image ? (
@@ -566,6 +342,7 @@ export function ClientNegotiations() {
                         </div>
                       </td>
 
+                      {/* Proposed terms */}
                       <td className="py-3.5 px-4 font-mono">
                         <div className="space-y-0.5">
                           <span className="font-extrabold text-emerald-800 block">{formatCurrency(clientPrice)} / {unitStr}</span>
@@ -573,26 +350,29 @@ export function ClientNegotiations() {
                         </div>
                       </td>
 
+                      {/* Master catalog price */}
                       <td className="py-3.5 px-4 font-mono font-bold text-on-surface-variant">
                         {formatCurrency(prod.price || prod.base_price || thread.supply_detail?.base_price)} / {unitStr}
                       </td>
 
+                      {/* Status */}
                       <td className="py-3.5 px-4">
                         {isAccepted ? (
-                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 inline-flex items-center gap-1">
                             <CheckCircle2 size={11} /> AGREED
                           </span>
                         ) : isDeclined ? (
-                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-black bg-red-100 text-red-950 border border-red-300 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-extrabold bg-red-100 text-red-900 border border-red-300 inline-flex items-center gap-1">
                             <X size={11} /> DECLINED
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-black bg-amber-100 text-amber-950 border border-amber-300 inline-flex items-center gap-1">
-                            <Clock size={11} /> ACTIVE
+                          <span className="px-2.5 py-1 rounded-full text-[9.5px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">
+                            <Clock size={11} /> IN NEGOTIATION
                           </span>
                         )}
                       </td>
 
+                      {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -618,8 +398,8 @@ export function ClientNegotiations() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── CLIENT NEGOTIATION MODAL DIALOG ─────────────────────────────────── */}
       <AnimatePresence>
@@ -629,56 +409,56 @@ export function ClientNegotiations() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]"
+              className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-outline-variant/40 flex flex-col max-h-[90vh]"
             >
               
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-outline-variant/40 pb-4 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-primary to-[#143820] text-white rounded-2xl shadow-2xs">
-                    <Handshake size={22} />
+                  <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                    <Handshake size={20} />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-on-surface">Client B2B Deal Negotiation</h3>
+                    <h3 className="text-base font-extrabold text-on-surface">Client B2B Negotiation</h3>
                     <p className="text-xs text-on-surface-variant font-medium">
-                      Client: <span className="font-extrabold text-on-surface">{activeThread.buyer_detail?.name || 'Client'}</span> ({activeThread.buyer_detail?.email})
+                      Client: <span className="font-bold text-on-surface">{activeThread.buyer_detail?.name || 'Client'}</span> ({activeThread.buyer_detail?.email})
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setActiveThread(null)}
-                  className="p-2 text-on-surface-variant hover:text-on-surface rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer"
+                  className="p-1.5 text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Product Summary Header Card */}
-              <div className="mt-4 p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/30 flex items-center justify-between shrink-0 shadow-2xs">
+              <div className="mt-4 p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 flex items-center justify-between shrink-0 shadow-2xs">
                 <div className="flex items-center gap-3">
                   {activeThread.supply_detail?.product_detail?.image_url ? (
-                    <img src={activeThread.supply_detail.product_detail.image_url} alt="Product" className="w-11 h-11 rounded-xl object-cover border border-outline-variant/40 shadow-2xs" />
+                    <img src={activeThread.supply_detail.product_detail.image_url} alt="Product" className="w-10 h-10 rounded-lg object-cover border border-outline-variant/40" />
                   ) : (
-                    <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center text-on-surface-variant border border-outline-variant/40">
-                      <Package size={20} />
+                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-on-surface-variant">
+                      <Package size={18} />
                     </div>
                   )}
                   <div>
-                    <span className="font-black text-on-surface text-xs block">
+                    <span className="font-extrabold text-on-surface text-xs block">
                       {activeThread.supply_detail?.product_detail?.name || activeThread.supply_detail?.custom_product_name || 'Produce Item'}
                     </span>
                     <span className="text-[10.5px] text-on-surface-variant font-medium block">
-                      Master Price: <span className="font-bold text-primary">{formatCurrency(activeThread.supply_detail?.product_detail?.price || activeThread.supply_detail?.base_price)}</span>
+                      Master Selling Price: <span className="font-bold text-primary">{formatCurrency(activeThread.supply_detail?.product_detail?.price || activeThread.supply_detail?.base_price)}</span>
                     </span>
                   </div>
                 </div>
                 <div>
                   {activeThread.status === 'accepted' ? (
-                    <span className="px-3 py-1 bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-full font-black text-[10px]">AGREED</span>
+                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full font-bold text-[10px]">AGREED</span>
                   ) : activeThread.status === 'DECLINED' ? (
-                    <span className="px-3 py-1 bg-red-100 text-red-950 border border-red-300 rounded-full font-black text-[10px]">DECLINED</span>
+                    <span className="px-2.5 py-1 bg-red-100 text-red-900 border border-red-300 rounded-full font-bold text-[10px]">DECLINED</span>
                   ) : (
-                    <span className="px-3 py-1 bg-amber-100 text-amber-950 border border-amber-300 rounded-full font-black text-[10px]">ACTIVE</span>
+                    <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full font-bold text-[10px]">IN PROGRESS</span>
                   )}
                 </div>
               </div>
@@ -690,24 +470,24 @@ export function ClientNegotiations() {
                     const isAdmin = of.sender === 'admin';
                     return (
                       <div key={idx} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                        <div className={`p-3.5 rounded-2xl max-w-[85%] text-xs border ${
+                        <div className={`p-3 rounded-2xl max-w-[85%] text-xs border ${
                           isAdmin 
-                            ? 'bg-primary text-white border-primary rounded-tr-xs shadow-md' 
+                            ? 'bg-primary text-white border-primary rounded-tr-xs' 
                             : 'bg-surface-container-low text-on-surface border-outline-variant/40 rounded-tl-xs shadow-2xs'
                         }`}>
                           <div className="flex items-center justify-between gap-4 border-b pb-1.5 mb-1.5 border-current/20 text-[10px]">
-                            <span className="font-black uppercase tracking-wider">{isAdmin ? 'Harvest Hill Delivery (Admin)' : (of.sender_name || 'Client Buyer')}</span>
+                            <span className="font-bold uppercase tracking-wider">{isAdmin ? 'Harvest Hill Delivery (Admin)' : (of.sender_name || 'Client Buyer')}</span>
                             <span className="opacity-75 font-mono">{of.created_at ? new Date(of.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                           </div>
                           <div className="space-y-1">
-                            <p className="font-black text-sm">
+                            <p className="font-extrabold text-sm">
                               RWF {Number(of.price).toLocaleString()} / {activeThread.supply_detail?.unit || 'kg'}
                             </p>
-                            <p className="text-[11px] opacity-90 font-extrabold">
+                            <p className="text-[11px] opacity-90 font-bold">
                               Quantity: {Number(of.quantity).toLocaleString()} {activeThread.supply_detail?.unit || 'kg'} (Total: {formatCurrency(of.total)})
                             </p>
                             {of.message && (
-                              <p className="mt-2 text-xs opacity-95 leading-relaxed font-medium bg-black/10 p-2.5 rounded-xl border border-current/10">
+                              <p className="mt-1.5 text-xs opacity-95 leading-relaxed font-medium bg-black/10 p-2 rounded-lg">
                                 "{of.message}"
                               </p>
                             )}
@@ -728,7 +508,7 @@ export function ClientNegotiations() {
                 <form onSubmit={handleSendCounterOffer} className="pt-3 border-t border-outline-variant/40 space-y-3 shrink-0">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] uppercase font-black text-on-surface-variant tracking-wider mb-1">
+                      <label className="block text-[10px] uppercase font-extrabold text-on-surface-variant tracking-wider mb-1">
                         Counter Price (RWF per {activeThread.supply_detail?.unit || 'kg'})
                       </label>
                       <input
@@ -737,11 +517,11 @@ export function ClientNegotiations() {
                         required
                         value={counterPrice}
                         onChange={(e) => setCounterPrice(e.target.value)}
-                        className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-black text-on-surface focus:outline-none focus:border-primary font-mono"
+                        className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-bold text-on-surface focus:outline-none focus:border-primary font-mono"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase font-black text-on-surface-variant tracking-wider mb-1">
+                      <label className="block text-[10px] uppercase font-extrabold text-on-surface-variant tracking-wider mb-1">
                         Counter Volume ({activeThread.supply_detail?.unit || 'kg'})
                       </label>
                       <input
@@ -750,21 +530,21 @@ export function ClientNegotiations() {
                         required
                         value={counterQty}
                         onChange={(e) => setCounterQty(e.target.value)}
-                        className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-black text-on-surface focus:outline-none focus:border-primary font-mono"
+                        className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-bold text-on-surface focus:outline-none focus:border-primary font-mono"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] uppercase font-black text-on-surface-variant tracking-wider mb-1">
-                      Admin Notes / Counter Terms
+                    <label className="block text-[10px] uppercase font-extrabold text-on-surface-variant tracking-wider mb-1">
+                      Notes / Admin Counter Message
                     </label>
                     <input
                       type="text"
                       placeholder="Enter counter message to client..."
                       value={counterMessage}
                       onChange={(e) => setCounterMessage(e.target.value)}
-                      className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-semibold text-on-surface focus:outline-none focus:border-primary"
+                      className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-3.5 py-2 text-xs font-medium text-on-surface focus:outline-none focus:border-primary"
                     />
                   </div>
 
@@ -773,14 +553,14 @@ export function ClientNegotiations() {
                       type="button"
                       onClick={handleAcceptProposal}
                       disabled={submittingAction}
-                      className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
                       <CheckCircle2 size={15} /> Accept Client Terms
                     </button>
                     <button
                       type="submit"
                       disabled={submittingAction}
-                      className="flex-1 py-2.5 bg-primary hover:bg-[#376847] text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      className="flex-1 py-2.5 bg-primary hover:bg-[#376847] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
                       <Send size={14} /> Send Counter Offer
                     </button>
