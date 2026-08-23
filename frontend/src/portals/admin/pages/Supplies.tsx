@@ -1368,12 +1368,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           )}
         </div>
 
-        {/* Dynamic Pagination Bar */}
-        {masterProductGroups.length > 0 && activeStatusTab !== 'Custom Submissions' && (
-          <div className="px-4 sm:px-6 py-3 border-t border-outline-variant/40 bg-surface-container-lowest flex items-center justify-between gap-4 shrink-0">
-            <p className="text-xs font-semibold text-on-surface-variant">
-              Showing <span className="font-bold text-on-surface">{indexOfFirstGroup + 1}</span> to <span className="font-bold text-on-surface">{Math.min(indexOfFirstGroup + groupsPerPage, masterProductGroups.length)}</span> of <span className="font-bold text-on-surface">{masterProductGroups.length}</span> master products
-            </p>
+        {/* Dynamic Pagination Bar (Only displayed when products exceed single-page threshold) */}
+        {masterProductGroups.length > groupsPerPage && activeStatusTab !== 'Custom Submissions' && (
+          <div className="px-4 sm:px-6 py-3 border-t border-outline-variant/40 bg-surface-container-lowest flex items-center justify-end gap-4 shrink-0">
             <div className="flex items-center gap-1.5">
               <button
                 disabled={currentPage === 1}
