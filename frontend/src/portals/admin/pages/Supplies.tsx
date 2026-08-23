@@ -192,35 +192,47 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     fetchAvailableClients();
   };
 
+  const handleOpenDiscountModal = (targetObj: any) => {
+    setDiscountSupply(targetObj);
+    const isDisc = !!(targetObj.isDiscounted || targetObj.is_discounted || targetObj.product_detail?.is_discounted);
+    const discPrice = targetObj.discountPrice ?? targetObj.discount_price ?? targetObj.product_detail?.discount_price ?? null;
+    setDiscountIsActive(isDisc);
+    setDiscountPriceInput(discPrice ? String(discPrice) : '');
+  };
+
   const handleSaveDiscountOffer = async () => {
     if (!discountSupply) return;
     try {
       setIsSavingDiscount(true);
+      const targetProdId = discountSupply.productId || discountSupply.product || discountSupply.product_detail?.id || discountSupply.id;
       const parsedDiscountPrice = discountPriceInput ? parseFloat(discountPriceInput) : null;
-      await api.supplies.update(discountSupply.id, {
+
+      await api.products.update(targetProdId, {
         is_discounted: discountIsActive,
         discount_price: discountIsActive ? parsedDiscountPrice : null,
       });
 
-      toast(`Fresh deal discount settings saved!`, "success");
+      toast(`Fresh Deal discount settings saved for Master Product!`, "success");
       setDiscountSupply(null);
       loadSupplies();
     } catch (err: any) {
-      toast(err.message || "Failed to save discount settings.", "error");
+      toast(err.message || "Failed to save Master Product discount settings.", "error");
     } finally {
       setIsSavingDiscount(false);
     }
   };
 
-  const handleAbortDiscount = async (supply: any) => {
+  const handleAbortDiscount = async (targetObj: any) => {
+    if (!targetObj) return;
     try {
-      await api.supplies.update(supply.id, {
+      const targetProdId = targetObj.productId || targetObj.product || targetObj.product_detail?.id || targetObj.id;
+      await api.products.update(targetProdId, {
         is_discounted: false,
         discount_price: null,
       });
-      const stdPrice = supply.agreed_price || supply.price;
-      toast(`Fresh deal aborted. Price reverted to standard (${formatCurrency(stdPrice)}).`, "success");
-      setSelectedSupply(null);
+      const stdPrice = targetObj.masterSellingPrice || targetObj.price || targetObj.base_price || 0;
+      toast(`Fresh deal aborted. Master Product price reverted to standard (${formatCurrency(stdPrice)}).`, "success");
+      setDiscountSupply(null);
       loadSupplies();
     } catch (err: any) {
       toast(err.message || "Failed to abort fresh deal.", "error");
@@ -1342,9 +1354,25 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                         </p>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-mono text-xs font-bold text-primary">
-                          {formatCurrency(group.masterSellingPrice)} / {group.unit || 'kg'}
-                        </p>
+                        {group.isDiscounted && group.discountPrice && group.discountPrice < group.masterSellingPrice ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono text-xs font-black text-orange-600">
+                                {formatCurrency(group.discountPrice)} / {group.unit || 'kg'}
+                              </span>
+                              <span className="text-[8px] font-black uppercase tracking-wider bg-orange-100 text-orange-900 border border-orange-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5 shadow-2xs">
+                                <Tag size={9} className="text-orange-700" /> Fresh Deal
+                              </span>
+                            </div>
+                            <p className="font-mono text-[10px] text-on-surface-variant/60 line-through">
+                              {formatCurrency(group.masterSellingPrice)} / {group.unit || 'kg'}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="font-mono text-xs font-bold text-primary">
+                            {formatCurrency(group.masterSellingPrice)} / {group.unit || 'kg'}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn(
@@ -1529,23 +1557,31 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                       )}
 
                       {!selectedSupply.is_archived && (
-                        <div className={cn("grid gap-2.5", selectedSupply.is_discounted ? "grid-cols-1" : "grid-cols-2")}>
-                          {!selectedSupply.is_discounted && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const sup = selectedSupply;
-                                setSelectedSupply(null);
-                                setDiscountSupply(sup);
-                                setDiscountIsActive(!!sup.is_discounted);
-                                setDiscountPriceInput(sup.discount_price ? String(sup.discount_price) : '');
-                              }}
-                              className="w-full py-2.5 bg-orange-50/80 border border-orange-200 text-orange-950 rounded-xl font-extrabold hover:bg-orange-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs"
-                            >
-                              <Tag size={13} className="text-orange-700" />
-                              <span>Fresh Deals</span>
-                            </button>
-                          )}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targetObj = selectedSupply.product_detail || {
+                                id: selectedSupply.product,
+                                productId: selectedSupply.product,
+                                name: selectedSupply.product_detail?.name || selectedSupply.custom_product_name,
+                                masterSellingPrice: selectedSupply.product_detail?.price || selectedSupply.agreed_price || selectedSupply.price,
+                                isDiscounted: selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted,
+                                discountPrice: selectedSupply.product_detail?.discount_price || selectedSupply.discount_price,
+                              };
+                              setSelectedSupply(null);
+                              handleOpenDiscountModal(targetObj);
+                            }}
+                            className={cn(
+                              "w-full py-2.5 rounded-xl font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs shadow-2xs",
+                              (selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted)
+                                ? "bg-orange-100 text-orange-950 border border-orange-300 hover:bg-orange-200"
+                                : "bg-orange-50/80 text-orange-950 border border-orange-200 hover:bg-orange-100"
+                            )}
+                          >
+                            <Tag size={13} className="text-orange-700" />
+                            <span>{(selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted) ? 'Fresh Deal (Active)' : 'Fresh Deals'}</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
@@ -1887,6 +1923,34 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             {siblingSupplies.length} Supply Batch{siblingSupplies.length > 1 ? 'es' : ''} • {totalAcceptedStock.toLocaleString()} {selectedSupply.unit} Total Stock
                           </p>
                         </div>
+
+                        {selectedSupply.product && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targetProd = selectedSupply.product_detail || {
+                                id: selectedSupply.product,
+                                productId: selectedSupply.product,
+                                name: currentProdName,
+                                masterSellingPrice: selectedSupply.product_detail?.price || selectedSupply.agreed_price || selectedSupply.price,
+                                isDiscounted: selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted,
+                                discountPrice: selectedSupply.product_detail?.discount_price || selectedSupply.discount_price,
+                              };
+                              setSelectedSupply(null);
+                              handleOpenDiscountModal(targetProd);
+                            }}
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0",
+                              (selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted)
+                                ? "bg-orange-100 border border-orange-300 text-orange-950 hover:bg-orange-200"
+                                : "bg-orange-50 border border-orange-200 text-orange-900 hover:bg-orange-100"
+                            )}
+                            title="Configure Fresh Deals discount for this Master Product"
+                          >
+                            <Tag size={13} className="text-orange-700" />
+                            <span>{(selectedSupply.product_detail?.is_discounted || selectedSupply.is_discounted) ? 'Fresh Deal (Active)' : 'Fresh Deals'}</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
@@ -2609,8 +2673,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   <Tag size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base text-[#1c1c18]">Delegate Fresh Deal Discount</h3>
-                  <p className="text-[10px] text-[#717971] font-semibold">Configure seasonal promotion offer pricing</p>
+                  <h3 className="font-extrabold text-base text-[#1c1c18]">Master Product Fresh Deal</h3>
+                  <p className="text-[10px] text-[#717971] font-semibold">Configure promotional offer for Master Product catalog</p>
                 </div>
               </div>
               <button
@@ -2624,14 +2688,16 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
             <div className="p-3.5 bg-[#f6f3ec]/60 rounded-2xl border border-[#e5e2db] flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Crop Batch</p>
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Master Product</p>
                 <p className="text-xs font-extrabold text-[#1c1c18] mt-0.5">
-                  {discountSupply.product_detail?.name || discountSupply.custom_product_name || 'Harvest Supply'}
+                  {discountSupply.name || discountSupply.product_detail?.name || discountSupply.custom_product_name || 'Produce'}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Standard Price</p>
-                <p className="text-xs font-black text-primary font-mono mt-0.5">{formatCurrency(discountSupply.agreed_price || discountSupply.price)}</p>
+                <p className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider">Standard Selling Price</p>
+                <p className="text-xs font-black text-primary font-mono mt-0.5">
+                  {formatCurrency(discountSupply.masterSellingPrice || discountSupply.price || discountSupply.base_price || discountSupply.agreed_price || 0)}
+                </p>
               </div>
             </div>
 
@@ -2640,7 +2706,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 <div>
                   <p className="text-xs font-extrabold text-orange-950">Enable Fresh Deals Discount</p>
                   <p className="text-[10px] text-orange-800 leading-relaxed mt-0.5">
-                    Features supply under Seasonal Discounts on client landing page.
+                    Promotes Master Product under Fresh Deals across landing page, client catalog & marketplace.
                   </p>
                 </div>
                 <input
@@ -2655,7 +2721,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 <div className="space-y-3 pt-3 border-t border-orange-200">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-extrabold text-orange-950 uppercase tracking-wider block">
-                      Discounted Offer Price (RWF per {discountSupply.unit})
+                      Discounted Offer Price (RWF per {discountSupply.unit || 'kg'})
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-900">RWF</span>
@@ -2671,7 +2737,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                   {discountPriceInput && parseFloat(discountPriceInput) > 0 && (
                     (() => {
-                      const stdPrice = parseFloat(discountSupply.agreed_price || discountSupply.price || discountSupply.base_price || 0);
+                      const stdPrice = parseFloat(discountSupply.masterSellingPrice || discountSupply.price || discountSupply.base_price || discountSupply.agreed_price || 0);
                       const discPrice = parseFloat(discountPriceInput);
                       if (stdPrice > 0 && discPrice > 0 && discPrice < stdPrice) {
                         const savedRwf = stdPrice - discPrice;
