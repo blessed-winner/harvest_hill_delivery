@@ -3,13 +3,20 @@ from django.db import migrations, models
 
 def seed_sequence_counters(apps, schema_editor):
     DisplaySequenceCounter = apps.get_model('common', 'DisplaySequenceCounter')
-    Product = apps.get_model('products', 'Product')
-    Supply = apps.get_model('supplies', 'Supply')
-    Order = apps.get_model('orders', 'Order')
 
-    def get_max_num(model, field_name, prefix):
+    def safe_get_max(app_name, model_name, field_name, prefix):
         max_num = 0
         try:
+            model = apps.get_model(app_name, model_name)
+            table_name = model._meta.db_table
+            with schema_editor.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = %s AND column_name = %s;
+                """, [table_name, field_name])
+                if not cursor.fetchone():
+                    return 0
+
             for val in model.objects.exclude(**{f"{field_name}__isnull": True}).values_list(field_name, flat=True):
                 if val and isinstance(val, str) and val.startswith(prefix):
                     match = re.search(r'\d+', val.replace(prefix, ''))
@@ -21,9 +28,9 @@ def seed_sequence_counters(apps, schema_editor):
             print(f"Migration scan note for {prefix}: {e}")
         return max_num
 
-    mst_max = get_max_num(Product, 'display_id', 'MST-')
-    sup_max = get_max_num(Supply, 'supply_number', 'SUP-')
-    ord_max = get_max_num(Order, 'order_number', 'ORD-')
+    mst_max = safe_get_max('products', 'Product', 'display_id', 'MST-')
+    sup_max = safe_get_max('supplies', 'Supply', 'supply_number', 'SUP-')
+    ord_max = safe_get_max('orders', 'Order', 'order_number', 'ORD-')
 
     DisplaySequenceCounter.objects.update_or_create(
         key='master_product',
