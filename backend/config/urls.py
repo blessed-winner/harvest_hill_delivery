@@ -1,8 +1,16 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+def root_health_check(request):
+    return JsonResponse({
+        "message": "Harvest Hill API is running",
+        "status": "ok"
+    })
+
 urlpatterns = [
+    path('', root_health_check, name='root_health_check'),
     path('admin/', admin.site.urls),
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/farmer/', include('apps.accounts.farmer_urls')),
