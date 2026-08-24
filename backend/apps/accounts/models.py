@@ -97,7 +97,7 @@ class FarmerApplication(models.Model):
 class SystemSetting(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key = models.CharField(max_length=100, unique=True)
-    value = models.CharField(max_length=255, blank=True, default='')
+    value = models.TextField(blank=True, default='')
 
     def __str__(self):
         return f"{self.key}={self.value}"
