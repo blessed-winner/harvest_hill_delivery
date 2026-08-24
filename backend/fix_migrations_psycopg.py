@@ -21,16 +21,26 @@ try:
             """)
 
             # 1. Check for mismatched column data types (e.g. integer/bigint vs UUID)
-            tables_to_check = [
+            uuid_tables = [
+                ('orders', 'orders_order'),
+                ('orders', 'orders_orderitem'),
                 ('negotiations', 'negotiations_negotiationoffer'),
                 ('negotiations', 'negotiations_negotiationthread'),
                 ('delivery_notes', 'delivery_notes_deliverynote'),
                 ('delivery_notes', 'delivery_notes_deliverynoteitem'),
                 ('invoices', 'invoices_invoice'),
                 ('notifications', 'notifications_notification'),
+                ('supplies', 'supplies_supply'),
+                ('supplies', 'supplies_supplyimage'),
+                ('products', 'products_product'),
+                ('products', 'products_productimage'),
+                ('products', 'products_freshdeal'),
+                ('products', 'products_productrequest'),
+                ('accounts', 'accounts_farmerprofile'),
+                ('accounts', 'accounts_clientprofile'),
             ]
 
-            for app_name, table_name in tables_to_check:
+            for app_name, table_name in uuid_tables:
                 cur.execute("""
                     SELECT data_type 
                     FROM information_schema.columns 
