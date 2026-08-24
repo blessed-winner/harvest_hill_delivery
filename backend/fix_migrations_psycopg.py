@@ -7,7 +7,7 @@ if not db_url:
     exit(0)
 
 try:
-    print("Connecting to PostgreSQL database to repair django_migrations history...")
+    print("Connecting to PostgreSQL database to repair migration schema & history...")
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
             # Ensure django_migrations table exists
@@ -19,10 +19,34 @@ try:
                     applied timestamp with time zone NOT NULL
                 );
             """)
-            
+
+            # 1. Check for mismatched column data types (e.g. integer/bigint vs UUID)
+            tables_to_check = [
+                ('negotiations', 'negotiations_negotiationoffer'),
+                ('negotiations', 'negotiations_negotiationthread'),
+                ('delivery_notes', 'delivery_notes_deliverynote'),
+                ('delivery_notes', 'delivery_notes_deliverynoteitem'),
+                ('invoices', 'invoices_invoice'),
+                ('notifications', 'notifications_notification'),
+            ]
+
+            for app_name, table_name in tables_to_check:
+                cur.execute("""
+                    SELECT data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = %s AND column_name = 'id';
+                """, (table_name,))
+                row = cur.fetchone()
+                if row:
+                    data_type = row[0].lower()
+                    if 'uuid' not in data_type:
+                        print(f"Table '{table_name}' has legacy non-UUID 'id' ({data_type}). Dropping table and resetting '{app_name}' migrations...")
+                        cur.execute(f"DROP TABLE IF EXISTS {table_name} CASCADE;")
+                        cur.execute("DELETE FROM django_migrations WHERE app = %s;", (app_name,))
+
+            # 2. Repair missing sequence history for products app
             cur.execute("SELECT name FROM django_migrations WHERE app='products';")
             rows = [r[0] for r in cur.fetchall()]
-            print("Currently applied products migrations in DB:", rows)
 
             products_migrations = [
                 '0001_initial',
@@ -53,6 +77,6 @@ try:
                         )
 
             conn.commit()
-            print("Successfully verified and repaired django_migrations history!")
+            print("Successfully verified and repaired django_migrations history and column schemas!")
 except Exception as err:
     print("Migration repair notice:", err)
