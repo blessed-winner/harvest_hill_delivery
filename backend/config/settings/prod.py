@@ -4,8 +4,9 @@ DEBUG = False
 
 # Database connection pooling for production
 DATABASES = {
-    "default": env.db("DATABASE_URL", conn_max_age=600)
+    "default": env.db("DATABASE_URL")
 }
+DATABASES["default"]["CONN_MAX_AGE"] = 600
 
 # Production security headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

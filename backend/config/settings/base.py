@@ -14,10 +14,10 @@ env = environ.Env(
 # Read .env file if it exists
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = env('SECRET_KEY')
-DEBUG = env('DEBUG')
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-prod-fallback-secret-key-harvest-hill-2026')
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 # Application definition
 INSTALLED_APPS = [
@@ -157,7 +157,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
-    'SIGNING_KEY': env('JWT_SIGNING_KEY'),
+    'SIGNING_KEY': env('JWT_SIGNING_KEY', default=SECRET_KEY),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
@@ -177,9 +177,9 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': env('CLOUDINARY_API_KEY'),
-    'API_SECRET': env('CLOUDINARY_API_SECRET'),
+    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME', default='dygqfwbsu'),
+    'API_KEY': env('CLOUDINARY_API_KEY', default='888566947262174'),
+    'API_SECRET': env('CLOUDINARY_API_SECRET', default=''),
 }
 
 # Django 5.1+ removed DEFAULT_FILE_STORAGE; STORAGES is required for non-local media.
