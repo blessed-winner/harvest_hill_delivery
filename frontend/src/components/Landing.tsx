@@ -314,7 +314,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
   // Helper to resolve unique items for a category
   const getSectionItems = (categoryTarget: string) => {
-    const targetLower = categoryTarget.toLowerCase();
+    const targetLower = (categoryTarget || '').toLowerCase();
     const masterItems = activeMasterProducts;
 
     if (masterItems.length === 0) {
@@ -322,9 +322,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     if (targetLower === 'deals') {
-      const matchedDeals = masterItems.filter((s: any) => s.is_discounted || s.has_active_discount || s.hasActiveDiscount);
-      if (matchedDeals.length > 0) return matchedDeals;
-      return masterItems;
+      return masterItems.filter((s: any) => s.is_discounted || s.has_active_discount || s.hasActiveDiscount);
     }
     
     if (targetLower === 'popular' || targetLower === 'all') {
@@ -336,36 +334,42 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     if (targetLower.includes('vegetable') || targetLower.includes('herb')) {
-      const res = masterItems.filter((p: any) => {
+      return masterItems.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
-        return cat.includes('vegetable') || cat.includes('herb');
+        const name = (p.name || '').toLowerCase();
+        return cat.includes('vegetable') || cat.includes('herb') || name.includes('pepper') || name.includes('tomato') || name.includes('potato') || name.includes('rosemary');
       });
-      if (res.length > 0) return res;
     }
 
     if (targetLower.includes('dairy') || targetLower.includes('animal')) {
-      const res = masterItems.filter((p: any) => {
+      return masterItems.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
-        return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk');
+        const name = (p.name || '').toLowerCase();
+        return cat.includes('dairy') || cat.includes('animal') || cat.includes('egg') || cat.includes('milk') || name.includes('egg') || name.includes('milk');
       });
-      if (res.length > 0) return res;
     }
 
     if (targetLower.includes('fruit')) {
-      const res = masterItems.filter((p: any) => {
+      return masterItems.filter((p: any) => {
         const cat = (p.category || '').toLowerCase();
-        return cat.includes('fruit');
+        const name = (p.name || '').toLowerCase();
+        return cat.includes('fruit') || name.includes('apple') || name.includes('avocado') || name.includes('banana') || name.includes('passion');
       });
-      if (res.length > 0) return res;
     }
 
-    const matched = masterItems.filter((p: any) => {
-      const cat = (p.category || '').toLowerCase();
-      return cat.includes(targetLower);
-    });
+    if (targetLower.includes('grain') || targetLower.includes('staple')) {
+      return masterItems.filter((p: any) => {
+        const cat = (p.category || '').toLowerCase();
+        const name = (p.name || '').toLowerCase();
+        return cat.includes('grain') || cat.includes('rice') || cat.includes('staple') || name.includes('rice') || name.includes('peanut');
+      });
+    }
 
-    if (matched.length > 0) return matched;
-    return masterItems;
+    return masterItems.filter((p: any) => {
+      const cat = (p.category || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return cat.includes(targetLower) || name.includes(targetLower);
+    });
   };
 
   if (loading) {
@@ -691,71 +695,98 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         </section>
       ) : (
         /* Render Configured Homepage Sections in Exact Admin Order */
-        enabledSections.map((sec) => {
-          const allItems = getSectionItems(sec.category);
-          if (allItems.length === 0) return null;
+        (() => {
+          const renderedSections = enabledSections.map((sec) => {
+            const allItems = getSectionItems(sec.category);
+            if (allItems.length === 0) return null;
 
-          const perPage = sec.itemsPerPage || 8;
-          const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
-          const currentPage = sectionPages[sec.id] || 0;
+            const perPage = sec.itemsPerPage || 8;
+            const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+            const currentPage = sectionPages[sec.id] || 0;
 
-          const visibleItems = allItems.slice(currentPage * perPage, (currentPage + 1) * perPage);
-          const isDealSection = sec.category.toLowerCase() === 'deals';
+            const visibleItems = allItems.slice(currentPage * perPage, (currentPage + 1) * perPage);
+            const isDealSection = sec.category.toLowerCase() === 'deals';
 
+            return (
+              <section key={sec.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+                {/* Section Header */}
+                <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E8E4DA]">
+                  <div>
+                    <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
+                      {sec.title}
+                    </h2>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end sm:self-auto">
+                    {/* Pagination controls for this section */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-1.5 bg-white border border-[#E8E4DA] rounded-xl px-2.5 py-1 shadow-sm text-xs font-bold text-[#414942]">
+                        <button
+                          disabled={currentPage === 0}
+                          onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.max(0, currentPage - 1) }))}
+                          className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                          title="Previous page"
+                        >
+                          <ChevronLeft size={15} />
+                        </button>
+                        <span className="font-mono text-[11px] px-1">
+                          {currentPage + 1} / {totalPages}
+                        </span>
+                        <button
+                          disabled={currentPage >= totalPages - 1}
+                          onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.min(totalPages - 1, currentPage + 1) }))}
+                          className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                          title="Next page"
+                        >
+                          <ChevronRight size={15} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* View All link */}
+                    <button
+                      onClick={() => onNavigate('catalog', sec.category !== 'Popular' && sec.category !== 'All' ? sec.category : undefined)}
+                      className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
+                    >
+                      <span>View all</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Product Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx, sec.id))}
+                </div>
+              </section>
+            );
+          }).filter(Boolean);
+
+          if (renderedSections.length > 0) {
+            return renderedSections;
+          }
+
+          // Fallback if no category matches specific section filters
           return (
-            <section key={sec.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-              {/* Section Header */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
               <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E8E4DA]">
-                <div>
-                  <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
-                    {sec.title}
-                  </h2>
-                </div>
-
-                <div className="flex items-center gap-3 self-end sm:self-auto">
-                  {/* Pagination controls for this section */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center gap-1.5 bg-white border border-[#E8E4DA] rounded-xl px-2.5 py-1 shadow-sm text-xs font-bold text-[#414942]">
-                      <button
-                        disabled={currentPage === 0}
-                        onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.max(0, currentPage - 1) }))}
-                        className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                        title="Previous page"
-                      >
-                        <ChevronLeft size={15} />
-                      </button>
-                      <span className="font-mono text-[11px] px-1">
-                        {currentPage + 1} / {totalPages}
-                      </span>
-                      <button
-                        disabled={currentPage >= totalPages - 1}
-                        onClick={() => setSectionPages(prev => ({ ...prev, [sec.id]: Math.min(totalPages - 1, currentPage + 1) }))}
-                        className="p-1 hover:bg-[#FAF7F0] rounded-md transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                        title="Next page"
-                      >
-                        <ChevronRight size={15} />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* View All link */}
-                  <button
-                    onClick={() => onNavigate('catalog', sec.category !== 'Popular' && sec.category !== 'All' ? sec.category : undefined)}
-                    className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
-                  >
-                    <span>View all</span>
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
+                <h2 className="text-base sm:text-xl font-extrabold text-[#1C2A1E] tracking-tight">
+                  Available Fresh Produce
+                </h2>
+                <button
+                  onClick={() => onNavigate('catalog')}
+                  className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D]"
+                >
+                  <span>Explore Catalog</span>
+                  <ChevronRight size={14} />
+                </button>
               </div>
-
-              {/* Product Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {visibleItems.map((item: any, idx: number) => renderProductCard(item, isDealSection, idx, sec.id))}
+                {activeMasterProducts.slice(0, 8).map((item: any, idx: number) => renderProductCard(item, false, idx, 'fallback'))}
               </div>
             </section>
           );
-        })
+        })()
       )}
 
     </div>
