@@ -49,9 +49,25 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
   ];
 
-  // Load section configuration from localStorage or DOM event
-  const loadSectionConfig = () => {
-    if (typeof window !== 'undefined') {
+  // Load section configuration from API or localStorage or DOM event
+  const loadSectionConfig = async () => {
+    let loaded = false;
+    try {
+      const settings = await clientApi.systemSettings.get();
+      if (settings?.homepage_sections_config) {
+        const remote = settings.homepage_sections_config;
+        const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSectionsConfig(parsed.sort((a: any, b: any) => a.order - b.order));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('homepage_sections_config', JSON.stringify(parsed));
+          }
+          loaded = true;
+        }
+      }
+    } catch {}
+
+    if (!loaded && typeof window !== 'undefined') {
       const saved = localStorage.getItem('homepage_sections_config');
       if (saved) {
         try {
@@ -62,8 +78,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           }
         } catch {}
       }
+      setSectionsConfig(DEFAULT_HOMEPAGE_CONFIG);
     }
-    setSectionsConfig(DEFAULT_HOMEPAGE_CONFIG);
   };
 
   useEffect(() => {
@@ -673,49 +689,12 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             </div>
           </div>
         </section>
-      ) : activeSupplies.length <= 5 ? (
-        /* STATE 2 — Few Active Harvest Submissions (1 <= activeSupplies.length <= 5) */
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E8E4DA]">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-2xl font-extrabold text-[#1C2A1E] tracking-tight">
-                  Available Harvests Now
-                </h2>
-                <span className="bg-[#2D5A3D] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
-                  {activeSupplies.length} {activeSupplies.length === 1 ? 'Harvest' : 'Harvests'}
-                </span>
-              </div>
-              <p className="text-xs text-[#717971] font-medium mt-0.5">
-                Fresh harvest submissions are verified and added regularly.
-              </p>
-            </div>
-
-            <button
-              onClick={() => onNavigate('catalog')}
-              className="text-xs font-bold text-[#2D5A3D] hover:underline flex items-center gap-0.5 cursor-pointer bg-white border border-[#E8E4DA] px-3 py-1.5 rounded-xl shadow-sm hover:border-[#2D5A3D] self-start sm:self-auto"
-            >
-              <span>Explore Catalog</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-
-          {/* Adaptive grid layout based on actual active supply count */}
-          <div className={cn(
-            "grid gap-4",
-            activeSupplies.length === 1 && "grid-cols-1 max-w-xs mx-auto",
-            activeSupplies.length === 2 && "grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto",
-            activeSupplies.length === 3 && "grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto",
-            activeSupplies.length === 4 && "grid-cols-2 sm:grid-cols-4 max-w-5xl mx-auto",
-            activeSupplies.length === 5 && "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 max-w-6xl mx-auto"
-          )}>
-            {activeSupplies.map((item: any, idx: number) => renderProductCard(item, !!item.is_discounted, idx, 'few-products'))}
-          </div>
-        </section>
       ) : (
-        /* STATE 3 — Many Products (products.length > 5) */
+        /* Render Configured Homepage Sections in Exact Admin Order */
         enabledSections.map((sec) => {
           const allItems = getSectionItems(sec.category);
+          if (allItems.length === 0) return null;
+
           const perPage = sec.itemsPerPage || 8;
           const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
           const currentPage = sectionPages[sec.id] || 0;

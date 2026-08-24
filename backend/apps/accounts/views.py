@@ -923,9 +923,16 @@ class SystemSettingsView(APIView):
 
     def get(self, request):
         from .models import SystemSetting
+        import json
         settings_dict = {}
         for s in SystemSetting.objects.all():
-            settings_dict[s.key] = s.value.lower() == 'true' if s.value.lower() in ['true', 'false'] else s.value
+            if s.key == 'homepage_sections_config':
+                try:
+                    settings_dict[s.key] = json.loads(s.value)
+                except Exception:
+                    settings_dict[s.key] = s.value
+            else:
+                settings_dict[s.key] = s.value.lower() == 'true' if s.value.lower() in ['true', 'false'] else s.value
         
         # Default show_farmer_names_to_clients to False if not explicitly set
         if 'show_farmer_names_to_clients' not in settings_dict:
@@ -938,10 +945,14 @@ class SystemSettingsView(APIView):
             return Response({"detail": "Only admins can change system settings."}, status=status.HTTP_403_FORBIDDEN)
 
         from .models import SystemSetting
+        import json
         data = request.data
         for key, val in data.items():
             setting, _ = SystemSetting.objects.get_or_create(key=key)
-            setting.value = str(val)
+            if isinstance(val, (dict, list)):
+                setting.value = json.dumps(val)
+            else:
+                setting.value = str(val)
             setting.save()
 
         return Response({"detail": "System settings updated successfully."})

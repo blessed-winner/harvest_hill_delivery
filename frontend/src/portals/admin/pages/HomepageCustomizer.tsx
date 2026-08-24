@@ -81,43 +81,78 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageSectionConfig[] = [
   },
 ];
 
+import { api as adminApi } from '../lib/api';
+
 export function HomepageCustomizer() {
   const [sections, setSections] = useState<HomepageSectionConfig[]>(DEFAULT_HOMEPAGE_CONFIG);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('homepage_sections_config');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
+    async function loadConfig() {
+      let loaded = false;
+      try {
+        const settings = await adminApi.systemSettings.get();
+        if (settings?.homepage_sections_config) {
+          const remote = settings.homepage_sections_config;
+          const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setSections(parsed.sort((a, b) => a.order - b.order));
+            setSections(parsed.sort((a: any, b: any) => a.order - b.order));
+            localStorage.setItem('homepage_sections_config', JSON.stringify(parsed));
+            loaded = true;
           }
-        } catch {}
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote section settings, using local storage:", err);
+      }
+
+      if (!loaded && typeof window !== 'undefined') {
+        const saved = localStorage.getItem('homepage_sections_config');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setSections(parsed.sort((a, b) => a.order - b.order));
+            }
+          } catch {}
+        }
       }
     }
+    loadConfig();
   }, []);
 
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
+    const reordered = sections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
+    setSections(reordered);
     if (typeof window !== 'undefined') {
-      const reordered = sections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
-      setSections(reordered);
       localStorage.setItem('homepage_sections_config', JSON.stringify(reordered));
       window.dispatchEvent(new Event('homepage_config_updated'));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
     }
+
+    try {
+      await adminApi.systemSettings.update({ homepage_sections_config: reordered });
+    } catch (err) {
+      console.error("Failed to save homepage settings to backend:", err);
+    }
+
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleResetDefault = () => {
+  const handleResetDefault = async () => {
     setSections(DEFAULT_HOMEPAGE_CONFIG);
     if (typeof window !== 'undefined') {
       localStorage.setItem('homepage_sections_config', JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
       window.dispatchEvent(new Event('homepage_config_updated'));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
     }
+
+    try {
+      await adminApi.systemSettings.update({ homepage_sections_config: DEFAULT_HOMEPAGE_CONFIG });
+    } catch (err) {
+      console.error("Failed to reset homepage settings on backend:", err);
+    }
+
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   const handleAddSection = () => {
