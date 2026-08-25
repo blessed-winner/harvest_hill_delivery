@@ -86,6 +86,8 @@ import { api as adminApi } from '../lib/api';
 export function HomepageCustomizer() {
   const [sections, setSections] = useState<HomepageSectionConfig[]>(DEFAULT_HOMEPAGE_CONFIG);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     async function loadConfig() {
@@ -116,11 +118,15 @@ export function HomepageCustomizer() {
           } catch {}
         }
       }
+      setIsDirty(false);
     }
     loadConfig();
   }, []);
 
   const handleSaveConfig = async () => {
+    if (!isDirty || isSaving) return;
+
+    setIsSaving(true);
     const reordered = sections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
     setSections(reordered);
     if (typeof window !== 'undefined') {
@@ -132,13 +138,17 @@ export function HomepageCustomizer() {
       await adminApi.systemSettings.update({ homepage_sections_config: reordered });
     } catch (err) {
       console.error("Failed to save homepage settings to backend:", err);
+    } finally {
+      setIsSaving(false);
     }
 
+    setIsDirty(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   const handleResetDefault = async () => {
+    setIsSaving(true);
     setSections(DEFAULT_HOMEPAGE_CONFIG);
     if (typeof window !== 'undefined') {
       localStorage.setItem('homepage_sections_config', JSON.stringify(DEFAULT_HOMEPAGE_CONFIG));
@@ -149,8 +159,11 @@ export function HomepageCustomizer() {
       await adminApi.systemSettings.update({ homepage_sections_config: DEFAULT_HOMEPAGE_CONFIG });
     } catch (err) {
       console.error("Failed to reset homepage settings on backend:", err);
+    } finally {
+      setIsSaving(false);
     }
 
+    setIsDirty(false);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
@@ -169,12 +182,14 @@ export function HomepageCustomizer() {
     };
     const updated = [...sections, newSection];
     setSections(updated);
+    setIsDirty(true);
   };
 
   const handleDeleteSection = (index: number) => {
     const updated = sections.filter((_, idx) => idx !== index);
     const reordered = updated.map((sec, idx) => ({ ...sec, order: idx + 1 }));
     setSections(reordered);
+    setIsDirty(true);
   };
 
   const moveSection = (index: number, direction: 'up' | 'down') => {
@@ -188,6 +203,7 @@ export function HomepageCustomizer() {
 
     const reordered = newSections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
     setSections(reordered);
+    setIsDirty(true);
   };
 
   const updateSection = (index: number, field: keyof HomepageSectionConfig, value: any) => {
@@ -202,6 +218,7 @@ export function HomepageCustomizer() {
     
     newSections[index] = current;
     setSections(newSections);
+    setIsDirty(true);
   };
 
   return (
@@ -237,11 +254,17 @@ export function HomepageCustomizer() {
           </button>
           
           <button
+            disabled={!isDirty || isSaving}
             onClick={handleSaveConfig}
-            className="px-5 py-2.5 bg-primary text-white hover:opacity-90 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer flex items-center gap-2"
+            className={cn(
+              "px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-2",
+              isDirty && !isSaving
+                ? "bg-primary text-white hover:opacity-90 cursor-pointer"
+                : "bg-surface-container-high text-on-surface-variant/40 border border-outline-variant/30 cursor-not-allowed opacity-60"
+            )}
           >
             <Save size={15} />
-            <span>Save Sections</span>
+            <span>{isSaving ? "Saving..." : "Save Sections"}</span>
           </button>
         </div>
       </div>
