@@ -422,7 +422,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       : (item.total_available_quantity != null ? item.total_available_quantity : item.quantity);
     const displayQuantity = liveQuantity != null && !isNaN(Number(liveQuantity)) ? parseFloat(String(liveQuantity)).toLocaleString() : '0';
     const sizeText = `${displayQuantity} ${unit} live stock`;
-    const isSponsored = item.sponsored || (isDeal && (idx === 0 || idx === 3));
     const targetProdId = item.id;
     const cardKey = `${secId || 'sec'}-${item.id || idx}-${idx}`;
 
@@ -433,11 +432,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
         className="bg-white border border-[#E8E4DA] rounded-[12px] p-3 flex flex-col justify-between shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all h-full cursor-pointer group relative"
       >
         <div>
-          {isSponsored && (
-            <span className="absolute top-2 right-2 z-10 text-[9px] font-semibold text-[#888888] bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded border border-[#E8E4DA]">
-              Sponsored
-            </span>
-          )}
 
           {/* Product Photo */}
           <div className="aspect-square rounded-[10px] overflow-hidden bg-[#FAF7F0] mb-2.5 relative flex items-center justify-center">
