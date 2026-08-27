@@ -350,12 +350,24 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 instance.save(update_fields=['agreed_price'])
             if instance.product and self.request.user.role == 'admin':
                 instance.product.base_price = instance.price
-                if photo_file:
+                if instance.photo:
+                    instance.product.image = instance.photo.name
+                elif photo_file:
+                    if hasattr(photo_file, 'seek'):
+                        try:
+                            photo_file.seek(0)
+                        except Exception:
+                            pass
                     instance.product.image = photo_file
                 instance.product.save()
 
                 from apps.products.models import ProductImage
                 for img in images:
+                    if hasattr(img, 'seek'):
+                        try:
+                            img.seek(0)
+                        except Exception:
+                            pass
                     if not ProductImage.objects.filter(product=instance.product, image=img).exists():
                         ProductImage.objects.create(product=instance.product, image=img)
         
@@ -363,6 +375,11 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage
         if len(images) > 1:
             for img in images[1:]:
+                if hasattr(img, 'seek'):
+                    try:
+                        img.seek(0)
+                    except Exception:
+                        pass
                 SupplyImage.objects.create(supply=instance, image=img)
 
         # Log supply submission in AuditLog
@@ -438,6 +455,11 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         # Create additional SupplyImage objects if multiple images are uploaded
         if len(images) > 1:
             for img in images[1:]:
+                if hasattr(img, 'seek'):
+                    try:
+                        img.seek(0)
+                    except Exception:
+                        pass
                 SupplyImage.objects.create(supply=instance, image=img)
 
         new_status = instance.status
