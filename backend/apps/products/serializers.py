@@ -49,6 +49,9 @@ class ProductSerializer(serializers.ModelSerializer):
     activeDeal = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+    has_bulk_deal = serializers.SerializerMethodField()
+    effective_bulk_min_qty = serializers.SerializerMethodField()
+    effective_bulk_price = serializers.SerializerMethodField()
     sourcing_supplies = serializers.SerializerMethodField()
     sourcing_history_count = serializers.IntegerField(read_only=True)
     supplier_count = serializers.IntegerField(read_only=True)
@@ -56,6 +59,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_price(self, obj):
         return float(obj.price)
+
+    def get_has_bulk_deal(self, obj):
+        return bool(obj.has_bulk_deal)
+
+    def get_effective_bulk_min_qty(self, obj):
+        val = obj.effective_bulk_min_qty
+        return float(val) if val is not None else None
+
+    def get_effective_bulk_price(self, obj):
+        val = obj.effective_bulk_price
+        return float(val) if val is not None else None
 
     def get_effective_price(self, obj):
         return float(obj.effective_price)
@@ -122,6 +136,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
+            'bulk_min_qty', 'bulk_price', 'has_bulk_deal', 'effective_bulk_min_qty', 'effective_bulk_price',
             'image', 'image_url', 'images', 'quantity_needed', 'total_available_quantity', 
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at'
@@ -271,9 +286,23 @@ class ProductShortSerializer(serializers.ModelSerializer):
     activeDeal = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     base_price = serializers.SerializerMethodField()
+    has_bulk_deal = serializers.SerializerMethodField()
+    effective_bulk_min_qty = serializers.SerializerMethodField()
+    effective_bulk_price = serializers.SerializerMethodField()
 
     def get_price(self, obj):
         return float(obj.price)
+
+    def get_has_bulk_deal(self, obj):
+        return bool(obj.has_bulk_deal)
+
+    def get_effective_bulk_min_qty(self, obj):
+        val = obj.effective_bulk_min_qty
+        return float(val) if val is not None else None
+
+    def get_effective_bulk_price(self, obj):
+        val = obj.effective_bulk_price
+        return float(val) if val is not None else None
 
     def get_effective_price(self, obj):
         return float(obj.effective_price)
@@ -337,6 +366,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
             'id', 'display_id', 'displayId', 'name', 'category', 'unit', 'image', 'image_url', 'images',
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage',
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
+            'bulk_min_qty', 'bulk_price', 'has_bulk_deal', 'effective_bulk_min_qty', 'effective_bulk_price',
             'quantity_needed', 'status', 'quality_requirements', 
             'submission_deadline', 'preferred_harvest_period', 'description', 'archived_at'
         ]

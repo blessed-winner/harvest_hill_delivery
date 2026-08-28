@@ -41,6 +41,8 @@ class Product(models.Model):
     quantity_needed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_discounted = models.BooleanField(default=False)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bulk_min_qty = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bulk_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     visibility_scope = models.CharField(max_length=30, choices=VISIBILITY_CHOICES, default='PUBLIC')
     target_clients = models.ManyToManyField('accounts.ClientProfile', blank=True, related_name='exclusive_products')
     archived_at = models.DateTimeField(null=True, blank=True)
@@ -233,6 +235,31 @@ class Product(models.Model):
     @property
     def sourcing_history_count(self):
         return self.supplies.exclude(status='rejected').count()
+
+    @property
+    def has_bulk_deal(self):
+        if self.bulk_min_qty and self.bulk_price and float(self.bulk_min_qty) > 0 and float(self.bulk_price) > 0:
+            return True
+        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
+        return supply_bulk is not None
+
+    @property
+    def effective_bulk_min_qty(self):
+        if self.bulk_min_qty and float(self.bulk_min_qty) > 0:
+            return float(self.bulk_min_qty)
+        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
+        if supply_bulk and supply_bulk.bulk_min_qty:
+            return float(supply_bulk.bulk_min_qty)
+        return None
+
+    @property
+    def effective_bulk_price(self):
+        if self.bulk_price and float(self.bulk_price) > 0:
+            return float(self.bulk_price)
+        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
+        if supply_bulk and supply_bulk.bulk_price:
+            return float(supply_bulk.bulk_price)
+        return None
 
     def __str__(self):
         return self.name

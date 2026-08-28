@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Plus, ChevronRight, ChevronLeft,
-  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle, Store
+  ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle, Store, Layers
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
 import { DEFAULT_HOMEPAGE_CONFIG, HomepageSectionConfig } from '../portals/admin/pages/HomepageCustomizer';
@@ -470,6 +470,27 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <p className="text-[10px] text-[#777777] font-normal mt-0.5">
             {sizeText}
           </p>
+
+          {(() => {
+            const hasBulkDeal = !!(
+              item.has_bulk_deal ||
+              (item.bulk_min_qty && item.bulk_price) ||
+              (item.effective_bulk_min_qty && item.effective_bulk_price) ||
+              (item.product_detail?.bulk_min_qty && item.product_detail?.bulk_price)
+            );
+            const bulkMinQty = item.effective_bulk_min_qty || item.bulk_min_qty || item.product_detail?.bulk_min_qty;
+            const bulkPrice = item.effective_bulk_price || item.bulk_price || item.product_detail?.bulk_price;
+
+            if (hasBulkDeal && Number(bulkMinQty) > 0 && Number(bulkPrice) > 0) {
+              return (
+                <div className="mt-1.5 px-2 py-0.5 bg-[#FAF7F0] text-[#2D5A3D] border border-[#2D5A3D]/25 rounded-md text-[9px] font-extrabold flex items-center gap-1 shadow-2xs">
+                  <Layers size={10} className="shrink-0" />
+                  <span>Bulk: {bulkMinQty}+ {unit} @ RWF {Number(bulkPrice).toLocaleString()}/{unit}</span>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
 
         {/* Pricing */}

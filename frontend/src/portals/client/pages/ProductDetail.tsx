@@ -187,6 +187,14 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
             discount_price: discPriceVal,
             discount_percentage: discountPct,
             is_discounted: isDiscountedItem,
+            bulk_min_qty: fetchedSupply.bulk_min_qty ? Number(fetchedSupply.bulk_min_qty) : (fetchedSupply.effective_bulk_min_qty ? Number(fetchedSupply.effective_bulk_min_qty) : (fetchedSupply.product_detail?.bulk_min_qty ? Number(fetchedSupply.product_detail.bulk_min_qty) : null)),
+            bulk_price: fetchedSupply.bulk_price ? Number(fetchedSupply.bulk_price) : (fetchedSupply.effective_bulk_price ? Number(fetchedSupply.effective_bulk_price) : (fetchedSupply.product_detail?.bulk_price ? Number(fetchedSupply.product_detail.bulk_price) : null)),
+            has_bulk_deal: !!(
+              fetchedSupply.has_bulk_deal ||
+              (fetchedSupply.bulk_min_qty && fetchedSupply.bulk_price) ||
+              (fetchedSupply.effective_bulk_min_qty && fetchedSupply.effective_bulk_price) ||
+              (fetchedSupply.product_detail?.bulk_min_qty && fetchedSupply.product_detail?.bulk_price)
+            ),
             active_deal: fetchedSupply.active_deal || fetchedSupply.activeDeal,
             status: fetchedSupply.status || 'available',
             image_url: mainImageUrl,
@@ -325,8 +333,6 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
       loadNegotiationThread();
     }
   }, [isNegotiating, product?.id]);
-
-
 
   const handleSendOffer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -537,6 +543,24 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 )}
               </div>
             </div>
+
+            {/* Special Bulk Deal Offer Dedicated Banner/Div */}
+            {product.has_bulk_deal && product.bulk_min_qty && product.bulk_price && (
+              <div className="bg-[#FAF7F0] border border-[#2D5A3D]/30 rounded-2xl p-4 space-y-1.5 shadow-sm mt-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[#2D5A3D] font-extrabold text-xs">
+                    <FileText size={16} />
+                    <span>Special Bulk Deal Offer</span>
+                  </div>
+                  <span className="bg-[#2D5A3D] text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Volume Discount
+                  </span>
+                </div>
+                <p className="text-xs text-[#1C2A1E] font-medium leading-relaxed">
+                  Order <span className="font-extrabold text-[#2D5A3D]">{product.bulk_min_qty}+ {product.unit}</span> to receive a special bulk rate of <span className="font-extrabold text-[#2D5A3D]">RWF {Number(product.bulk_price).toLocaleString()}/{product.unit}</span> (Regular unit price: RWF {Number(product.price).toLocaleString()}/{product.unit}).
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Row: Qty Selector, Add to Cart & Negotiate Price */}
