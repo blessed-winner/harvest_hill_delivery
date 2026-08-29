@@ -1000,13 +1000,12 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       if (!confirmed) return;
 
       try {
-        await api.products.update(masterProdId, { status: 'archived' });
         await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, { is_archived: true })));
-        toast(`Master Product "${masterProdName}" and its inventory composition archived successfully.`, "success");
+        toast(`Master Product harvest inventory ("${masterProdName}") archived successfully. Requirement template status remains unchanged.`, "success");
         setSelectedSupply(null);
         loadSupplies();
       } catch (err: any) {
-        toast(err.message || "Failed to archive Master Product.", "error");
+        toast(err.message || "Failed to archive Master Product supplies.", "error");
       }
     } else {
       try {
@@ -3067,10 +3066,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 <ul className="space-y-2 list-disc list-inside leading-relaxed text-[#1c1c18]">
                   {isMasterProd ? (
                     <>
-                      <li><strong className="text-red-800">Master Product Deletion:</strong> The Master Product catalog entity ("{masterProdName}") will be permanently deleted from the database.</li>
-                      <li><strong className="text-red-800">Master Product Inventory Composition:</strong> All {batchCount} component supply batch(es) totaling {totalStock.toLocaleString()} {unit} stock in its inventory composition will be permanently destroyed.</li>
-                      <li><strong className="text-red-800">Irreversible Data Loss:</strong> All historical negotiation logs, photos, and sourcing audit trails linked to this master product and its inventory composition will be erased.</li>
-                      <li><strong className="text-emerald-800">Recommended Option:</strong> To hide this master product from active client catalog without destroying data, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
+                      <li><strong className="text-red-800">Master Product Inventory Composition:</strong> All {batchCount} component supply batch(es) totaling {totalStock.toLocaleString()} {unit} stock in its inventory composition will be permanently deleted from database.</li>
+                      <li><strong className="text-emerald-800">Requirement Template Unaffected:</strong> The Product Requirement template in Product Catalog will retain its current status (open/closed/draft) untouched.</li>
+                      <li><strong className="text-red-800">Irreversible Data Loss:</strong> All historical negotiation logs, photos, and sourcing audit trails linked to this harvest supply batch will be erased.</li>
+                      <li><strong className="text-emerald-800">Recommended Option:</strong> To hide these supplies from active catalog without destroying data, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
                     </>
                   ) : (
                     <>
@@ -3091,9 +3090,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     try {
                       setIsArchivingInstead(true);
                       if (isMasterProd && masterProdId) {
-                        await api.products.update(masterProdId, { status: 'archived' });
                         await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, { is_archived: true })));
-                        toast(`Master Product "${masterProdName}" and its inventory composition archived successfully.`, "success");
+                        toast(`Master Product harvest inventory ("${masterProdName}") archived successfully. Requirement template remains unchanged.`, "success");
                       } else {
                         await api.supplies.update(deleteWarningSupply.id, { is_archived: true });
                         toast("Supply archived successfully. Historical records preserved.", "success");
@@ -3120,9 +3118,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     try {
                       setIsDeletingPermanently(true);
                       if (isMasterProd && masterProdId) {
-                        await api.products.delete(masterProdId).catch(() => {});
                         await Promise.all(siblingSupplies.map(s => api.supplies.delete(s.id).catch(() => {})));
-                        toast(`Master Product "${masterProdName}" and its inventory composition permanently deleted.`, "success");
+                        toast(`Master Product harvest inventory ("${masterProdName}") permanently deleted. Requirement template remains unchanged.`, "success");
                       } else {
                         await api.supplies.delete(deleteWarningSupply.id);
                         toast("Supply permanently deleted from database.", "success");
