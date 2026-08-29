@@ -95,6 +95,14 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [origMasterImagesCount, setOrigMasterImagesCount] = useState<number>(0);
   const [isDeletingImage, setIsDeletingImage] = useState(false);
 
+  // Bulk Deal Edit State
+  const [editHasBulkDeal, setEditHasBulkDeal] = useState(false);
+  const [editBulkMinQty, setEditBulkMinQty] = useState('');
+  const [editBulkPrice, setEditBulkPrice] = useState('');
+  const [origHasBulkDeal, setOrigHasBulkDeal] = useState(false);
+  const [origBulkMinQty, setOrigBulkMinQty] = useState('');
+  const [origBulkPrice, setOrigBulkPrice] = useState('');
+
   // Contextual Negotiation Pane State
   const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
 
@@ -580,6 +588,37 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const handleRemoveBulkDeal = async () => {
+    if (!selectedSupply) return;
+    const masterId = selectedSupply.product || selectedSupply.product_detail?.id;
+    const prodName = selectedSupply.product_detail?.name || selectedSupply.custom_product_name || selectedSupply.suggested_product_name || 'Master Product';
+
+    const confirmed = await showConfirm(
+      "Remove Bulk Deal?",
+      `Are you sure you want to remove the bulk deal configuration for "${prodName}"? This will disable special bulk pricing for this Master Product across the system.`
+    );
+    if (!confirmed) return;
+
+    try {
+      if (masterId) {
+        await api.products.update(masterId, { bulk_min_qty: null, bulk_price: null });
+        const siblingSupplies = supplies.filter(s =>
+          String(s.product || s.product_detail?.id) === String(masterId) ||
+          (s.product_detail?.name && s.product_detail.name.trim().toLowerCase() === prodName.trim().toLowerCase())
+        );
+        await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, { bulk_min_qty: null, bulk_price: null }).catch(() => {})));
+      } else {
+        await api.supplies.update(selectedSupply.id, { bulk_min_qty: null, bulk_price: null });
+      }
+      toast(`Bulk deal removed for "${prodName}" throughout the system.`, "success");
+      setSelectedSupply(null);
+      loadSupplies();
+    } catch (err: any) {
+      console.error("Failed to remove bulk deal:", err);
+      toast(err.message || "Failed to remove bulk deal.", "error");
+    }
+  };
+
   const handleOpenEditModal = async (supply: any) => {
     setEditSupply(supply);
     const masterProdId = supply.product || supply.product_detail?.id;
@@ -588,6 +627,19 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     let initPrice = String(supply.product_detail?.price || supply.product_detail?.base_price || supply.agreed_price || supply.price || '');
     let initUnit = supply.unit || supply.product_detail?.unit || 'kg';
     let initNotes = supply.product_detail?.description || supply.notes || '';
+
+    const initialBulkMin = supply.product_detail?.bulk_min_qty ?? supply.product_detail?.effective_bulk_min_qty ?? supply.bulk_min_qty ?? '';
+    const initialBulkP = supply.product_detail?.bulk_price ?? supply.product_detail?.effective_bulk_price ?? supply.bulk_price ?? '';
+    const hasInitialBulk = !!(initialBulkMin && initialBulkP && parseFloat(String(initialBulkMin)) > 0 && parseFloat(String(initialBulkP)) > 0);
+    const bMinStr = initialBulkMin ? String(initialBulkMin) : '';
+    const bPStr = initialBulkP ? String(initialBulkP) : '';
+
+    setEditHasBulkDeal(hasInitialBulk);
+    setEditBulkMinQty(bMinStr);
+    setEditBulkPrice(bPStr);
+    setOrigHasBulkDeal(hasInitialBulk);
+    setOrigBulkMinQty(bMinStr);
+    setOrigBulkPrice(bPStr);
 
     setEditQty(initQty);
     setEditPrice(initPrice);
@@ -602,6 +654,19 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           if (prodData.unit) setEditUnit(prodData.unit);
           if (prodData.description) setEditNotes(prodData.description);
           if (prodData.quantity_needed) setEditQty(String(prodData.quantity_needed));
+
+          const mBulkMin = prodData.bulk_min_qty ?? prodData.effective_bulk_min_qty;
+          const mBulkP = prodData.bulk_price ?? prodData.effective_bulk_price;
+          const mHasB = !!(mBulkMin && mBulkP && parseFloat(String(mBulkMin)) > 0 && parseFloat(String(mBulkP)) > 0);
+          const mbMinStr = mBulkMin ? String(mBulkMin) : '';
+          const mbPStr = mBulkP ? String(mBulkP) : '';
+
+          setEditHasBulkDeal(mHasB);
+          setEditBulkMinQty(mbMinStr);
+          setEditBulkPrice(mbPStr);
+          setOrigHasBulkDeal(mHasB);
+          setOrigBulkMinQty(mbMinStr);
+          setOrigBulkPrice(mbPStr);
 
           const rawImgs = Array.isArray(prodData.images) && prodData.images.length > 0
             ? prodData.images
@@ -738,19 +803,24 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     const currentNotes = editNotes.trim();
 
     const imagesChanged = isMasterProd && (editMasterImages.length !== origMasterImagesCount);
+    const bulkChanged = isMasterProd && (
+      editHasBulkDeal !== origHasBulkDeal ||
+      (editHasBulkDeal && (editBulkMinQty.trim() !== origBulkMinQty.trim() || editBulkPrice.trim() !== origBulkPrice.trim()))
+    );
 
     const hasChange = (
       currentQty !== origQty ||
       currentPrice !== origPrice ||
       currentUnit !== origUnit ||
       currentNotes !== origNotes ||
-      imagesChanged
+      imagesChanged ||
+      bulkChanged
     );
 
     const parsedQ = parseFloat(currentQty);
     const parsedP = parseFloat(currentPrice);
     return hasChange && !isNaN(parsedQ) && parsedQ > 0 && !isNaN(parsedP) && parsedP > 0;
-  }, [editSupply, editQty, editPrice, editUnit, editNotes, editMasterImages, origMasterImagesCount]);
+  }, [editSupply, editQty, editPrice, editUnit, editNotes, editMasterImages, origMasterImagesCount, editHasBulkDeal, editBulkMinQty, editBulkPrice, origHasBulkDeal, origBulkMinQty, origBulkPrice]);
 
   const handleSaveAdminEdit = async () => {
     if (!editSupply) return;
@@ -769,6 +839,20 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     const masterProdId = editSupply.product || editSupply.product_detail?.id;
     const masterProdName = editSupply.product_detail?.name || editSupply.custom_product_name || 'Master Product';
 
+    const parsedBulkMin = editHasBulkDeal && editBulkMinQty ? parseFloat(editBulkMinQty) : null;
+    const parsedBulkPrice = editHasBulkDeal && editBulkPrice ? parseFloat(editBulkPrice) : null;
+
+    if (editHasBulkDeal) {
+      if (parsedBulkMin === null || isNaN(parsedBulkMin) || parsedBulkMin <= 0) {
+        toast("Please enter a valid minimum bulk threshold greater than zero.", "warning");
+        return;
+      }
+      if (parsedBulkPrice === null || isNaN(parsedBulkPrice) || parsedBulkPrice <= 0) {
+        toast("Please enter a valid special bulk price per unit greater than zero.", "warning");
+        return;
+      }
+    }
+
     try {
       setIsSavingEdit(true);
       if (masterProdId) {
@@ -777,8 +861,21 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           offered_price: parsedPrice,
           quantity_needed: parsedQty,
           unit: editUnit,
-          description: editNotes.trim()
+          description: editNotes.trim(),
+          bulk_min_qty: parsedBulkMin,
+          bulk_price: parsedBulkPrice,
         });
+
+        // Sync sibling supplies
+        const siblingSupplies = supplies.filter(s =>
+          String(s.product || s.product_detail?.id) === String(masterProdId) ||
+          (s.product_detail?.name && s.product_detail.name.trim().toLowerCase() === masterProdName.trim().toLowerCase())
+        );
+        await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, {
+          bulk_min_qty: parsedBulkMin,
+          bulk_price: parsedBulkPrice,
+        }).catch(() => {})));
+
         toast(`Master Product "${masterProdName}" details updated successfully!`, "success");
       } else {
         await apiRequest(`/api/supplies/${editSupply.id}/`, {
@@ -787,7 +884,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             quantity: parsedQty,
             price: parsedPrice,
             unit: editUnit,
-            notes: editNotes.trim()
+            notes: editNotes.trim(),
+            bulk_min_qty: parsedBulkMin,
+            bulk_price: parsedBulkPrice,
           })
         });
         toast("Supply details updated successfully!", "success");
@@ -2776,11 +2875,21 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                       <div className="flex items-center justify-between pt-2 border-t border-blue-200/80 text-[10.5px] text-blue-900 font-medium">
                         <span>💡 B2B bulk tier configured for this Master Product catalog entry.</span>
-                        {bulkSavings > 0 && (
-                          <span className="font-extrabold font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
-                            Save {formatCurrency(bulkSavings)}/unit
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {bulkSavings > 0 && (
+                            <span className="font-extrabold font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                              Save {formatCurrency(bulkSavings)}/unit
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleRemoveBulkDeal}
+                            className="px-2.5 py-1 text-red-700 hover:bg-red-50 rounded-lg text-[10.5px] font-extrabold border border-red-200/80 transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-2xs"
+                            title="Remove bulk deal configuration for this Master Product across the system"
+                          >
+                            <X size={11} /> Remove Bulk Deal
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2914,6 +3023,61 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                     className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-medium text-on-surface outline-none focus:border-primary resize-none"
                   />
                 </div>
+
+                {/* Master Product Bulk Deal Tier Configuration */}
+                {isMasterProdEdit && (
+                  <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-3 font-sans">
+                    <div className="flex items-center justify-between cursor-pointer" onClick={() => setEditHasBulkDeal(!editHasBulkDeal)}>
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-blue-700 shrink-0" />
+                        <div>
+                          <p className="text-xs font-extrabold text-blue-950">Register Master Product Bulk Deal Tier</p>
+                          <p className="text-[10px] text-blue-800 leading-relaxed mt-0.5">
+                            Enable special B2B volume pricing for client orders meeting minimum quantity.
+                          </p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={editHasBulkDeal}
+                        onChange={(e) => setEditHasBulkDeal(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded cursor-pointer accent-blue-600"
+                      />
+                    </div>
+
+                    {editHasBulkDeal && (
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-200/80">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold text-blue-950 uppercase tracking-wider block">
+                            Min Bulk Threshold ({editUnit || 'kg'})
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 50"
+                            value={editBulkMinQty}
+                            onChange={(e) => setEditBulkMinQty(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold text-blue-950 uppercase tracking-wider block">
+                            Bulk Special Price (RWF)
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-900">RWF</span>
+                            <input
+                              type="number"
+                              placeholder="e.g. 800"
+                              value={editBulkPrice}
+                              onChange={(e) => setEditBulkPrice(e.target.value)}
+                              className="w-full pl-10 pr-3 py-2 rounded-xl border border-blue-300 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Master Product Images Gallery Strip */}
                 {isMasterProdEdit && (
