@@ -207,13 +207,24 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     if (!discountSupply) return;
     try {
       setIsSavingDiscount(true);
-      const targetProdId = discountSupply.productId || discountSupply.product || discountSupply.product_detail?.id || discountSupply.id;
+      const targetProdId = discountSupply.productId || discountSupply.product || discountSupply.product_detail?.id || (typeof discountSupply.id !== 'string' || !discountSupply.id.startsWith('SUP-') ? discountSupply.id : null);
       const parsedDiscountPrice = discountPriceInput ? parseFloat(discountPriceInput) : null;
 
-      await api.products.update(targetProdId, {
-        is_discounted: discountIsActive,
-        discount_price: discountIsActive ? parsedDiscountPrice : null,
-      });
+      if (targetProdId) {
+        await api.products.update(targetProdId, {
+          is_discounted: discountIsActive,
+          discount_price: discountIsActive ? parsedDiscountPrice : null,
+        });
+      }
+
+      if (discountSupply.id) {
+        try {
+          await api.supplies.update(discountSupply.id, {
+            is_discounted: discountIsActive,
+            discount_price: discountIsActive ? parsedDiscountPrice : null,
+          });
+        } catch {}
+      }
 
       toast(`Fresh Deal discount settings saved for Master Product!`, "success");
       setDiscountSupply(null);

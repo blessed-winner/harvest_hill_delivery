@@ -51,8 +51,8 @@ class ProductSerializer(serializers.ModelSerializer):
     effective_price = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     has_active_discount = serializers.SerializerMethodField()
-    is_discounted = serializers.SerializerMethodField()
-    discount_price = serializers.SerializerMethodField()
+    is_discounted = serializers.BooleanField(required=False, default=False)
+    discount_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     originalPrice = serializers.SerializerMethodField()
     discountedPrice = serializers.SerializerMethodField()
     discountPercentage = serializers.SerializerMethodField()
@@ -77,12 +77,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_has_active_discount(self, obj):
         return bool(obj.has_active_discount)
-
-    def get_is_discounted(self, obj):
-        return bool(obj.has_active_discount)
-
-    def get_discount_price(self, obj):
-        return float(obj.effective_price)
 
     def get_originalPrice(self, obj):
         return float(obj.price)
@@ -287,8 +281,8 @@ class ProductShortSerializer(serializers.ModelSerializer):
     effective_price = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     has_active_discount = serializers.SerializerMethodField()
-    is_discounted = serializers.SerializerMethodField()
-    discount_price = serializers.SerializerMethodField()
+    is_discounted = serializers.BooleanField(required=False, default=False)
+    discount_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     originalPrice = serializers.SerializerMethodField()
     discountedPrice = serializers.SerializerMethodField()
     discountPercentage = serializers.SerializerMethodField()
@@ -309,12 +303,6 @@ class ProductShortSerializer(serializers.ModelSerializer):
 
     def get_has_active_discount(self, obj):
         return bool(obj.has_active_discount)
-
-    def get_is_discounted(self, obj):
-        return bool(obj.has_active_discount)
-
-    def get_discount_price(self, obj):
-        return float(obj.effective_price)
 
     def get_originalPrice(self, obj):
         return float(obj.price)

@@ -166,11 +166,10 @@ class Product(models.Model):
         deal = self.active_deal
         if deal:
             return True
-        base = float(self.price)
-        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < base:
+        if self.is_discounted:
             return True
         disc_supply = self.supplies.filter(is_archived=False, status='accepted', is_discounted=True, discount_price__gt=0).first()
-        if disc_supply and float(disc_supply.discount_price) < base:
+        if disc_supply:
             return True
         return False
 
@@ -187,13 +186,13 @@ class Product(models.Model):
                 discounted = base - val
             return max(0.0, float(discounted))
         
-        # Fallback to legacy is_discounted if set on MasterProduct
-        if self.is_discounted and self.discount_price and float(self.discount_price) > 0 and float(self.discount_price) < base:
+        # Fallback to is_discounted if set on MasterProduct
+        if self.is_discounted and self.discount_price and float(self.discount_price) > 0:
             return float(self.discount_price)
 
         # Fallback to underlying accepted supply discount if set
         disc_supply = self.supplies.filter(is_archived=False, status='accepted', is_discounted=True, discount_price__gt=0).first()
-        if disc_supply and float(disc_supply.discount_price) < base:
+        if disc_supply and float(disc_supply.discount_price) > 0:
             return float(disc_supply.discount_price)
 
         return base
