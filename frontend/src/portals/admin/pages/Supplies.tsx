@@ -2641,38 +2641,37 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   const savedPercent = Math.round((savedRwfPerUnit / stdP) * 100);
 
                   return (
-                    <div className="p-3.5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-orange-300/80 space-y-2.5 font-sans shadow-2xs animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
-                            <Tag size={15} />
+                    <div className="p-3 bg-[#fffcf5] rounded-xl border border-[#eadaa6] space-y-2 font-sans shadow-2xs animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-lg bg-[#d97706]/15 text-[#b45309] flex items-center justify-center shrink-0">
+                            <Tag size={13} />
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-xs text-orange-950">Active Master Product Fresh Deal</span>
-                              <span className="px-2 py-0.5 bg-orange-600 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-[11px] text-[#451a03]">Master Fresh Deal</span>
+                              <span className="px-1.5 py-0.2 bg-[#d97706] text-white text-[9px] font-bold rounded-md font-mono">
                                 {savedPercent}% OFF
                               </span>
                             </div>
-                            <p className="text-[11px] font-bold text-orange-900 font-mono mt-0.5">
-                              Discounted Price: <span className="font-extrabold text-orange-950 text-xs">{formatCurrency(discP)}</span> / {selectedSupply.unit || 'kg'}
-                              <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-orange-300 pl-1.5">
-                                (Standard: {formatCurrency(stdP)})
+                            <p className="text-[10px] text-[#78350f] font-mono mt-0.5 truncate">
+                              Offer: <span className="font-bold text-[#451a03]">{formatCurrency(discP)}</span> / {selectedSupply.unit || 'kg'}
+                              <span className="text-[9px] text-[#a16207] font-normal ml-1 border-l border-[#fde68a] pl-1">
+                                (Std: {formatCurrency(stdP)})
                               </span>
                             </p>
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider">Unit Savings</p>
-                          <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">
+                        <div className="text-right shrink-0">
+                          <span className="text-[9px] font-bold text-[#15803d] font-mono bg-[#dcfce7] border border-[#bbf7d0] px-1.5 py-0.5 rounded-md inline-block">
                             Save {formatCurrency(savedRwfPerUnit)} / {selectedSupply.unit || 'kg'}
-                          </p>
+                          </span>
                         </div>
                       </div>
 
-                      {/* Actions: Edit Fresh Deal vs Abort Deal */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-orange-200/80">
+                      {/* Actions: Minimalist & Demure buttons */}
+                      <div className="flex items-center gap-2 pt-1.5 border-t border-[#fef3c7]">
                         <button
                           type="button"
                           onClick={() => {
@@ -2687,9 +2686,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                             setSelectedSupply(null);
                             handleOpenDiscountModal(targetProd);
                           }}
-                          className="flex-1 py-2 px-3 bg-white hover:bg-orange-100/70 text-orange-950 border border-orange-300 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="flex-1 py-1.5 px-2.5 bg-white hover:bg-[#fef3c7]/60 text-[#78350f] border border-[#fde68a] rounded-lg text-[10.5px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
                         >
-                          <Edit3 size={13} className="text-orange-800" />
+                          <Edit3 size={11} className="text-[#b45309]" />
                           <span>Edit Deal</span>
                         </button>
 
@@ -2709,9 +2708,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                               handleAbortDiscount(targetProd);
                             }
                           }}
-                          className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="flex-1 py-1.5 px-2.5 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-lg text-[10.5px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
                         >
-                          <X size={13} />
+                          <X size={11} />
                           <span>Abort Deal</span>
                         </button>
                       </div>
