@@ -446,9 +446,13 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
           {/* Gallery Thumbnail Strip */}
           {(() => {
-            const rawImages: string[] = product.images || [];
+            const rawImages: string[] = (product.images && product.images.length > 0)
+              ? product.images
+              : (product.image_url ? [product.image_url] : []);
+            
             const seenKeys = new Set<string>();
             const uniqueImages: string[] = [];
+
             for (const imgUrl of rawImages) {
               if (!imgUrl) continue;
               let cleanKey = imgUrl.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || imgUrl;
@@ -458,7 +462,9 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                 uniqueImages.push(imgUrl);
               }
             }
-            if (uniqueImages.length <= 1) return null;
+
+            if (uniqueImages.length === 0) return null;
+
             return (
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
                 {uniqueImages.map((img: string, idx: number) => {
