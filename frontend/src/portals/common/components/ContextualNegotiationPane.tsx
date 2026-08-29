@@ -382,12 +382,12 @@ export function ContextualNegotiationPane({
                 <RefreshCw size={16} className="animate-spin text-primary" /> Loading negotiation timeline...
               </div>
             ) : !thread || !thread.offers || thread.offers.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30 space-y-2 my-auto">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-1">
-                  <Handshake size={24} />
+              <div className="flex flex-col items-center justify-center text-center p-4 sm:p-5 bg-surface-container-low/40 rounded-2xl border border-outline-variant/30 space-y-1.5 my-auto max-w-sm mx-auto overflow-hidden">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-0.5 shrink-0">
+                  <Handshake size={18} />
                 </div>
-                <h4 className="font-extrabold text-sm text-on-surface">Start the Conversation</h4>
-                <p className="text-xs text-on-surface-variant max-w-xs leading-relaxed">
+                <h4 className="font-bold text-xs text-on-surface">Start the Conversation</h4>
+                <p className="text-[11px] text-on-surface-variant leading-relaxed max-w-xs mx-auto">
                   Discuss quantity, pricing, delivery, or terms directly with Harvest Hill Delivery. Ask a question or make a structured offer below.
                 </p>
               </div>
