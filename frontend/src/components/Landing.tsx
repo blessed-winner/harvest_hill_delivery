@@ -470,27 +470,6 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           <p className="text-[10px] text-[#777777] font-normal mt-0.5">
             {sizeText}
           </p>
-
-          {(() => {
-            const hasBulkDeal = !!(
-              item.has_bulk_deal ||
-              (item.bulk_min_qty && item.bulk_price) ||
-              (item.effective_bulk_min_qty && item.effective_bulk_price) ||
-              (item.product_detail?.bulk_min_qty && item.product_detail?.bulk_price)
-            );
-            const bulkMinQty = item.effective_bulk_min_qty || item.bulk_min_qty || item.product_detail?.bulk_min_qty;
-            const bulkPrice = item.effective_bulk_price || item.bulk_price || item.product_detail?.bulk_price;
-
-            if (hasBulkDeal && Number(bulkMinQty) > 0 && Number(bulkPrice) > 0) {
-              return (
-                <div className="mt-1.5 px-2 py-0.5 bg-[#FAF7F0] text-[#2D5A3D] border border-[#2D5A3D]/25 rounded-md text-[9px] font-extrabold flex items-center gap-1 shadow-2xs">
-                  <Layers size={10} className="shrink-0" />
-                  <span>Bulk: {bulkMinQty}+ {unit} @ RWF {Number(bulkPrice).toLocaleString()}/{unit}</span>
-                </div>
-              );
-            }
-            return null;
-          })()}
         </div>
 
         {/* Pricing */}
@@ -607,10 +586,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
               image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&auto=format&fit=crop&q=80"
             },
             {
-              label: "Bulk Pricing",
-              subtext: "Order in volume",
+              label: "Fresh Vegetables",
+              subtext: "Wholesale harvest",
               tag: "CRATE RATES",
-              category: "Bulk Orders",
+              category: "Vegetables",
               image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&auto=format&fit=crop&q=80"
             },
             {

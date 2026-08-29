@@ -238,27 +238,14 @@ class Product(models.Model):
 
     @property
     def has_bulk_deal(self):
-        if self.bulk_min_qty and self.bulk_price and float(self.bulk_min_qty) > 0 and float(self.bulk_price) > 0:
-            return True
-        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
-        return supply_bulk is not None
+        return False
 
     @property
     def effective_bulk_min_qty(self):
-        if self.bulk_min_qty and float(self.bulk_min_qty) > 0:
-            return float(self.bulk_min_qty)
-        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
-        if supply_bulk and supply_bulk.bulk_min_qty:
-            return float(supply_bulk.bulk_min_qty)
         return None
 
     @property
     def effective_bulk_price(self):
-        if self.bulk_price and float(self.bulk_price) > 0:
-            return float(self.bulk_price)
-        supply_bulk = self.supplies.filter(is_archived=False, status='accepted', bulk_min_qty__gt=0, bulk_price__gt=0).first()
-        if supply_bulk and supply_bulk.bulk_price:
-            return float(supply_bulk.bulk_price)
         return None
 
     def __str__(self):

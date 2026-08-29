@@ -24,7 +24,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   // Filters
   const [organicOnly, setOrganicOnly] = useState(false);
   const [inSeason, setInSeason] = useState(false);
-  const [bulkAvailable, setBulkAvailable] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
@@ -218,14 +217,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
               photo: image_url,
               farmer_name: 'Harvest Hill Delivery',
               farmer_location: 'Kigali, Rwanda',
-              bulk_min_qty: item.bulk_min_qty ? Number(item.bulk_min_qty) : (item.effective_bulk_min_qty ? Number(item.effective_bulk_min_qty) : (item.product_detail?.bulk_min_qty ? Number(item.product_detail.bulk_min_qty) : null)),
-              bulk_price: item.bulk_price ? Number(item.bulk_price) : (item.effective_bulk_price ? Number(item.effective_bulk_price) : (item.product_detail?.bulk_price ? Number(item.product_detail.bulk_price) : null)),
-              has_bulk_deal: !!(
-                item.has_bulk_deal ||
-                (item.bulk_min_qty && item.bulk_price) ||
-                (item.effective_bulk_min_qty && item.effective_bulk_price) ||
-                (item.product_detail?.bulk_min_qty && item.product_detail?.bulk_price)
-              ),
               isFromProduct: !isSupply,
               raw_item: item
             });
@@ -241,9 +232,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             const c = (p.category || p.raw_item?.category || p.raw_item?.product_detail?.category || '').toLowerCase();
             if (catTarget === 'deals' || catTarget === 'flash deals') {
               return !!(p.is_discounted || p.raw_item?.is_discounted || p.raw_item?.has_active_discount || (p.base_price && p.price < p.base_price));
-            }
-            if (catTarget === 'bulk orders' || catTarget === 'bulk') {
-              return !!(p.has_bulk_deal || (p.bulk_min_qty > 0 && p.bulk_price > 0));
             }
             if (catTarget === 'seasonal') {
               return p.urgency === 'high';
@@ -272,9 +260,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
           uniqueProducts = uniqueProducts.filter((p: any) => 
             p.name?.toLowerCase().includes('organic') || p.raw_item?.notes?.toLowerCase().includes('organic')
           );
-        }
-        if (bulkAvailable) {
-          uniqueProducts = uniqueProducts.filter((p: any) => p.has_bulk_deal || (p.bulk_min_qty > 0 && p.bulk_price > 0));
         }
 
         // Apply client-side sorting
@@ -311,7 +296,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, bulkAvailable, farmerFilter]);
+  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, farmerFilter]);
 
   // Pre-defined core categories + dynamic categories from products
   const defaultCategories = ['all', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based'];
@@ -448,23 +433,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                 </button>
               </div>
 
-              {/* Toggle 2: Bulk */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setBulkAvailable(!bulkAvailable)}>
-                <div>
-                  <span className="block text-xs font-bold text-[#1c1c18]">Bulk Available</span>
-                  <span className="block text-[10px] text-[#717971]">Wholesale pricing</span>
-                </div>
-                <button
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
-                    bulkAvailable ? 'bg-[#9ed0ab]' : 'bg-[#e5e2db]'
-                  }`}
-                >
-                  <span className={`w-3.5 h-3.5 rounded-full bg-white shadow absolute transition-all ${
-                    bulkAvailable ? 'left-5' : 'left-0.5'
-                  }`} />
-                </button>
-              </div>
-
             </div>
           </div>
 
@@ -566,7 +534,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                   setSearchQuery('');
                   setOrganicOnly(false);
                   setInSeason(false);
-                  setBulkAvailable(false);
                   setFarmerFilter(null);
                 }}
                 className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
@@ -609,10 +576,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
 
                 const quantity = prod.total_available_quantity != null ? prod.total_available_quantity : (prod.quantity != null ? prod.quantity : 0);
 
-                const bulkMinQty = prod.bulk_min_qty || prod.effective_bulk_min_qty || prod.product_detail?.bulk_min_qty;
-                const bulkPrice = prod.bulk_price || prod.effective_bulk_price || prod.product_detail?.bulk_price;
-                const hasBulkDeal = !!(prod.has_bulk_deal || (bulkMinQty && bulkPrice));
-
                 const product = {
                   id: prod.id,
                   product_id: prod.product || prod.id,
@@ -623,10 +586,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                   price: isDiscounted ? discPrice : origPrice,
                   image_url,
                   farmer_name: prod.farmer_name || 'Harvest Hill Certified Farm',
-                  quantity,
-                  bulk_min_qty: bulkMinQty,
-                  bulk_price: bulkPrice,
-                  has_bulk_deal: hasBulkDeal
+                  quantity
                 };
                 
                 const urgencyBadge = product.urgency === 'high' ? 'SEASONAL' : product.urgency === 'medium' ? 'LIMITED' : null;
@@ -693,13 +653,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                         <h3 className="text-xs font-bold text-[#1c1c18] mt-0.5 group-hover:text-[#144227] transition-colors line-clamp-1">
                           {product.name}
                         </h3>
-
-                        {hasBulkDeal && Number(bulkMinQty) > 0 && Number(bulkPrice) > 0 && (
-                          <div className="mt-1 px-2 py-0.5 bg-[#FAF7F0] text-[#2D5A3D] border border-[#2D5A3D]/25 rounded-md text-[9px] font-extrabold inline-flex items-center gap-1">
-                            <Layers size={10} className="shrink-0" />
-                            <span>Bulk: {bulkMinQty}+ {unit} @ RWF {Number(bulkPrice).toLocaleString()}/{unit}</span>
-                          </div>
-                        )}
                       </div>
 
                       <div className={`flex items-center justify-between border-t border-[#f0eee7] ${

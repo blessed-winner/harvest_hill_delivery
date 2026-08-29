@@ -53,8 +53,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [harvestProduct, setHarvestProduct] = useState<any | null>(null);
   const [harvestQty, setHarvestQty] = useState('');
   const [harvestPrice, setHarvestPrice] = useState('');
-  const [harvestBulkMinQty, setHarvestBulkMinQty] = useState('');
-  const [harvestBulkPrice, setHarvestBulkPrice] = useState('');
   const [harvestDate, setHarvestDate] = useState(new Date().toISOString().slice(0, 10));
   const [harvestNotes, setHarvestNotes] = useState('');
   const [harvestPhotos, setHarvestPhotos] = useState<File[]>([]);
@@ -343,8 +341,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setHarvestProduct(product);
     setHarvestQty(product.quantity_needed ? String(product.quantity_needed) : '');
     setHarvestPrice(product.base_price ? String(product.base_price) : '');
-    setHarvestBulkMinQty('');
-    setHarvestBulkPrice('');
     setHarvestDate(new Date().toISOString().slice(0, 10));
     setHarvestNotes('');
     setHarvestPhotos([]);
@@ -390,11 +386,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         notes: harvestNotes,
         status: 'accepted' // Auto-accept admin farm harvest
       };
-
-      if (harvestBulkMinQty && harvestBulkPrice) {
-        payload.bulk_min_qty = parseFloat(harvestBulkMinQty);
-        payload.bulk_price = parseFloat(harvestBulkPrice);
-      }
 
       if (harvestPhotos.length > 0) {
         payload.photo = harvestPhotos[0];
@@ -1379,38 +1370,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     placeholder="e.g. 1200"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c9c0] focus:border-[#144227] text-xs font-semibold outline-none transition-all placeholder-[#717971]/60 bg-white"
                   />
-                </div>
-              </div>
-
-              {/* Optional Bulk Deal Offer */}
-              <div className="p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
-                    Optional Bulk Deal Offer
-                  </span>
-                  <span className="text-[9px] font-semibold text-emerald-700">Tiered Pricing</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold text-emerald-900 uppercase">Min Bulk Qty</label>
-                    <input
-                      type="number"
-                      value={harvestBulkMinQty}
-                      onChange={(e) => setHarvestBulkMinQty(e.target.value)}
-                      placeholder="e.g. 50"
-                      className="w-full px-3 py-2 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:border-emerald-600"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-extrabold text-emerald-900 uppercase">Bulk Price / Unit (RWF)</label>
-                    <input
-                      type="number"
-                      value={harvestBulkPrice}
-                      onChange={(e) => setHarvestBulkPrice(e.target.value)}
-                      placeholder="e.g. 1000"
-                      className="w-full px-3 py-2 rounded-lg border border-emerald-300 text-xs font-semibold bg-white outline-none focus:border-emerald-600"
-                    />
-                  </div>
                 </div>
               </div>
 

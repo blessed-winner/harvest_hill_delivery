@@ -364,7 +364,6 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
           <button onClick={() => onNavigate('catalog', 'Grains')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Grains</button>
           <button onClick={() => onNavigate('catalog', 'Herbs')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Herbs</button>
           <button onClick={() => onNavigate('catalog', 'Seasonal')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Seasonal</button>
-          <button onClick={() => onNavigate('catalog', 'Bulk Orders')} className="hover:text-[#2D5A3D] cursor-pointer transition-colors shrink-0">Bulk Orders</button>
         </div>
       </nav>
 
@@ -387,11 +386,11 @@ export default function TopBar({ activeScreen, onNavigate, cartCount, onMenuClic
             <button
               onClick={() => {
                 setIsBusinessOpen(false);
-                onNavigate('catalog', 'Bulk Orders');
+                onNavigate('catalog');
               }}
               className="w-full bg-[#2D5A3D] text-white py-2.5 rounded-xl font-bold text-xs hover:bg-[#1E3E2A] transition-colors cursor-pointer"
             >
-              Explore Bulk Catalog
+              Explore Catalog
             </button>
           </div>
         </div>

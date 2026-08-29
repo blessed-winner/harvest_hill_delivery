@@ -133,11 +133,8 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
     localStorage.removeItem(getCartStorageKey());
   };
 
-  // Calculate item unit price with bulk deal tier evaluation
+  // Calculate item unit price
   const getItemUnitPrice = (item: any) => {
-    if (item.bulk_min_qty && item.bulk_price && item.qty >= Number(item.bulk_min_qty)) {
-      return parsePrice(item.bulk_price);
-    }
     return parsePrice(item.price);
   };
 
