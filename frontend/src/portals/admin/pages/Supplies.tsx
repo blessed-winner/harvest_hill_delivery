@@ -2705,6 +2705,87 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   );
                 })()}
 
+                {/* Active Master Product Bulk Deal Notice Banner */}
+                {(() => {
+                  const masterDetail = selectedSupply.product_detail;
+                  const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
+
+                  const hasBulk = !!(
+                    masterDetail?.has_bulk_deal ||
+                    masterDetail?.hasBulkDeal ||
+                    targetMaster?.has_bulk_deal ||
+                    targetMaster?.hasBulkDeal ||
+                    (masterDetail?.effective_bulk_min_qty && masterDetail?.effective_bulk_price) ||
+                    (targetMaster?.effective_bulk_min_qty && targetMaster?.effective_bulk_price) ||
+                    (selectedSupply.bulk_min_qty && selectedSupply.bulk_price)
+                  );
+
+                  const bulkMinQty = Number(
+                    masterDetail?.effective_bulk_min_qty || masterDetail?.bulk_min_qty ||
+                    targetMaster?.effective_bulk_min_qty || targetMaster?.bulk_min_qty ||
+                    selectedSupply.bulk_min_qty || 0
+                  );
+                  const bulkPrice = Number(
+                    masterDetail?.effective_bulk_price || masterDetail?.bulk_price ||
+                    targetMaster?.effective_bulk_price || targetMaster?.bulk_price ||
+                    selectedSupply.bulk_price || 0
+                  );
+
+                  if (!hasBulk || bulkMinQty <= 0 || bulkPrice <= 0) return null;
+
+                  const stdPrice = Number(
+                    targetMaster?.base_price || masterDetail?.price || masterDetail?.base_price || selectedSupply.agreed_price || selectedSupply.price || 0
+                  );
+                  const bulkSavings = stdPrice > bulkPrice ? stdPrice - bulkPrice : 0;
+                  const bulkDiscountPercent = stdPrice > 0 && bulkSavings > 0 ? Math.round((bulkSavings / stdPrice) * 100) : 0;
+
+                  return (
+                    <div className="p-3.5 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-blue-600/10 rounded-2xl border border-blue-300/80 space-y-2 font-sans shadow-2xs animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
+                            <Package size={16} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-blue-950">Active Master Product Bulk Deal</span>
+                              {bulkDiscountPercent > 0 && (
+                                <span className="px-2 py-0.5 bg-blue-700 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
+                                  {bulkDiscountPercent}% OFF BULK
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] font-bold text-blue-900 font-mono mt-0.5">
+                              Special Bulk Price: <span className="font-extrabold text-blue-950 text-xs">{formatCurrency(bulkPrice)}</span> / {selectedSupply.unit || 'kg'}
+                              {stdPrice > 0 && (
+                                <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-blue-300 pl-1.5">
+                                  (Standard: {formatCurrency(stdPrice)})
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <p className="text-[9.5px] font-extrabold text-blue-800 uppercase tracking-wider">Min. Bulk Threshold</p>
+                          <p className="text-xs font-black text-blue-900 font-mono mt-0.5">
+                            {bulkMinQty.toLocaleString()} {selectedSupply.unit || 'kg'}+
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-blue-200/80 text-[10.5px] text-blue-900 font-medium">
+                        <span>💡 B2B bulk tier configured for this Master Product catalog entry.</span>
+                        {bulkSavings > 0 && (
+                          <span className="font-extrabold font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                            Save {formatCurrency(bulkSavings)}/unit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {(() => {
                   const targetMaster = masterProducts.find(p => String(p.id) === String(selectedSupply.product || selectedSupply.product_detail?.id));
                   const masterPrice = Number(targetMaster?.base_price ?? selectedSupply.product_detail?.base_price ?? selectedSupply.base_price ?? selectedSupply.agreed_price ?? selectedSupply.price ?? 0);
