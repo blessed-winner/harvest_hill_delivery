@@ -512,7 +512,7 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
                   <div className="flex items-center gap-2 flex-wrap">
                     {isFreshDeal && (
                       <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                        <span>SAVE {dealPct}% (FRESH DEAL)</span>
+                        <span>SAVE {dealPct}%</span>
                       </span>
                     )}
                     {product.urgency === 'HIGH' && (

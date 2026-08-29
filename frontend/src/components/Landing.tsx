@@ -450,7 +450,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
             {isDiscountedItem && Number(pct) > 0 ? (
               <span className="absolute bottom-1.5 left-1.5 bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1">
                 <Tag size={10} className="text-[#D9381E]" />
-                <span>Save {pct}% (FLASH DEAL)</span>
+                <span>Save {pct}%</span>
               </span>
             ) : (
               <span className="absolute bottom-1.5 left-1.5 bg-[#2D5A3D]/95 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
