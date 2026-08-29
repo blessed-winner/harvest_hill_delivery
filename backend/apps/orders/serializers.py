@@ -44,13 +44,19 @@ def deduct_inventory_for_order(order):
             if remaining_to_deduct <= 0:
                 break
             
-            current_qty = float(supply.quantity)
+            current_qty = float(supply.quantity or 0)
+            current_acc_qty = float(supply.accepted_quantity) if supply.accepted_quantity is not None else None
+
             if current_qty >= remaining_to_deduct:
                 supply.quantity = current_qty - remaining_to_deduct
+                if current_acc_qty is not None:
+                    supply.accepted_quantity = max(0.0, current_acc_qty - remaining_to_deduct)
                 remaining_to_deduct = 0
             else:
                 remaining_to_deduct -= current_qty
                 supply.quantity = 0
+                if current_acc_qty is not None:
+                    supply.accepted_quantity = max(0.0, current_acc_qty - current_qty)
 
             supply.save()
 
@@ -62,6 +68,11 @@ def deduct_inventory_for_order(order):
                         title="Inventory Threshold Reached",
                         message=f"Product '{product.name}' ({supply.supply_number or supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
                     )
+
+        # Also update product.quantity_needed if set on MasterProduct
+        if product.quantity_needed and float(product.quantity_needed) > 0:
+            product.quantity_needed = max(0.0, float(product.quantity_needed) - purchased_qty)
+            product.save(update_fields=['quantity_needed'])
 
     order.is_quantity_deducted = True
     order.save(update_fields=['is_quantity_deducted'])
@@ -202,7 +213,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
                 if supply:
                     supply.quantity = float(supply.quantity) + restore_qty
+                    if supply.accepted_quantity is not None:
+                        supply.accepted_quantity = float(supply.accepted_quantity) + restore_qty
                     supply.save()
+
+                if product and product.quantity_needed is not None:
+                    product.quantity_needed = float(product.quantity_needed) + restore_qty
+                    product.save(update_fields=['quantity_needed'])
 
             instance.is_quantity_deducted = False
             instance.save(update_fields=['is_quantity_deducted'])
