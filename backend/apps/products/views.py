@@ -159,61 +159,73 @@ class ProductViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], parser_classes=[JSONParser, MultiPartParser, FormParser])
     def delete_image(self, request, pk=None):
         """Deletes a MasterProduct gallery image or cover image from DB and Cloudinary storage."""
-        product = self.get_object()
-        image_id = request.data.get('image_id')
-        image_url = request.data.get('image_url')
+        try:
+            product = self.get_object()
+            image_id = request.data.get('image_id')
+            image_url = request.data.get('image_url')
 
-        from .models import ProductImage
-        from .utils import delete_cloudinary_image
-        from rest_framework.response import Response
+            from .models import ProductImage
+            from .utils import delete_cloudinary_image
+            from rest_framework.response import Response
+            import uuid
 
-        deleted = False
+            deleted = False
 
-        if image_id:
-            try:
-                img_obj = ProductImage.objects.get(id=image_id, product=product)
-                if img_obj.image:
-                    try:
-                        delete_cloudinary_image(img_obj.image)
-                    except Exception:
-                        pass
-                img_obj.delete()
-                deleted = True
-            except Exception:
-                pass
-
-        if not deleted and image_url:
-            clean_url = str(image_url).split('?')[0]
-            gallery_matches = ProductImage.objects.filter(product=product)
-            for img in gallery_matches:
-                if img.image:
-                    try:
-                        url_str = str(img.image.url)
-                        if url_str in clean_url or clean_url in url_str or img.image.name in clean_url:
-                            delete_cloudinary_image(img.image)
-                            img.delete()
-                            deleted = True
-                            break
-                    except Exception:
-                        pass
-
-            if product.image:
+            if image_id and not str(image_id).startswith('img-'):
                 try:
-                    cover_str = str(product.image.url)
-                    if cover_str in clean_url or clean_url in cover_str or product.image.name in clean_url:
-                        delete_cloudinary_image(product.image)
-                        next_img = product.gallery_images.first()
-                        if next_img:
-                            product.image = next_img.image
-                        else:
-                            product.image = None
-                        product.save(update_fields=['image'])
+                    uuid_val = uuid.UUID(str(image_id))
+                    img_obj = ProductImage.objects.filter(id=uuid_val, product=product).first()
+                    if img_obj:
+                        if img_obj.image:
+                            try:
+                                delete_cloudinary_image(img_obj.image)
+                            except Exception:
+                                pass
+                        img_obj.delete()
                         deleted = True
-                except Exception:
+                except (ValueError, TypeError, Exception):
                     pass
 
-        from .serializers import ProductSerializer
-        return Response(ProductSerializer(product, context={'request': request}).data, status=status.HTTP_200_OK)
+            if not deleted and image_url:
+                clean_url = str(image_url).split('?')[0].replace('http://', '').replace('https://', '')
+                url_key = clean_url.split('/')[-1].split('.')[0].lower() if '/' in clean_url else clean_url.lower()
+
+                gallery_matches = ProductImage.objects.filter(product=product)
+                for img in gallery_matches:
+                    if img.image:
+                        try:
+                            g_url = str(img.image.url).split('?')[0].replace('http://', '').replace('https://', '')
+                            g_key = g_url.split('/')[-1].split('.')[0].lower() if '/' in g_url else g_url.lower()
+                            if (url_key and g_key and (g_key == url_key or g_key in url_key or url_key in g_key)) or img.image.name in clean_url or clean_url in g_url:
+                                delete_cloudinary_image(img.image)
+                                img.delete()
+                                deleted = True
+                                break
+                        except Exception:
+                            pass
+
+                if product.image:
+                    try:
+                        c_url = str(product.image.url).split('?')[0].replace('http://', '').replace('https://', '')
+                        c_key = c_url.split('/')[-1].split('.')[0].lower() if '/' in c_url else c_url.lower()
+                        if (url_key and c_key and (c_key == url_key or c_key in url_key or url_key in c_key)) or product.image.name in clean_url or clean_url in c_url:
+                            delete_cloudinary_image(product.image)
+                            next_img = product.gallery_images.first()
+                            if next_img:
+                                product.image = next_img.image
+                            else:
+                                product.image = None
+                            product.save(update_fields=['image'])
+                            deleted = True
+                    except Exception:
+                        pass
+
+            from .serializers import ProductSerializer
+            return Response(ProductSerializer(product, context={'request': request}).data, status=status.HTTP_200_OK)
+        except Exception as err:
+            print("Failed to delete_image:", err)
+            from rest_framework.response import Response
+            return Response({"detail": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_images(self, request, pk=None):

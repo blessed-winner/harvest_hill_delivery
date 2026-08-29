@@ -161,8 +161,25 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
+CORS_ALLOW_CREDENTIALS = True
+
+cors_origins = env.list('CORS_ALLOWED_ORIGINS', default=[])
+if not cors_origins:
+    cors_origins = [
+        'https://harvest-hill-delivery.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+    ]
+
+CORS_ALLOWED_ORIGINS = cors_origins
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=CORS_ALLOWED_ORIGINS)
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^http://localhost:\d+$",
+]
 
 CORS_ALLOW_HEADERS = [
     'accept',
