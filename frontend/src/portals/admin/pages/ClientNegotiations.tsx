@@ -380,7 +380,7 @@ export function ClientNegotiations() {
                             onClick={() => handleOpenModal(thread)}
                             className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-[#376847] transition-all cursor-pointer shadow-2xs flex items-center gap-1"
                           >
-                            <Handshake size={13} /> Respond & Manage
+                            <Handshake size={13} /> Respond
                           </button>
                           <button
                             type="button"
