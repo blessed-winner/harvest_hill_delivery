@@ -853,6 +853,51 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }
   };
 
+  const handleArchiveMasterProductOrSupply = async (supply: any) => {
+    if (!supply) return;
+    const masterProdId = supply.product || supply.product_detail?.id;
+    const masterProdName = supply.product_detail?.name || supply.custom_product_name || supply.suggested_product_name || 'Master Product';
+    const isMasterProd = !!masterProdId;
+
+    if (isMasterProd && masterProdId) {
+      const siblingSupplies = supplies.filter(s =>
+        (masterProdId && (String(s.product) === String(masterProdId) || String(s.product_detail?.id) === String(masterProdId))) ||
+        (s.product_detail?.name && s.product_detail.name.trim().toLowerCase() === masterProdName.trim().toLowerCase())
+      );
+      const batchCount = siblingSupplies.length > 0 ? siblingSupplies.length : 1;
+      const totalStock = siblingSupplies.reduce((sum, s) => {
+        const qty = s.accepted_quantity != null ? Number(s.accepted_quantity) : Number(s.quantity || 0);
+        return sum + qty;
+      }, 0);
+      const unit = supply.unit || supply.product_detail?.unit || 'kg';
+
+      const confirmed = await showConfirm(
+        "Archive Master Product & Inventory Composition",
+        `Are you sure you want to archive Master Product "${masterProdName}" and its master product inventory composition (${batchCount} component supply batch(es) totaling ${totalStock.toLocaleString()} ${unit})?`
+      );
+      if (!confirmed) return;
+
+      try {
+        await api.products.update(masterProdId, { status: 'archived' });
+        await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, { is_archived: true })));
+        toast(`Master Product "${masterProdName}" and its inventory composition archived successfully.`, "success");
+        setSelectedSupply(null);
+        loadSupplies();
+      } catch (err: any) {
+        toast(err.message || "Failed to archive Master Product.", "error");
+      }
+    } else {
+      try {
+        await api.supplies.update(supply.id, { is_archived: true });
+        toast("Supply archived successfully.", "success");
+        setSelectedSupply(null);
+        loadSupplies();
+      } catch (err: any) {
+        toast(err.message || "Failed to archive supply.", "error");
+      }
+    }
+  };
+
   const handleBulkArchive = async () => {
     try {
       await Promise.all(selectedIds.map(id => api.supplies.update(id, { is_archived: true })));
@@ -1635,7 +1680,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   {!selectedSupply.is_archived && (
                     <div className="grid grid-cols-2 gap-2.5">
                       <button
-                        onClick={() => handleArchiveSupply(selectedSupply.id)}
+                        onClick={() => handleArchiveMasterProductOrSupply(selectedSupply)}
                         className="w-full py-2.5 bg-white border border-outline-variant/60 text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                       >
                         <Archive size={14} className="text-on-surface-variant" /> Archive
@@ -2792,102 +2837,149 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       )}
 
       {/* Permanent Delete High-Stakes Warning Modal */}
-      {deleteWarningSupply && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-red-200 space-y-5 text-left relative font-sans">
+      {deleteWarningSupply && (() => {
+        const masterProdId = deleteWarningSupply.product || deleteWarningSupply.product_detail?.id;
+        const masterProdName = deleteWarningSupply.product_detail?.name || deleteWarningSupply.custom_product_name || deleteWarningSupply.suggested_product_name || 'Master Product';
+        const isMasterProd = !!masterProdId;
 
-            {/* Header with warning badge */}
-            <div className="flex items-start gap-4 border-b border-red-100 pb-4">
-              <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center shrink-0 shadow-sm">
-                <AlertTriangle size={26} />
+        const siblingSupplies = isMasterProd
+          ? supplies.filter(s =>
+              (masterProdId && (String(s.product) === String(masterProdId) || String(s.product_detail?.id) === String(masterProdId))) ||
+              (s.product_detail?.name && s.product_detail.name.trim().toLowerCase() === masterProdName.trim().toLowerCase())
+            )
+          : [deleteWarningSupply];
+
+        const batchCount = siblingSupplies.length > 0 ? siblingSupplies.length : 1;
+        const totalStock = siblingSupplies.reduce((sum, s) => {
+          const qty = s.accepted_quantity != null ? Number(s.accepted_quantity) : Number(s.quantity || 0);
+          return sum + qty;
+        }, 0);
+        const unit = deleteWarningSupply.unit || deleteWarningSupply.product_detail?.unit || 'kg';
+
+        return (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-red-200 space-y-5 text-left relative font-sans">
+
+              {/* Header with warning badge */}
+              <div className="flex items-start gap-4 border-b border-red-100 pb-4">
+                <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center shrink-0 shadow-sm">
+                  <AlertTriangle size={26} />
+                </div>
+                <div className="space-y-1">
+                  <span className="px-2.5 py-0.5 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-full border border-red-200">
+                    {isMasterProd ? "Master Product & Inventory Deletion" : "Permanent Database Deletion Warning"}
+                  </span>
+                  <h3 className="text-lg font-extrabold text-[#1c1c18]">
+                    {isMasterProd ? `Delete Master Product "${masterProdName}"?` : "Delete this supply permanently?"}
+                  </h3>
+                  <p className="text-xs font-mono font-bold text-red-700">
+                    {isMasterProd ? (
+                      `Master Product: ${masterProdName} — ${batchCount} Component Batch${batchCount > 1 ? 'es' : ''} (${totalStock.toLocaleString()} ${unit} inventory)`
+                    ) : (
+                      `${deleteWarningSupply.supply_number || `SUP-${String(deleteWarningSupply.id).slice(0, 8).toUpperCase()}`} — ${masterProdName} (${deleteWarningSupply.quantity} ${unit})`
+                    )}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <span className="px-2.5 py-0.5 bg-red-100 text-red-800 text-[10px] font-black uppercase tracking-widest rounded-full border border-red-200">
-                  Permanent Database Deletion Warning
-                </span>
-                <h3 className="text-lg font-extrabold text-[#1c1c18]">
-                  Delete this supply permanently?
-                </h3>
-                <p className="text-xs font-mono font-bold text-red-700">
-                  {deleteWarningSupply.supply_number || `SUP-${String(deleteWarningSupply.id).slice(0, 8).toUpperCase()}`} — {deleteWarningSupply.product_detail?.name || deleteWarningSupply.custom_product_name || 'Harvest Supply'} ({deleteWarningSupply.quantity} {deleteWarningSupply.unit || 'kg'})
+
+              {/* Clear Explanation of Stakes in Short Sentences */}
+              <div className="p-4 bg-red-50/80 rounded-2xl border border-red-200/80 space-y-3 text-xs text-red-950">
+                <p className="font-extrabold text-sm text-red-900">
+                  High-Stakes Action Details:
                 </p>
+                <ul className="space-y-2 list-disc list-inside leading-relaxed text-[#1c1c18]">
+                  {isMasterProd ? (
+                    <>
+                      <li><strong className="text-red-800">Master Product Deletion:</strong> The Master Product catalog entity ("{masterProdName}") will be permanently deleted from the database.</li>
+                      <li><strong className="text-red-800">Master Product Inventory Composition:</strong> All {batchCount} component supply batch(es) totaling {totalStock.toLocaleString()} {unit} stock in its inventory composition will be permanently destroyed.</li>
+                      <li><strong className="text-red-800">Irreversible Data Loss:</strong> All historical negotiation logs, photos, and sourcing audit trails linked to this master product and its inventory composition will be erased.</li>
+                      <li><strong className="text-emerald-800">Recommended Option:</strong> To hide this master product from active client catalog without destroying data, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li><strong className="text-red-800">Irreversible:</strong> This supply record will be permanently deleted from the database and cannot be retrieved.</li>
+                      <li><strong className="text-red-800">Data Loss:</strong> All historical negotiation logs, batch photos, and sourcing audit trails linked to this harvest will be destroyed.</li>
+                      <li><strong className="text-emerald-800">Recommended Option:</strong> If you only want to hide this item from active client marketplace catalog stock, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
+                    </>
+                  )}
+                </ul>
               </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isArchivingInstead || isDeletingPermanently}
+                  onClick={async () => {
+                    try {
+                      setIsArchivingInstead(true);
+                      if (isMasterProd && masterProdId) {
+                        await api.products.update(masterProdId, { status: 'archived' });
+                        await Promise.all(siblingSupplies.map(s => api.supplies.update(s.id, { is_archived: true })));
+                        toast(`Master Product "${masterProdName}" and its inventory composition archived successfully.`, "success");
+                      } else {
+                        await api.supplies.update(deleteWarningSupply.id, { is_archived: true });
+                        toast("Supply archived successfully. Historical records preserved.", "success");
+                      }
+                      setDeleteWarningSupply(null);
+                      setSelectedSupply(null);
+                      loadSupplies();
+                    } catch (err: any) {
+                      toast(err.message || "Failed to archive item.", "error");
+                    } finally {
+                      setIsArchivingInstead(false);
+                    }
+                  }}
+                  className="flex-1 py-3 px-4 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Archive size={15} />
+                  <span>{isArchivingInstead ? 'Archiving...' : 'Archive Instead (Recommended)'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isArchivingInstead || isDeletingPermanently}
+                  onClick={async () => {
+                    try {
+                      setIsDeletingPermanently(true);
+                      if (isMasterProd && masterProdId) {
+                        await api.products.delete(masterProdId).catch(() => {});
+                        await Promise.all(siblingSupplies.map(s => api.supplies.delete(s.id).catch(() => {})));
+                        toast(`Master Product "${masterProdName}" and its inventory composition permanently deleted.`, "success");
+                      } else {
+                        await api.supplies.delete(deleteWarningSupply.id);
+                        toast("Supply permanently deleted from database.", "success");
+                      }
+                      setDeleteWarningSupply(null);
+                      setSelectedSupply(null);
+                      loadSupplies();
+                    } catch (err: any) {
+                      toast(err.message || "Failed to delete item.", "error");
+                    } finally {
+                      setIsDeletingPermanently(false);
+                    }
+                  }}
+                  className="py-3 px-4 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Trash2 size={15} />
+                  <span>{isDeletingPermanently ? 'Deleting...' : 'Delete Permanently'}</span>
+                </button>
+              </div>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeleteWarningSupply(null)}
+                  className="text-xs font-bold text-[#717971] hover:text-[#1c1c18] transition-colors cursor-pointer"
+                >
+                  Cancel Action
+                </button>
+              </div>
+
             </div>
-
-            {/* Clear Explanation of Stakes in Short Sentences */}
-            <div className="p-4 bg-red-50/80 rounded-2xl border border-red-200/80 space-y-3 text-xs text-red-950">
-              <p className="font-extrabold text-sm text-red-900">
-                High-Stakes Action Details:
-              </p>
-              <ul className="space-y-2 list-disc list-inside leading-relaxed text-[#1c1c18]">
-                <li><strong className="text-red-800">Irreversible:</strong> This supply record will be permanently deleted from the database and cannot be retrieved.</li>
-                <li><strong className="text-red-800">Data Loss:</strong> All historical negotiation logs, batch photos, and sourcing audit trails linked to this harvest will be destroyed.</li>
-                <li><strong className="text-emerald-800">Recommended Option:</strong> If you only want to hide this item from active client marketplace catalog stock, select <strong className="text-emerald-800">Archive Instead</strong>.</li>
-              </ul>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="button"
-                disabled={isArchivingInstead || isDeletingPermanently}
-                onClick={async () => {
-                  try {
-                    setIsArchivingInstead(true);
-                    await api.supplies.update(deleteWarningSupply.id, { is_archived: true });
-                    toast("Supply archived successfully. Historical records preserved.", "success");
-                    setDeleteWarningSupply(null);
-                    setSelectedSupply(null);
-                    loadSupplies();
-                  } catch (err: any) {
-                    toast(err.message || "Failed to archive supply.", "error");
-                  } finally {
-                    setIsArchivingInstead(false);
-                  }
-                }}
-                className="flex-1 py-3 px-4 bg-[#144227] hover:bg-[#0f2e1b] text-white rounded-xl font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <Archive size={15} />
-                <span>{isArchivingInstead ? 'Archiving...' : 'Archive Instead (Recommended)'}</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isArchivingInstead || isDeletingPermanently}
-                onClick={async () => {
-                  try {
-                    setIsDeletingPermanently(true);
-                    await api.supplies.delete(deleteWarningSupply.id);
-                    toast("Supply permanently deleted from database.", "success");
-                    setDeleteWarningSupply(null);
-                    setSelectedSupply(null);
-                    loadSupplies();
-                  } catch (err: any) {
-                    toast(err.message || "Failed to delete supply.", "error");
-                  } finally {
-                    setIsDeletingPermanently(false);
-                  }
-                }}
-                className="py-3 px-4 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Trash2 size={15} />
-                <span>{isDeletingPermanently ? 'Deleting...' : 'Delete Permanently'}</span>
-              </button>
-            </div>
-
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => setDeleteWarningSupply(null)}
-                className="text-xs font-bold text-[#717971] hover:text-[#1c1c18] transition-colors cursor-pointer"
-              >
-                Cancel Action
-              </button>
-            </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Admin Visibility & Access Controls Modal */}
       {visibilitySupply && (
