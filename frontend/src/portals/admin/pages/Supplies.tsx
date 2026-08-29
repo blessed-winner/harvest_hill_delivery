@@ -680,11 +680,12 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           })
         });
       }
-      setEditMasterImages(prev => prev.filter(item => {
-        const itemUrl = typeof item === 'string' ? item : (item.image_url || item.url || item.image);
-        return itemUrl !== imgUrl && item.id !== imgItem.id;
-      }));
-      toast("Master product image removed from database and Cloudinary storage.", "success");
+        setEditMasterImages(prev => prev.filter(item => {
+          const itemUrl = typeof item === 'string' ? item : (item.image_url || item.url || item.image);
+          return itemUrl !== imgUrl && item.id !== imgItem.id;
+        }));
+        await loadSupplies();
+        toast("Master product image removed from database and Cloudinary storage.", "success");
     } catch (err: any) {
       console.error("Failed to delete product image:", err);
       toast(err.message || "Failed to delete image.", "error");
@@ -727,6 +728,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         }
 
         setEditMasterImages(uniqueImgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+        await loadSupplies();
         toast("New master product image(s) uploaded successfully! Visible in product details.", "success");
       }
     } catch (err: any) {
@@ -739,32 +741,13 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
   const isEditSupplyChanged = React.useMemo(() => {
     if (!editSupply) return false;
-    const isMasterProd = !!(editSupply.product || editSupply.product_detail?.id);
-
-    const origQty = String(editSupply.accepted_quantity != null ? editSupply.accepted_quantity : (editSupply.quantity || '')).trim();
-    const origPrice = String(editSupply.product_detail?.price || editSupply.product_detail?.base_price || editSupply.agreed_price || editSupply.price || '').trim();
-    const origUnit = String(editSupply.unit || editSupply.product_detail?.unit || 'kg').trim();
-    const origNotes = String(editSupply.product_detail?.description || editSupply.notes || '').trim();
-
     const currentQty = editQty.trim();
     const currentPrice = editPrice.trim();
-    const currentUnit = editUnit.trim();
-    const currentNotes = editNotes.trim();
-
-    const imagesChanged = isMasterProd && (editMasterImages.length !== origMasterImagesCount);
-
-    const hasChange = (
-      currentQty !== origQty ||
-      currentPrice !== origPrice ||
-      currentUnit !== origUnit ||
-      currentNotes !== origNotes ||
-      imagesChanged
-    );
 
     const parsedQ = parseFloat(currentQty);
     const parsedP = parseFloat(currentPrice);
-    return hasChange && !isNaN(parsedQ) && parsedQ > 0 && !isNaN(parsedP) && parsedP > 0;
-  }, [editSupply, editQty, editPrice, editUnit, editNotes, editMasterImages, origMasterImagesCount]);
+    return !isNaN(parsedQ) && parsedQ > 0 && !isNaN(parsedP) && parsedP > 0;
+  }, [editSupply, editQty, editPrice]);
 
   const handleSaveAdminEdit = async () => {
     if (!editSupply) return;
