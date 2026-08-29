@@ -143,7 +143,92 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance.save(update_fields=['status', 'archived_at'])
         from apps.common.utils import log_action
         log_action(request, actor=request.user, action="product_restored", target_model="Product", target_id=instance.id, target_name=instance.name)
+        from rest_framework.response import Response
         return Response({"detail": f"Product '{instance.name}' restored successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], parser_classes=[JSONParser, MultiPartParser, FormParser])
+    def delete_image(self, request, pk=None):
+        """Deletes a MasterProduct gallery image or cover image from DB and Cloudinary storage."""
+        product = self.get_object()
+        image_id = request.data.get('image_id')
+        image_url = request.data.get('image_url')
+
+        from .models import ProductImage
+        from .utils import delete_cloudinary_image
+        from rest_framework.response import Response
+
+        deleted = False
+
+        if image_id:
+            try:
+                img_obj = ProductImage.objects.get(id=image_id, product=product)
+                if img_obj.image:
+                    try:
+                        delete_cloudinary_image(img_obj.image)
+                    except Exception:
+                        pass
+                img_obj.delete()
+                deleted = True
+            except Exception:
+                pass
+
+        if not deleted and image_url:
+            clean_url = str(image_url).split('?')[0]
+            gallery_matches = ProductImage.objects.filter(product=product)
+            for img in gallery_matches:
+                if img.image:
+                    try:
+                        url_str = str(img.image.url)
+                        if url_str in clean_url or clean_url in url_str or img.image.name in clean_url:
+                            delete_cloudinary_image(img.image)
+                            img.delete()
+                            deleted = True
+                            break
+                    except Exception:
+                        pass
+
+            if product.image:
+                try:
+                    cover_str = str(product.image.url)
+                    if cover_str in clean_url or clean_url in cover_str or product.image.name in clean_url:
+                        delete_cloudinary_image(product.image)
+                        next_img = product.gallery_images.first()
+                        if next_img:
+                            product.image = next_img.image
+                        else:
+                            product.image = None
+                        product.save(update_fields=['image'])
+                        deleted = True
+                except Exception:
+                    pass
+
+        from .serializers import ProductSerializer
+        return Response(ProductSerializer(product, context={'request': request}).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def upload_images(self, request, pk=None):
+        """Uploads new MasterProduct gallery images and updates cover image if not set."""
+        product = self.get_object()
+        raw_files = request.FILES.getlist('images') or request.FILES.getlist('image')
+        files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
+
+        from .models import ProductImage
+        from rest_framework.response import Response
+
+        for file in files:
+            try:
+                ProductImage.objects.create(product=product, image=file)
+            except Exception as e:
+                print(f"Failed to create ProductImage during upload_images: {e}")
+
+        if not product.image and files:
+            first_img = product.gallery_images.first()
+            if first_img:
+                product.image = first_img.image
+                product.save(update_fields=['image'])
+
+        from .serializers import ProductSerializer
+        return Response(ProductSerializer(product, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
 class FreshDealViewSet(viewsets.ModelViewSet):

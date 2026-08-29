@@ -271,7 +271,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const isFormDirty = useMemo(() => {
     if (!selectedProduct) return false;
     if (selectedProduct === 'new') {
-      return !!formName.trim();
+      const pMode = formPricingMode;
+      const validPrice = pMode === 'harvest_hill_offers' ? (parseFloat(formOfferedPrice) > 0) : true;
+      const validQty = parseFloat(formQuantityNeeded) > 0;
+      return !!(formName.trim() && validPrice && validQty);
     }
 
     const norm = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
@@ -279,10 +282,16 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     const isFutureDeadline = selectedProduct.submission_deadline && selectedProduct.submission_deadline >= todayStr;
     const initialStatus = isFutureDeadline ? 'open' : norm(selectedProduct.status || 'open');
 
+    const initialPricingMode = norm(selectedProduct.pricing_mode || (selectedProduct.offered_price || selectedProduct.base_price ? 'harvest_hill_offers' : 'farmer_proposes'));
+    const initialOfferedPrice = (selectedProduct.offered_price !== null && selectedProduct.offered_price !== undefined)
+      ? norm(selectedProduct.offered_price)
+      : (selectedProduct.base_price ? norm(selectedProduct.base_price) : '');
+
     const nameChanged = norm(formName) !== norm(selectedProduct.name);
     const catChanged = norm(formCategory) !== norm(selectedProduct.category || 'Vegetables');
     const unitChanged = norm(formUnit) !== norm(selectedProduct.unit || 'kg');
-    const priceChanged = norm(formPrice) !== norm(selectedProduct.base_price);
+    const pricingModeChanged = norm(formPricingMode) !== initialPricingMode;
+    const priceChanged = norm(formOfferedPrice) !== initialOfferedPrice || norm(formPrice) !== norm(selectedProduct.base_price);
     const qtyChanged = norm(formQuantityNeeded) !== norm(selectedProduct.quantity_needed);
     const statusChanged = norm(formStatus) !== initialStatus;
     const qualityChanged = norm(formQualityRequirements) !== norm(selectedProduct.quality_requirements);
@@ -294,6 +303,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       nameChanged ||
       catChanged ||
       unitChanged ||
+      pricingModeChanged ||
       priceChanged ||
       qtyChanged ||
       statusChanged ||
@@ -307,6 +317,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formName,
     formCategory,
     formUnit,
+    formPricingMode,
+    formOfferedPrice,
     formPrice,
     formQuantityNeeded,
     formStatus,

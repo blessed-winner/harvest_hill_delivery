@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package, FileText, Plus } from 'lucide-react';
+import { Search, ChevronRight, Handshake, CheckCircle2, Archive, Check, X, RefreshCw, AlertCircle, AlertTriangle, Trash2, Send, Sparkles, MessageSquare, Edit3, Save, Eye, Lock, ShieldCheck, Globe, Users, UserCheck, Tag, Package, FileText, Plus, Image as ImageIcon } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { api, apiRequest } from '../lib/api';
@@ -91,6 +91,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
   const [editUnit, setEditUnit] = useState('kg');
   const [editNotes, setEditNotes] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editMasterImages, setEditMasterImages] = useState<any[]>([]);
+  const [origMasterImagesCount, setOrigMasterImagesCount] = useState<number>(0);
+  const [isDeletingImage, setIsDeletingImage] = useState(false);
 
   // Contextual Negotiation Pane State
   const [activeNegotiationSupply, setActiveNegotiationSupply] = useState<any | null>(null);
@@ -577,37 +580,142 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     }
   };
 
-  const handleOpenEditModal = (supply: any) => {
+  const handleOpenEditModal = async (supply: any) => {
     setEditSupply(supply);
-    setEditQty(String(supply.accepted_quantity != null ? supply.accepted_quantity : (supply.quantity || '')));
-    setEditPrice(String(supply.agreed_price != null ? supply.agreed_price : (supply.price || supply.proposed_price || '')));
-    setEditUnit(supply.unit || 'kg');
-    setEditNotes(supply.notes || '');
+    const masterProdId = supply.product || supply.product_detail?.id;
+
+    let initQty = String(supply.accepted_quantity != null ? supply.accepted_quantity : (supply.quantity || ''));
+    let initPrice = String(supply.product_detail?.price || supply.product_detail?.base_price || supply.agreed_price || supply.price || '');
+    let initUnit = supply.unit || supply.product_detail?.unit || 'kg';
+    let initNotes = supply.product_detail?.description || supply.notes || '';
+
+    setEditQty(initQty);
+    setEditPrice(initPrice);
+    setEditUnit(initUnit);
+    setEditNotes(initNotes);
+
+    if (masterProdId) {
+      try {
+        const prodData = await apiRequest(`/api/products/${masterProdId}/`);
+        if (prodData) {
+          if (prodData.base_price || prodData.price) setEditPrice(String(prodData.price || prodData.base_price));
+          if (prodData.unit) setEditUnit(prodData.unit);
+          if (prodData.description) setEditNotes(prodData.description);
+          if (prodData.quantity_needed) setEditQty(String(prodData.quantity_needed));
+
+          const imgs = Array.isArray(prodData.images) && prodData.images.length > 0
+            ? prodData.images
+            : (prodData.image_url ? [prodData.image_url] : []);
+
+          setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+          setOrigMasterImagesCount(imgs.length);
+        }
+      } catch (err) {
+        const imgs = supply.product_detail?.images || (supply.product_detail?.image_url ? [supply.product_detail.image_url] : []);
+        setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+        setOrigMasterImagesCount(imgs.length);
+      }
+    } else {
+      setEditMasterImages([]);
+      setOrigMasterImagesCount(0);
+    }
+  };
+
+  const handleDeleteMasterProductImage = async (imgItem: any) => {
+    if (!editSupply) return;
+    const masterProdId = editSupply.product || editSupply.product_detail?.id;
+    const imgUrl = typeof imgItem === 'string' ? imgItem : (imgItem.image_url || imgItem.url || imgItem.image);
+
+    const confirmed = await showConfirm(
+      "Delete Master Product Image",
+      "Are you sure you want to permanently delete this image? It will be removed from Cloudinary storage and database.",
+      { isDanger: true }
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeletingImage(true);
+      if (masterProdId) {
+        await apiRequest(`/api/products/${masterProdId}/delete_image/`, {
+          method: 'POST',
+          body: JSON.stringify({
+            image_id: imgItem.id && !String(imgItem.id).startsWith('img-') ? imgItem.id : null,
+            image_url: imgUrl
+          })
+        });
+      }
+      setEditMasterImages(prev => prev.filter(item => {
+        const itemUrl = typeof item === 'string' ? item : (item.image_url || item.url || item.image);
+        return itemUrl !== imgUrl && item.id !== imgItem.id;
+      }));
+      toast("Master product image removed from database and Cloudinary storage.", "success");
+    } catch (err: any) {
+      console.error("Failed to delete product image:", err);
+      toast(err.message || "Failed to delete image.", "error");
+    } finally {
+      setIsDeletingImage(false);
+    }
+  };
+
+  const handleUploadMasterProductImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !editSupply) return;
+    const masterProdId = editSupply.product || editSupply.product_detail?.id;
+    const files = Array.from(e.target.files);
+
+    try {
+      setIsDeletingImage(true);
+      if (masterProdId) {
+        const formData = new FormData();
+        files.forEach(f => formData.append('images', f));
+
+        const updatedProd = await apiRequest(`/api/products/${masterProdId}/upload_images/`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const imgs = Array.isArray(updatedProd.images) && updatedProd.images.length > 0
+          ? updatedProd.images
+          : (updatedProd.image_url ? [updatedProd.image_url] : []);
+
+        setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+        toast("New master product image(s) uploaded successfully! Visible in product details.", "success");
+      }
+    } catch (err: any) {
+      console.error("Failed to upload product images:", err);
+      toast(err.message || "Failed to upload product images.", "error");
+    } finally {
+      setIsDeletingImage(false);
+    }
   };
 
   const isEditSupplyChanged = React.useMemo(() => {
     if (!editSupply) return false;
+    const isMasterProd = !!(editSupply.product || editSupply.product_detail?.id);
+
     const origQty = String(editSupply.accepted_quantity != null ? editSupply.accepted_quantity : (editSupply.quantity || '')).trim();
-    const origPrice = String(editSupply.agreed_price != null ? editSupply.agreed_price : (editSupply.price || editSupply.proposed_price || '')).trim();
-    const origUnit = String(editSupply.unit || 'kg').trim();
-    const origNotes = String(editSupply.notes || '').trim();
+    const origPrice = String(editSupply.product_detail?.price || editSupply.product_detail?.base_price || editSupply.agreed_price || editSupply.price || '').trim();
+    const origUnit = String(editSupply.unit || editSupply.product_detail?.unit || 'kg').trim();
+    const origNotes = String(editSupply.product_detail?.description || editSupply.notes || '').trim();
 
     const currentQty = editQty.trim();
     const currentPrice = editPrice.trim();
     const currentUnit = editUnit.trim();
     const currentNotes = editNotes.trim();
 
+    const imagesChanged = isMasterProd && (editMasterImages.length !== origMasterImagesCount);
+
     const hasChange = (
       currentQty !== origQty ||
       currentPrice !== origPrice ||
       currentUnit !== origUnit ||
-      currentNotes !== origNotes
+      currentNotes !== origNotes ||
+      imagesChanged
     );
 
     const parsedQ = parseFloat(currentQty);
     const parsedP = parseFloat(currentPrice);
     return hasChange && !isNaN(parsedQ) && parsedQ > 0 && !isNaN(parsedP) && parsedP > 0;
-  }, [editSupply, editQty, editPrice, editUnit, editNotes]);
+  }, [editSupply, editQty, editPrice, editUnit, editNotes, editMasterImages, origMasterImagesCount]);
 
   const handleSaveAdminEdit = async () => {
     if (!editSupply) return;
@@ -623,24 +731,38 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       return;
     }
 
+    const masterProdId = editSupply.product || editSupply.product_detail?.id;
+    const masterProdName = editSupply.product_detail?.name || editSupply.custom_product_name || 'Master Product';
+
     try {
       setIsSavingEdit(true);
-      await apiRequest(`/api/supplies/${editSupply.id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          quantity: parsedQty,
-          price: parsedPrice,
+      if (masterProdId) {
+        await api.products.update(masterProdId, {
+          base_price: parsedPrice,
+          offered_price: parsedPrice,
+          quantity_needed: parsedQty,
           unit: editUnit,
-          notes: editNotes.trim()
-        })
-      });
+          description: editNotes.trim()
+        });
+        toast(`Master Product "${masterProdName}" details updated successfully!`, "success");
+      } else {
+        await apiRequest(`/api/supplies/${editSupply.id}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            quantity: parsedQty,
+            price: parsedPrice,
+            unit: editUnit,
+            notes: editNotes.trim()
+          })
+        });
+        toast("Supply details updated successfully!", "success");
+      }
 
-      toast("Supply details updated successfully!", "success");
       setEditSupply(null);
       setSelectedSupply(null);
       loadSupplies();
     } catch (err: any) {
-      toast(err.message || "Failed to update supply.", "error");
+      toast(err.message || "Failed to update details.", "error");
     } finally {
       setIsSavingEdit(false);
     }
@@ -2608,68 +2730,122 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         </div>
       )}
 
-      {/* Admin Direct Edit Supply Modal */}
-      {editSupply && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans">
-            <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
-              <div>
-                <h3 className="font-extrabold text-base text-on-surface">Edit Harvest / Supply Listing</h3>
-                <p className="text-xs text-on-surface-variant font-medium">Harvest Hill Admin Direct Supply Manager</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditSupply(null)}
-                className="p-1.5 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {/* Admin Direct Edit Supply / Master Product Modal */}
+      {editSupply && (() => {
+        const isMasterProdEdit = !!(editSupply.product || editSupply.product_detail?.id);
+        const prodTitle = editSupply.product_detail?.name || editSupply.custom_product_name || 'Produce';
 
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/60 space-y-4 font-sans text-xs">
+              <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+                <div>
+                  <h3 className="font-extrabold text-base text-on-surface">
+                    {isMasterProdEdit ? `Edit Master Product (${prodTitle})` : 'Edit Harvest / Supply Listing'}
+                  </h3>
+                  <p className="text-[10px] text-on-surface-variant font-medium">
+                    {isMasterProdEdit ? 'Harvest Hill Master Catalog Manager' : 'Admin Direct Supply Manager'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditSupply(null)}
+                  className="p-1.5 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Quantity Needed / Available</label>
+                    <input
+                      type="number"
+                      value={editQty}
+                      onChange={(e) => setEditQty(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Unit</label>
+                    <input
+                      type="text"
+                      value={editUnit}
+                      onChange={(e) => setEditUnit(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary font-mono"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Quantity</label>
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Master Base Selling Price (RWF)</label>
                   <input
                     type="number"
-                    value={editQty}
-                    onChange={(e) => setEditQty(e.target.value)}
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary font-mono"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Unit</label>
-                  <input
-                    type="text"
-                    value={editUnit}
-                    onChange={(e) => setEditUnit(e.target.value)}
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Notes / Product Description</label>
+                  <textarea
+                    rows={2}
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    placeholder="Enter product description or notes..."
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-medium text-on-surface outline-none focus:border-primary resize-none"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Price per Unit (RWF)</label>
-                <input
-                  type="number"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl font-bold text-xs text-on-surface outline-none focus:border-primary"
-                />
-              </div>
+                {/* Master Product Images Gallery Strip */}
+                {isMasterProdEdit && (
+                  <div className="space-y-2 pt-2 border-t border-outline-variant/30">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-extrabold uppercase text-on-surface-variant flex items-center gap-1.5">
+                        <ImageIcon size={13} className="text-primary" /> Master Product Gallery Images (Visible in Product Details)
+                      </label>
+                      <span className="text-[10px] font-mono font-bold text-on-surface-variant">
+                        {editMasterImages.length} image{editMasterImages.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Notes / Admin Terms</label>
-                <textarea
-                  rows={3}
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Enter supply notes or delivery terms..."
-                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-medium text-on-surface outline-none focus:border-primary resize-none"
-                />
+                    <div className="grid grid-cols-4 gap-2">
+                      {editMasterImages.map((imgItem: any, idx: number) => {
+                        const imgUrl = typeof imgItem === 'string' ? imgItem : (imgItem.image_url || imgItem.url || imgItem.image);
+                        return (
+                          <div key={imgItem.id || idx} className="relative h-16 rounded-xl overflow-hidden border border-outline-variant/60 group shadow-2xs bg-surface-container-low">
+                            <img src={imgUrl} className="w-full h-full object-cover" alt={`Master Product image ${idx + 1}`} />
+                            <button
+                              type="button"
+                              disabled={isDeletingImage}
+                              onClick={() => handleDeleteMasterProductImage(imgItem)}
+                              className="absolute top-1 right-1 bg-red-600/90 text-white p-1 rounded-full opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md hover:bg-red-700 disabled:opacity-50"
+                              title="Delete image permanently from Cloudinary & DB"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      <label className="h-16 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary flex flex-col items-center justify-center cursor-pointer transition-colors bg-surface-container-low/50 hover:bg-surface-container-low">
+                        <Plus size={16} className="text-primary" />
+                        <span className="text-[9px] font-bold text-primary mt-0.5">Add Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleUploadMasterProductImages}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
             <div className="flex gap-2 pt-2 border-t border-outline-variant/30">
               <button
@@ -2690,7 +2866,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
             </div>
           </div>
         </div>
-      )}
+      );
+    })()}
 
       {/* Contextual Negotiation Pane */}
       <ContextualNegotiationPane
