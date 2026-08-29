@@ -23,7 +23,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
   
   // Filters
   const [organicOnly, setOrganicOnly] = useState(false);
-  const [inSeason, setInSeason] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('name');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
@@ -135,7 +134,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
         const params: Record<string, string> = {};
         if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
         if (searchQuery) params.search = searchQuery;
-        if (inSeason) params.urgency = 'high'; // Filter by high urgency for in-season products
         if (sortBy) params.ordering = sortBy;
         if (farmerFilter) params.farmer = farmerFilter;
         
@@ -296,7 +294,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery, inSeason, sortBy, organicOnly, farmerFilter]);
+  }, [selectedCategory, searchQuery, sortBy, organicOnly, farmerFilter]);
 
   // Pre-defined core categories + dynamic categories from products
   const defaultCategories = ['all', 'Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based'];
@@ -412,29 +410,7 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
             </div>
           </div>
 
-          {/* Toggle Switches card */}
-          <div className="bg-white border border-[#e5e2db] rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="space-y-4">
-              
-              {/* Toggle 1: In Season */}
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setInSeason(!inSeason)}>
-                <div>
-                  <span className="block text-xs font-bold text-[#1c1c18]">In Season</span>
-                  <span className="block text-[10px] text-[#717971]">Harvested recently</span>
-                </div>
-                <button
-                  className={`w-9 h-5 rounded-full transition-colors relative flex items-center ${
-                    inSeason ? 'bg-[#9ed0ab]' : 'bg-[#e5e2db]'
-                  }`}
-                >
-                  <span className={`w-3.5 h-3.5 rounded-full bg-white shadow absolute transition-all ${
-                    inSeason ? 'left-5' : 'left-0.5'
-                  }`} />
-                </button>
-              </div>
 
-            </div>
-          </div>
 
           {/* Product of the Month Card (Only displayed if order_count > 0) */}
           {popularProduct && popularProduct.order_count > 0 && (
@@ -533,7 +509,6 @@ export default function Catalog({ onNavigate, addToCart, initialCategory, initia
                   setSelectedCategory('all');
                   setSearchQuery('');
                   setOrganicOnly(false);
-                  setInSeason(false);
                   setFarmerFilter(null);
                 }}
                 className="bg-[#144227] text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-[#376847] transition-colors"
