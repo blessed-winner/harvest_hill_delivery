@@ -159,10 +159,12 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
   };
 
   const handleDeleteOrderPrompt = (orderId: number | string) => {
+    const targetOrder = orders.find(o => o.id === orderId) || (selectedOrder?.id === orderId ? selectedOrder : null);
+    const orderDisplayId = formatOrderNumber(targetOrder || orderId);
     setConfirmState({
       isOpen: true,
       title: "Delete Order",
-      message: `Are you sure you want to delete Order #${orderId}? This action will remove it permanently from the database.`,
+      message: `Are you sure you want to delete Order #${orderDisplayId}? This action will remove it permanently from the database.`,
       action: async () => {
         try {
           await api.orders.delete(orderId);
@@ -211,16 +213,17 @@ export function OrdersManagement({ searchTerm = '' }: OrdersManagementProps) {
 
   const handleGenerateDeliveryNote = async (order: any) => {
     try {
+      const orderDisplayId = formatOrderNumber(order);
       await api.deliveryNotes.create({
         order: order.id,
-        details: `Logistics note for Order #${order.id} shipped to ${order.delivery_address}.`,
+        details: `Logistics note for Order #${orderDisplayId} shipped to ${order.delivery_address}.`,
         status: 'pending'
       });
 
       setSuccessDialog({
         isOpen: true,
         title: "Delivery Note Generated!",
-        message: `Delivery note for Order #${order.id} has been generated successfully and synced with the logistics ledger.`
+        message: `Delivery note for Order #${orderDisplayId} has been generated successfully and synced with the logistics ledger.`
       });
     } catch (err: any) {
       toast(err.message || "Failed to generate delivery note.", "error");
