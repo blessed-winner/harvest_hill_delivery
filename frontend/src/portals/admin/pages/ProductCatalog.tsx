@@ -277,27 +277,37 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return !!(formName.trim() && validPrice && validQty);
     }
 
-    const norm = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
+    const normStr = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
+    const normNum = (v: any) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    };
+
     const todayStr = new Date().toISOString().slice(0, 10);
     const isFutureDeadline = selectedProduct.submission_deadline && selectedProduct.submission_deadline >= todayStr;
-    const initialStatus = isFutureDeadline ? 'open' : norm(selectedProduct.status || 'open');
+    const initialStatus = isFutureDeadline ? 'open' : normStr(selectedProduct.status || 'open');
 
-    const initialPricingMode = norm(selectedProduct.pricing_mode || (selectedProduct.offered_price || selectedProduct.base_price ? 'harvest_hill_offers' : 'farmer_proposes'));
+    const initialPricingMode = normStr(selectedProduct.pricing_mode || (selectedProduct.offered_price || selectedProduct.base_price ? 'harvest_hill_offers' : 'farmer_proposes'));
     const initialOfferedPrice = (selectedProduct.offered_price !== null && selectedProduct.offered_price !== undefined)
-      ? norm(selectedProduct.offered_price)
-      : (selectedProduct.base_price ? norm(selectedProduct.base_price) : '');
+      ? selectedProduct.offered_price
+      : (selectedProduct.base_price ? selectedProduct.base_price : null);
 
-    const nameChanged = norm(formName) !== norm(selectedProduct.name);
-    const catChanged = norm(formCategory) !== norm(selectedProduct.category || 'Vegetables');
-    const unitChanged = norm(formUnit) !== norm(selectedProduct.unit || 'kg');
-    const pricingModeChanged = norm(formPricingMode) !== initialPricingMode;
-    const priceChanged = norm(formOfferedPrice) !== initialOfferedPrice || norm(formPrice) !== norm(selectedProduct.base_price);
-    const qtyChanged = norm(formQuantityNeeded) !== norm(selectedProduct.quantity_needed);
-    const statusChanged = norm(formStatus) !== initialStatus;
-    const qualityChanged = norm(formQualityRequirements) !== norm(selectedProduct.quality_requirements);
-    const deadlineChanged = norm(formSubmissionDeadline) !== norm(selectedProduct.submission_deadline);
-    const periodChanged = norm(formPreferredPeriod) !== norm(selectedProduct.preferred_harvest_period);
-    const descChanged = norm(formDescription) !== norm(selectedProduct.description);
+    const nameChanged = normStr(formName) !== normStr(selectedProduct.name);
+    const catChanged = normStr(formCategory) !== normStr(selectedProduct.category || 'Vegetables');
+    const unitChanged = normStr(formUnit) !== normStr(selectedProduct.unit || 'kg');
+    const pricingModeChanged = normStr(formPricingMode) !== initialPricingMode;
+
+    const offeredPriceChanged = normNum(formOfferedPrice) !== normNum(initialOfferedPrice);
+    const basePriceChanged = normNum(formPrice) !== normNum(selectedProduct.base_price);
+    const priceChanged = formPricingMode === 'harvest_hill_offers' ? offeredPriceChanged : basePriceChanged;
+
+    const qtyChanged = normNum(formQuantityNeeded) !== normNum(selectedProduct.quantity_needed);
+    const statusChanged = normStr(formStatus) !== initialStatus;
+    const qualityChanged = normStr(formQualityRequirements) !== normStr(selectedProduct.quality_requirements);
+    const deadlineChanged = normStr(formSubmissionDeadline) !== normStr(selectedProduct.submission_deadline);
+    const periodChanged = normStr(formPreferredPeriod) !== normStr(selectedProduct.preferred_harvest_period);
+    const descChanged = normStr(formDescription) !== normStr(selectedProduct.description);
 
     return (
       nameChanged ||
