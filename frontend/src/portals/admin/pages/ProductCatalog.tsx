@@ -200,7 +200,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchTerm]);
+  }, [activeCategory, searchTerm, activeStatusTab]);
 
   const handleToggleNeeded = async (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -538,11 +538,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const filteredProducts = products.filter(p => {
+    let matchesStatus = true;
+    if (activeStatusTab === 'all') {
+      matchesStatus = p.status !== 'archived';
+    } else {
+      matchesStatus = p.status === activeStatusTab;
+    }
+
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
     const matchesSearch = searchTerm 
       ? p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-    return matchesCategory && matchesSearch;
+    return matchesStatus && matchesCategory && matchesSearch;
   });
 
   const getUrgencyBadgeClass = (urgency: string) => {
