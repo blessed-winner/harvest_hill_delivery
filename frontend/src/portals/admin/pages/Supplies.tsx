@@ -2839,55 +2839,48 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   const bulkDiscountPercent = stdPrice > 0 && bulkSavings > 0 ? Math.round((bulkSavings / stdPrice) * 100) : 0;
 
                   return (
-                    <div className="p-3.5 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-blue-600/10 rounded-2xl border border-blue-300/80 space-y-2 font-sans shadow-2xs animate-in fade-in duration-200">
+                    <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/60 space-y-1.5 font-sans">
+                      {/* Header Line */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
-                            <Package size={16} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-xs text-blue-950">Active Master Product Bulk Deal</span>
-                              {bulkDiscountPercent > 0 && (
-                                <span className="px-2 py-0.5 bg-blue-700 text-white text-[9.5px] font-black rounded-full uppercase tracking-wider font-mono">
-                                  {bulkDiscountPercent}% OFF BULK
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] font-bold text-blue-900 font-mono mt-0.5">
-                              Special Bulk Price: <span className="font-extrabold text-blue-950 text-xs">{formatCurrency(bulkPrice)}</span> / {selectedSupply.unit || 'kg'}
-                              {stdPrice > 0 && (
-                                <span className="text-[10px] text-on-surface-variant/70 font-normal ml-1.5 border-l border-blue-300 pl-1.5">
-                                  (Standard: {formatCurrency(stdPrice)})
-                                </span>
-                              )}
-                            </p>
-                          </div>
+                        <div className="flex items-center gap-1.5">
+                          <Package size={13} className="text-blue-700 shrink-0" />
+                          <span className="font-bold text-xs text-blue-950">Bulk Tier Active</span>
+                          {bulkDiscountPercent > 0 && (
+                            <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-black rounded-md font-mono">
+                              {bulkDiscountPercent}% OFF
+                            </span>
+                          )}
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <p className="text-[9.5px] font-extrabold text-blue-800 uppercase tracking-wider">Min. Bulk Threshold</p>
-                          <p className="text-xs font-black text-blue-900 font-mono mt-0.5">
-                            {bulkMinQty.toLocaleString()} {selectedSupply.unit || 'kg'}+
-                          </p>
-                        </div>
+                        <span className="text-[11px] font-extrabold text-blue-900 font-mono">
+                          Min. {bulkMinQty.toLocaleString()} {selectedSupply.unit || 'kg'}
+                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-blue-200/80 text-[10.5px] text-blue-900 font-medium">
-                        <span>💡 B2B bulk tier configured for this Master Product catalog entry.</span>
+                      {/* Pricing & Actions Line */}
+                      <div className="flex items-center justify-between text-[11px] font-mono pt-0.5">
+                        <div className="text-blue-950 font-bold">
+                          {formatCurrency(bulkPrice)} / {selectedSupply.unit || 'kg'}
+                          {stdPrice > 0 && (
+                            <span className="text-on-surface-variant/60 font-normal ml-1.5">
+                              (Std. {formatCurrency(stdPrice)})
+                            </span>
+                          )}
+                        </div>
+
                         <div className="flex items-center gap-2">
                           {bulkSavings > 0 && (
-                            <span className="font-extrabold font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                            <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50/90 px-1.5 py-0.5 rounded border border-emerald-200/70 font-mono">
                               Save {formatCurrency(bulkSavings)}/unit
                             </span>
                           )}
                           <button
                             type="button"
                             onClick={handleRemoveBulkDeal}
-                            className="px-2.5 py-1 text-red-700 hover:bg-red-50 rounded-lg text-[10.5px] font-extrabold border border-red-200/80 transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-2xs"
-                            title="Remove bulk deal configuration for this Master Product across the system"
+                            className="text-[10.5px] font-bold text-red-700 hover:text-red-900 hover:underline cursor-pointer transition-colors flex items-center gap-0.5"
+                            title="Remove bulk deal configuration system-wide"
                           >
-                            <X size={11} /> Remove Bulk Deal
+                            <X size={11} /> Remove
                           </button>
                         </div>
                       </div>
@@ -3026,53 +3019,45 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
 
                 {/* Master Product Bulk Deal Tier Configuration */}
                 {isMasterProdEdit && (
-                  <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-3 font-sans">
+                  <div className="p-3 bg-blue-50/60 border border-blue-200/60 rounded-xl space-y-2.5 font-sans">
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setEditHasBulkDeal(!editHasBulkDeal)}>
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-blue-700 shrink-0" />
-                        <div>
-                          <p className="text-xs font-extrabold text-blue-950">Register Master Product Bulk Deal Tier</p>
-                          <p className="text-[10px] text-blue-800 leading-relaxed mt-0.5">
-                            Enable special B2B volume pricing for client orders meeting minimum quantity.
-                          </p>
-                        </div>
+                      <div className="flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                        <span className="text-xs font-bold text-blue-950">Bulk Tier Pricing</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={editHasBulkDeal}
                         onChange={(e) => setEditHasBulkDeal(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 rounded cursor-pointer accent-blue-600"
+                        className="w-3.5 h-3.5 text-blue-600 rounded cursor-pointer accent-blue-600"
                       />
                     </div>
 
                     {editHasBulkDeal && (
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-blue-200/80">
+                      <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-blue-200/60">
                         <div className="space-y-1">
                           <label className="text-[10px] font-extrabold text-blue-950 uppercase tracking-wider block">
-                            Min Bulk Threshold ({editUnit || 'kg'})
+                            Min. Threshold ({editUnit || 'kg'})
                           </label>
                           <input
                             type="number"
                             placeholder="e.g. 50"
                             value={editBulkMinQty}
                             onChange={(e) => setEditBulkMinQty(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                           />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-extrabold text-blue-950 uppercase tracking-wider block">
-                            Bulk Special Price (RWF)
+                            Bulk Price (RWF)
                           </label>
-                          <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-900">RWF</span>
-                            <input
-                              type="number"
-                              placeholder="e.g. 800"
-                              value={editBulkPrice}
-                              onChange={(e) => setEditBulkPrice(e.target.value)}
-                              className="w-full pl-10 pr-3 py-2 rounded-xl border border-blue-300 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                            />
-                          </div>
+                          <input
+                            type="number"
+                            placeholder="e.g. 800"
+                            value={editBulkPrice}
+                            onChange={(e) => setEditBulkPrice(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs font-bold bg-white text-[#1c1c18] outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                          />
                         </div>
                       </div>
                     )}
