@@ -378,10 +378,16 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
     }
   };
 
+  // Dynamically compute all categories from demands and system defaults
+  const defaultCategories = ['Vegetables', 'Fruits', 'Herbs', 'Grains', 'Animal-Based'];
+  const dynamicCategories = Array.from(new Set(demands.map(d => d.category).filter(Boolean)));
+  const allCategories = ['All Categories', ...Array.from(new Set([...defaultCategories, ...dynamicCategories]))];
+
   // Filter calculations
   const filteredDemands = demands.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All Categories' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All Categories' || 
+      (product.category && product.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase());
     const matchesUrgency = urgencyFilter === 'All' || 
       (urgencyFilter === 'high' && (product.urgency === 'high' || product.name.toLowerCase().includes('tomato'))) ||
       (urgencyFilter === 'steady' && product.urgency === 'steady' && !product.name.toLowerCase().includes('tomato'));
@@ -425,10 +431,9 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-4 py-2 rounded-lg border border-outline-variant bg-white font-mono text-xs min-w-[160px] cursor-pointer focus:ring-primary focus:border-primary outline-none"
             >
-              <option>All Categories</option>
-              <option>Vegetables</option>
-              <option>Grains</option>
-              <option>Fruits</option>
+              {allCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
             <button 
               onClick={() => setShowFiltersMenu(!showFiltersMenu)}
