@@ -612,7 +612,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           for (const img of rawImgs) {
             const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
             if (!urlStr) continue;
-            const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+            let cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+            if (cleanKey.includes('.')) cleanKey = cleanKey.split('.')[0];
             if (!seenKeys.has(cleanKey)) {
               seenKeys.add(cleanKey);
               uniqueImgs.push(img);
@@ -629,7 +630,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         for (const img of rawImgs) {
           const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
           if (!urlStr) continue;
-          const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          let cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          if (cleanKey.includes('.')) cleanKey = cleanKey.split('.')[0];
           if (!seenKeys.has(cleanKey)) {
             seenKeys.add(cleanKey);
             uniqueImgs.push(img);
@@ -705,7 +707,8 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         for (const img of rawImgs) {
           const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
           if (!urlStr) continue;
-          const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          let cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          if (cleanKey.includes('.')) cleanKey = cleanKey.split('.')[0];
           if (!seenKeys.has(cleanKey)) {
             seenKeys.add(cleanKey);
             uniqueImgs.push(img);

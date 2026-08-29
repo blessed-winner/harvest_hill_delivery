@@ -342,24 +342,31 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 instance.product.base_price = instance.price
                 if instance.photo:
                     instance.product.image = instance.photo.name
-                elif photo_file:
-                    if hasattr(photo_file, 'seek'):
-                        try:
-                            photo_file.seek(0)
-                        except Exception:
-                            pass
-                    instance.product.image = photo_file
-                instance.product.save()
-
                 from apps.products.models import ProductImage
+                created_pi_list = []
                 for img in images:
                     if hasattr(img, 'seek'):
                         try:
                             img.seek(0)
                         except Exception:
                             pass
-                    if not ProductImage.objects.filter(product=instance.product, image=img).exists():
-                        ProductImage.objects.create(product=instance.product, image=img)
+                    try:
+                        pi = ProductImage.objects.create(product=instance.product, image=img)
+                        created_pi_list.append(pi)
+                    except Exception as e:
+                        print("Failed to create ProductImage from supply:", e)
+
+                if created_pi_list and created_pi_list[0].image and not instance.product.image:
+                    instance.product.image = created_pi_list[0].image
+                    instance.product.save(update_fields=['image'])
+                elif photo_file and not instance.product.image:
+                    if hasattr(photo_file, 'seek'):
+                        try:
+                            photo_file.seek(0)
+                        except Exception:
+                            pass
+                    instance.product.image = photo_file
+                    instance.product.save(update_fields=['image'])
         
         # Create related SupplyImage instances only for extra gallery images
         # If only 1 image was uploaded, it is already saved as instance.photo, so do not create a duplicate SupplyImage

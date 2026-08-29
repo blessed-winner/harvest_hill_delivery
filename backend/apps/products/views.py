@@ -54,13 +54,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
         if files:
-            product = serializer.save(image=files[0])
+            product = serializer.save()
             from .models import ProductImage
+            created_pi_list = []
             for file in files:
                 try:
-                    ProductImage.objects.create(product=product, image=file)
+                    pi = ProductImage.objects.create(product=product, image=file)
+                    created_pi_list.append(pi)
                 except Exception as img_err:
                     print(f"Failed to create ProductImage during create: {img_err}")
+            if created_pi_list and created_pi_list[0].image:
+                product.image = created_pi_list[0].image
+                product.save(update_fields=['image'])
         elif image_url and isinstance(image_url, str):
             clean_path = image_url
             if '/media/' in clean_path:
@@ -96,14 +101,19 @@ class ProductViewSet(viewsets.ModelViewSet):
                     delete_cloudinary_image(instance.image)
                 except Exception:
                     pass
-            instance = serializer.save(image=files[0])
+            instance = serializer.save()
             from .models import ProductImage
             instance.gallery_images.all().delete()
+            created_pi_list = []
             for file in files:
                 try:
-                    ProductImage.objects.create(product=instance, image=file)
+                    pi = ProductImage.objects.create(product=instance, image=file)
+                    created_pi_list.append(pi)
                 except Exception as img_err:
                     print(f"Failed to create ProductImage during update: {img_err}")
+            if created_pi_list and created_pi_list[0].image:
+                instance.image = created_pi_list[0].image
+                instance.save(update_fields=['image'])
         elif image_url and isinstance(image_url, str):
             clean_path = image_url
             if '/media/' in clean_path:

@@ -12,6 +12,9 @@ def _normalize_image_key(url):
     clean = str(url).split('?')[0].replace('http://', '').replace('https://', '')
     if '/' in clean:
         clean = clean.split('/')[-1]
+    # Remove extension
+    if '.' in clean:
+        clean = clean.rsplit('.', 1)[0]
     return clean.lower().strip()
 
 
@@ -120,6 +123,8 @@ class ProductSerializer(serializers.ModelSerializer):
         for img_obj in obj.gallery_images.all():
             try:
                 if img_obj.image:
+                    if obj.image and (img_obj.image == obj.image or (getattr(img_obj.image, 'name', None) and img_obj.image.name == getattr(obj.image, 'name', None))):
+                        continue
                     g_url = img_obj.image.url
                     if g_url:
                         key = _normalize_image_key(g_url)
@@ -353,6 +358,8 @@ class ProductShortSerializer(serializers.ModelSerializer):
         for img_obj in obj.gallery_images.all():
             try:
                 if img_obj.image:
+                    if obj.image and (img_obj.image == obj.image or (getattr(img_obj.image, 'name', None) and img_obj.image.name == getattr(obj.image, 'name', None))):
+                        continue
                     g_url = img_obj.image.url
                     if g_url:
                         key = _normalize_image_key(g_url)

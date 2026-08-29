@@ -445,27 +445,42 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
           })()}
 
           {/* Gallery Thumbnail Strip */}
-          {product.images && product.images.length > 0 && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-              {product.images.map((img: string, idx: number) => {
-                const isSelected = activeImgIndex === idx;
-                return (
-                  <button
-                    key={`${img}-${idx}`}
-                    type="button"
-                    onClick={() => setActiveImgIndex(idx)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#f6f3ec] ${
-                      isSelected 
-                        ? 'border-[#144227] ring-2 ring-[#144227]/30 scale-105 shadow-sm' 
-                        : 'border-[#e5e2db] opacity-75 hover:opacity-100 hover:border-[#144227]/50'
-                    }`}
-                  >
-                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {(() => {
+            const rawImages: string[] = product.images || [];
+            const seenKeys = new Set<string>();
+            const uniqueImages: string[] = [];
+            for (const imgUrl of rawImages) {
+              if (!imgUrl) continue;
+              let cleanKey = imgUrl.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || imgUrl;
+              if (cleanKey.includes('.')) cleanKey = cleanKey.split('.')[0];
+              if (!seenKeys.has(cleanKey)) {
+                seenKeys.add(cleanKey);
+                uniqueImages.push(imgUrl);
+              }
+            }
+            if (uniqueImages.length <= 1) return null;
+            return (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                {uniqueImages.map((img: string, idx: number) => {
+                  const isSelected = activeImgIndex === idx;
+                  return (
+                    <button
+                      key={`${img}-${idx}`}
+                      type="button"
+                      onClick={() => setActiveImgIndex(idx)}
+                      className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#f6f3ec] ${
+                        isSelected 
+                          ? 'border-[#144227] ring-2 ring-[#144227]/30 scale-105 shadow-sm' 
+                          : 'border-[#e5e2db] opacity-75 hover:opacity-100 hover:border-[#144227]/50'
+                      }`}
+                    >
+                      <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column: Info & Actions */}
