@@ -6,6 +6,15 @@ def _product_has_image(image):
     return bool(image and getattr(image, 'name', None))
 
 
+def _normalize_image_key(url):
+    if not url:
+        return ""
+    clean = str(url).split('?')[0].replace('http://', '').replace('https://', '')
+    if '/' in clean:
+        clean = clean.split('/')[-1]
+    return clean.lower().strip()
+
+
 class FreshDealSerializer(serializers.ModelSerializer):
     master_product_name = serializers.CharField(source='master_product.name', read_only=True)
     master_product_base_price = serializers.FloatField(source='master_product.price', read_only=True)
@@ -109,19 +118,31 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_images(self, obj):
         urls = []
+        seen_keys = set()
+
         if obj.image:
             try:
                 cover_url = obj.image.url
-                if cover_url and cover_url not in urls:
-                    urls.append(cover_url)
+                if cover_url:
+                    key = _normalize_image_key(cover_url)
+                    if key and key not in seen_keys:
+                        seen_keys.add(key)
+                        urls.append(cover_url)
             except Exception:
                 pass
+
         for img_obj in obj.gallery_images.all():
             try:
-                if img_obj.image and img_obj.image.url and img_obj.image.url not in urls:
-                    urls.append(img_obj.image.url)
+                if img_obj.image:
+                    g_url = img_obj.image.url
+                    if g_url:
+                        key = _normalize_image_key(g_url)
+                        if key and key not in seen_keys:
+                            seen_keys.add(key)
+                            urls.append(g_url)
             except Exception:
                 pass
+
         return urls
 
     def get_base_price(self, obj):
@@ -345,19 +366,31 @@ class ProductShortSerializer(serializers.ModelSerializer):
 
     def get_images(self, obj):
         urls = []
+        seen_keys = set()
+
         if obj.image:
             try:
                 cover_url = obj.image.url
-                if cover_url and cover_url not in urls:
-                    urls.append(cover_url)
+                if cover_url:
+                    key = _normalize_image_key(cover_url)
+                    if key and key not in seen_keys:
+                        seen_keys.add(key)
+                        urls.append(cover_url)
             except Exception:
                 pass
+
         for img_obj in obj.gallery_images.all():
             try:
-                if img_obj.image and img_obj.image.url and img_obj.image.url not in urls:
-                    urls.append(img_obj.image.url)
+                if img_obj.image:
+                    g_url = img_obj.image.url
+                    if g_url:
+                        key = _normalize_image_key(g_url)
+                        if key and key not in seen_keys:
+                            seen_keys.add(key)
+                            urls.append(g_url)
             except Exception:
                 pass
+
         return urls
 
     class Meta:

@@ -603,17 +603,40 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           if (prodData.description) setEditNotes(prodData.description);
           if (prodData.quantity_needed) setEditQty(String(prodData.quantity_needed));
 
-          const imgs = Array.isArray(prodData.images) && prodData.images.length > 0
+          const rawImgs = Array.isArray(prodData.images) && prodData.images.length > 0
             ? prodData.images
             : (prodData.image_url ? [prodData.image_url] : []);
 
-          setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
-          setOrigMasterImagesCount(imgs.length);
+          const seenKeys = new Set<string>();
+          const uniqueImgs: any[] = [];
+          for (const img of rawImgs) {
+            const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
+            if (!urlStr) continue;
+            const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+            if (!seenKeys.has(cleanKey)) {
+              seenKeys.add(cleanKey);
+              uniqueImgs.push(img);
+            }
+          }
+
+          setEditMasterImages(uniqueImgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+          setOrigMasterImagesCount(uniqueImgs.length);
         }
       } catch (err) {
-        const imgs = supply.product_detail?.images || (supply.product_detail?.image_url ? [supply.product_detail.image_url] : []);
-        setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
-        setOrigMasterImagesCount(imgs.length);
+        const rawImgs = supply.product_detail?.images || (supply.product_detail?.image_url ? [supply.product_detail.image_url] : []);
+        const seenKeys = new Set<string>();
+        const uniqueImgs: any[] = [];
+        for (const img of rawImgs) {
+          const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
+          if (!urlStr) continue;
+          const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          if (!seenKeys.has(cleanKey)) {
+            seenKeys.add(cleanKey);
+            uniqueImgs.push(img);
+          }
+        }
+        setEditMasterImages(uniqueImgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+        setOrigMasterImagesCount(uniqueImgs.length);
       }
     } else {
       setEditMasterImages([]);
@@ -673,11 +696,23 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
           body: formData
         });
 
-        const imgs = Array.isArray(updatedProd.images) && updatedProd.images.length > 0
+        const rawImgs = Array.isArray(updatedProd.images) && updatedProd.images.length > 0
           ? updatedProd.images
           : (updatedProd.image_url ? [updatedProd.image_url] : []);
 
-        setEditMasterImages(imgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
+        const seenKeys = new Set<string>();
+        const uniqueImgs: any[] = [];
+        for (const img of rawImgs) {
+          const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
+          if (!urlStr) continue;
+          const cleanKey = urlStr.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || urlStr;
+          if (!seenKeys.has(cleanKey)) {
+            seenKeys.add(cleanKey);
+            uniqueImgs.push(img);
+          }
+        }
+
+        setEditMasterImages(uniqueImgs.map((img: any, idx: number) => typeof img === 'string' ? { id: `img-${idx}`, url: img } : img));
         toast("New master product image(s) uploaded successfully! Visible in product details.", "success");
       }
     } catch (err: any) {
