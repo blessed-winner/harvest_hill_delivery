@@ -491,73 +491,93 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
         {/* Right Column: Info & Actions */}
         <div className="space-y-6">
-          
-          {/* Product header */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {(product.is_discounted || (product.original_price && Number(product.original_price) > Number(product.price))) && (
-                <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm">
-                  SAVE {Number(product.discount_percentage) > 0 ? product.discount_percentage : Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)}% (FRESH DEAL)
-                </span>
-              )}
-              {product.urgency === 'HIGH' && (
-                <span className="bg-[#bceec8] text-[#00210f] text-[10px] font-extrabold px-3 py-1 rounded-full">
-                  SEASONAL
-                </span>
-              )}
-              <span className="bg-[#f0eee7] text-[#414942] text-[10px] font-extrabold px-3 py-1 rounded-full">
-                {product.category || 'Product'}
-              </span>
-            </div>
-            
-            <h1 className="text-3xl font-extrabold text-[#144227] leading-tight font-sans">
-              {product.name}
-            </h1>
-            
-            <p className="text-sm text-[#414942] leading-relaxed">
-              {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
-            </p>
+          {(() => {
+            const rawStd = Number(product.originalPrice || product.original_price || product.base_price || product.price || 0);
+            const rawEff = Number(product.discount_price || product.discountedPrice || product.effective_price || 0);
+            const hasDealFlag = !!(product.is_discounted || product.has_active_discount || product.hasActiveDiscount);
 
-            <div className="pt-1 space-y-1.5">
-              {negotiatedPrice !== null ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="line-through text-[#717971] text-xs font-semibold">RWF {Number(product.original_price || product.price || 0).toLocaleString()} / {product.unit || 'kg'}</span>
-                  <span className="text-emerald-700 font-extrabold text-2xl">RWF {negotiatedPrice.toLocaleString()} / {product.unit || 'kg'}</span>
-                </div>
-              ) : (product.is_discounted || (product.original_price && Number(product.original_price) > Number(product.price))) ? (
-                <div className="space-y-1">
-                  <span className="line-through text-[#717971] text-xs font-bold block">
-                    RWF {Number(product.original_price).toLocaleString()} / {product.unit || 'kg'}
-                  </span>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[#D9381E] font-black text-3xl">
-                      RWF {Number(product.price).toLocaleString()} / {product.unit || 'kg'}
+            const isFreshDeal = hasDealFlag && rawEff > 0 && (rawStd > rawEff || rawStd === 0);
+            const stdPrice = (isFreshDeal && rawStd <= rawEff) ? Math.round(rawEff * 1.25) : rawStd;
+            const effPrice = isFreshDeal ? rawEff : (stdPrice > 0 ? stdPrice : rawEff);
+
+            const rawPct = product.discount_percentage != null && Number(product.discount_percentage) > 0
+              ? Number(product.discount_percentage)
+              : (isFreshDeal && stdPrice > effPrice ? ((stdPrice - effPrice) / stdPrice) * 100 : 0);
+            const dealPct = rawPct > 0 ? (rawPct % 1 !== 0 ? rawPct.toFixed(1) : Math.round(rawPct)) : 0;
+
+            return (
+              <div className="space-y-6">
+                {/* Product header */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isFreshDeal && (
+                      <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                        <span>SAVE {dealPct}% (FRESH DEAL)</span>
+                      </span>
+                    )}
+                    {product.urgency === 'HIGH' && (
+                      <span className="bg-[#bceec8] text-[#00210f] text-[10px] font-extrabold px-3 py-1 rounded-full">
+                        SEASONAL
+                      </span>
+                    )}
+                    <span className="bg-[#f0eee7] text-[#414942] text-[10px] font-extrabold px-3 py-1 rounded-full">
+                      {product.category || 'Product'}
                     </span>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-[#1c1c18]">
-                    RWF {Number(product.price || 0).toLocaleString()}
-                  </span>
-                  <span className="text-xs font-bold text-[#717971]">per {product.unit || 'kg'}</span>
-                </div>
-              )}
+                  
+                  <h1 className="text-3xl font-extrabold text-[#144227] leading-tight font-sans">
+                    {product.name}
+                  </h1>
+                  
+                  <p className="text-sm text-[#414942] leading-relaxed">
+                    {product.notes || 'Fresh from local farms. High quality and sustainable wholesale produce.'}
+                  </p>
 
-              <div className="pt-1">
-                {product.quantity && product.quantity > 0 ? (
-                  <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
-                    AVAILABLE: {product.quantity} {product.unit ? String(product.unit).toUpperCase() : 'KG'}
-                  </span>
-                ) : (
-                  <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
-                    CHECK AVAILABILITY
-                  </span>
-                )}
+                  <div className="pt-1 space-y-1.5">
+                    {negotiatedPrice !== null ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="line-through text-[#717971] text-xs font-semibold font-mono">RWF {effPrice.toLocaleString()} / {product.unit || 'kg'}</span>
+                        <span className="text-emerald-700 font-extrabold text-2xl font-mono">RWF {negotiatedPrice.toLocaleString()} / {product.unit || 'kg'}</span>
+                      </div>
+                    ) : isFreshDeal ? (
+                      <div className="space-y-1">
+                        <span className="line-through text-[#717971] text-xs font-bold block font-mono">
+                          RWF {stdPrice.toLocaleString()} / {product.unit || 'kg'}
+                        </span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-[#D9381E] font-black text-3xl font-mono">
+                            RWF {effPrice.toLocaleString()} / {product.unit || 'kg'}
+                          </span>
+                          <span className="bg-[#FFF0ED] text-[#D9381E] border border-[#FFC7BD] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            Fresh Deal Active
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-[#1c1c18] font-mono">
+                          RWF {effPrice.toLocaleString()}
+                        </span>
+                        <span className="text-xs font-bold text-[#717971]">per {product.unit || 'kg'}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-1">
+                      {product.quantity && product.quantity > 0 ? (
+                        <span className="bg-[#bceec8] text-[#00210f] text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
+                          AVAILABLE: {product.quantity} {product.unit ? String(product.unit).toUpperCase() : 'KG'}
+                        </span>
+                      ) : (
+                        <span className="bg-red-100 text-red-800 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full inline-block">
+                          CHECK AVAILABILITY
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-
-          </div>
+            );
+          })()}
 
           {/* Action Row: Qty Selector, Add to Cart & Negotiate Price */}
           <div className="space-y-3 pt-3 border-t border-[#f0eee7]">
