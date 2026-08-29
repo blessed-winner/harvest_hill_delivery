@@ -15,8 +15,11 @@ import Invoices from '../../portals/client/pages/Invoices';
 import { CurrencyProvider } from '../../context/CurrencyContext';
 import { getCartStorageKey } from '../../portals/client/lib/api';
 
+import { useAlert } from '../../context/AlertContext';
+
 export default function ClientPage() {
   const router = useRouter();
+  const { showAlert } = useAlert();
   const [activeScreen, setActiveScreen] = useState('landing'); // Default view is now the Marketplace Home
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // Track selected category
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null); // Track selected product
@@ -115,7 +118,7 @@ export default function ClientPage() {
         const unit = product.unit || 'kg';
 
         if (currentQty + 1 > availableQty) {
-          alert(`Cannot add more. Maximum available stock for "${product.name || 'this product'}" is ${availableQty} ${unit}.`);
+          showAlert("Stock Limit Reached", `Cannot add more. Maximum available stock for "${product.name || 'this product'}" is ${availableQty} ${unit}.`, "warning");
           return;
         }
 

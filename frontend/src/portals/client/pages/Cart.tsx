@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2, ChevronRight, Calendar, ArrowRight, ShieldCheck, HeartHandshake, Headphones, Loader2, Package } from 'lucide-react';
 import { clientApi, getCartStorageKey } from '../lib/api';
+import { useAlert } from '../../../context/AlertContext';
 
 interface CartProps {
   onNavigate: (screen: string) => void;
@@ -33,6 +34,7 @@ const parsePrice = (price: any): number => {
 };
 
 export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps) {
+  const { showAlert } = useAlert();
   const [items, setItems] = useState<CartItem[]>([]);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
           const maxAvailable = parseFloat((item as any).available_quantity || 9999);
           const targetQty = item.qty + delta;
           if (targetQty > maxAvailable) {
-            alert(`Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`);
+            showAlert("Stock Limit Reached", `Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`, "warning");
             return { ...item, qty: maxAvailable };
           }
           const newQty = Math.max(1, targetQty);
@@ -107,7 +109,7 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
           const maxAvailable = parseFloat((item as any).available_quantity || 9999);
           let validQty = isNaN(parsed) ? 1 : Math.max(1, parsed);
           if (validQty > maxAvailable) {
-            alert(`Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`);
+            showAlert("Stock Limit Reached", `Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`, "warning");
             validQty = maxAvailable;
           }
           return { ...item, qty: validQty };
