@@ -650,55 +650,6 @@ export default function Dashboard({ onNavigate, addToCart }: DashboardProps) {
 
                   </div>
 
-                  {/* Preference Settings checkboxes */}
-                  <div className="pt-4 border-t border-[#f0eee7]">
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-[#717971] mb-4">Preference Settings</p>
-                    
-                    <div className="space-y-4">
-                      {/* Pref 1 */}
-                      <label className="flex items-start gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={autoReorder}
-                          onChange={() => setAutoReorder(!autoReorder)}
-                          className="sr-only"
-                        />
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all mt-0.5 ${
-                          autoReorder
-                            ? 'bg-[#144227] border-[#144227] text-white'
-                            : 'border-[#c1c9c0] bg-white group-hover:border-[#144227]'
-                        }`}>
-                          {autoReorder && <Check size={12} strokeWidth={3} />}
-                        </div>
-                        <div>
-                          <span className="block text-xs font-bold text-[#1c1c18]">Receive Email Notifications</span>
-                          <span className="block text-[10px] text-[#717971]">Receive automated email updates regarding order deliveries.</span>
-                        </div>
-                      </label>
-
-                      {/* Pref 2 */}
-                      <label className="flex items-start gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={earlyAccess}
-                          onChange={() => setEarlyAccess(!earlyAccess)}
-                          className="sr-only"
-                        />
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all mt-0.5 ${
-                          earlyAccess
-                            ? 'bg-[#144227] border-[#144227] text-white'
-                            : 'border-[#c1c9c0] bg-white group-hover:border-[#144227]'
-                        }`}>
-                          {earlyAccess && <Check size={12} strokeWidth={3} />}
-                        </div>
-                        <div>
-                          <span className="block text-xs font-bold text-[#1c1c18]">Receive Inventory Low Alerts</span>
-                          <span className="block text-[10px] text-[#717971]">Notify when preferred fresh catalog products are running low in stock.</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
                   {/* Save Changes Row */}
                   <div className="flex items-center justify-between pt-4 border-t border-[#f0eee7]">
                     <div className="h-6">
