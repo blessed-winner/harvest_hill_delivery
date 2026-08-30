@@ -50,7 +50,13 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -p ${{ secrets.SSH_PORT || 22 }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          HOST_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC4biVnxfNfPnkEUhk+C6BtdqZCQQsfrKtFA5Fo9XMTS"
+          FINGERPRINT=$(echo "$HOST_KEY" | ssh-keygen -l -f - | awk '{print $2}')
+          if [ "$FINGERPRINT" != "SHA256:B60mWnb5vy8naOxkPHZrjC5jjPei8gKLzbSL+vyuiu0" ]; then
+            echo "Host key fingerprint mismatch! Got: $FINGERPRINT"
+            exit 1
+          fi
+          echo "${{ secrets.SSH_HOST }} $HOST_KEY" >> ~/.ssh/known_hosts
 
       - name: Transfer docker-compose.yml to Remote Server
         run: |
