@@ -1,11 +1,6 @@
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://24.199.93.70}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://24.199.93.70}
+    image: ghcr.io/hamwenawe/harvesthilldelivery_frontend:${IMAGE_TAG:-latest}
     container_name: harvesthill_frontend
     restart: always
     ports:
