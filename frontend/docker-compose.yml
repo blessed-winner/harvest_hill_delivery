@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/hamwenawe/harvesthilldelivery_frontend:${IMAGE_TAG:-latest}
+    image: harvesthill_frontend:latest
     container_name: harvesthill_frontend
     restart: always
     ports:
