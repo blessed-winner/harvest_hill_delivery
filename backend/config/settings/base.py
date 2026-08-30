@@ -86,7 +86,7 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database
 # psycopg3 backend is used automatically by django 5.0+ when psycopg is installed.
 DATABASES = {
-    'default': env.db('DATABASE_URL')
+    'default': env.db('DATABASE_URL', default='sqlite:///:memory:')
 }
 
 # Password validation
