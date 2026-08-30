@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-and-deploy:
-    name: Test & Deploy Django Backend
+    name: Test, Build & Deploy Django Backend
     runs-on: ubuntu-latest
 
     steps:
@@ -29,15 +29,71 @@ jobs:
         run: |
           python manage.py test --settings=config.settings.test
 
-      - name: Deploy via SSH to Production Server
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker Layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-backend-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-backend-buildx-
+
+      - name: Build Backend Docker Image on Runner
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./Dockerfile
+          load: true
+          tags: harvesthill_backend:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move Docker Layer Cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Save and Compress Backend Docker Image Archive
+        run: |
+          docker save harvesthill_backend:latest | gzip -1 > backend_image.tar.gz
+
+      - name: Setup SSH Key for Deployment
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add SSH Host Key to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          HOST_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC4biVnxfNfPnkEUhk+C6BtdqZCQQsfrKtFA5Fo9XMTS"
+          FINGERPRINT=$(echo "$HOST_KEY" | ssh-keygen -l -f - | awk '{print $2}')
+          if [ "$FINGERPRINT" != "SHA256:B60mWnb5vy8naOxkPHZrjC5jjPei8gKLzbSL+vyuiu0" ]; then
+            echo "Host key fingerprint mismatch! Got: $FINGERPRINT"
+            exit 1
+          fi
+          echo "${{ secrets.SSH_HOST }} $HOST_KEY" >> ~/.ssh/known_hosts
+
+      - name: Transfer Image Archive & docker-compose.yml to Server
+        run: |
+          ssh -p ${{ secrets.SSH_PORT || 22 }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /var/www/harvesthilldelivery_backend"
+          rsync -avz \
+            -e "ssh -p ${{ secrets.SSH_PORT || 22 }}" \
+            ./docker-compose.yml backend_image.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/harvesthilldelivery_backend/
+
+      - name: Load Image and Restart Backend Container on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
           script: |
+            set -e
             cd /var/www/harvesthilldelivery_backend
-            git pull origin main
-            docker compose up -d --build
-            docker compose exec -T backend python manage.py migrate --noinput
+            gzip -dc backend_image.tar.gz | docker load
+            rm -f backend_image.tar.gz
+            docker compose up -d --remove-orphans
