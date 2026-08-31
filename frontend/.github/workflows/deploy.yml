@@ -32,8 +32,8 @@ jobs:
           file: ./Dockerfile
           load: true
           build-args: |
-            NEXT_PUBLIC_API_URL=http://24.199.93.70
-            NEXT_PUBLIC_WS_URL=ws://24.199.93.70
+            NEXT_PUBLIC_API_URL=http://24.199.93.70:8000
+            NEXT_PUBLIC_WS_URL=ws://24.199.93.70:8000
           tags: harvesthill_frontend:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
