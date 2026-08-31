@@ -102,15 +102,25 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         urls = []
         seen_keys = set()
+        request = self.context.get('request')
+
+        def _make_url(url_val):
+            if not url_val:
+                return None
+            if url_val.startswith('http://') or url_val.startswith('https://'):
+                return url_val
+            if request:
+                return request.build_absolute_uri(url_val)
+            return url_val
 
         if obj.image:
             try:
-                cover_url = obj.image.url
-                if cover_url:
-                    key = _normalize_image_key(cover_url)
+                raw_url = obj.image.url
+                if raw_url:
+                    key = _normalize_image_key(raw_url)
                     if key and key not in seen_keys:
                         seen_keys.add(key)
-                        urls.append(cover_url)
+                        urls.append(_make_url(raw_url))
             except Exception:
                 pass
 
@@ -119,12 +129,12 @@ class ProductSerializer(serializers.ModelSerializer):
                 if img_obj.image:
                     if obj.image and (img_obj.image == obj.image or (getattr(img_obj.image, 'name', None) and img_obj.image.name == getattr(obj.image, 'name', None))):
                         continue
-                    g_url = img_obj.image.url
-                    if g_url:
-                        key = _normalize_image_key(g_url)
+                    raw_url = img_obj.image.url
+                    if raw_url:
+                        key = _normalize_image_key(raw_url)
                         if key and key not in seen_keys:
                             seen_keys.add(key)
-                            urls.append(g_url)
+                            urls.append(_make_url(raw_url))
             except Exception:
                 pass
 
@@ -269,6 +279,9 @@ class ProductSerializer(serializers.ModelSerializer):
             name = obj.image.name if hasattr(obj.image, 'name') else str(obj.image)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         except Exception:
             return None
@@ -331,15 +344,25 @@ class ProductShortSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         urls = []
         seen_keys = set()
+        request = self.context.get('request')
+
+        def _make_url(url_val):
+            if not url_val:
+                return None
+            if url_val.startswith('http://') or url_val.startswith('https://'):
+                return url_val
+            if request:
+                return request.build_absolute_uri(url_val)
+            return url_val
 
         if obj.image:
             try:
-                cover_url = obj.image.url
-                if cover_url:
-                    key = _normalize_image_key(cover_url)
+                raw_url = obj.image.url
+                if raw_url:
+                    key = _normalize_image_key(raw_url)
                     if key and key not in seen_keys:
                         seen_keys.add(key)
-                        urls.append(cover_url)
+                        urls.append(_make_url(raw_url))
             except Exception:
                 pass
 
@@ -348,12 +371,12 @@ class ProductShortSerializer(serializers.ModelSerializer):
                 if img_obj.image:
                     if obj.image and (img_obj.image == obj.image or (getattr(img_obj.image, 'name', None) and img_obj.image.name == getattr(obj.image, 'name', None))):
                         continue
-                    g_url = img_obj.image.url
-                    if g_url:
-                        key = _normalize_image_key(g_url)
+                    raw_url = img_obj.image.url
+                    if raw_url:
+                        key = _normalize_image_key(raw_url)
                         if key and key not in seen_keys:
                             seen_keys.add(key)
-                            urls.append(g_url)
+                            urls.append(_make_url(raw_url))
             except Exception:
                 pass
 
@@ -376,6 +399,9 @@ class ProductShortSerializer(serializers.ModelSerializer):
             name = obj.image.name if hasattr(obj.image, 'name') else str(obj.image)
             if name.startswith('http://') or name.startswith('https://'):
                 return name
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         except Exception:
             return None

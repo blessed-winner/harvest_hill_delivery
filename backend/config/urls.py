@@ -9,6 +9,10 @@ def root_health_check(request):
         "status": "ok"
     })
 
+from django.conf import settings
+from django.views.static import serve
+from django.urls import re_path
+
 urlpatterns = [
     path('', root_health_check, name='root_health_check'),
     path('admin/', admin.site.urls),
@@ -24,4 +28,5 @@ urlpatterns = [
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

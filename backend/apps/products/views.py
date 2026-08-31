@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Product, ProductRequest
 from .serializers import ProductSerializer, ProductRequestSerializer
-from .utils import delete_cloudinary_image
+from .utils import delete_image_file
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -98,7 +98,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if files:
             if instance.image:
                 try:
-                    delete_cloudinary_image(instance.image)
+                    delete_image_file(instance.image)
                 except Exception:
                     pass
             instance = serializer.save()
@@ -165,7 +165,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             image_url = request.data.get('image_url')
 
             from .models import ProductImage
-            from .utils import delete_cloudinary_image
+            from .utils import delete_image_file
             from rest_framework.response import Response
             import uuid
 
@@ -178,7 +178,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     if img_obj:
                         if img_obj.image:
                             try:
-                                delete_cloudinary_image(img_obj.image)
+                                delete_image_file(img_obj.image)
                             except Exception:
                                 pass
                         img_obj.delete()
@@ -197,7 +197,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                             g_url = str(img.image.url).split('?')[0].replace('http://', '').replace('https://', '')
                             g_key = g_url.split('/')[-1].split('.')[0].lower() if '/' in g_url else g_url.lower()
                             if (url_key and g_key and (g_key == url_key or g_key in url_key or url_key in g_key)) or img.image.name in clean_url or clean_url in g_url:
-                                delete_cloudinary_image(img.image)
+                                delete_image_file(img.image)
                                 img.delete()
                                 deleted = True
                                 break
@@ -209,7 +209,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                         c_url = str(product.image.url).split('?')[0].replace('http://', '').replace('https://', '')
                         c_key = c_url.split('/')[-1].split('.')[0].lower() if '/' in c_url else c_url.lower()
                         if (url_key and c_key and (c_key == url_key or c_key in url_key or url_key in c_key)) or product.image.name in clean_url or clean_url in c_url:
-                            delete_cloudinary_image(product.image)
+                            delete_image_file(product.image)
                             next_img = product.gallery_images.first()
                             if next_img:
                                 product.image = next_img.image

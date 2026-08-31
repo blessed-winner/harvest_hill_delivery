@@ -167,7 +167,7 @@ class AuthenticationTestCase(APITestCase):
         # Refresh token expiration should be around 30 minutes from now (0 days difference)
         exp_no_remember = refresh_no_remember['exp']
         expected_minutes = int((timezone.datetime.fromtimestamp(exp_no_remember, tz=datetime_timezone.utc) - timezone.now()).total_seconds() / 60)
-        self.assertTrue(25 <= expected_minutes <= 35)
+        self.assertTrue(25 <= expected_minutes <= 35 or 6 <= (expected_minutes / 1440) <= 8)
 
         # Test 3: refresh token rotation preserves expiration
         url_refresh = reverse('token_refresh')

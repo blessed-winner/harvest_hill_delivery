@@ -22,7 +22,6 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 # Application definition
 INSTALLED_APPS = [
     'daphne',
-    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,7 +30,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Third party apps
-    'cloudinary',
     'channels',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -120,7 +118,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -193,16 +191,9 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME', default='dygqfwbsu'),
-    'API_KEY': env('CLOUDINARY_API_KEY', default='888566947262174'),
-    'API_SECRET': env('CLOUDINARY_API_SECRET', default=''),
-}
-
-# Django 5.1+ removed DEFAULT_FILE_STORAGE; STORAGES is required for non-local media.
 STORAGES = {
     'default': {
-        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',

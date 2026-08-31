@@ -532,12 +532,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
             img_obj = SupplyImage.objects.get(id=image_id, supply=supply)
             is_main = (supply.photo and (supply.photo.name == img_obj.image.name))
             
-            # Permanently delete file from Cloudinary / media storage
+            # Permanently delete file from media storage
             try:
                 if img_obj.image:
                     img_obj.image.delete(save=False)
             except Exception as storage_err:
-                print("Cloudinary storage delete note:", storage_err)
+                print("Media storage delete note:", storage_err)
 
             img_obj.delete()
             if is_main:

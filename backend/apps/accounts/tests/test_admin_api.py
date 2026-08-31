@@ -80,6 +80,7 @@ class AdminAPITestCase(APITestCase):
             'category': 'Fruits',
             'unit': 'lbs',
             'base_price': '1.50',
+            'offered_price': '1.50',
             'quantity_needed': 10
         }
         res = self.client.post(url_list, data, format='json')

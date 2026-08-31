@@ -85,7 +85,7 @@ class Command(BaseCommand):
             farmer_profiles.append(fprof)
             self.stdout.write(self.style.SUCCESS(f"Seeded farmer: {fdata['farm_name']} ({fdata['email']})"))
 
-        # 3. Seed Catalog Master Products with hosted Cloudinary URLs & discounts
+        # 3. Seed Catalog Master Products with hosted image URLs & discounts
         products_data = [
             {
                 "name": "Organic Hass Avocados",
@@ -329,4 +329,4 @@ class Command(BaseCommand):
             disc_str = f" (Discounted: RWF {prod.discount_price})" if prod.is_discounted else ""
             self.stdout.write(self.style.SUCCESS(f"Seeded Product: {prod.name} (Live Stock: {prod.total_available_quantity} {prod.unit}){disc_str}"))
 
-        self.stdout.write(self.style.SUCCESS("Database seeding completed successfully! All Cloudinary products & live stock are active."))
+        self.stdout.write(self.style.SUCCESS("Database seeding completed successfully! All seeded products & live stock are active."))

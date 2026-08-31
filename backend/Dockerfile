@@ -17,11 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script and application code
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
+# Copy application code and entrypoint script
 COPY . /app/
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
