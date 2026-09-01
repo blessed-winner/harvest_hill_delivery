@@ -46,14 +46,21 @@ export default function LoginPage() {
       localStorage.setItem('user_role', data.user.role || 'client');
       localStorage.setItem('user_email', userEmail);
       localStorage.setItem('user_username', data.user.username || '');
+      if (data.user?.id) {
+        localStorage.setItem('user_id', String(data.user.id));
+      }
 
-      // Clean any transient unauthenticated/guest cart data
+      // Clean transient guest cart & legacy email-keyed cart data for fresh session
       try {
         localStorage.removeItem('guest_cart');
         localStorage.removeItem('cart_items_guest');
         localStorage.removeItem('cart_items_client_client');
         localStorage.removeItem('cart_items_client');
         localStorage.removeItem('pending_checkout_product_id');
+        if (userEmail) {
+          const safeEmail = userEmail.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          localStorage.removeItem(`cart_items_client_${safeEmail}`);
+        }
       } catch {}
 
       // Evaluate guest intent window (5 minutes threshold = 300,000 ms)
@@ -211,7 +218,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me & Forgot Password */}
+            {/* Remember Me */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer group">
                 <input
@@ -233,12 +240,6 @@ export default function LoginPage() {
                 </div>
                 <span className="text-xs text-[#414942] font-semibold">Remember me</span>
               </label>
-              <Link 
-                href="/forgot-password" 
-                className="text-xs font-bold text-[#144227] hover:underline underline-offset-2"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             {/* Login button */}

@@ -96,6 +96,19 @@ export default function SignupPage() {
         throw new Error(errorMsg);
       }
 
+      // Clean any transient unauthenticated/guest cart data for fresh signup
+      try {
+        localStorage.removeItem('guest_cart');
+        localStorage.removeItem('cart_items_guest');
+        localStorage.removeItem('cart_items_client_client');
+        localStorage.removeItem('cart_items_client');
+        localStorage.removeItem('pending_checkout_product_id');
+        if (email) {
+          const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          localStorage.removeItem(`cart_items_client_${safeEmail}`);
+        }
+      } catch {}
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');

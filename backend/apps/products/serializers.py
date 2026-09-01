@@ -48,6 +48,8 @@ class ProductSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     displayId = serializers.CharField(source='display_id', read_only=True)
     total_available_quantity = serializers.SerializerMethodField()
+    total_sold_quantity = serializers.SerializerMethodField()
+    totalSoldQuantity = serializers.SerializerMethodField()
     effective_price = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     has_active_discount = serializers.SerializerMethodField()
@@ -65,6 +67,12 @@ class ProductSerializer(serializers.ModelSerializer):
     sourcing_history_count = serializers.IntegerField(read_only=True)
     supplier_count = serializers.IntegerField(read_only=True)
     submission_count = serializers.SerializerMethodField()
+
+    def get_total_sold_quantity(self, obj):
+        return float(obj.total_sold_quantity)
+
+    def get_totalSoldQuantity(self, obj):
+        return float(obj.total_sold_quantity)
 
     def get_price(self, obj):
         return float(obj.price)
@@ -152,7 +160,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'id', 'display_id', 'displayId', 'name', 'category', 'description', 'is_currently_needed', 'urgency', 'unit', 
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage', 
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
-            'image', 'image_url', 'images', 'quantity_needed', 'total_available_quantity', 
+            'image', 'image_url', 'images', 'quantity_needed', 'total_available_quantity', 'total_sold_quantity', 'totalSoldQuantity',
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
             'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at'
         ]

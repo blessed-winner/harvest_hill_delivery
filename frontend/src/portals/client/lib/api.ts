@@ -281,9 +281,12 @@ export function getCartStorageKey(): string {
   if (typeof window === 'undefined') return 'cart_items_guest';
   const token = localStorage.getItem('access_token');
   const role = localStorage.getItem('user_role') || 'client';
+  const userId = (localStorage.getItem('user_id') || '').trim();
   const rawEmail = (localStorage.getItem('user_email') || '').trim();
   const rawUsername = (localStorage.getItem('user_username') || '').trim();
-  const identifier = rawEmail || rawUsername;
+  
+  // Prioritize user_id (unique UUID) over email/username so recreated accounts start clean
+  const identifier = userId || rawEmail || rawUsername;
 
   if (!token || !identifier) {
     return 'cart_items_guest';

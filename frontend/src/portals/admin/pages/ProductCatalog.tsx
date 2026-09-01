@@ -775,11 +775,19 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
                           {/* Requirement Spec Box - Vertical Hierarchy */}
                           <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
-                            <div>
-                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
-                              <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
-                                {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
-                              </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
+                                <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
+                                  {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#144227]">Quantity Sold</p>
+                                <p className="text-sm font-black text-emerald-800 font-mono mt-0.5">
+                                  {parseFloat(product.total_sold_quantity || product.totalSoldQuantity || product.quantity_sold || 0).toLocaleString()} {product.unit || 'kg'}
+                                </p>
+                              </div>
                             </div>
 
                             <div className="py-1 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">

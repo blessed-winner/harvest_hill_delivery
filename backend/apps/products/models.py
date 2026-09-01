@@ -82,15 +82,24 @@ class Product(models.Model):
 
     @property
     def total_available_quantity(self):
-        """Calculates total aggregated quantity ONLY from accepted active farmer supplies."""
+        """Calculates total aggregated sellable quantity ONLY from accepted active farmer supplies."""
         accepted_supplies = self.supplies.filter(is_archived=False, status='accepted')
         total = 0.0
         for s in accepted_supplies:
-            if s.accepted_quantity is not None:
-                total += float(s.accepted_quantity)
-            else:
-                total += float(s.quantity)
+            total += float(s.accepted_quantity if s.accepted_quantity is not None else (s.quantity if s.status == 'accepted' else 0.0))
         return total
+
+    @property
+    def total_sold_quantity(self):
+        """Calculates total quantity sold across active client orders."""
+        from django.db.models import Sum
+        from apps.orders.models import OrderItem
+        sold = OrderItem.objects.filter(
+            product=self,
+            order__is_archived=False,
+            order__status__in=['pending', 'confirmed', 'processing', 'shipped', 'delivered']
+        ).aggregate(total=Sum('quantity'))['total']
+        return float(sold or 0.0)
 
     def is_visible_to_user(self, user=None):
         """Returns True if the MasterProduct itself is visible to the given user."""

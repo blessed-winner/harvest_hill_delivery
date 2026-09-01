@@ -11,6 +11,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'product', 'product_detail', 'quantity', 'price']
 
 
+from django.db import transaction
+
 def deduct_inventory_for_order(order):
     if order.is_quantity_deducted:
         return
@@ -18,64 +20,60 @@ def deduct_inventory_for_order(order):
     from apps.notifications.models import Notification
     from apps.accounts.models import User
 
-    for item in order.items.all():
-        product = item.product
-        purchased_qty = float(item.quantity or 0)
-        if not product or purchased_qty <= 0:
-            continue
+    with transaction.atomic():
+        for item in order.items.all():
+            product = item.product
+            purchased_qty = float(item.quantity or 0)
+            if not product or purchased_qty <= 0:
+                continue
 
-        # Look up matching active accepted farmer supplies for this product
-        supplies = Supply.objects.filter(
-            product=product,
-            status='accepted',
-            is_archived=False,
-            quantity__gt=0
-        ).order_by('created_at')
-
-        if not supplies.exists():
+            # Look up active accepted farmer supplies for this product with available sellable stock
             supplies = Supply.objects.filter(
                 product=product,
                 status='accepted',
-                is_archived=False
+                is_archived=False,
+                accepted_quantity__gt=0
             ).order_by('created_at')
 
-        remaining_to_deduct = purchased_qty
-        for supply in supplies:
-            if remaining_to_deduct <= 0:
-                break
-            
-            current_qty = float(supply.quantity or 0)
-            current_acc_qty = float(supply.accepted_quantity) if supply.accepted_quantity is not None else None
+            if not supplies.exists():
+                supplies = Supply.objects.filter(
+                    product=product,
+                    status='accepted',
+                    is_archived=False
+                ).order_by('created_at')
 
-            if current_qty >= remaining_to_deduct:
-                supply.quantity = current_qty - remaining_to_deduct
-                if current_acc_qty is not None:
-                    supply.accepted_quantity = max(0.0, current_acc_qty - remaining_to_deduct)
-                remaining_to_deduct = 0
-            else:
-                remaining_to_deduct -= current_qty
-                supply.quantity = 0
-                if current_acc_qty is not None:
-                    supply.accepted_quantity = max(0.0, current_acc_qty - current_qty)
+            remaining_to_deduct = purchased_qty
+            for supply in supplies:
+                if remaining_to_deduct <= 0:
+                    break
 
-            supply.save()
+                available = float(supply.accepted_quantity if supply.accepted_quantity is not None else (supply.quantity if supply.status == 'accepted' else 0.0))
+                if available <= 0:
+                    continue
 
-            if float(supply.quantity) <= 10:
-                admin_users = User.objects.filter(role='admin')
-                for admin in admin_users:
-                    Notification.objects.create(
-                        user=admin,
-                        title="Inventory Threshold Reached",
-                        message=f"Product '{product.name}' ({supply.supply_number or supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.quantity} kg remaining)."
-                    )
+                deduction = min(available, remaining_to_deduct)
+                supply.accepted_quantity = max(0.0, available - deduction)
+                remaining_to_deduct -= deduction
 
-        # Also update product.quantity_needed if set on MasterProduct
-        if product.quantity_needed and float(product.quantity_needed) > 0:
-            product.quantity_needed = max(0.0, float(product.quantity_needed) - purchased_qty)
-            product.save(update_fields=['quantity_needed'])
+                # NEVER modify supply.quantity! Raw farmer submission remains intact.
+                supply.save(update_fields=['accepted_quantity'])
 
-    order.is_quantity_deducted = True
-    order.save(update_fields=['is_quantity_deducted'])
+                if float(supply.accepted_quantity) <= 10:
+                    admin_users = User.objects.filter(role='admin')
+                    for admin in admin_users:
+                        Notification.objects.create(
+                            user=admin,
+                            title="Inventory Threshold Reached",
+                            message=f"Product '{product.name}' ({supply.supply_number or supply.id}) from supplier '{supply.farmer.user.email}' has reached low stock ({supply.accepted_quantity:g} {product.unit} remaining)."
+                        )
+
+            # Also update product.quantity_needed if set on MasterProduct
+            if product.quantity_needed and float(product.quantity_needed) > 0:
+                product.quantity_needed = max(0.0, float(product.quantity_needed) - purchased_qty)
+                product.save(update_fields=['quantity_needed'])
+
+        order.is_quantity_deducted = True
+        order.save(update_fields=['is_quantity_deducted'])
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -109,7 +107,6 @@ class OrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Order must contain at least one item.")
         
         from apps.supplies.models import Supply
-        from django.db.models import Sum
 
         for item in value:
             product = item.get('product')
@@ -117,10 +114,11 @@ class OrderSerializer(serializers.ModelSerializer):
             if not product or qty <= 0:
                 continue
 
-            # Calculate total available stock across active accepted supplies for this product
-            total_available = float(
-                Supply.objects.filter(product=product, status='accepted', is_archived=False)
-                .aggregate(total=Sum('quantity'))['total'] or 0
+            # Calculate total available sellable stock across active accepted supplies using accepted_quantity
+            accepted_supplies = Supply.objects.filter(product=product, status='accepted', is_archived=False)
+            total_available = sum(
+                float(s.accepted_quantity if s.accepted_quantity is not None else (s.quantity if s.status == 'accepted' else 0.0))
+                for s in accepted_supplies
             )
 
             product_name = getattr(product, 'name', f"Product #{product.id}")
@@ -154,17 +152,19 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
-        order = Order.objects.create(**validated_data)
-
-        for item_data in items_data:
-            prod = item_data.get('product')
-            if ('price' not in item_data or item_data['price'] is None) and prod:
-                item_data['price'] = prod.effective_price
-            OrderItem.objects.create(order=order, **item_data)
         
-        # Deduct inventory immediately for the created order
-        deduct_inventory_for_order(order)
-        return order
+        with transaction.atomic():
+            order = Order.objects.create(**validated_data)
+
+            for item_data in items_data:
+                prod = item_data.get('product')
+                if ('price' not in item_data or item_data['price'] is None) and prod:
+                    item_data['price'] = prod.effective_price
+                OrderItem.objects.create(order=order, **item_data)
+            
+            # Deduct inventory immediately for the created order
+            deduct_inventory_for_order(order)
+            return order
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop('items', None)
@@ -185,47 +185,48 @@ class OrderSerializer(serializers.ModelSerializer):
         if t_fee > 0 and t_tax > 0:
             is_assessed = True
 
-        instance.status = new_status
-        instance.delivery_address = validated_data.get('delivery_address', instance.delivery_address)
-        instance.transport_fee = t_fee
-        instance.tax_amount = t_tax
-        instance.is_assessed = is_assessed
-        instance.is_archived = validated_data.get('is_archived', instance.is_archived)
-        instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
-        instance.save()
+        with transaction.atomic():
+            instance.status = new_status
+            instance.delivery_address = validated_data.get('delivery_address', instance.delivery_address)
+            instance.transport_fee = t_fee
+            instance.tax_amount = t_tax
+            instance.is_assessed = is_assessed
+            instance.is_archived = validated_data.get('is_archived', instance.is_archived)
+            instance.is_deleted_by_client = validated_data.get('is_deleted_by_client', instance.is_deleted_by_client)
+            instance.save()
 
-        # Deduct inventory if status becomes delivered / confirmed / processing / shipped
-        if new_status in ['delivered', 'confirmed', 'processing', 'shipped']:
-            deduct_inventory_for_order(instance)
+            # Deduct inventory if status becomes delivered / confirmed / processing / shipped
+            if new_status in ['delivered', 'confirmed', 'processing', 'shipped']:
+                deduct_inventory_for_order(instance)
 
-        # Restore supply quantities when an order is cancelled
-        if new_status == 'cancelled' and old_status != 'cancelled' and instance.is_quantity_deducted:
-            from apps.supplies.models import Supply
+            # Restore supply accepted quantities when an order is cancelled
+            if new_status == 'cancelled' and old_status != 'cancelled' and instance.is_quantity_deducted:
+                from apps.supplies.models import Supply
 
-            for item in instance.items.all():
-                product = item.product
-                restore_qty = float(item.quantity)
+                for item in instance.items.all():
+                    product = item.product
+                    restore_qty = float(item.quantity)
 
-                supply = Supply.objects.filter(
-                    product=product,
-                    is_archived=False,
-                ).order_by('created_at').first()
+                    supply = Supply.objects.filter(
+                        product=product,
+                        status='accepted',
+                        is_archived=False,
+                    ).order_by('created_at').first()
 
-                if supply:
-                    supply.quantity = float(supply.quantity) + restore_qty
-                    if supply.accepted_quantity is not None:
-                        supply.accepted_quantity = float(supply.accepted_quantity) + restore_qty
-                    supply.save()
+                    if supply:
+                        current_acc = float(supply.accepted_quantity if supply.accepted_quantity is not None else 0.0)
+                        supply.accepted_quantity = current_acc + restore_qty
+                        supply.save(update_fields=['accepted_quantity'])
 
-                if product and product.quantity_needed is not None:
-                    product.quantity_needed = float(product.quantity_needed) + restore_qty
-                    product.save(update_fields=['quantity_needed'])
+                    if product and product.quantity_needed is not None:
+                        product.quantity_needed = float(product.quantity_needed) + restore_qty
+                        product.save(update_fields=['quantity_needed'])
 
-            instance.is_quantity_deducted = False
-            instance.save(update_fields=['is_quantity_deducted'])
+                instance.is_quantity_deducted = False
+                instance.save(update_fields=['is_quantity_deducted'])
 
-        if items_data is not None:
-            instance.items.all().delete()
-            for item_data in items_data:
-                OrderItem.objects.create(order=instance, **item_data)
-        return instance
+            if items_data is not None:
+                instance.items.all().delete()
+                for item_data in items_data:
+                    OrderItem.objects.create(order=instance, **item_data)
+            return instance
