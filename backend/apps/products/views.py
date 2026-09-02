@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Product, ProductRequest
@@ -30,9 +31,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search', None)
         is_currently_needed = self.request.query_params.get('is_currently_needed', None)
 
-        # For farmers/non-admins, strictly show OPEN requirements
+        # For non-admins, strictly show OPEN requirements that pass MasterProduct visibility checks
         if not self.request.user.is_authenticated or getattr(self.request.user, 'role', '') != 'admin':
-            queryset = queryset.filter(status='open')
+            queryset = Product.objects.visible_to_user(self.request.user)
         elif status_param and status_param != 'all':
             queryset = queryset.filter(status=status_param)
 
@@ -44,6 +45,15 @@ class ProductViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(name__icontains=search)
 
         return queryset.order_by('-created_at')
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user = request.user
+        if not user or not user.is_authenticated or getattr(user, 'role', '') != 'admin':
+            if not instance.is_visible_to_user(user):
+                return Response({"detail": "Not found or unauthorized access to this product."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         from django.utils import timezone
@@ -268,6 +278,12 @@ class FreshDealViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(master_product_id=master_product_id)
         if status_param:
             queryset = queryset.filter(status=status_param)
+
+        user = self.request.user
+        if not user or not user.is_authenticated or getattr(user, 'role', '') != 'admin':
+            visible_prod_ids = Product.objects.visible_to_user(user).values_list('id', flat=True)
+            queryset = queryset.filter(master_product_id__in=visible_prod_ids)
+
         return queryset
 
     def perform_create(self, serializer):

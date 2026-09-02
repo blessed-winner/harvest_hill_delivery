@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock, Users, UserCheck, Globe } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
-import { api } from '../lib/api';
+import { api, apiRequest } from '../lib/api';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { useAlert } from '../../../context/AlertContext';
 
@@ -31,6 +31,24 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formSubmissionDeadline, setFormSubmissionDeadline] = useState<string>("");
   const [formPreferredPeriod, setFormPreferredPeriod] = useState<string>("");
   const [formDescription, setFormDescription] = useState<string>("");
+  const [formVisibilityScope, setFormVisibilityScope] = useState<string>("PUBLIC");
+  const [formTargetClients, setFormTargetClients] = useState<any[]>([]);
+  const [availableClients, setAvailableClients] = useState<any[]>([]);
+  const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+
+  const fetchAvailableClients = async () => {
+    try {
+      setIsLoadingClients(true);
+      const res = await apiRequest('/api/accounts/users/?role=client');
+      const list = Array.isArray(res) ? res : (res?.results || []);
+      setAvailableClients(list);
+    } catch {
+      setAvailableClients([]);
+    } finally {
+      setIsLoadingClients(false);
+    }
+  };
 
   // Status Filter Tabs
   const [activeStatusTab, setActiveStatusTab] = useState<string>('all');
@@ -236,8 +254,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormSubmissionDeadline("");
     setFormPreferredPeriod("");
     setFormDescription("");
+    setFormVisibilityScope("PUBLIC");
+    setFormTargetClients([]);
+    setClientSearchQuery("");
     setErrorMessage("");
     setSelectedProduct("new");
+    fetchAvailableClients();
   };
 
   const handleOpenEditProduct = (product: any) => {
@@ -263,7 +285,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormSubmissionDeadline(product.submission_deadline || "");
     setFormPreferredPeriod(product.preferred_harvest_period || "");
     setFormDescription(product.description || "");
+    const scope = product.visibility_scope || 'PUBLIC';
+    setFormVisibilityScope(scope);
+    const targets = product.target_clients_detail || product.target_clients || [];
+    setFormTargetClients(Array.isArray(targets) ? targets : []);
+    setClientSearchQuery("");
     setErrorMessage("");
+    fetchAvailableClients();
   };
 
   const isFormDirty = useMemo(() => {
@@ -290,6 +318,39 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     const initialOfferedPrice = (selectedProduct.offered_price !== null && selectedProduct.offered_price !== undefined)
       ? selectedProduct.offered_price
       : (selectedProduct.base_price ? selectedProduct.base_price : null);
+
+    const normScope = (s: string) => {
+      if (s === 'private_admin') return 'HARVEST_HILL_ONLY';
+      if (s === 'specific_clients') return 'SPECIFIC_CLIENTS';
+      if (s === 'all_clients') return 'REGISTERED_CLIENTS';
+      if (s === 'public') return 'PUBLIC';
+      return s;
+    };
+    const normCurrentScope = normScope(normStr(formVisibilityScope || 'PUBLIC'));
+    const normInitialScope = normScope(normStr(selectedProduct.visibility_scope || 'PUBLIC'));
+    const visibilityScopeChanged = normCurrentScope !== normInitialScope;
+
+    const extractClientIds = (list: any[]) => {
+      if (!Array.isArray(list)) return [];
+      return list.map((c: any) => {
+        if (typeof c === 'object' && c !== null) {
+          return String(c.id || c.client_profile?.id || c.user_id || '').trim();
+        }
+        return String(c).trim();
+      }).filter(Boolean).sort();
+    };
+
+    const initialClientIds = extractClientIds(selectedProduct.target_clients_detail || selectedProduct.target_clients || []);
+    const currentClientIds = extractClientIds(formTargetClients);
+
+    let targetClientsChanged = false;
+    if (normCurrentScope === 'SPECIFIC_CLIENTS' || normInitialScope === 'SPECIFIC_CLIENTS') {
+      if (initialClientIds.length !== currentClientIds.length) {
+        targetClientsChanged = true;
+      } else {
+        targetClientsChanged = initialClientIds.some((id, idx) => id !== currentClientIds[idx]);
+      }
+    }
 
     const nameChanged = normStr(formName) !== normStr(selectedProduct.name);
     const catChanged = normStr(formCategory) !== normStr(selectedProduct.category || 'Vegetables');
@@ -318,7 +379,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       qualityChanged ||
       deadlineChanged ||
       periodChanged ||
-      descChanged
+      descChanged ||
+      visibilityScopeChanged ||
+      targetClientsChanged
     );
   }, [
     selectedProduct,
@@ -333,7 +396,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formQualityRequirements,
     formSubmissionDeadline,
     formPreferredPeriod,
-    formDescription
+    formDescription,
+    formVisibilityScope,
+    formTargetClients
   ]);
 
   const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
@@ -417,6 +482,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
+    if ((formVisibilityScope === 'SPECIFIC_CLIENTS' || formVisibilityScope === 'specific_clients') && formTargetClients.length === 0) {
+      setErrorMessage("Select at least one client for this visibility option.");
+      return;
+    }
+
     const qtyVal = parseFloat(formQuantityNeeded);
     if (qtyVal <= 0) {
       setErrorMessage("Quantity needed must be greater than zero.");
@@ -441,6 +511,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       finalStatus = 'open';
     }
 
+    const targetClientIds = formTargetClients.map((c: any) => {
+      if (typeof c === 'object') {
+        return c.id || c.client_profile?.id || c.user_id;
+      }
+      return c;
+    }).filter(Boolean);
+
     const payload: any = {
       name: formName.trim(),
       category: formCategory,
@@ -454,6 +531,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       submission_deadline: formSubmissionDeadline || null,
       preferred_harvest_period: formPreferredPeriod.trim(),
       description: formDescription.trim(),
+      visibility_scope: formVisibilityScope,
+      target_clients: targetClientIds,
     };
 
     try {
@@ -757,15 +836,40 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                               {product.category || 'Vegetables'}
                             </span>
 
-                            <span className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs",
-                              isOpen && "bg-emerald-100 text-emerald-900 border-emerald-300",
-                              isDraft && "bg-amber-100 text-amber-900 border-amber-300",
-                              isClosed && "bg-gray-100 text-gray-700 border-gray-300",
-                              isArchived && "bg-purple-100 text-purple-900 border-purple-300"
-                            )}>
-                              {st}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {(() => {
+                                const scope = product.visibility_scope || 'PUBLIC';
+                                let badgeLabel = 'Public';
+                                let badgeClass = 'bg-blue-50 text-blue-800 border-blue-200';
+
+                                if (scope === 'HARVEST_HILL_ONLY' || scope === 'private_admin') {
+                                  badgeLabel = 'Harvest Hill Only';
+                                  badgeClass = 'bg-gray-100 text-gray-800 border-gray-300';
+                                } else if (scope === 'SPECIFIC_CLIENTS' || scope === 'specific_clients') {
+                                  badgeLabel = 'Specific Clients';
+                                  badgeClass = 'bg-amber-100 text-amber-900 border-amber-300';
+                                } else if (scope === 'REGISTERED_CLIENTS' || scope === 'all_clients') {
+                                  badgeLabel = 'Registered Clients';
+                                  badgeClass = 'bg-indigo-100 text-indigo-900 border-indigo-300';
+                                }
+
+                                return (
+                                  <span className={cn("px-2 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wider border shadow-2xs", badgeClass)}>
+                                    {badgeLabel}
+                                  </span>
+                                );
+                              })()}
+
+                              <span className={cn(
+                                "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs",
+                                isOpen && "bg-emerald-100 text-emerald-900 border-emerald-300",
+                                isDraft && "bg-amber-100 text-amber-900 border-amber-300",
+                                isClosed && "bg-gray-100 text-gray-700 border-gray-300",
+                                isArchived && "bg-purple-100 text-purple-900 border-purple-300"
+                              )}>
+                                {st}
+                              </span>
+                            </div>
                           </div>
 
                           {/* Requirement Title */}
@@ -1286,6 +1390,190 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
+          </div>
+
+          {/* Section 5: Marketplace Visibility Scope & Access Controls */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <ShieldCheck size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                5. Marketplace Visibility & Client Access
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider block">
+                Visibility Scope <span className="text-red-500">*</span>
+              </label>
+              <div className="space-y-2">
+                {[
+                  { id: 'HARVEST_HILL_ONLY', label: 'Harvest Hill Delivery Only', desc: 'Restricted internally to Harvest Hill Delivery administration', icon: Lock },
+                  { id: 'SPECIFIC_CLIENTS', label: 'Specific Chosen Clients', desc: 'Exclusive access to designated wholesale client accounts', icon: Users },
+                  { id: 'REGISTERED_CLIENTS', label: 'All Registered Clients', desc: 'Visible to all authenticated client buyer accounts', icon: UserCheck },
+                  { id: 'PUBLIC', label: 'Public Marketplace', desc: 'Accessible to all visitors, including guests and registered clients', icon: Globe },
+                ].map((item) => {
+                  const isSelected = formVisibilityScope === item.id || (
+                    item.id === 'HARVEST_HILL_ONLY' && formVisibilityScope === 'private_admin'
+                  ) || (
+                    item.id === 'SPECIFIC_CLIENTS' && formVisibilityScope === 'specific_clients'
+                  ) || (
+                    item.id === 'REGISTERED_CLIENTS' && formVisibilityScope === 'all_clients'
+                  ) || (
+                    item.id === 'PUBLIC' && formVisibilityScope === 'public'
+                  );
+                  const IconComp = item.icon;
+                  return (
+                    <label
+                      key={item.id}
+                      onClick={() => setFormVisibilityScope(item.id)}
+                      className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#144227]/5 border-[#144227] shadow-xs'
+                          : 'bg-white border-[#e5e2db] hover:bg-[#f6f3ec]/40'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                        isSelected ? 'bg-[#144227] text-white' : 'bg-[#f0eee7] text-[#717971]'
+                      }`}>
+                        <IconComp size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-extrabold ${isSelected ? 'text-[#144227]' : 'text-[#1c1c18]'}`}>
+                            {item.label}
+                          </span>
+                          {isSelected && (
+                            <span className="w-2 h-2 rounded-full bg-[#144227]"></span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[#717971] leading-relaxed mt-0.5">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Specific Chosen Clients Selector */}
+            {(formVisibilityScope === 'SPECIFIC_CLIENTS' || formVisibilityScope === 'specific_clients') && (
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3 font-sans animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10.5px] font-extrabold text-amber-950 uppercase tracking-wider block">
+                    Choose clients who can access this product
+                  </label>
+                  <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                    {formTargetClients.length} Selected
+                  </span>
+                </div>
+
+                {/* Client Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search username, email, or business name..."
+                    value={clientSearchQuery}
+                    onChange={(e) => setClientSearchQuery(e.target.value)}
+                    className="w-full pl-3 pr-8 py-2 rounded-xl border border-amber-300 bg-white text-xs font-medium text-[#1c1c18] outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  {clientSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setClientSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-800 hover:text-amber-950 text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                {/* Matching Search Results Dropdown */}
+                {clientSearchQuery.trim().length > 0 && (
+                  <div className="max-h-36 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-amber-200 divide-y divide-amber-100 shadow-xs">
+                    {availableClients
+                      .filter(c => {
+                        const q = clientSearchQuery.toLowerCase();
+                        const email = (c.email || '').toLowerCase();
+                        const uname = (c.username || '').toLowerCase();
+                        const bname = (c.client_profile?.business_name || c.business_name || '').toLowerCase();
+                        return email.includes(q) || uname.includes(q) || bname.includes(q);
+                      })
+                      .map(c => {
+                        const cid = c.client_profile?.id || c.id;
+                        const isAlreadySelected = formTargetClients.some(sc => {
+                          const scId = sc.id || sc.client_profile?.id || sc.user_id;
+                          return scId === cid || sc.email === c.email;
+                        });
+                        const displayName = c.client_profile?.business_name || c.username || c.email;
+
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              if (!isAlreadySelected) {
+                                setFormTargetClients(prev => [...prev, {
+                                  id: cid,
+                                  email: c.email,
+                                  username: c.username,
+                                  name: displayName
+                                }]);
+                                setClientSearchQuery('');
+                              }
+                            }}
+                            className={`p-2 px-3 text-xs flex items-center justify-between transition-colors ${
+                              isAlreadySelected ? 'bg-amber-50 opacity-60 cursor-not-allowed' : 'hover:bg-amber-100/60 cursor-pointer'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-extrabold text-amber-950">{displayName}</p>
+                              <p className="text-[10px] text-amber-800 font-mono">{c.email}</p>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={isAlreadySelected}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                isAlreadySelected ? 'bg-amber-200 text-amber-800' : 'bg-primary text-white hover:opacity-90'
+                              }`}
+                            >
+                              {isAlreadySelected ? 'Added' : '+ Add'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+
+                {/* Selected Clients Removable Chips */}
+                <div className="space-y-1">
+                  <span className="text-[9.5px] font-bold text-amber-900 uppercase tracking-wider block">Selected clients:</span>
+                  {formTargetClients.length === 0 ? (
+                    <p className="text-[11px] text-amber-800 italic">No clients selected yet. Search above to add wholesale client accounts.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {formTargetClients.map((c: any, idx: number) => {
+                        const displayName = c.name || c.email || c.username || (typeof c === 'string' ? c : `Client ${c.id || idx}`);
+                        return (
+                          <span
+                            key={c.id || idx}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-950 shadow-2xs"
+                          >
+                            <span>{displayName}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFormTargetClients(prev => prev.filter((_, i) => i !== idx))}
+                              className="w-4 h-4 rounded-full bg-amber-100 text-amber-900 hover:bg-amber-200 flex items-center justify-center text-[10px] font-black cursor-pointer transition-colors"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DetailDrawer>

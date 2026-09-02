@@ -43,6 +43,20 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return obj.image.url
 
 
+class TargetClientSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.accounts.models import ClientProfile
+        model = ClientProfile
+        fields = ['id', 'email', 'username', 'name']
+
+    def get_name(self, obj):
+        return obj.business_name or (obj.user.username if obj.user else '') or (obj.user.email if obj.user else '')
+
+
 class ProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
@@ -67,6 +81,14 @@ class ProductSerializer(serializers.ModelSerializer):
     sourcing_history_count = serializers.IntegerField(read_only=True)
     supplier_count = serializers.IntegerField(read_only=True)
     submission_count = serializers.SerializerMethodField()
+
+    from apps.accounts.models import ClientProfile
+    target_clients_detail = TargetClientSerializer(source='target_clients', many=True, read_only=True)
+    target_clients = serializers.PrimaryKeyRelatedField(
+        queryset=ClientProfile.objects.all(),
+        many=True,
+        required=False
+    )
 
     def get_total_sold_quantity(self, obj):
         return float(obj.total_sold_quantity)
@@ -162,10 +184,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
             'image', 'image_url', 'images', 'quantity_needed', 'total_available_quantity', 'total_sold_quantity', 'totalSoldQuantity',
             'supplier_count', 'sourcing_history_count', 'sourcing_supplies', 'created_at',
-            'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at'
+            'status', 'quality_requirements', 'submission_deadline', 'preferred_harvest_period', 'submission_count', 'archived_at',
+            'visibility_scope', 'target_clients', 'target_clients_detail'
         ]
         extra_kwargs = {
             'image': {'required': False, 'allow_null': True},
+            'visibility_scope': {'required': False},
         }
 
     def get_submission_count(self, obj):
@@ -277,6 +301,24 @@ class ProductSerializer(serializers.ModelSerializer):
             name_duplicates = name_duplicates.exclude(pk=instance.pk)
         if name_duplicates.exists():
             raise serializers.ValidationError({"name": "A product with this name already exists in the catalog."})
+
+        # 5. Marketplace Visibility Scope Validation
+        v_scope = attrs.get('visibility_scope')
+        if v_scope is None and instance:
+            v_scope = instance.visibility_scope
+
+        if v_scope in ['SPECIFIC_CLIENTS', 'specific_clients']:
+            if 'target_clients' in attrs:
+                target_clients = attrs['target_clients']
+            elif instance:
+                target_clients = list(instance.target_clients.all())
+            else:
+                target_clients = []
+
+            if not target_clients:
+                raise serializers.ValidationError({
+                    "target_clients": "Select at least one client for this visibility option."
+                })
 
         return attrs
 
@@ -397,7 +439,7 @@ class ProductShortSerializer(serializers.ModelSerializer):
             'pricing_mode', 'offered_price', 'base_price', 'price', 'effective_price', 'is_discounted', 'discount_price', 'discount_percentage',
             'has_active_discount', 'active_deal', 'originalPrice', 'discountedPrice', 'discountPercentage', 'hasActiveDiscount', 'activeDeal',
             'quantity_needed', 'status', 'quality_requirements', 
-            'submission_deadline', 'preferred_harvest_period', 'description', 'archived_at'
+            'submission_deadline', 'preferred_harvest_period', 'description', 'archived_at', 'visibility_scope'
         ]
 
     def get_image_url(self, obj):

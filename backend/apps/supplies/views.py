@@ -283,6 +283,12 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
                 Q(custom_product_name__icontains=search_str) |
                 Q(suggested_product_name__icontains=search_str)
             )
+        user = self.request.user
+        if not user or not user.is_authenticated or getattr(user, 'role', '') != 'admin':
+            from apps.products.models import Product
+            visible_prod_ids = Product.objects.visible_to_user(user).values_list('id', flat=True)
+            queryset = queryset.filter(Q(product__isnull=True) | Q(product_id__in=visible_prod_ids))
+
         return queryset
 
     def perform_destroy(self, instance):

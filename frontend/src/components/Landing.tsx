@@ -152,6 +152,9 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     for (const s of suppliesList) {
       if (s.status !== 'accepted' && s.status !== 'open') continue;
 
+      const sScope = s.visibility_scope || s.product_detail?.visibility_scope;
+      if (sScope === 'HARVEST_HILL_ONLY' || sScope === 'private_admin') continue;
+
       const prodName = (s.product_detail?.name || s.name || s.custom_product_name || s.suggested_product_name || 'Produce').trim();
       if (!prodName) continue;
 
@@ -238,6 +241,8 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
 
     for (const p of productList) {
+      if (p.visibility_scope === 'HARVEST_HILL_ONLY' || p.visibility_scope === 'private_admin') continue;
+
       const prodName = (p.name || '').trim();
       if (!prodName) continue;
 
@@ -306,7 +311,10 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
       }
     }
 
-    return Array.from(map.values());
+    return Array.from(map.values()).filter((item: any) => {
+      const avail = parseFloat(String(item.total_available_quantity ?? item.quantity ?? 0));
+      return avail > 0;
+    });
   };
 
   const activeMasterProducts = aggregateMasterProducts(supplies, products);

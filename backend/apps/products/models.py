@@ -2,7 +2,34 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
+class ProductQuerySet(models.QuerySet):
+    def visible_to_user(self, user=None):
+        if user and hasattr(user, 'is_authenticated') and user.is_authenticated and getattr(user, 'role', '') == 'admin':
+            return self
+
+        q = models.Q(status='open')
+
+        # 1. PUBLIC products are always visible to everyone
+        scope_q = models.Q(visibility_scope__in=['PUBLIC', 'public'])
+
+        if user and hasattr(user, 'is_authenticated') and user.is_authenticated:
+            # 2. REGISTERED_CLIENTS products are visible to any authenticated user
+            scope_q |= models.Q(visibility_scope__in=['REGISTERED_CLIENTS', 'all_clients'])
+
+            # 3. SPECIFIC_CLIENTS products are visible if user or user's client profile is in target_clients
+            client_profile = getattr(user, 'client_profile', None)
+            specific_q = models.Q(target_clients__user=user)
+            if client_profile:
+                specific_q |= models.Q(target_clients=client_profile)
+            
+            scope_q |= (models.Q(visibility_scope__in=['SPECIFIC_CLIENTS', 'specific_clients']) & specific_q)
+
+        return self.filter(q & scope_q).distinct()
+
+
 class Product(models.Model):
+    objects = ProductQuerySet.as_manager()
+
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('open', 'Open'),
@@ -132,18 +159,17 @@ class Product(models.Model):
         return False
 
     def get_available_quantity_for_user(self, user=None):
-        """Calculates available quantity filtered strictly by user authorization and double-lock visibility."""
+        """Calculates available quantity strictly based on Master Product visibility and accepted supplies."""
         if not self.is_visible_to_user(user):
             return 0.0
 
         accepted_supplies = self.supplies.filter(is_archived=False, status='accepted')
         total = 0.0
         for s in accepted_supplies:
-            if s.is_visible_to_user(user):
-                if s.accepted_quantity is not None:
-                    total += float(s.accepted_quantity)
-                else:
-                    total += float(s.quantity)
+            if s.accepted_quantity is not None:
+                total += float(s.accepted_quantity)
+            else:
+                total += float(s.quantity)
         return total
 
     @property

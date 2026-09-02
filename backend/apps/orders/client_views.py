@@ -124,10 +124,7 @@ class ClientDashboardViewSet(viewsets.ViewSet):
         recent_orders_data = OrderSerializer(recent_orders, many=True).data
         
         # Urgent products (high urgency needed products)
-        urgent_products = Product.objects.filter(
-            is_currently_needed=True,
-            urgency='high'
-        )[:5]
+        urgent_products = Product.objects.visible_to_user(request.user).filter(is_currently_needed=True, urgency='high')[:5]
         urgent_products_data = ProductSerializer(urgent_products, many=True).data
         
         # Active orders count (pending, processing, shipped)
@@ -287,7 +284,7 @@ class ClientDashboardViewSet(viewsets.ViewSet):
             return Response({'product': None, 'order_count': 0, 'total_purchased': 0})
 
         product_obj = Product.objects.filter(pk=top_item['product']).first()
-        if not product_obj:
+        if not product_obj or not product_obj.is_visible_to_user(request.user):
             return Response({'product': None, 'order_count': 0, 'total_purchased': 0})
 
         order_count = top_item['order_count']
@@ -387,13 +384,13 @@ class ClientOrderViewSet(viewsets.ModelViewSet):
 class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Client Product Browsing API
-    Browse and search available master products
+    Browse and search available master products with strict visibility authorization
     """
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Product.objects.all().order_by('-created_at')
+        return Product.objects.visible_to_user(self.request.user).order_by('-created_at')
 
     @extend_schema(
         summary="Browse available products",
@@ -459,15 +456,6 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
             else:
                 queryset = queryset.filter(is_discounted=False)
         
-        # Double-lock access enforcement per Section 4:
-        # A client should only see/use a MasterProduct when:
-        # 1. The MasterProduct itself is visible to that client, AND
-        # 2. There is relevant approved/available supply that the client is authorized to access.
-        user = request.user
-        if not user or not user.is_authenticated or user.role != 'admin':
-            visible_ids = [p.pk for p in queryset if p.is_visible_to_user(user) and p.get_available_quantity_for_user(user) > 0]
-            queryset = queryset.filter(pk__in=visible_ids)
-        
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'results': serializer.data,
@@ -476,15 +464,19 @@ class ClientProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(
         summary="Get product details",
-        description="Retrieve detailed information about a specific farmer supply",
+        description="Retrieve detailed information about a specific master product",
         tags=['Client Portal']
     )
     def retrieve(self, request, *args, **kwargs):
         """Get a single product by ID with strict direct access authorization check"""
-        instance = self.get_object()
+        try:
+            instance = self.get_object()
+        except Exception:
+            return Response({"detail": "Not found or unauthorized access to this product."}, status=404)
+
         user = request.user
-        if not user or not user.is_authenticated or user.role != 'admin':
-            if not instance.is_visible_to_user(user) or instance.get_available_quantity_for_user(user) <= 0:
+        if not user or not user.is_authenticated or getattr(user, 'role', '') != 'admin':
+            if not instance.is_visible_to_user(user):
                 return Response({"detail": "Not found or unauthorized access to this product."}, status=404)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)

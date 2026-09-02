@@ -6,7 +6,9 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
-    "lint": "npm --prefix frontend run lint"
+    "lint": "npm --prefix frontend run lint",
+    "push:frontend": "powershell -ExecutionPolicy Bypass -File ./push_frontend_only.ps1",
+    "push:backend": "powershell -ExecutionPolicy Bypass -File ./push_backend_only.ps1"
   }
 }
 

@@ -266,9 +266,20 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       const clientIds = selectedClients.map(c => c.id || c.user_id || c.pk);
       await api.supplies.update(visibilitySupply.id, {
         visibility_scope: visibilityScopeInput,
-        disclose_farmer_name: discloseFarmerNameInput,
         target_clients: clientIds,
       });
+
+      const targetProdId = visibilitySupply.product || visibilitySupply.product_detail?.id;
+      if (targetProdId) {
+        try {
+          await api.products.update(targetProdId, {
+            visibility_scope: visibilityScopeInput,
+            target_clients: clientIds,
+          });
+        } catch (pErr) {
+          console.error("Failed to sync Master Product visibility:", pErr);
+        }
+      }
 
       toast(`Visibility settings saved!`, "success");
       setVisibilitySupply(null);
@@ -3386,23 +3397,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                   </div>
                 </div>
               )}
-
-              <div className="p-4 bg-white border border-[#e5e2db] rounded-2xl space-y-2 shadow-xs">
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => setDiscloseFarmerNameInput(!discloseFarmerNameInput)}>
-                  <div className="pr-4">
-                    <p className="text-xs font-extrabold text-[#1c1c18]">Disclose Farm Name to Buyers</p>
-                    <p className="text-[10px] text-[#717971] leading-relaxed mt-0.5">
-                      When off, supplier displays anonymously as <strong className="text-[#144227]">"Harvest Hill Delivery"</strong>.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={discloseFarmerNameInput}
-                    onChange={(e) => setDiscloseFarmerNameInput(e.target.checked)}
-                    className="w-4 h-4 rounded border-[#c1c9c0] text-[#144227] focus:ring-[#144227] cursor-pointer accent-[#144227]"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="flex gap-2.5 pt-2 border-t border-[#e5e2db]">

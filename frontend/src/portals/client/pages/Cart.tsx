@@ -80,13 +80,15 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
 
   // Update item quantities
   const updateQty = (id: string, delta: number) => {
+    let limitWarning: { name: string; maxAvailable: number; unit: string } | null = null;
+
     setItems(prev => {
       const updated = prev.map(item => {
         if (item.id === id) {
           const maxAvailable = parseFloat((item as any).available_quantity || 9999);
           const targetQty = item.qty + delta;
           if (targetQty > maxAvailable) {
-            showAlert("Stock Limit Reached", `Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`, "warning");
+            limitWarning = { name: item.name, maxAvailable, unit: item.unit || 'kg' };
             return { ...item, qty: maxAvailable };
           }
           const newQty = Math.max(1, targetQty);
@@ -98,18 +100,25 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
       setCartCount(updated.length);
       return updated;
     });
+
+    if (limitWarning) {
+      const { name, maxAvailable, unit } = limitWarning;
+      showAlert("Stock Limit Reached", `Maximum available stock for "${name}" is ${maxAvailable} ${unit}.`, "warning");
+    }
   };
 
   // Direct manual quantity input handler
   const handleManualQtyChange = (id: string, rawVal: string) => {
     const parsed = parseInt(rawVal, 10);
+    let limitWarning: { name: string; maxAvailable: number; unit: string } | null = null;
+
     setItems(prev => {
       const updated = prev.map(item => {
         if (item.id === id) {
           const maxAvailable = parseFloat((item as any).available_quantity || 9999);
           let validQty = isNaN(parsed) ? 1 : Math.max(1, parsed);
           if (validQty > maxAvailable) {
-            showAlert("Stock Limit Reached", `Maximum available stock for "${item.name}" is ${maxAvailable} ${item.unit || 'kg'}.`, "warning");
+            limitWarning = { name: item.name, maxAvailable, unit: item.unit || 'kg' };
             validQty = maxAvailable;
           }
           return { ...item, qty: validQty };
@@ -119,6 +128,11 @@ export default function Cart({ onNavigate, cartCount, setCartCount }: CartProps)
       setCartCount(updated.length);
       return updated;
     });
+
+    if (limitWarning) {
+      const { name, maxAvailable, unit } = limitWarning;
+      showAlert("Stock Limit Reached", `Maximum available stock for "${name}" is ${maxAvailable} ${unit}.`, "warning");
+    }
   };
 
   // Remove item
