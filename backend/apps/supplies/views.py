@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets, serializers, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -266,7 +267,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         if category and category.lower() != 'all':
             cat_lower = category.lower()
-            from django.db.models import Q
             if cat_lower in ['dairy', 'animal', 'animal-based']:
                 queryset = queryset.filter(Q(product__category__icontains='dairy') | Q(product__category__icontains='animal') | Q(custom_category__icontains='dairy') | Q(custom_category__icontains='animal'))
             elif cat_lower in ['deals', 'flash deals']:
@@ -276,7 +276,6 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
 
         if search:
             search_str = search.strip()
-            from django.db.models import Q
             queryset = queryset.filter(
                 Q(product__name__icontains=search_str) |
                 Q(product__display_id__icontains=search_str) |
