@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock, Users, UserCheck, Globe } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock, Users, UserCheck, Globe, Edit3, UploadCloud } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -18,6 +18,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const { formatPrice } = useCurrency();
 
+  // Image URL helper
+  const getImageUrl = (url: string | null | undefined) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   // Form states
   const [formName, setFormName] = useState("");
   const [formCategory, setFormCategory] = useState("Vegetables");
@@ -25,6 +33,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [formPricingMode, setFormPricingMode] = useState<string>("harvest_hill_offers");
   const [formOfferedPrice, setFormOfferedPrice] = useState<string>("");
   const [formPrice, setFormPrice] = useState(""); // Holds entered reference price
+  const [formWorkflow, setFormWorkflow] = useState<'publish_directly' | 'request_harvest'>('publish_directly');
+  
+  // Direct Publishing Supply Batch States
+  const [formPublishStockQty, setFormPublishStockQty] = useState<string>("");
+  const [formPublishHarvestDate, setFormPublishHarvestDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [formPublishBatchNotes, setFormPublishBatchNotes] = useState<string>("");
+
   const [formQuantityNeeded, setFormQuantityNeeded] = useState("");
   const [formStatus, setFormStatus] = useState<string>("open");
   const [formQualityRequirements, setFormQualityRequirements] = useState<string>("");
@@ -36,6 +51,77 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [availableClients, setAvailableClients] = useState<any[]>([]);
   const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
   const [isLoadingClients, setIsLoadingClients] = useState(false);
+
+  // Product Image Files State (Max 3 MB per image limit)
+  const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
+  const [productImagePreviews, setProductImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]);
+
+  const handleProductImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+    const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
+    const totalCurrentCount = existingImages.length + productImageFiles.length;
+    const availableSlots = 3 - totalCurrentCount;
+
+    if (availableSlots <= 0) {
+      toast("You have reached the maximum limit of 3 images for this product.", "warning");
+      e.target.value = '';
+      return;
+    }
+
+    if (selectedFiles.length > availableSlots) {
+      toast(`Only the first ${availableSlots} image(s) were added (limit: 3 images).`, "warning");
+    }
+
+    const filesToAdd = selectedFiles.slice(0, availableSlots);
+    const validFiles: File[] = [];
+
+    for (const file of filesToAdd) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast(`Image "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum allowed size of 3 MB.`, "error");
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    if (validFiles.length > 0) {
+      setProductImageFiles(prev => [...prev, ...validFiles]);
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+      setProductImagePreviews(prev => [...prev, ...newPreviews]);
+    }
+    e.target.value = '';
+  };
+
+  const handleRemoveNewImage = (index: number) => {
+    setProductImageFiles(prev => prev.filter((_, i) => i !== index));
+    setProductImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+  const handleRemoveNewProductImage = handleRemoveNewImage;
+
+  const handleRemoveExistingImage = async (imgIdOrItem: any) => {
+    if (!selectedProduct || selectedProduct === 'new') return;
+    const imgItem = typeof imgIdOrItem === 'object' ? imgIdOrItem : (existingImages.find(i => i.id === imgIdOrItem || i.url === imgIdOrItem || i === imgIdOrItem) || { id: imgIdOrItem });
+    const imgUrl = typeof imgItem === 'string' ? imgItem : (imgItem.image_url || imgItem.url || imgItem.image);
+    try {
+      await apiRequest(`/api/products/${selectedProduct.id}/delete_image/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          image_id: imgItem.id && !String(imgItem.id).startsWith('img-') ? imgItem.id : null,
+          image_url: imgUrl
+        })
+      });
+      setExistingImages(prev => prev.filter(item => {
+        const u = typeof item === 'string' ? item : (item.image_url || item.url || item.image);
+        return u !== imgUrl && item.id !== imgItem.id;
+      }));
+      toast("Product image deleted successfully.", "success");
+      loadProducts();
+    } catch (err: any) {
+      toast(err.message || "Failed to delete image.", "error");
+    }
+  };
+  const handleDeleteExistingProductImage = handleRemoveExistingImage;
 
   const fetchAvailableClients = async () => {
     try {
@@ -241,6 +327,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const handleOpenAddProduct = () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
     setSourceRequestId(null);
     setFormName("");
     setFormCategory("Vegetables");
@@ -248,6 +335,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormPricingMode("harvest_hill_offers");
     setFormOfferedPrice("");
     setFormPrice("");
+    setFormWorkflow("publish_directly");
+    setFormPublishStockQty("");
+    setFormPublishHarvestDate(todayStr);
+    setFormPublishBatchNotes("");
     setFormQuantityNeeded("");
     setFormStatus("open");
     setFormQualityRequirements("");
@@ -257,6 +348,9 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormVisibilityScope("PUBLIC");
     setFormTargetClients([]);
     setClientSearchQuery("");
+    setProductImageFiles([]);
+    setProductImagePreviews([]);
+    setExistingImages([]);
     setErrorMessage("");
     setSelectedProduct("new");
     fetchAvailableClients();
@@ -275,9 +369,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       : (product.base_price ? String(product.base_price) : "");
     setFormOfferedPrice(pVal);
     setFormPrice(pVal);
+    setFormWorkflow(product.is_currently_needed ? "request_harvest" : "publish_directly");
+    setFormPublishStockQty("");
+    setFormPublishHarvestDate(todayStr);
+    setFormPublishBatchNotes("");
     setFormQuantityNeeded(product.quantity_needed ? String(product.quantity_needed) : "");
     
-    // Auto-open status if deadline is in future or today
     const isFutureDeadline = product.submission_deadline && product.submission_deadline >= todayStr;
     setFormStatus(isFutureDeadline ? "open" : (product.status || "open"));
     
@@ -289,18 +386,37 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setFormVisibilityScope(scope);
     const targets = product.target_clients_detail || product.target_clients || [];
     setFormTargetClients(Array.isArray(targets) ? targets : []);
+
+    const rawImgs = (Array.isArray(product.images) && product.images.length > 0)
+      ? product.images 
+      : (product.image_url ? [product.image_url] : (product.image ? [product.image] : []));
+    
+    const formattedImages = rawImgs.map((img: any, idx: number) => {
+      const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
+      const fullUrl = getImageUrl(urlStr);
+      const id = (typeof img === 'object' && img.id) ? img.id : `img-${idx}`;
+      return { id, url: fullUrl, image_url: fullUrl };
+    });
+
+    setExistingImages(formattedImages);
+    setProductImageFiles([]);
+    setProductImagePreviews([]);
+
     setClientSearchQuery("");
     setErrorMessage("");
     fetchAvailableClients();
   };
 
+  const handleOpenAddRequirement = (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleOpenEditProduct(product);
+    setFormWorkflow("request_harvest");
+  };
+
   const isFormDirty = useMemo(() => {
     if (!selectedProduct) return false;
     if (selectedProduct === 'new') {
-      const pMode = formPricingMode;
-      const validPrice = pMode === 'harvest_hill_offers' ? (parseFloat(formOfferedPrice) > 0) : true;
-      const validQty = parseFloat(formQuantityNeeded) > 0;
-      return !!(formName.trim() && validPrice && validQty);
+      return !!formName.trim();
     }
 
     const normStr = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
@@ -367,6 +483,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     const deadlineChanged = normStr(formSubmissionDeadline) !== normStr(selectedProduct.submission_deadline);
     const periodChanged = normStr(formPreferredPeriod) !== normStr(selectedProduct.preferred_harvest_period);
     const descChanged = normStr(formDescription) !== normStr(selectedProduct.description);
+    const workflowChanged = (formWorkflow === 'request_harvest') !== !!selectedProduct.is_currently_needed;
+    const hasNewImageFiles = productImageFiles.length > 0;
+    
+    const hasPublishSupplyInput = (formWorkflow === 'publish_directly') && (
+      (!!formPublishStockQty && parseFloat(formPublishStockQty) > 0) ||
+      (!!formPublishBatchNotes.trim())
+    );
 
     return (
       nameChanged ||
@@ -381,7 +504,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       periodChanged ||
       descChanged ||
       visibilityScopeChanged ||
-      targetClientsChanged
+      targetClientsChanged ||
+      workflowChanged ||
+      hasNewImageFiles ||
+      hasPublishSupplyInput
     );
   }, [
     selectedProduct,
@@ -398,7 +524,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     formPreferredPeriod,
     formDescription,
     formVisibilityScope,
-    formTargetClients
+    formTargetClients,
+    formWorkflow,
+    productImageFiles,
+    formPublishStockQty,
+    formPublishHarvestDate,
+    formPublishBatchNotes
   ]);
 
   const handleOpenHarvestModal = (product: any, e: React.MouseEvent) => {
@@ -415,19 +546,38 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const handleHarvestPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selectedFiles = Array.from(e.target.files);
+    const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
+    const availableSlots = 3 - harvestPhotos.length;
     
-    if (harvestPhotos.length + selectedFiles.length > 5) {
-      toast("You can upload a maximum of 5 images per harvest batch.", "warning");
+    if (availableSlots <= 0) {
+      toast("You have reached the maximum limit of 3 images per harvest batch.", "warning");
+      e.target.value = '';
+      return;
     }
 
-    const availableSlots = 5 - harvestPhotos.length;
+    if (selectedFiles.length > availableSlots) {
+      toast(`Only the first ${availableSlots} image(s) were added (limit: 3 images).`, "warning");
+    }
+
     const filesToAdd = selectedFiles.slice(0, availableSlots);
+    const validFiles: File[] = [];
 
-    const newPhotos = [...harvestPhotos, ...filesToAdd];
-    setHarvestPhotos(newPhotos);
+    for (const f of filesToAdd) {
+      if (f.size > MAX_IMAGE_SIZE) {
+        toast(`Image "${f.name}" (${(f.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum allowed size of 3 MB.`, "error");
+      } else {
+        validFiles.push(f);
+      }
+    }
 
-    const newPreviews = filesToAdd.map(file => URL.createObjectURL(file));
-    setHarvestPhotoPreviews(prev => [...prev, ...newPreviews]);
+    if (validFiles.length > 0) {
+      const newPhotos = [...harvestPhotos, ...validFiles];
+      setHarvestPhotos(newPhotos);
+
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+      setHarvestPhotoPreviews(prev => [...prev, ...newPreviews]);
+    }
+    e.target.value = '';
   };
 
   const handleRemoveHarvestPhoto = (index: number) => {
@@ -472,12 +622,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   };
 
   const handleSaveProduct = async () => {
-    if (!formName || !formQuantityNeeded) {
-      setErrorMessage("Requirement name and quantity needed are required.");
+    if (!formName.trim()) {
+      setErrorMessage("Product name is required.");
       return;
     }
 
-    if (formPricingMode === 'harvest_hill_offers' && (!formOfferedPrice || parseFloat(formOfferedPrice) <= 0)) {
+    const effectivePrice = formOfferedPrice || formPrice;
+    if (formPricingMode === 'harvest_hill_offers' && (!effectivePrice || parseFloat(effectivePrice) <= 0)) {
       setErrorMessage("Offered price must be greater than zero when Harvest Hill offers the price.");
       return;
     }
@@ -487,29 +638,26 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return;
     }
 
-    const qtyVal = parseFloat(formQuantityNeeded);
-    if (qtyVal <= 0) {
-      setErrorMessage("Quantity needed must be greater than zero.");
-      return;
+    const isRequestHarvest = formWorkflow === 'request_harvest';
+    if (isRequestHarvest && formQuantityNeeded) {
+      const qtyVal = parseFloat(formQuantityNeeded);
+      if (qtyVal <= 0) {
+        setErrorMessage("Quantity needed must be greater than zero when requesting farmer harvest submissions.");
+        return;
+      }
     }
 
     const isDuplicate = products.some(p => 
-      p.name.toLowerCase() === formName.toLowerCase() && 
+      p.name.toLowerCase() === formName.trim().toLowerCase() && 
       (!selectedProduct || p.id !== selectedProduct.id)
     );
     if (isDuplicate) {
-      setErrorMessage("A requirement with this name already exists.");
+      setErrorMessage("A product with this name already exists in the catalog.");
       return;
     }
 
     setIsSaving(true);
     setErrorMessage("");
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-    let finalStatus = formStatus;
-    if (formSubmissionDeadline && formSubmissionDeadline >= todayStr && formStatus === 'closed') {
-      finalStatus = 'open';
-    }
 
     const targetClientIds = formTargetClients.map((c: any) => {
       if (typeof c === 'object') {
@@ -518,27 +666,56 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       return c;
     }).filter(Boolean);
 
-    const payload: any = {
-      name: formName.trim(),
-      category: formCategory,
-      unit: formUnit,
-      pricing_mode: formPricingMode,
-      offered_price: formPricingMode === 'harvest_hill_offers' ? (formOfferedPrice ? parseFloat(formOfferedPrice) : null) : null,
-      base_price: formOfferedPrice ? parseFloat(formOfferedPrice) : (formPrice ? parseFloat(formPrice) : 0),
-      quantity_needed: qtyVal,
-      status: finalStatus,
-      quality_requirements: formQualityRequirements.trim(),
-      submission_deadline: formSubmissionDeadline || null,
-      preferred_harvest_period: formPreferredPeriod.trim(),
-      description: formDescription.trim(),
-      visibility_scope: formVisibilityScope,
-      target_clients: targetClientIds,
-    };
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let finalStatus = formStatus;
+    if (isRequestHarvest && formSubmissionDeadline && formSubmissionDeadline >= todayStr && formStatus === 'closed') {
+      finalStatus = 'open';
+    }
+
+    const formData = new FormData();
+    formData.append('name', formName.trim());
+    formData.append('category', formCategory);
+    formData.append('unit', formUnit);
+    formData.append('pricing_mode', formPricingMode);
+
+    if (formPricingMode === 'harvest_hill_offers' && effectivePrice) {
+      formData.append('offered_price', effectivePrice);
+      formData.append('base_price', effectivePrice);
+    } else if (formPrice) {
+      formData.append('base_price', formPrice);
+    } else {
+      formData.append('base_price', '0');
+    }
+
+    formData.append('description', formDescription.trim());
+    formData.append('visibility_scope', formVisibilityScope);
+    targetClientIds.forEach(id => formData.append('target_clients', String(id)));
+
+    formData.append('status', finalStatus);
+    formData.append('is_currently_needed', String(isRequestHarvest));
+    formData.append('quantity_needed', isRequestHarvest && formQuantityNeeded ? formQuantityNeeded : '0');
+    formData.append('quality_requirements', isRequestHarvest ? formQualityRequirements.trim() : '');
+    if (isRequestHarvest && formSubmissionDeadline) {
+      formData.append('submission_deadline', formSubmissionDeadline);
+    }
+    formData.append('preferred_harvest_period', isRequestHarvest ? formPreferredPeriod.trim() : '');
+
+    if (formWorkflow === 'publish_directly' && formPublishStockQty && parseFloat(formPublishStockQty) > 0) {
+      formData.append('publish_supply', 'true');
+      formData.append('supply_quantity', formPublishStockQty);
+      formData.append('supply_available_date', formPublishHarvestDate || todayStr);
+      formData.append('supply_notes', formPublishBatchNotes || 'Direct published harvest stock by Admin.');
+    }
+
+    productImageFiles.forEach(file => {
+      formData.append('images', file);
+    });
 
     try {
+      let res: any;
       if (selectedProduct === 'new') {
-        await api.products.create(payload);
-        toast(`Requirement for "${formName}" created successfully!`, "success");
+        res = await api.products.create(formData);
+        toast(`Product "${formName}" created & catalog published successfully!`, "success");
 
         if (sourceRequestId) {
           try {
@@ -551,14 +728,16 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           }
         }
       } else {
-        await api.products.update(selectedProduct.id, payload);
-        toast(`Requirement for "${formName}" updated successfully!`, "success");
+        res = await api.products.update(selectedProduct.id, formData);
+        toast(`Product "${formName}" updated successfully!`, "success");
       }
       setErrorMessage("");
       setSelectedProduct(null);
+      setProductImageFiles([]);
+      setProductImagePreviews([]);
       loadProducts();
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to save requirement.");
+      setErrorMessage(err.message || "Failed to save product.");
     } finally {
       setIsSaving(false);
     }
@@ -645,14 +824,14 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       <div className="px-6 py-5 shrink-0 bg-white border-b border-outline-variant">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold text-on-surface tracking-tight">Harvest Hill Requirements</h2>
-            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Manage crop requirement specs, target reference prices, and farmer harvest submission deadlines.</p>
+            <h2 className="text-2xl font-extrabold text-on-surface tracking-tight">Harvest Hill Product Catalog</h2>
+            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Manage master products, direct catalog publishing, and optional farmer harvest requirements.</p>
           </div>
           <button 
             onClick={handleOpenAddProduct}
             className="flex items-center justify-center px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-extrabold shadow-sm hover:opacity-90 transition-all cursor-pointer whitespace-nowrap shrink-0 self-start sm:self-auto"
           >
-            <Plus className="w-4 h-4 mr-1.5" /> Create Requirement
+            <Plus className="w-4 h-4 mr-1.5" /> Create Product
           </button>
         </div>
 
@@ -768,12 +947,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             onClick={() => handleCreateProductFromRequest(req)}
                             className="px-2.5 py-1.5 bg-[#144227] hover:bg-[#376847] text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1.5 inline-flex"
                           >
-                            <Plus size={11} className="mr-1" /> Create Requirement
+                            <Plus size={11} className="mr-1" /> Create Product
                           </button>
                         )}
                         {(req.status === 'requirement_created' || req.status === 'fulfilled') && (
                           <span className="px-2.5 py-1.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-extrabold inline-flex items-center gap-1 shadow-2xs">
-                            <CheckCircle2 size={13} /> Requirement Created
+                            <CheckCircle2 size={13} /> Product Created
                           </span>
                         )}
                         <button
@@ -793,24 +972,24 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
         ) : (
           <>
             {isLoading ? (
-              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading requirements...</div>
+              <div className="p-8 text-center text-on-surface-variant font-medium animate-pulse">Loading products...</div>
             ) : filteredProducts.length === 0 ? (
               <div className="p-12 flex flex-col items-center justify-center text-center text-on-surface-variant bg-white border border-[#E8E4DA] rounded-2xl max-w-lg mx-auto space-y-3">
                 <AlertCircle className="w-10 h-10 opacity-40 text-primary" />
                 <div className="space-y-1">
-                  <p className="text-base font-extrabold text-[#1C2A1E]">No Product Requirements Found</p>
-                  <p className="text-xs text-[#717971]">There are no requirements matching the selected status or category filters.</p>
+                  <p className="text-base font-extrabold text-[#1C2A1E]">No Products Found</p>
+                  <p className="text-xs text-[#717971]">There are no products matching the selected status or category filters.</p>
                 </div>
                 <button
                   onClick={handleOpenAddProduct}
                   className="px-4 py-2 bg-[#2D5A3D] text-white rounded-xl text-xs font-bold shadow-xs hover:bg-[#1E3E2A] transition-all cursor-pointer"
                 >
-                  + Create First Requirement
+                  + Create First Product
                 </button>
               </div>
             ) : (
               <>
-                {/* Text-driven Product Requirement Cards Grid */}
+                {/* Product Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                   {currentProducts.map((product, i) => {
                     const st = (product.status || 'open').toLowerCase();
@@ -819,6 +998,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     const isClosed = st === 'closed';
                     const isArchived = st === 'archived';
                     const subCount = product.submission_count || product.sourcing_history_count || 0;
+                    const isHarvestRequested = !!product.is_currently_needed;
+                    const coverImg = product.image_url || (Array.isArray(product.images) && product.images[0]) || null;
 
                     return (
                       <motion.div
@@ -831,35 +1012,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                       >
                         <div>
                           {/* Card Top Pill Header */}
-                          <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center justify-between gap-2 mb-2">
                             <span className="bg-[#FAF7F0] text-[#2D5A3D] text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-md border border-[#E8E4DA] uppercase tracking-wider">
                               {product.category || 'Vegetables'}
                             </span>
 
                             <div className="flex items-center gap-1.5">
-                              {(() => {
-                                const scope = product.visibility_scope || 'PUBLIC';
-                                let badgeLabel = 'Public';
-                                let badgeClass = 'bg-blue-50 text-blue-800 border-blue-200';
-
-                                if (scope === 'HARVEST_HILL_ONLY' || scope === 'private_admin') {
-                                  badgeLabel = 'Harvest Hill Only';
-                                  badgeClass = 'bg-gray-100 text-gray-800 border-gray-300';
-                                } else if (scope === 'SPECIFIC_CLIENTS' || scope === 'specific_clients') {
-                                  badgeLabel = 'Specific Clients';
-                                  badgeClass = 'bg-amber-100 text-amber-900 border-amber-300';
-                                } else if (scope === 'REGISTERED_CLIENTS' || scope === 'all_clients') {
-                                  badgeLabel = 'Registered Clients';
-                                  badgeClass = 'bg-indigo-100 text-indigo-900 border-indigo-300';
-                                }
-
-                                return (
-                                  <span className={cn("px-2 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wider border shadow-2xs", badgeClass)}>
-                                    {badgeLabel}
-                                  </span>
-                                );
-                              })()}
-
                               <span className={cn(
                                 "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-2xs",
                                 isOpen && "bg-emerald-100 text-emerald-900 border-emerald-300",
@@ -869,21 +1027,40 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                               )}>
                                 {st}
                               </span>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEditProduct(product);
+                                }}
+                                className="p-1 rounded-md text-gray-500 hover:text-[#2D5A3D] hover:bg-[#F5F3ED] transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                                title="Edit Product Details"
+                              >
+                                <Edit3 size={14} />
+                              </button>
                             </div>
                           </div>
 
-                          {/* Requirement Title */}
+                          {/* Product Cover Image Thumbnail (if present) */}
+                          {coverImg && (
+                            <div className="h-32 w-full rounded-xl overflow-hidden mb-2.5 border border-outline-variant/30 relative bg-surface-container-low">
+                              <img src={coverImg} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                          )}
+
+                          {/* Product Title */}
                           <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors mb-2 leading-tight">
                             {product.name}
                           </h3>
 
-                          {/* Requirement Spec Box - Vertical Hierarchy */}
+                          {/* Product Details Box */}
                           <div className="space-y-2.5 bg-[#FAF7F0]/80 p-3.5 rounded-xl border border-[#F0ECE1] my-2 text-xs">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Quantity Needed</p>
-                                <p className="text-sm font-extrabold text-[#1C2A1E] font-mono mt-0.5">
-                                  {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Selling Price</p>
+                                <p className="text-sm font-extrabold text-[#2D5A3D] font-mono mt-0.5">
+                                  RWF {parseFloat(product.price || product.base_price || product.offered_price || 0).toLocaleString()} / {product.unit || 'kg'}
                                 </p>
                               </div>
                               <div>
@@ -894,36 +1071,33 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                               </div>
                             </div>
 
-                            <div className="py-1 border-y border-[#E8E4DA]/60 my-1 space-y-0.5">
-                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Pricing</p>
-                              {product.pricing_mode === 'farmer_proposes' ? (
-                                <div>
-                                  <p className="text-[11px] font-medium text-[#717971]">Farmer proposes</p>
-                                  <p className="text-xs font-semibold text-[#4A473D] mt-0.5">
-                                    Price submitted during harvest submission
-                                  </p>
+                            {isHarvestRequested && (
+                              <div className="py-1 border-y border-[#E8E4DA]/60 my-1 space-y-1">
+                                <div className="flex justify-between items-center text-[10.5px]">
+                                  <span className="font-extrabold text-[#717971] uppercase">Quantity Needed:</span>
+                                  <span className="font-mono font-bold text-[#1C2A1E]">
+                                    {parseFloat(product.quantity_needed || 0).toLocaleString()} {product.unit || 'kg'}
+                                  </span>
                                 </div>
-                              ) : (
-                                <div>
-                                  <p className="text-[11px] font-medium text-[#717971]">Harvest Hill offers</p>
-                                  <p className="text-base font-black text-[#2D5A3D] font-mono mt-0.5">
-                                    RWF {parseFloat(product.offered_price || product.base_price || 0).toLocaleString()} / {product.unit || 'kg'}
-                                  </p>
+                                <div className="flex justify-between items-center text-[10.5px]">
+                                  <span className="font-extrabold text-[#717971] uppercase">Deadline:</span>
+                                  <span className="font-bold text-[#1C2A1E]">
+                                    {product.submission_deadline ? product.submission_deadline : 'No deadline'}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submit By</p>
-                              <p className="text-xs font-bold text-[#1C2A1E] mt-0.5">
-                                {product.submission_deadline ? product.submission_deadline : 'No deadline'}
-                              </p>
-                            </div>
+                                <div className="flex justify-between items-center text-[10.5px]">
+                                  <span className="font-extrabold text-[#717971] uppercase">Farmer Offers:</span>
+                                  <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full text-[10px]">
+                                    {subCount} submissions
+                                  </span>
+                                </div>
+                              </div>
+                            )}
 
                             <div className="flex items-center justify-between pt-1 border-t border-[#E8E4DA]">
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Submissions</span>
-                              <span className="font-extrabold text-[#2D5A3D] bg-[#2D5A3D]/10 px-2 py-0.5 rounded-full text-xs font-mono">
-                                {subCount}
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#717971]">Live Stock Available</span>
+                              <span className="font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-mono">
+                                {(product.total_available_quantity || 0).toLocaleString()} {product.unit || 'kg'}
                               </span>
                             </div>
                           </div>
@@ -931,36 +1105,50 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
                         {/* Card Actions Bar */}
                         <div className="flex items-center justify-between gap-1.5 pt-3 border-t border-[#F4F1E8] mt-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setHistoryProduct(product);
-                            }}
-                            className="py-1.5 px-2 bg-[#F5F3ED] hover:bg-[#EBE7DC] text-[#4A473D] border border-[#E3DFC2] rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer flex-1"
-                            title="Requirement Audit & Submissions History"
-                          >
-                            <Handshake size={11} /> History
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenAddRequirement(product, e)}
+                              className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-102 text-xs font-bold"
+                              title="Add or Configure Farmer Harvest Requirement"
+                            >
+                              <Plus size={13} />
+                              <span>Add</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={(e) => handleOpenHarvestModal(product, e)}
-                            className="py-1.5 px-2 bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer flex-1"
-                            title="Record Admin Internal Harvest Batch"
-                          >
-                            <Sprout size={11} /> Harvest
-                          </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenHarvestModal(product, e)}
+                              className="px-3 py-1.5 rounded-xl bg-[#2D5A3D] hover:bg-[#1E3E2A] text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:scale-102 text-xs font-bold"
+                              title="Record Admin Internal Harvest Batch"
+                            >
+                              <Sprout size={13} />
+                              <span>Harvest</span>
+                            </button>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteOrArchiveProduct(product, e)}
-                            className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
-                            title={subCount > 0 ? "Archive Requirement" : "Delete Requirement"}
-                          >
-                            <Trash2 size={11} />
-                            {subCount > 0 ? 'Archive' : 'Delete'}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHistoryProduct(product);
+                              }}
+                              className="w-8 h-8 rounded-xl bg-[#F5F3ED] hover:bg-[#EBE7DC] text-[#4A473D] border border-[#E3DFC2] flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                              title="Sourcing & Negotiation History Audit"
+                            >
+                              <Handshake size={14} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteOrArchiveProduct(product, e)}
+                              className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105"
+                              title={subCount > 0 ? "Archive Product" : "Delete Product"}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -1000,8 +1188,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       <DetailDrawer
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
-        title={selectedProduct === 'new' ? "New Product Requirement" : "Edit Product Requirement"}
-        subtitle="Specify crop demand specs, target reference price, and submission deadline for local farmers."
+        title={selectedProduct === 'new' ? "Create Product" : "Edit Product"}
+        subtitle="Manage product specifications, image gallery, catalog visibility, and optional harvest submission requirements."
         footer={
           <div className="w-full space-y-3">
             {errorMessage && (
@@ -1025,8 +1213,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <button 
                 type="button"
                 onClick={handleSaveProduct}
-                disabled={isSaving || !isFormDirty || (formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10))}
-                title={formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10) ? "Cannot activate requirement with an expired deadline" : undefined}
+                disabled={isSaving || !isFormDirty || (formWorkflow === 'request_harvest' && formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10))}
+                title={formWorkflow === 'request_harvest' && formStatus === 'open' && !!formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10) ? "Cannot activate requirement with an expired deadline" : undefined}
                 className="flex-[2] px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-[#376847] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-xs"
               >
                 {isSaving ? (
@@ -1037,7 +1225,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>{selectedProduct === 'new' ? 'Create Requirement' : 'Update Requirement'}</span>
+                    <span>{selectedProduct === 'new' ? 'Create Product' : 'Save Changes'}</span>
                   </>
                 )}
               </button>
@@ -1057,7 +1245,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                Requirement Name <span className="text-red-500">*</span>
+                Product Name <span className="text-red-500">*</span>
               </label>
               <input 
                 type="text" 
@@ -1106,285 +1294,36 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                 </select>
               </div>
             </div>
-          </div>
 
-          {/* Section 2: Volume & Target Pricing Card */}
-          <div className="p-4.5 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs font-sans">
-            <div className="flex items-center justify-between pb-2.5 border-b border-outline-variant/20">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                  <Package size={14} />
-                </div>
-                <div>
-                  <span className="text-xs font-extrabold text-primary uppercase tracking-wider block">
-                    2. Volume & Pricing Model
-                  </span>
-                  <span className="text-[10.5px] text-on-surface-variant font-medium">
-                    Set target harvest quantities and select procurement pricing mode
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quantity Needed Input */}
             <div className="space-y-1.5">
-              <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider flex items-center justify-between">
-                <span>Quantity Needed <span className="text-red-500">*</span></span>
-                <span className="text-[10px] text-on-surface-variant font-medium">Unit: <strong className="uppercase text-primary font-mono">{formUnit}</strong></span>
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Catalog Selling Price (RWF per {formUnit})
               </label>
               <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-primary font-mono">
+                  RWF
+                </span>
                 <input 
                   type="number" 
-                  min="1"
-                  placeholder="e.g. 1000"
-                  value={formQuantityNeeded}
+                  placeholder="e.g. 1500"
+                  value={formPrice}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setFormQuantityNeeded(val);
-                    if (val && parseFloat(val) <= 0) {
-                      setErrorMessage("Quantity needed must be greater than zero.");
-                    } else if (errorMessage === "Quantity needed must be greater than zero.") {
-                      setErrorMessage("");
-                    }
+                    setFormPrice(val);
+                    setFormOfferedPrice(val);
                   }}
-                  className={cn(
-                    "w-full pl-4 pr-16 py-2.5 rounded-xl border text-sm font-extrabold outline-none bg-surface-container-lowest focus:ring-2 transition-all",
-                    formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0
-                      ? "border-red-500 focus:ring-red-200"
-                      : "border-outline-variant/60 focus:border-primary focus:ring-primary/10"
-                  )}
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black font-mono text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-md">
-                  {formUnit}
-                </span>
-              </div>
-              {formQuantityNeeded !== "" && parseFloat(formQuantityNeeded) <= 0 && (
-                <p className="text-[10.5px] text-red-600 font-bold mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> Quantity needed must be greater than 0.
-                </p>
-              )}
-            </div>
-
-            {/* Pricing Mode Radio Selector */}
-            <div className="space-y-3 pt-2 border-t border-outline-variant/20">
-              <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider block">
-                Procurement Pricing Mode <span className="text-red-500">*</span>
-              </label>
-              
-              {(() => {
-                const subCount = selectedProduct && selectedProduct !== 'new' ? (selectedProduct.submission_count || selectedProduct.sourcing_history_count || 0) : 0;
-                return (
-                  <div className="space-y-2.5">
-                    {subCount > 0 && (
-                      <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[10.5px] text-amber-900 font-medium flex items-center gap-2">
-                        <Lock className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-                        <span>Pricing mode locked ({subCount} active submission{subCount > 1 ? 's' : ''} exist).</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {/* Option 1: Harvest Hill Offers */}
-                      <label 
-                        onClick={() => {
-                          if (subCount > 0) return;
-                          setFormPricingMode('harvest_hill_offers');
-                        }}
-                        className={cn(
-                          "p-3.5 rounded-xl border flex items-start gap-3 transition-all",
-                          subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-                          formPricingMode === 'harvest_hill_offers' 
-                            ? "bg-emerald-50/90 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs" 
-                            : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
-                        )}
-                      >
-                        <input 
-                          type="radio" 
-                          name="pricing_mode" 
-                          checked={formPricingMode === 'harvest_hill_offers'}
-                          disabled={subCount > 0}
-                          onChange={() => {}}
-                          className="mt-0.5 text-primary accent-primary cursor-pointer" 
-                        />
-                        <div className="space-y-0.5 flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
-                              <Tag size={13} className="text-primary" /> Harvest Hill Offers Price
-                            </span>
-                            {formPricingMode === 'harvest_hill_offers' && (
-                              <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-on-surface-variant leading-relaxed">
-                            Harvest Hill sets an explicit target price per {formUnit} for farmer submissions.
-                          </p>
-
-                          {formPricingMode === 'harvest_hill_offers' && (
-                            <div className="pt-2.5 mt-2 border-t border-emerald-200/80 space-y-1.5" onClick={(e) => e.stopPropagation()}>
-                              <label className="text-[10px] font-extrabold text-emerald-950 uppercase tracking-wider block">
-                                Offered Price (RWF per {formUnit}) <span className="text-red-500">*</span>
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-900 font-mono">
-                                  RWF
-                                </span>
-                                <input 
-                                  type="number" 
-                                  placeholder="e.g. 1200"
-                                  value={formOfferedPrice}
-                                  onChange={(e) => {
-                                    setFormOfferedPrice(e.target.value);
-                                    setFormPrice(e.target.value);
-                                  }}
-                                  className="w-full pl-14 pr-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-extrabold text-emerald-950 outline-none bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 transition-all font-mono"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-
-                      {/* Option 2: Farmer Proposes */}
-                      <label 
-                        onClick={() => {
-                          if (subCount > 0) return;
-                          setFormPricingMode('farmer_proposes');
-                          setFormOfferedPrice('');
-                        }}
-                        className={cn(
-                          "p-3.5 rounded-xl border flex items-start gap-3 transition-all",
-                          subCount > 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-                          formPricingMode === 'farmer_proposes' 
-                            ? "bg-emerald-50/90 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs" 
-                            : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
-                        )}
-                      >
-                        <input 
-                          type="radio" 
-                          name="pricing_mode" 
-                          checked={formPricingMode === 'farmer_proposes'}
-                          disabled={subCount > 0}
-                          onChange={() => {}}
-                          className="mt-0.5 text-primary accent-primary cursor-pointer" 
-                        />
-                        <div className="space-y-0.5 flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-xs text-on-surface flex items-center gap-1.5">
-                              <Handshake size={13} className="text-primary" /> Farmer Proposes Price
-                            </span>
-                            {formPricingMode === 'farmer_proposes' && (
-                              <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-on-surface-variant leading-relaxed">
-                            Farmers submit their asking price when proposing harvest offers.
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Section 3: Status & Deadline Card */}
-          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
-            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
-              <Clock size={13} className="text-primary" />
-              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
-                3. Lifecycle & Timeline
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Status
-                </label>
-                <select 
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-xl border border-outline-variant/60 text-[10.5px] font-bold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer uppercase tracking-wider"
-                >
-                  <option value="open">OPEN (Active)</option>
-                  <option value="draft">DRAFT (Private)</option>
-                  <option value="closed">CLOSED (Ended)</option>
-                  <option value="archived">ARCHIVED</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Submission Deadline
-                </label>
-                <input 
-                  type="date" 
-                  value={formSubmissionDeadline}
-                  onChange={(e) => setFormSubmissionDeadline(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                  className="w-full pl-14 pr-3.5 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all font-mono"
                 />
               </div>
             </div>
 
-            {formStatus === 'open' && formSubmissionDeadline && formSubmissionDeadline < new Date().toISOString().slice(0, 10) && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-semibold flex items-start gap-2 animate-in fade-in duration-150">
-                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-extrabold text-[11px] text-amber-950">Submission Deadline Expired</p>
-                  <p className="text-[10px] text-amber-800 leading-relaxed mt-0.5">
-                    The submission deadline ({formSubmissionDeadline}) has passed. Please update the deadline date to today or a future date to activate this requirement as OPEN.
-                  </p>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-1.5">
               <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                Preferred Harvest / Delivery Window
-              </label>
-              <input 
-                type="text" 
-                placeholder="e.g. Late August 2026 harvest cycle"
-                value={formPreferredPeriod}
-                onChange={(e) => setFormPreferredPeriod(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Section 4: Quality & Description Card */}
-          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
-            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
-              <ShieldCheck size={13} className="text-primary" />
-              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
-                4. Quality Standards & Details
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                Quality Requirements
-              </label>
-              <textarea 
-                rows={3}
-                placeholder="Describe specific quality standards, grading criteria, or packaging requirements for this crop..."
-                value={formQualityRequirements}
-                onChange={(e) => setFormQualityRequirements(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                Requirement Description
+                Product Description
               </label>
               <textarea 
                 rows={2}
-                placeholder="Describe what Harvest Hill is looking for in this supply cycle..."
+                placeholder="Describe product features, quality standards, or notes..."
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
@@ -1392,12 +1331,355 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
             </div>
           </div>
 
-          {/* Section 5: Marketplace Visibility Scope & Access Controls */}
+          {/* Section 2: Product Images & Gallery */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+              <div className="flex items-center gap-1.5">
+                <UploadCloud size={13} className="text-primary" />
+                <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                  2. Product Images & Gallery
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant">Max 3 MB per image</span>
+            </div>
+
+            {/* Existing Images list (if editing) */}
+            {existingImages.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                  Current Product Images
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {existingImages.map((img: any) => {
+                    const imgUrl = typeof img === 'string' ? img : img.image_url || img.image;
+                    const imgId = typeof img === 'object' ? img.id : null;
+                    return (
+                      <div key={imgId || imgUrl} className="relative h-20 rounded-xl overflow-hidden border border-outline-variant/40 group bg-surface-container-low shadow-2xs">
+                        <img src={imgUrl} alt="Product" className="w-full h-full object-cover" />
+                        {imgId && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExistingImage(imgId)}
+                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                            title="Delete image"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Selected File Previews */}
+            {productImagePreviews.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">
+                  New Images to Upload ({productImageFiles.length})
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {productImagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative h-20 rounded-xl overflow-hidden border border-emerald-300 group bg-emerald-50 shadow-2xs">
+                      <img src={preview} alt="New upload" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewImage(idx)}
+                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                        title="Remove image"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Selector Dropzone */}
+            <label className="border-2 border-dashed border-outline-variant/60 hover:border-primary/60 bg-surface-container-lowest hover:bg-surface-container-low/40 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1 block">
+              <UploadCloud className="w-6 h-6 text-primary opacity-80" />
+              <p className="text-xs font-bold text-on-surface">Click or drag files to upload product photos</p>
+              <p className="text-[10px] text-on-surface-variant">Supports JPG, PNG, WEBP. Maximum file size: <strong className="text-primary font-extrabold">3 MB per image</strong>.</p>
+              <input 
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleProductImageSelect}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {/* Section 3: Publishing Workflow & Farmer Requirements */}
+          <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
+              <Package size={13} className="text-primary" />
+              <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                3. Workflow & Farmer Requirements
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                Publishing Mode
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormWorkflow('publish_directly')}
+                  className={cn(
+                    "p-3 rounded-xl border text-left transition-all cursor-pointer space-y-1",
+                    formWorkflow === 'publish_directly'
+                      ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500 shadow-2xs"
+                      : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-emerald-950">Publish Directly</span>
+                    {formWorkflow === 'publish_directly' && <CheckCircle2 size={14} className="text-emerald-700" />}
+                  </div>
+                  <p className="text-[10.5px] text-on-surface-variant leading-tight">
+                    Add product directly to catalog without creating farmer harvest requirements.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormWorkflow('request_harvest')}
+                  className={cn(
+                    "p-3 rounded-xl border text-left transition-all cursor-pointer space-y-1",
+                    formWorkflow === 'request_harvest'
+                      ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500 shadow-2xs"
+                      : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-amber-950">Request Submissions</span>
+                    {formWorkflow === 'request_harvest' && <CheckCircle2 size={14} className="text-amber-700" />}
+                  </div>
+                  <p className="text-[10.5px] text-on-surface-variant leading-tight">
+                    Configure harvest requirements so farmers can submit harvest offers.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {formWorkflow === 'publish_directly' && (
+              <div className="space-y-3 pt-3 border-t border-outline-variant/20 animate-in fade-in duration-200">
+                <div className="p-3 bg-[#FAF7F0] border border-[#E8E4DA] rounded-xl space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <Sprout size={14} className="text-[#2D5A3D]" />
+                    <span className="text-xs font-extrabold text-[#1C2A1E] uppercase tracking-wider">Direct Supply Stock Publishing</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider block">
+                        Initial Stock Quantity ({formUnit})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 500"
+                        value={formPublishStockQty}
+                        onChange={(e) => setFormPublishStockQty(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-bold outline-none bg-white font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider block">
+                        Available / Harvest Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formPublishHarvestDate}
+                        onChange={(e) => setFormPublishHarvestDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-bold outline-none bg-white cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-[#717971] uppercase tracking-wider block">
+                      Supply Batch Notes / Quality Grade
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Grade A fresh harvest ready for immediate delivery"
+                      value={formPublishBatchNotes}
+                      onChange={(e) => setFormPublishBatchNotes(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formWorkflow === 'request_harvest' && (
+              <div className="space-y-4 pt-3 border-t border-outline-variant/20 animate-in fade-in duration-200">
+                {/* Quantity Needed */}
+                <div className="space-y-1.5">
+                  <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider flex items-center justify-between">
+                    <span>Quantity Needed from Farmers</span>
+                    <span className="text-[10px] text-on-surface-variant font-medium">Unit: <strong className="uppercase text-primary font-mono">{formUnit}</strong></span>
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      min="1"
+                      placeholder="e.g. 1000"
+                      value={formQuantityNeeded}
+                      onChange={(e) => setFormQuantityNeeded(e.target.value)}
+                      className="w-full pl-4 pr-16 py-2.5 rounded-xl border border-outline-variant/60 text-sm font-extrabold outline-none bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black font-mono text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-md">
+                      {formUnit}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Procurement Pricing Mode */}
+                <div className="space-y-2">
+                  <label className="text-[10.5px] font-extrabold text-on-surface uppercase tracking-wider block">
+                    Procurement Pricing Mode
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    <label 
+                      onClick={() => setFormPricingMode('harvest_hill_offers')}
+                      className={cn(
+                        "p-3 rounded-xl border flex items-start gap-3 transition-all cursor-pointer",
+                        formPricingMode === 'harvest_hill_offers'
+                          ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500"
+                          : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                      )}
+                    >
+                      <input 
+                        type="radio" 
+                        name="pricing_mode" 
+                        checked={formPricingMode === 'harvest_hill_offers'}
+                        onChange={() => {}}
+                        className="mt-0.5 text-primary accent-primary" 
+                      />
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-extrabold text-xs text-on-surface block">Harvest Hill Offers Price</span>
+                        <p className="text-[11px] text-on-surface-variant">Set target price for farmer submissions.</p>
+                        {formPricingMode === 'harvest_hill_offers' && (
+                          <div className="pt-2 mt-1 space-y-1" onClick={(e) => e.stopPropagation()}>
+                            <label className="text-[10px] font-extrabold text-emerald-950 uppercase tracking-wider block">
+                              Offered Price (RWF per {formUnit})
+                            </label>
+                            <input 
+                              type="number" 
+                              placeholder="e.g. 1200"
+                              value={formOfferedPrice}
+                              onChange={(e) => {
+                                setFormOfferedPrice(e.target.value);
+                                if (!formPrice) setFormPrice(e.target.value);
+                              }}
+                              className="w-full px-3 py-1.5 rounded-xl border border-emerald-300 text-xs font-extrabold outline-none bg-white focus:border-emerald-600 font-mono"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </label>
+
+                    <label 
+                      onClick={() => {
+                        setFormPricingMode('farmer_proposes');
+                        setFormOfferedPrice('');
+                      }}
+                      className={cn(
+                        "p-3 rounded-xl border flex items-start gap-3 transition-all cursor-pointer",
+                        formPricingMode === 'farmer_proposes'
+                          ? "bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500"
+                          : "bg-white border-outline-variant/60 hover:bg-surface-container-low"
+                      )}
+                    >
+                      <input 
+                        type="radio" 
+                        name="pricing_mode" 
+                        checked={formPricingMode === 'farmer_proposes'}
+                        onChange={() => {}}
+                        className="mt-0.5 text-primary accent-primary" 
+                      />
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-extrabold text-xs text-on-surface block">Farmer Proposes Price</span>
+                        <p className="text-[11px] text-on-surface-variant">Farmers specify their asking price when submitting.</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Status & Deadline */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                      Requirement Status
+                    </label>
+                    <select 
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-xl border border-outline-variant/60 text-[10.5px] font-bold outline-none bg-white cursor-pointer uppercase tracking-wider"
+                    >
+                      <option value="open">OPEN (Active)</option>
+                      <option value="draft">DRAFT (Private)</option>
+                      <option value="closed">CLOSED (Ended)</option>
+                      <option value="archived">ARCHIVED</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                      Submission Deadline
+                    </label>
+                    <input 
+                      type="date" 
+                      value={formSubmissionDeadline}
+                      onChange={(e) => setFormSubmissionDeadline(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-semibold outline-none bg-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                    Preferred Harvest / Delivery Window
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Late August 2026 harvest cycle"
+                    value={formPreferredPeriod}
+                    onChange={(e) => setFormPreferredPeriod(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
+                    Quality Requirements for Farmers
+                  </label>
+                  <textarea 
+                    rows={2}
+                    placeholder="Describe specific quality standards or packaging criteria..."
+                    value={formQualityRequirements}
+                    onChange={(e) => setFormQualityRequirements(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-outline-variant/60 text-xs font-medium outline-none bg-surface-container-lowest focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 4: Marketplace Visibility Scope & Access Controls */}
           <div className="p-4 bg-white rounded-2xl border border-outline-variant/40 space-y-4 shadow-2xs">
             <div className="flex items-center gap-1.5 pb-2 border-b border-outline-variant/20">
               <ShieldCheck size={13} className="text-primary" />
               <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
-                5. Marketplace Visibility & Client Access
+                4. Marketplace Visibility & Client Access
               </span>
             </div>
 
@@ -1521,7 +1803,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                                 setClientSearchQuery('');
                               }
                             }}
-                            className={`p-2 px-3 text-xs flex items-center justify-between transition-colors ${
+                            className={`p-2 px-[#144227] text-xs flex items-center justify-between transition-colors ${
                               isAlreadySelected ? 'bg-amber-50 opacity-60 cursor-not-allowed' : 'hover:bg-amber-100/60 cursor-pointer'
                             }`}
                           >
@@ -1694,10 +1976,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-extrabold text-[#1c1c18] uppercase tracking-wider">
-                    Batch Photos (Up to 5 images)
+                    Batch Photos (Up to 3 images)
                   </label>
                   <span className="text-[10px] text-[#717971] font-mono">
-                    {harvestPhotos.length}/5 photos
+                    {harvestPhotos.length}/3 photos
                   </span>
                 </div>
 
@@ -1716,7 +1998,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     </div>
                   ))}
 
-                  {harvestPhotos.length < 5 && (
+                  {harvestPhotos.length < 3 && (
                     <label className="h-16 rounded-xl border-2 border-dashed border-[#c1c9c0] hover:border-[#144227] flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#f6f3ec]/40 hover:bg-[#f6f3ec]">
                       <Plus size={16} className="text-[#144227]" />
                       <span className="text-[9px] font-bold text-[#717971] mt-0.5">Add</span>

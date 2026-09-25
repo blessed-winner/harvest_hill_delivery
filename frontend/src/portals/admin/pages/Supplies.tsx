@@ -607,9 +607,9 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
     const masterProdId = supply.product || supply.product_detail?.id;
 
     let initQty = String(supply.accepted_quantity != null ? supply.accepted_quantity : (supply.quantity || ''));
-    let initPrice = String(supply.product_detail?.price || supply.product_detail?.base_price || supply.agreed_price || supply.price || '');
+    let initPrice = String(supply.agreed_price != null ? supply.agreed_price : (supply.price || supply.product_detail?.price || supply.product_detail?.base_price || ''));
     let initUnit = supply.unit || supply.product_detail?.unit || 'kg';
-    let initNotes = supply.product_detail?.description || supply.notes || '';
+    let initNotes = supply.notes || '';
 
     setEditQty(initQty);
     setEditPrice(initPrice);
@@ -620,11 +620,6 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       try {
         const prodData = await apiRequest(`/api/products/${masterProdId}/`);
         if (prodData) {
-          if (prodData.base_price || prodData.price) setEditPrice(String(prodData.price || prodData.base_price));
-          if (prodData.unit) setEditUnit(prodData.unit);
-          if (prodData.description) setEditNotes(prodData.description);
-          if (prodData.quantity_needed) setEditQty(String(prodData.quantity_needed));
-
           const rawImgs = Array.isArray(prodData.images) && prodData.images.length > 0
             ? prodData.images
             : (prodData.image_url ? [prodData.image_url] : []);
@@ -774,38 +769,39 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
       return;
     }
 
-    const masterProdId = editSupply.product || editSupply.product_detail?.id;
-    const masterProdName = editSupply.product_detail?.name || editSupply.custom_product_name || 'Master Product';
+    const supplyTitle = editSupply.product_detail?.name || editSupply.custom_product_name || 'Supply Batch';
 
     try {
       setIsSavingEdit(true);
-      if (masterProdId) {
-        await api.products.update(masterProdId, {
-          base_price: parsedPrice,
-          offered_price: parsedPrice,
-          quantity_needed: parsedQty,
-          unit: editUnit,
-          description: editNotes.trim()
-        });
-        toast(`Master Product "${masterProdName}" details updated successfully!`, "success");
-      } else {
-        await apiRequest(`/api/supplies/${editSupply.id}/`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            quantity: parsedQty,
-            price: parsedPrice,
-            unit: editUnit,
-            notes: editNotes.trim()
-          })
-        });
-        toast("Supply details updated successfully!", "success");
+
+      const isHarvestHill = !editSupply.farmer || 
+        (editSupply.farmer.user && editSupply.farmer.user.role === 'admin') ||
+        (editSupply.farmer_name && editSupply.farmer_name.toLowerCase().includes('harvest hill'));
+
+      const updatePayload: Record<string, any> = {
+        accepted_quantity: parsedQty,
+        agreed_price: parsedPrice,
+        unit: editUnit,
+        notes: editNotes.trim()
+      };
+
+      if (isHarvestHill) {
+        updatePayload.quantity = parsedQty;
+        updatePayload.price = parsedPrice;
       }
+
+      await apiRequest(`/api/supplies/${editSupply.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatePayload)
+      });
+
+      toast(`Supply batch for "${supplyTitle}" updated successfully!`, "success");
 
       setEditSupply(null);
       setSelectedSupply(null);
       loadSupplies();
     } catch (err: any) {
-      toast(err.message || "Failed to update details.", "error");
+      toast(err.message || "Failed to update supply batch details.", "error");
     } finally {
       setIsSavingEdit(false);
     }
@@ -2771,10 +2767,11 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
         </div>
       )}
 
-      {/* Admin Direct Edit Supply / Master Product Modal */}
+      {/* Admin Direct Edit Supply Batch Modal */}
       {editSupply && (() => {
-        const isMasterProdEdit = !!(editSupply.product || editSupply.product_detail?.id);
         const prodTitle = editSupply.product_detail?.name || editSupply.custom_product_name || 'Produce';
+        const supNumber = editSupply.supply_number || `SUP-${String(editSupply.id).slice(0, 6).toUpperCase()}`;
+        const isMasterProdEdit = !!(editSupply.product || editSupply.product_detail?.id);
 
         return (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
@@ -2782,10 +2779,10 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
                 <div>
                   <h3 className="font-extrabold text-base text-on-surface">
-                    {isMasterProdEdit ? `Edit Master Product (${prodTitle})` : 'Edit Harvest / Supply Listing'}
+                    Edit Harvest Supply Batch ({prodTitle})
                   </h3>
                   <p className="text-[10px] text-on-surface-variant font-medium">
-                    {isMasterProdEdit ? 'Harvest Hill Master Catalog Manager' : 'Admin Direct Supply Manager'}
+                    Batch: <span className="font-bold text-primary font-mono">{supNumber}</span> • Update live inventory batch quantity & terms
                   </p>
                 </div>
                 <button
@@ -2800,7 +2797,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Quantity Needed / Available</label>
+                    <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Supply Quantity ({editUnit})</label>
                     <input
                       type="number"
                       value={editQty}
@@ -2821,7 +2818,7 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Master Base Selling Price (RWF)</label>
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Supply Unit Price (RWF per {editUnit})</label>
                   <input
                     type="number"
                     value={editPrice}
@@ -2831,12 +2828,12 @@ export function Supplies({ searchTerm: propSearchTerm = '' }: SuppliesProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Notes / Product Description</label>
+                  <label className="text-[10px] font-extrabold uppercase text-on-surface-variant">Batch Notes & Storage Specs</label>
                   <textarea
                     rows={2}
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Enter product description or notes..."
+                    placeholder="Enter harvest supply notes or storage specs..."
                     className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs font-medium text-on-surface outline-none focus:border-primary resize-none"
                   />
                 </div>

@@ -57,9 +57,15 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         from django.utils import timezone
+        from rest_framework.exceptions import ValidationError
         today = timezone.now().date()
 
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
         raw_files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        for f in raw_files:
+            if f and getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
+                raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
+
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
@@ -93,15 +99,80 @@ class ProductViewSet(viewsets.ModelViewSet):
         if product.submission_deadline and product.submission_deadline >= today and product.status == 'closed':
             product.status = 'open'
             product.save(update_fields=['status'])
+
+        self._auto_publish_supply_batch(product, self.request.data)
+
         from apps.common.utils import log_action
         log_action(self.request, actor=self.request.user, action="product_added", target_model="Product", target_id=product.id, target_name=product.name)
 
+    def _auto_publish_supply_batch(self, product, request_data):
+        publish_supply = request_data.get('publish_supply') or request_data.get('is_direct_publish')
+        initial_qty = request_data.get('supply_quantity') or request_data.get('initial_stock')
+        if (str(publish_supply).lower() == 'true' or publish_supply is True) and initial_qty:
+            try:
+                qty_val = float(initial_qty)
+                if qty_val > 0:
+                    from apps.supplies.models import Supply, SupplyImage
+                    from apps.accounts.models import FarmerProfile
+                    from django.utils import timezone
+                    today = timezone.now().date()
+
+                    farmer_profile = None
+                    if self.request.user and self.request.user.is_authenticated:
+                        farmer_profile = getattr(self.request.user, 'farmer_profile', None)
+                        if not farmer_profile:
+                            farmer_profile, _ = FarmerProfile.objects.get_or_create(
+                                user=self.request.user,
+                                defaults={'farm_name': 'Harvest Hill', 'location': 'Kigali, Rwanda'}
+                            )
+                        if getattr(self.request.user, 'role', '') == 'admin' and farmer_profile.farm_name != 'Harvest Hill':
+                            farmer_profile.farm_name = 'Harvest Hill'
+                            farmer_profile.save(update_fields=['farm_name'])
+                    
+                    if not farmer_profile:
+                        farmer_profile, _ = FarmerProfile.objects.get_or_create(
+                            farm_name='Harvest Hill',
+                            defaults={'location': 'Kigali, Rwanda'}
+                        )
+                    
+                    if farmer_profile:
+                        price_val = float(product.price or product.base_price or product.offered_price or 0)
+                        avail_date = request_data.get('supply_available_date') or today
+                        notes_val = request_data.get('supply_notes') or 'Direct published harvest stock by Admin.'
+                        
+                        supply = Supply.objects.create(
+                            product=product,
+                            farmer=farmer_profile,
+                            quantity=qty_val,
+                            accepted_quantity=qty_val,
+                            price=price_val,
+                            agreed_price=price_val,
+                            available_date=avail_date,
+                            notes=notes_val,
+                            status='accepted',
+                            photo=product.image
+                        )
+                        for pi in product.gallery_images.all():
+                            if pi.image:
+                                try:
+                                    SupplyImage.objects.create(supply=supply, image=pi.image)
+                                except Exception:
+                                    pass
+            except Exception as e:
+                print(f"Failed to auto-publish supply batch: {e}")
+
     def perform_update(self, serializer):
         from django.utils import timezone
+        from rest_framework.exceptions import ValidationError
         today = timezone.now().date()
         instance = self.get_object()
 
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
         raw_files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
+        for f in raw_files:
+            if f and getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
+                raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
+
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
@@ -141,6 +212,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         if instance.submission_deadline and instance.submission_deadline >= today and instance.status == 'closed':
             instance.status = 'open'
             instance.save(update_fields=['status'])
+
+        self._auto_publish_supply_batch(instance, self.request.data)
 
     def perform_destroy(self, instance):
         """Soft-delete (archive) MasterProduct / Product Requirement instead of permanent deletion."""
@@ -241,7 +314,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     def upload_images(self, request, pk=None):
         """Uploads new MasterProduct gallery images and updates cover image if not set."""
         product = self.get_object()
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
         raw_files = request.FILES.getlist('images') or request.FILES.getlist('image')
+        for f in raw_files:
+            if f and getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
+                return Response({"detail": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."}, status=status.HTTP_400_BAD_REQUEST)
+
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
 
         from .models import ProductImage

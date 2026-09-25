@@ -304,9 +304,16 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response({"detail": f"Supply '{supply.supply_number or supply.id}' restored successfully."}, status=200)
 
     def perform_create(self, serializer):
-        # Extract files from request
+        from rest_framework.exceptions import ValidationError
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
+
         images = self.request.FILES.getlist('images')
         photo_file = self.request.FILES.get('photo')
+        
+        all_upload_files = list(images) + ([photo_file] if photo_file else [])
+        for f in all_upload_files:
+            if f and getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
+                raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
         
         # If no photo but images are uploaded, use the first image as photo
         if not photo_file and images:
@@ -514,6 +521,9 @@ class SupplyViewSet(RoleScopedQuerysetMixin, viewsets.ModelViewSet):
         image_file = request.FILES.get('image')
         if not image_file:
             return Response({"error": "No image provided"}, status=400)
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
+        if image_file and getattr(image_file, 'size', 0) > MAX_IMAGE_SIZE:
+            return Response({"error": f"Image '{image_file.name}' exceeds the maximum allowed size of 3 MB."}, status=400)
         img_obj = SupplyImage.objects.create(supply=supply, image=image_file)
         
         # Also update main supply photo if it is empty

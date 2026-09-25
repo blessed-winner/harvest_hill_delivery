@@ -158,8 +158,8 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
 
   const handleOnTheFlyUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editSupply || !e.target.files || e.target.files.length === 0) return;
-    if (editImages.length >= 5) {
-      toast("You can upload a maximum of 5 images.", "warning");
+    if (editImages.length >= 3) {
+      toast("You can upload a maximum of 3 images.", "warning");
       return;
     }
     const file = e.target.files[0];
@@ -725,10 +725,10 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="block text-xs font-bold text-primary font-sans">
-                      Harvest Photos ({editImages.length}/5)
+                      Harvest Photos ({editImages.length}/3)
                     </label>
                     <span className="text-[10px] text-on-surface-variant font-mono">
-                      Max 5 photos
+                      Max 3 photos
                     </span>
                   </div>
 
@@ -763,8 +763,8 @@ export default function MySupplies({ onViewChange }: MySuppliesProps) {
                       </div>
                     ))}
 
-                    {/* Dynamic '+' Square Tile for uploading new photo (shown if < 5 threshold) */}
-                    {editImages.length < 5 && (
+                    {/* Dynamic '+' Square Tile for uploading new photo (shown if < 3 threshold) */}
+                    {editImages.length < 3 && (
                       <label className="aspect-square rounded-2xl border-2 border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center cursor-pointer transition-all group relative">
                         {isUploadingImage ? (
                           <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />

@@ -129,6 +129,22 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_activeDeal(self, obj):
         return self.get_active_deal(obj)
 
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        try:
+            url = obj.image.url
+            if not url:
+                return None
+            if url.startswith('http://') or url.startswith('https://'):
+                return url
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return f"http://localhost:8000{url}" if url.startswith('/') else f"http://localhost:8000/{url}"
+        except Exception:
+            return None
+
     def get_images(self, obj):
         urls = []
         seen_keys = set()
@@ -141,7 +157,7 @@ class ProductSerializer(serializers.ModelSerializer):
                 return url_val
             if request:
                 return request.build_absolute_uri(url_val)
-            return url_val
+            return f"http://localhost:8000{url_val}" if url_val.startswith('/') else f"http://localhost:8000/{url_val}"
 
         if obj.image:
             try:
@@ -150,7 +166,9 @@ class ProductSerializer(serializers.ModelSerializer):
                     key = _normalize_image_key(raw_url)
                     if key and key not in seen_keys:
                         seen_keys.add(key)
-                        urls.append(_make_url(raw_url))
+                        formatted = _make_url(raw_url)
+                        if formatted:
+                            urls.append(formatted)
             except Exception:
                 pass
 
@@ -164,7 +182,9 @@ class ProductSerializer(serializers.ModelSerializer):
                         key = _normalize_image_key(raw_url)
                         if key and key not in seen_keys:
                             seen_keys.add(key)
-                            urls.append(_make_url(raw_url))
+                            formatted = _make_url(raw_url)
+                            if formatted:
+                                urls.append(formatted)
             except Exception:
                 pass
 
@@ -235,6 +255,15 @@ class ProductSerializer(serializers.ModelSerializer):
         offered_price = attrs.get('offered_price', instance.offered_price if instance else None)
         quantity_needed = attrs.get('quantity_needed', instance.quantity_needed if instance else 0)
 
+        # MAX Image size check: 3 MB (3,145,728 bytes)
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
+        image_file = attrs.get('image')
+        if image_file and hasattr(image_file, 'size') and image_file.size > MAX_IMAGE_SIZE:
+            img_name = getattr(image_file, 'name', 'Uploaded image')
+            raise serializers.ValidationError({
+                "image": f"Image '{img_name}' exceeds the maximum allowed size of 3 MB."
+            })
+
         # 0. Prevent unsafe pricing_mode changes if submissions exist
         if instance and 'pricing_mode' in attrs and attrs['pricing_mode'] != instance.pricing_mode:
             if instance.supplies.exclude(status='rejected').exists():
@@ -257,9 +286,11 @@ class ProductSerializer(serializers.ModelSerializer):
             attrs['offered_price'] = None
             attrs['base_price'] = 0.00
 
-        # 2. Dynamic unit-based quantity check (only for OPEN active requirements)
+        # 2. Dynamic unit-based quantity check (only when farmer harvest submissions are actively requested or quantity_needed is set > 0)
         status_val = attrs.get('status', instance.status if instance else 'open')
-        if status_val == 'open':
+        is_currently_needed = attrs.get('is_currently_needed', instance.is_currently_needed if instance else False)
+        
+        if status_val == 'open' and (is_currently_needed or (quantity_needed is not None and float(quantity_needed) > 0)):
             unit = attrs.get('unit', instance.unit if instance else 'kg').lower()
             min_qty = 1
             min_msg = "Quantity needed must be greater than zero."
@@ -284,12 +315,11 @@ class ProductSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"quantity_needed": min_msg})
 
         # 3. Submission deadline validation for OPEN status
-        status_val = attrs.get('status', instance.status if instance else 'open')
         deadline = attrs.get('submission_deadline', instance.submission_deadline if instance else None)
         from django.utils import timezone
         today = timezone.now().date()
 
-        if status_val == 'open' and deadline and deadline < today:
+        if status_val == 'open' and is_currently_needed and deadline and deadline < today:
             formatted_dl = deadline.strftime('%B %d, %Y') if hasattr(deadline, 'strftime') else str(deadline)
             raise serializers.ValidationError({
                 "submission_deadline": f"Cannot activate or set a requirement to OPEN when its submission deadline ({formatted_dl}) has passed. Please update the submission deadline to today or a future date first."

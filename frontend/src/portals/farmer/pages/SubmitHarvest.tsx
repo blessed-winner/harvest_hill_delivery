@@ -146,21 +146,34 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
+      const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
       const currentCount = photos.length;
-      const allowedCount = 5 - currentCount;
+      const allowedCount = 3 - currentCount;
       if (allowedCount <= 0) {
-        toast("You can upload a maximum of 5 images.", "warning");
+        toast("You can upload a maximum of 3 images.", "warning");
         return;
       }
       const filesToAdd = files.slice(0, allowedCount);
       if (files.length > allowedCount) {
-        toast(`Only the first ${allowedCount} image(s) were added (limit: 5 images).`, "warning");
+        toast(`Only the first ${allowedCount} image(s) were added (limit: 3 images).`, "warning");
       }
-      setPhotos(prev => [...prev, ...filesToAdd]);
-      const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
-      setPhotoPreviews(prev => [...prev, ...newUrls]);
-      if (!form.photo && filesToAdd.length > 0) {
-        setForm((current) => ({ ...current, photo: filesToAdd[0] }));
+
+      const validFiles: File[] = [];
+      for (const f of filesToAdd) {
+        if (f.size > MAX_IMAGE_SIZE) {
+          toast(`Image "${f.name}" (${(f.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum allowed size of 3 MB.`, "error");
+        } else {
+          validFiles.push(f);
+        }
+      }
+
+      if (validFiles.length > 0) {
+        setPhotos(prev => [...prev, ...validFiles]);
+        const newUrls = validFiles.map(file => URL.createObjectURL(file));
+        setPhotoPreviews(prev => [...prev, ...newUrls]);
+        if (!form.photo && validFiles.length > 0) {
+          setForm((current) => ({ ...current, photo: validFiles[0] }));
+        }
       }
     }
   };
@@ -906,14 +919,14 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                           </div>
                         ))}
                       </div>
-                      {photoPreviews.length < 5 && (
+                      {photoPreviews.length < 3 && (
                         <button
                           type="button"
                           onClick={() => document.getElementById('photo-upload')?.click()}
                           className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-primary text-primary rounded-lg font-bold hover:bg-primary/5 transition-all text-xs cursor-pointer"
                         >
                           <Plus size={14} />
-                          <span>Add Image ({photoPreviews.length}/5)</span>
+                          <span>Add Image ({photoPreviews.length}/3)</span>
                         </button>
                       )}
                     </div>
@@ -926,7 +939,7 @@ export default function SubmitHarvest({ preselectedProduct, clearPreselected }: 
                         <CloudUpload size={18} className="text-primary" />
                       </div>
                       <p className="font-sans text-xs font-bold text-primary">Click to upload crop photos</p>
-                      <p className="font-mono text-[9px] text-on-surface-variant mt-0.5 uppercase font-medium">Supports JPG, PNG up to 5 images</p>
+                      <p className="font-mono text-[9px] text-on-surface-variant mt-0.5 uppercase font-medium">Supports JPG, PNG, WEBP (Max 3 MB per image, up to 3 images)</p>
                     </div>
                   )}
                 </div>

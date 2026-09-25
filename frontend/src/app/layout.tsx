@@ -5,7 +5,18 @@ import { AlertProvider } from '../context/AlertContext';
 
 export const metadata: Metadata = {
   title: 'Harvest Hill Delivery',
-  description: 'Mock-only Harvest Hill delivery portal',
+  description: 'Get your fresh produce with Harvest Hill Delivery',
+  openGraph: {
+    title: 'Harvest Hill Delivery',
+    description: 'Get your fresh produce with Harvest Hill Delivery',
+    siteName: 'Harvest Hill Delivery',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Harvest Hill Delivery',
+    description: 'Get your fresh produce with Harvest Hill Delivery',
+  },
 };
 
 export default function RootLayout({
