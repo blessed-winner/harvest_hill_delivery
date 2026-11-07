@@ -105,6 +105,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [productImagePreviews, setProductImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
 
   const handleProductImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -114,13 +115,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     const availableSlots = 3 - totalCurrentCount;
 
     if (availableSlots <= 0) {
-      toast("You have reached the maximum limit of 3 images for this product.", "warning");
+      toast("You have reached the maximum limit of 3 images for this product. Remove an image above to replace it.", "warning");
       e.target.value = '';
       return;
     }
 
     if (selectedFiles.length > availableSlots) {
-      toast(`Only the first ${availableSlots} image(s) were added (limit: 3 images).`, "warning");
+      toast(`Only the first ${availableSlots} image(s) were added (limit: 3 images total).`, "warning");
     }
 
     const filesToAdd = selectedFiles.slice(0, availableSlots);
@@ -152,6 +153,18 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     if (!selectedProduct || selectedProduct === 'new') return;
     const imgItem = typeof imgIdOrItem === 'object' ? imgIdOrItem : (existingImages.find(i => i.id === imgIdOrItem || i.url === imgIdOrItem || i === imgIdOrItem) || { id: imgIdOrItem });
     const imgUrl = typeof imgItem === 'string' ? imgItem : (imgItem.image_url || imgItem.url || imgItem.image);
+    const rawUrl = typeof imgItem === 'object' ? imgItem.raw_url : undefined;
+    
+    if (imgUrl) {
+      setDeletedImageUrls(prev => [...prev, imgUrl]);
+    }
+    if (rawUrl && rawUrl !== imgUrl) {
+      setDeletedImageUrls(prev => [...prev, rawUrl]);
+    }
+    if (imgItem.id && !String(imgItem.id).startsWith('img-')) {
+      setDeletedImageUrls(prev => [...prev, String(imgItem.id)]);
+    }
+
     try {
       await apiRequest(`/api/products/${selectedProduct.id}/delete_image/`, {
         method: 'POST',
@@ -400,6 +413,7 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setProductImageFiles([]);
     setProductImagePreviews([]);
     setExistingImages([]);
+    setDeletedImageUrls([]);
     setErrorMessage("");
     setSelectedProduct("new");
     fetchAvailableClients();
@@ -444,12 +458,13 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
       const urlStr = typeof img === 'string' ? img : (img.image_url || img.url || img.image || '');
       const fullUrl = getImageUrl(urlStr);
       const id = (typeof img === 'object' && img.id) ? img.id : `img-${idx}`;
-      return { id, url: fullUrl, image_url: fullUrl };
+      return { id, url: fullUrl, image_url: fullUrl, raw_url: urlStr };
     });
 
     setExistingImages(formattedImages);
     setProductImageFiles([]);
     setProductImagePreviews([]);
+    setDeletedImageUrls([]);
 
     setClientSearchQuery("");
     setErrorMessage("");
@@ -759,6 +774,23 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     productImageFiles.forEach(file => {
       formData.append('images', file);
     });
+
+    if (selectedProduct && selectedProduct !== 'new') {
+      existingImages.forEach((img: any) => {
+        const u = img.raw_url || img.url || img.image_url || (typeof img === 'string' ? img : '');
+        if (u) {
+          formData.append('retained_images', u);
+        }
+        if (img.id && !String(img.id).startsWith('img-')) {
+          formData.append('retained_images', String(img.id));
+        }
+      });
+      deletedImageUrls.forEach(u => {
+        if (u) {
+          formData.append('deleted_images', u);
+        }
+      });
+    }
 
     try {
       let res: any;
@@ -1445,19 +1477,35 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               </div>
             )}
 
-            {/* Upload Selector Dropzone */}
-            <label className="border-2 border-dashed border-outline-variant/60 hover:border-primary/60 bg-surface-container-lowest hover:bg-surface-container-low/40 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1 block">
-              <UploadCloud className="w-6 h-6 text-primary opacity-80" />
-              <p className="text-xs font-bold text-on-surface">Click or drag files to upload product photos</p>
-              <p className="text-[10px] text-on-surface-variant">Supports JPG, PNG, WEBP. Maximum file size: <strong className="text-primary font-extrabold">3 MB per image</strong>.</p>
-              <input 
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleProductImageSelect}
-                className="hidden"
-              />
-            </label>
+            {/* Upload Selector Dropzone or Max Limit Banner */}
+            {existingImages.length + productImageFiles.length >= 3 ? (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-amber-900">
+                <Info size={16} className="text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs space-y-0.5">
+                  <p className="font-extrabold">Maximum 3 images reached</p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    This product has the maximum allowed images (3 of 3). To upload or replace a photo, delete or remove an existing image above first.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <label className="border-2 border-dashed border-outline-variant/60 hover:border-primary/60 bg-surface-container-lowest hover:bg-surface-container-low/40 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1 block">
+                <UploadCloud className="w-6 h-6 text-primary opacity-80" />
+                <p className="text-xs font-bold text-on-surface">
+                  Click or drag files to upload product photos ({3 - (existingImages.length + productImageFiles.length)} {3 - (existingImages.length + productImageFiles.length) === 1 ? 'slot' : 'slots'} available)
+                </p>
+                <p className="text-[10px] text-on-surface-variant">
+                  Supports JPG, PNG, WEBP. Maximum 3 images total. Max file size: <strong className="text-primary font-extrabold">3 MB per image</strong>.
+                </p>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleProductImageSelect}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
 
           {/* Section 3: Publishing Workflow & Farmer Requirements */}

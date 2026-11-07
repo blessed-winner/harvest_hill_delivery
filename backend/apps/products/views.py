@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Product, ProductRequest
-from .serializers import ProductSerializer, ProductRequestSerializer
+from .serializers import ProductSerializer, ProductRequestSerializer, _product_has_image
 from .utils import delete_image_file
 
 
@@ -89,6 +89,8 @@ class ProductViewSet(viewsets.ModelViewSet):
                 raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
 
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
+        if len(files) > 3:
+            raise ValidationError({"images": "A product cannot have more than 3 images in total."})
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
         if files:
@@ -186,6 +188,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         from django.utils import timezone
         from rest_framework.exceptions import ValidationError
+        from .models import ProductImage
         today = timezone.now().date()
         instance = self.get_object()
 
@@ -193,43 +196,124 @@ class ProductViewSet(viewsets.ModelViewSet):
         raw_files = self.request.FILES.getlist('images') or self.request.FILES.getlist('image')
         for f in raw_files:
             if f and getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
-                raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
+                raise ValidationError({"images": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
 
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
-        if files:
+        # 1. Process explicit deletions (deleted_images)
+        deleted_raw = self.request.data.getlist('deleted_images') or self.request.data.getlist('deleted_images[]')
+        if not deleted_raw and self.request.data.get('deleted_images'):
+            deleted_val = self.request.data.get('deleted_images')
+            deleted_raw = [deleted_val] if isinstance(deleted_val, str) else list(deleted_val)
+
+        for del_item in deleted_raw:
+            if not del_item:
+                continue
+            del_target = _stored_image_name(del_item)
+            del_base = del_target.rsplit('/', 1)[-1].lower() if del_target else str(del_item).rsplit('/', 1)[-1].lower()
+
+            for img in list(instance.gallery_images.all()):
+                if img.image:
+                    img_name = img.image.name
+                    img_base = img_name.rsplit('/', 1)[-1].lower()
+                    if img_name == del_target or img_base == del_base or str(img.id) == str(del_item):
+                        delete_image_file(img.image)
+                        img.delete()
+
             if instance.image:
-                try:
+                c_name = instance.image.name
+                c_base = c_name.rsplit('/', 1)[-1].lower()
+                if c_name == del_target or c_base == del_base:
                     delete_image_file(instance.image)
-                except Exception:
-                    pass
-            instance = serializer.save()
-            from .models import ProductImage
-            instance.gallery_images.all().delete()
-            created_pi_list = []
-            for file in files:
-                try:
-                    pi = ProductImage.objects.create(product=instance, image=file)
-                    created_pi_list.append(pi)
-                except Exception as img_err:
-                    print(f"Failed to create ProductImage during update: {img_err}")
-            if created_pi_list and created_pi_list[0].image:
-                instance.image = created_pi_list[0].image
-                instance.save(update_fields=['image'])
-        elif image_url and isinstance(image_url, str):
+                    instance.image = None
+                    instance.save(update_fields=['image'])
+
+        # 2. Process retained images if explicitly supplied (delete any existing image NOT retained)
+        retained_raw = self.request.data.getlist('retained_images') or self.request.data.getlist('retained_images[]')
+        if not retained_raw and self.request.data.get('retained_images'):
+            ret_val = self.request.data.get('retained_images')
+            retained_raw = [ret_val] if isinstance(ret_val, str) else list(ret_val)
+
+        if retained_raw:
+            retained_targets = set()
+            for r in retained_raw:
+                if not r:
+                    continue
+                t = _stored_image_name(r)
+                if t:
+                    retained_targets.add(t)
+                    retained_targets.add(t.rsplit('/', 1)[-1].lower())
+                retained_targets.add(str(r).rsplit('/', 1)[-1].lower())
+
+            for img in list(instance.gallery_images.all()):
+                if img.image:
+                    name = img.image.name
+                    base = name.rsplit('/', 1)[-1].lower()
+                    if name not in retained_targets and base not in retained_targets and str(img.id) not in retained_targets:
+                        delete_image_file(img.image)
+                        img.delete()
+
+            if instance.image:
+                c_name = instance.image.name
+                c_base = c_name.rsplit('/', 1)[-1].lower()
+                if c_name not in retained_targets and c_base not in retained_targets:
+                    delete_image_file(instance.image)
+                    instance.image = None
+                    instance.save(update_fields=['image'])
+
+        # 3. Calculate current unique existing images count (retained)
+        existing_names = set()
+        for gi in instance.gallery_images.all():
+            if gi.image and gi.image.name:
+                existing_names.add(gi.image.name)
+        if instance.image and instance.image.name and instance.image.name not in existing_names:
+            existing_names.add(instance.image.name)
+
+        current_count = len(existing_names)
+        total_count = current_count + len(files)
+
+        # 4. Strict enforcement of 3-image limit on backend
+        if total_count > 3:
+            raise ValidationError({
+                "images": f"A product cannot have more than 3 images in total. This product currently has {current_count} image(s), and you attempted to add {len(files)} new image(s)."
+            })
+
+        # 5. Save other fields through serializer
+        instance = serializer.save()
+
+        # 6. Incrementally add newly uploaded files (never wiping existing ones!)
+        created_pi_list = []
+        for file in files:
+            try:
+                pi = ProductImage.objects.create(product=instance, image=file)
+                created_pi_list.append(pi)
+            except Exception as img_err:
+                print(f"Failed to create ProductImage during update: {img_err}")
+
+        # If a single image_url string was provided without files and gallery is empty
+        if not files and image_url and isinstance(image_url, str) and not instance.gallery_images.exists():
             clean_path = image_url
             if '/media/' in clean_path:
                 clean_path = clean_path.split('/media/')[-1]
-            instance = serializer.save(image=clean_path)
-            from .models import ProductImage
-            if not instance.gallery_images.exists():
-                try:
-                    ProductImage.objects.create(product=instance, image=clean_path)
-                except Exception as img_err:
-                    print(f"Failed to create ProductImage from url: {img_err}")
+            try:
+                ProductImage.objects.create(product=instance, image=clean_path)
+            except Exception as img_err:
+                print(f"Failed to create ProductImage from url: {img_err}")
+
+        # 7. Ensure cover image is set and valid
+        if not instance.image or not _product_has_image(instance.image):
+            first_img = instance.gallery_images.exclude(image='').first()
+            if first_img and first_img.image:
+                instance.image = first_img.image
+                instance.save(update_fields=['image'])
         else:
-            instance = serializer.save()
+            # If instance.image was set but not in gallery_images, ensure it is added
+            if not instance.gallery_images.filter(image=instance.image.name).exists():
+                try:
+                    ProductImage.objects.create(product=instance, image=instance.image)
+                except Exception:
+                    pass
 
         if instance.submission_deadline and instance.submission_deadline >= today and instance.status == 'closed':
             instance.status = 'open'
