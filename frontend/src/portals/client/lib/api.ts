@@ -85,6 +85,11 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}, _r
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth-changed'));
       }
+      if (!_retry) {
+        const noAuthHeaders = { ...headers };
+        delete noAuthHeaders['Authorization'];
+        return apiRequest(endpoint, { ...options, headers: noAuthHeaders }, true);
+      }
     }
     let errMsg = `Request failed: ${response.status} ${response.statusText}`;
     let errFields: any = null;
