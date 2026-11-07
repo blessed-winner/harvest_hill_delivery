@@ -10,6 +10,7 @@ export type ViewType =
   | 'dashboard'
   | 'users'
   | 'products'
+  | 'media'
   | 'orders'
   | 'deliveries'
   | 'invoices'

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, AlertCircle, Trash2, Package, Image as ImageIcon, Sprout, Loader2, X, Handshake, Calendar, ShieldCheck, FileText, CheckCircle2, Clock, Tag, Info, Lock, Users, UserCheck, Globe, Edit3, UploadCloud } from 'lucide-react';
 import { DetailDrawer } from '../components/DetailDrawer';
+import { MediaPickerModal } from '../components/MediaPickerModal';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { api, apiRequest } from '../lib/api';
@@ -105,13 +106,15 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [productImagePreviews, setProductImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [libraryImages, setLibraryImages] = useState<any[]>([]);
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
 
   const handleProductImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selectedFiles = Array.from(e.target.files);
     const MAX_IMAGE_SIZE = 3 * 1024 * 1024; // 3 MB
-    const totalCurrentCount = existingImages.length + productImageFiles.length;
+    const totalCurrentCount = existingImages.length + productImageFiles.length + libraryImages.length;
     const availableSlots = 3 - totalCurrentCount;
 
     if (availableSlots <= 0) {
@@ -148,6 +151,10 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setProductImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
   const handleRemoveNewProductImage = handleRemoveNewImage;
+
+  const handleRemoveLibraryImage = (index: number) => {
+    setLibraryImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleRemoveExistingImage = async (imgIdOrItem: any) => {
     if (!selectedProduct || selectedProduct === 'new') return;
@@ -413,6 +420,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setProductImageFiles([]);
     setProductImagePreviews([]);
     setExistingImages([]);
+    setLibraryImages([]);
+    setIsMediaPickerOpen(false);
     setDeletedImageUrls([]);
     setErrorMessage("");
     setSelectedProduct("new");
@@ -464,6 +473,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
     setExistingImages(formattedImages);
     setProductImageFiles([]);
     setProductImagePreviews([]);
+    setLibraryImages([]);
+    setIsMediaPickerOpen(false);
     setDeletedImageUrls([]);
 
     setClientSearchQuery("");
@@ -773,6 +784,11 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
 
     productImageFiles.forEach(file => {
       formData.append('images', file);
+    });
+
+    libraryImages.forEach(img => {
+      const p = img.file_path || img.file || img.url;
+      if (p) formData.append('library_images', p);
     });
 
     if (selectedProduct && selectedProduct !== 'new') {
@@ -1453,6 +1469,37 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               </div>
             )}
 
+            {/* Selected from Media Library */}
+            {libraryImages.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon size={12} className="text-primary" />
+                  <span>Selected from Media Library ({libraryImages.length})</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {libraryImages.map((asset, idx) => {
+                    const fullUrl = getImageUrl(asset.url || asset.file_path || asset.file);
+                    return (
+                      <div key={asset.id || idx} className="relative h-20 rounded-xl overflow-hidden border border-primary/40 group bg-primary/5 shadow-2xs">
+                        <img src={fullUrl} alt="Library" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] font-extrabold px-1 py-0.5 rounded backdrop-blur-xs">
+                          Library
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLibraryImage(idx)}
+                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                          title="Remove image"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Selected File Previews */}
             {productImagePreviews.length > 0 && (
               <div className="space-y-2">
@@ -1477,34 +1524,47 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
               </div>
             )}
 
-            {/* Upload Selector Dropzone or Max Limit Banner */}
-            {existingImages.length + productImageFiles.length >= 3 ? (
+            {/* Action area: Choose from Media Library + Upload Dropzone */}
+            {existingImages.length + productImageFiles.length + libraryImages.length >= 3 ? (
               <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-start gap-2.5 text-amber-900">
                 <Info size={16} className="text-amber-700 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-0.5">
                   <p className="font-extrabold">Maximum 3 images reached</p>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    This product has the maximum allowed images (3 of 3). To upload or replace a photo, delete or remove an existing image above first.
+                    This product has the maximum allowed images (3 of 3). To upload or attach a different image, delete or remove an existing image above first.
                   </p>
                 </div>
               </div>
             ) : (
-              <label className="border-2 border-dashed border-outline-variant/60 hover:border-primary/60 bg-surface-container-lowest hover:bg-surface-container-low/40 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1 block">
-                <UploadCloud className="w-6 h-6 text-primary opacity-80" />
-                <p className="text-xs font-bold text-on-surface">
-                  Click or drag files to upload product photos ({3 - (existingImages.length + productImageFiles.length)} {3 - (existingImages.length + productImageFiles.length) === 1 ? 'slot' : 'slots'} available)
-                </p>
-                <p className="text-[10px] text-on-surface-variant">
-                  Supports JPG, PNG, WEBP. Maximum 3 images total. Max file size: <strong className="text-primary font-extrabold">3 MB per image</strong>.
-                </p>
-                <input 
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleProductImageSelect}
-                  className="hidden"
-                />
-              </label>
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsMediaPickerOpen(true)}
+                    className="flex-1 py-2.5 px-3 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/60 rounded-xl text-xs font-bold text-primary flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:border-primary/40"
+                  >
+                    <ImageIcon size={14} className="text-primary" />
+                    <span>Choose from Media Library ({3 - (existingImages.length + productImageFiles.length + libraryImages.length)} slots left)</span>
+                  </button>
+                </div>
+
+                <label className="border-2 border-dashed border-outline-variant/60 hover:border-primary/60 bg-surface-container-lowest hover:bg-surface-container-low/40 rounded-xl p-3.5 flex flex-col items-center justify-center cursor-pointer transition-colors text-center space-y-1 block">
+                  <UploadCloud className="w-5 h-5 text-primary opacity-80" />
+                  <p className="text-xs font-bold text-on-surface">
+                    Or upload new product photos from your device
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant">
+                    Supports JPG, PNG, WEBP. Max 3 MB per image (up to 3 total).
+                  </p>
+                  <input 
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleProductImageSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             )}
           </div>
 
@@ -1955,6 +2015,20 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
           </div>
         </div>
       </DetailDrawer>
+
+      {/* Media Picker Modal */}
+      <MediaPickerModal
+        isOpen={isMediaPickerOpen}
+        onClose={() => setIsMediaPickerOpen(false)}
+        maxSelectable={Math.max(0, 3 - (existingImages.length + productImageFiles.length + libraryImages.length))}
+        alreadyAttachedPaths={[
+          ...existingImages.map(img => img.raw_url || img.url || img.image_url || ''),
+          ...libraryImages.map(img => img.file_path || img.file || img.url || '')
+        ]}
+        onSelectImages={(selected) => {
+          setLibraryImages(prev => [...prev, ...selected]);
+        }}
+      />
 
       {/* Premium Confirm Dialog Modal */}
       {confirmDialog.isOpen && (

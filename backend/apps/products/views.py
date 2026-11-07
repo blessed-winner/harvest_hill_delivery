@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.db import models
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from .models import Product, ProductRequest
-from .serializers import ProductSerializer, ProductRequestSerializer, _product_has_image
+from apps.common.permissions import IsAdmin
+from .models import Product, ProductRequest, MediaAsset
+from .serializers import ProductSerializer, ProductRequestSerializer, MediaAssetSerializer, _product_has_image
 from .utils import delete_image_file
 
 
@@ -89,21 +91,49 @@ class ProductViewSet(viewsets.ModelViewSet):
                 raise ValidationError({"image": f"Image '{f.name}' exceeds the maximum allowed size of 3 MB."})
 
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
-        if len(files) > 3:
+
+        # Library images selected from Media Library
+        library_images = self.request.data.getlist('library_images') or self.request.data.getlist('library_images[]')
+        if not library_images and self.request.data.get('library_images'):
+            lib_val = self.request.data.get('library_images')
+            library_images = [lib_val] if isinstance(lib_val, str) else list(lib_val)
+        library_images = [img for img in library_images if img]
+
+        total_req_images = len(files) + len(library_images)
+        if total_req_images > 3:
             raise ValidationError({"images": "A product cannot have more than 3 images in total."})
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
-        if files:
+        if files or library_images:
             product = serializer.save()
-            from .models import ProductImage
+            from .models import ProductImage, MediaAsset
+            import os
             created_pi_list = []
             for file in files:
                 try:
                     pi = ProductImage.objects.create(product=product, image=file)
                     created_pi_list.append(pi)
+                    if pi.image and pi.image.name:
+                        MediaAsset.objects.get_or_create(
+                            file=pi.image.name,
+                            defaults={
+                                'original_filename': getattr(file, 'name', '') or os.path.basename(pi.image.name),
+                                'file_size': getattr(file, 'size', 0)
+                            }
+                        )
                 except Exception as img_err:
                     print(f"Failed to create ProductImage during create: {img_err}")
-            if created_pi_list and created_pi_list[0].image:
+
+            for lib_img in library_images:
+                clean_lib = _stored_image_name(lib_img)
+                if clean_lib and not product.gallery_images.filter(image=clean_lib).exists():
+                    try:
+                        pi = ProductImage.objects.create(product=product, image=clean_lib)
+                        created_pi_list.append(pi)
+                    except Exception as lib_err:
+                        print(f"Failed to link library image during create: {lib_err}")
+
+            if created_pi_list and not product.image:
                 product.image = created_pi_list[0].image
                 product.save(update_fields=['image'])
         elif image_url and isinstance(image_url, str):
@@ -188,7 +218,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         from django.utils import timezone
         from rest_framework.exceptions import ValidationError
-        from .models import ProductImage
+        from .models import ProductImage, MediaAsset
+        import os
         today = timezone.now().date()
         instance = self.get_object()
 
@@ -202,6 +233,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         image_url = self.request.data.get('image_url', None) or self.request.data.get('image', None)
 
         # 1. Process explicit deletions (deleted_images)
+        # Note: ONLY remove association from this product. Never delete the physical file from Media Library!
         deleted_raw = self.request.data.getlist('deleted_images') or self.request.data.getlist('deleted_images[]')
         if not deleted_raw and self.request.data.get('deleted_images'):
             deleted_val = self.request.data.get('deleted_images')
@@ -218,18 +250,16 @@ class ProductViewSet(viewsets.ModelViewSet):
                     img_name = img.image.name
                     img_base = img_name.rsplit('/', 1)[-1].lower()
                     if img_name == del_target or img_base == del_base or str(img.id) == str(del_item):
-                        delete_image_file(img.image)
                         img.delete()
 
             if instance.image:
                 c_name = instance.image.name
                 c_base = c_name.rsplit('/', 1)[-1].lower()
                 if c_name == del_target or c_base == del_base:
-                    delete_image_file(instance.image)
                     instance.image = None
                     instance.save(update_fields=['image'])
 
-        # 2. Process retained images if explicitly supplied (delete any existing image NOT retained)
+        # 2. Process retained images if explicitly supplied (remove un-retained images from this product)
         retained_raw = self.request.data.getlist('retained_images') or self.request.data.getlist('retained_images[]')
         if not retained_raw and self.request.data.get('retained_images'):
             ret_val = self.request.data.get('retained_images')
@@ -251,16 +281,21 @@ class ProductViewSet(viewsets.ModelViewSet):
                     name = img.image.name
                     base = name.rsplit('/', 1)[-1].lower()
                     if name not in retained_targets and base not in retained_targets and str(img.id) not in retained_targets:
-                        delete_image_file(img.image)
                         img.delete()
 
             if instance.image:
                 c_name = instance.image.name
                 c_base = c_name.rsplit('/', 1)[-1].lower()
                 if c_name not in retained_targets and c_base not in retained_targets:
-                    delete_image_file(instance.image)
                     instance.image = None
                     instance.save(update_fields=['image'])
+
+        # Library images selected from Media Library
+        library_images = self.request.data.getlist('library_images') or self.request.data.getlist('library_images[]')
+        if not library_images and self.request.data.get('library_images'):
+            lib_val = self.request.data.get('library_images')
+            library_images = [lib_val] if isinstance(lib_val, str) else list(lib_val)
+        library_images = [img for img in library_images if img]
 
         # 3. Calculate current unique existing images count (retained)
         existing_names = set()
@@ -271,28 +306,43 @@ class ProductViewSet(viewsets.ModelViewSet):
             existing_names.add(instance.image.name)
 
         current_count = len(existing_names)
-        total_count = current_count + len(files)
+        total_count = current_count + len(files) + len(library_images)
 
         # 4. Strict enforcement of 3-image limit on backend
         if total_count > 3:
             raise ValidationError({
-                "images": f"A product cannot have more than 3 images in total. This product currently has {current_count} image(s), and you attempted to add {len(files)} new image(s)."
+                "images": f"A product cannot have more than 3 images in total. This product currently has {current_count} image(s), and you attempted to add {len(files) + len(library_images)} image(s)."
             })
 
         # 5. Save other fields through serializer
         instance = serializer.save()
 
         # 6. Incrementally add newly uploaded files (never wiping existing ones!)
-        created_pi_list = []
         for file in files:
             try:
                 pi = ProductImage.objects.create(product=instance, image=file)
-                created_pi_list.append(pi)
+                if pi.image and pi.image.name:
+                    MediaAsset.objects.get_or_create(
+                        file=pi.image.name,
+                        defaults={
+                            'original_filename': getattr(file, 'name', '') or os.path.basename(pi.image.name),
+                            'file_size': getattr(file, 'size', 0)
+                        }
+                    )
             except Exception as img_err:
                 print(f"Failed to create ProductImage during update: {img_err}")
 
+        # 7. Incrementally link library images without duplicating files
+        for lib_img in library_images:
+            clean_lib = _stored_image_name(lib_img)
+            if clean_lib and not instance.gallery_images.filter(image=clean_lib).exists():
+                try:
+                    ProductImage.objects.create(product=instance, image=clean_lib)
+                except Exception as lib_err:
+                    print(f"Failed to link library image during update: {lib_err}")
+
         # If a single image_url string was provided without files and gallery is empty
-        if not files and image_url and isinstance(image_url, str) and not instance.gallery_images.exists():
+        if not files and not library_images and image_url and isinstance(image_url, str) and not instance.gallery_images.exists():
             clean_path = image_url
             if '/media/' in clean_path:
                 clean_path = clean_path.split('/media/')[-1]
@@ -301,7 +351,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             except Exception as img_err:
                 print(f"Failed to create ProductImage from url: {img_err}")
 
-        # 7. Ensure cover image is set and valid
+        # 8. Ensure cover image is set and valid
         if not instance.image or not _product_has_image(instance.image):
             first_img = instance.gallery_images.exclude(image='').first()
             if first_img and first_img.image:
@@ -365,19 +415,12 @@ class ProductViewSet(viewsets.ModelViewSet):
                     uuid_val = uuid.UUID(str(image_id))
                     img_obj = ProductImage.objects.filter(id=uuid_val, product=product).first()
                     if img_obj:
-                        if img_obj.image:
-                            try:
-                                delete_image_file(img_obj.image)
-                            except Exception:
-                                pass
                         img_obj.delete()
                         deleted = True
                 except (ValueError, TypeError, Exception):
                     pass
 
             if not deleted and image_url:
-                # Exact file-name matching only: no prefix/suffix or extension-less
-                # matching, so deleting 'milk.webp' can never touch 'milk.png'.
                 target_name = _stored_image_name(image_url)
                 if target_name:
                     target_base = target_name.rsplit('/', 1)[-1]
@@ -385,7 +428,6 @@ class ProductViewSet(viewsets.ModelViewSet):
 
                     matched = [img for img in gallery_imgs if img.image and img.image.name == target_name]
                     if not matched:
-                        # The client sent a bare file name: match it against the stored path.
                         matched = [
                             img for img in gallery_imgs
                             if img.image and img.image.name.rsplit('/', 1)[-1] == target_base
@@ -400,12 +442,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                     )
 
                     for img in matched:
-                        delete_image_file(img.image)
                         img.delete()
                         deleted = True
 
                     if cover_matches:
-                        delete_image_file(product.image)
                         next_img = product.gallery_images.exclude(image='').first()
                         product.image = next_img.image if (next_img and next_img.image) else None
                         product.save(update_fields=['image'])
@@ -554,4 +594,229 @@ class ProductRequestViewSet(viewsets.ModelViewSet):
             serializer.save(status='pending')
         else:
             serializer.save()
+
+
+class MediaAssetViewSet(viewsets.ModelViewSet):
+    """
+    Centralized Media Library API for administrators.
+    Provides browsing, uploading, reusing, and deleting of media files.
+    """
+    from .models import MediaAsset
+    queryset = MediaAsset.objects.all()
+    serializer_class = MediaAssetSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        return [permissions.IsAuthenticated(), IsAdmin()]
+
+    def get_queryset(self):
+        from .models import MediaAsset
+        from .media_utils import sync_existing_media
+
+        # Initial auto-sync if empty
+        if not MediaAsset.objects.exists():
+            try:
+                sync_existing_media()
+            except Exception:
+                pass
+
+        from django.db import models
+        qs = MediaAsset.objects.all()
+
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                models.Q(original_filename__icontains=search) |
+                models.Q(file__icontains=search)
+            )
+
+        filter_type = self.request.query_params.get('filter', '').strip().lower()
+        if filter_type in ['in_use', 'unused']:
+            from .models import Product
+            active_prods = Product.objects.exclude(status='archived')
+            used_cover = set(active_prods.exclude(image='').values_list('image', flat=True))
+            used_gallery = set(active_prods.filter(gallery_images__isnull=False).values_list('gallery_images__image', flat=True))
+            all_used_names = used_cover | used_gallery
+
+            all_used_bases = set()
+            for u in all_used_names:
+                if u:
+                    all_used_bases.add(str(u).rsplit('/', 1)[-1].lower())
+
+            in_use_ids = []
+            for asset in qs:
+                if asset.file and asset.file.name:
+                    aname = asset.file.name
+                    abase = aname.rsplit('/', 1)[-1].lower()
+                    if aname in all_used_names or abase in all_used_bases:
+                        in_use_ids.append(asset.id)
+
+            if filter_type == 'in_use':
+                qs = qs.filter(id__in=in_use_ids)
+            else:
+                qs = qs.exclude(id__in=in_use_ids)
+
+        ordering = self.request.query_params.get('ordering', '-created_at')
+        if ordering in ['-created_at', 'created_at', 'original_filename', '-original_filename', 'file_size', '-file_size']:
+            qs = qs.order_by(ordering)
+        else:
+            qs = qs.order_by('-created_at')
+
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        """Allows direct uploading of 1 or more images to the media library."""
+        MAX_IMAGE_SIZE = 3 * 1024 * 1024
+        raw_files = request.FILES.getlist('files') or request.FILES.getlist('file') or request.FILES.getlist('images') or request.FILES.getlist('image')
+        if not raw_files:
+            return Response({"error": "No image files provided for upload."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import MediaAsset
+        created_assets = []
+        errors = []
+        for f in raw_files:
+            if not f or getattr(f, 'size', 0) <= 0:
+                continue
+            if getattr(f, 'size', 0) > MAX_IMAGE_SIZE:
+                errors.append(f"Image '{f.name}' exceeds the maximum allowed size of 3 MB.")
+                continue
+
+            try:
+                asset = MediaAsset.objects.create(
+                    file=f,
+                    original_filename=getattr(f, 'name', '') or 'uploaded_image',
+                    file_size=getattr(f, 'size', 0)
+                )
+                created_assets.append(asset)
+            except Exception as err:
+                errors.append(f"Failed to upload '{f.name}': {str(err)}")
+
+        if errors and not created_assets:
+            return Response({"error": "Upload failed", "details": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(created_assets, many=True)
+        return Response({
+            "message": f"Successfully uploaded {len(created_assets)} image(s) to Media Library.",
+            "assets": serializer.data,
+            "errors": errors if errors else None
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'])
+    def usage(self, request, pk=None):
+        asset = self.get_object()
+        from .media_utils import get_media_asset_usage
+        prods = get_media_asset_usage(asset)
+        return Response({
+            "id": str(asset.id),
+            "filename": asset.original_filename or asset.file.name,
+            "usage_count": len(prods),
+            "products": [{'id': str(p.id), 'name': p.name, 'display_id': p.display_id} for p in prods]
+        })
+
+    def destroy(self, request, *args, **kwargs):
+        asset = self.get_object()
+        from .media_utils import get_media_asset_usage
+        from .utils import delete_image_file
+        prods = get_media_asset_usage(asset)
+        force = (
+            str(request.query_params.get('force', '')).lower() in ['true', '1'] or
+            str(request.data.get('force', '')).lower() in ['true', '1']
+        )
+
+        if prods and not force:
+            prod_names = [p.name for p in prods]
+            return Response({
+                "can_delete": False,
+                "error": "Image is currently in use",
+                "message": f"This image is currently used by {len(prods)} product(s): {', '.join(prod_names[:3])}{'...' if len(prods) > 3 else ''}. Confirm deletion with force=true to remove it from these products and delete the file.",
+                "products": [{'id': str(p.id), 'name': p.name} for p in prods]
+            }, status=status.HTTP_409_CONFLICT)
+
+        # If forced or not in use, remove references from products first
+        if prods:
+            rel_name = asset.file.name.replace('\\', '/')
+            base_name = rel_name.rsplit('/', 1)[-1].lower()
+            from .models import Product, ProductImage
+            ProductImage.objects.filter(
+                models.Q(image=rel_name) | models.Q(image__endswith=base_name)
+            ).delete()
+
+            for p in prods:
+                if p.image and (p.image.name == rel_name or p.image.name.rsplit('/', 1)[-1].lower() == base_name):
+                    next_img = p.gallery_images.exclude(image='').first()
+                    p.image = next_img.image if next_img else None
+                    p.save(update_fields=['image'])
+
+        # Delete physical file from disk
+        delete_image_file(asset.file)
+        # Delete MediaAsset record
+        asset.delete()
+        return Response({"message": "Image deleted successfully from Media Library."}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        ids = request.data.get('ids', [])
+        if not ids or not isinstance(ids, list):
+            return Response({"error": "A list of asset IDs is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        force = str(request.data.get('force', '')).lower() in ['true', '1']
+        from .models import MediaAsset, Product, ProductImage
+        from .media_utils import get_media_asset_usage
+        from .utils import delete_image_file
+        from django.db import models
+
+        assets = MediaAsset.objects.filter(id__in=ids)
+        in_use_summary = []
+
+        for asset in assets:
+            prods = get_media_asset_usage(asset)
+            if prods:
+                in_use_summary.append({
+                    "id": str(asset.id),
+                    "filename": asset.original_filename or asset.file.name,
+                    "products": [{'id': str(p.id), 'name': p.name} for p in prods]
+                })
+
+        if in_use_summary and not force:
+            return Response({
+                "can_delete": False,
+                "error": "One or more selected images are currently in use",
+                "message": f"{len(in_use_summary)} of the selected image(s) are currently in use by active products. Please confirm force delete if you wish to proceed.",
+                "in_use": in_use_summary
+            }, status=status.HTTP_409_CONFLICT)
+
+        deleted_count = 0
+        for asset in assets:
+            prods = get_media_asset_usage(asset)
+            if prods:
+                rel_name = asset.file.name.replace('\\', '/')
+                base_name = rel_name.rsplit('/', 1)[-1].lower()
+                ProductImage.objects.filter(
+                    models.Q(image=rel_name) | models.Q(image__endswith=base_name)
+                ).delete()
+
+                for p in prods:
+                    if p.image and (p.image.name == rel_name or p.image.name.rsplit('/', 1)[-1].lower() == base_name):
+                        next_img = p.gallery_images.exclude(image='').first()
+                        p.image = next_img.image if next_img else None
+                        p.save(update_fields=['image'])
+
+            delete_image_file(asset.file)
+            asset.delete()
+            deleted_count += 1
+
+        return Response({
+            "message": f"Successfully deleted {deleted_count} image(s) from Media Library."
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def sync(self, request):
+        from .media_utils import sync_existing_media
+        added, total = sync_existing_media()
+        return Response({
+            "message": f"Media library synchronized. Added {added} new item(s). Total: {total}.",
+            "added_count": added,
+            "total_count": total
+        }, status=status.HTTP_200_OK)
+
 

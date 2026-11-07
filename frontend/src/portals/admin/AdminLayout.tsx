@@ -6,6 +6,7 @@ import { TopBar } from './components/TopBar';
 import { Dashboard } from './pages/Dashboard';
 import { UserManagement } from './pages/UserManagement';
 import { ProductCatalog } from './pages/ProductCatalog';
+import { MediaLibrary } from './pages/MediaLibrary';
 import { OrdersManagement } from './pages/OrdersManagement';
 import { DeliveryNotes } from './pages/DeliveryNotes';
 import { Invoices } from './pages/Invoices';
@@ -65,6 +66,8 @@ export default function AdminLayout() {
         return <UserManagement />;
       case 'products':
         return <ProductCatalog />;
+      case 'media':
+        return <MediaLibrary />;
       case 'homepage':
         return <HomepageCustomizer />;
       case 'orders':

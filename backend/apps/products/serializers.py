@@ -45,6 +45,52 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return obj.image.url
 
 
+class MediaAssetSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    file_path = serializers.SerializerMethodField()
+    file_size_formatted = serializers.SerializerMethodField()
+    usage_count = serializers.SerializerMethodField()
+    products_using = serializers.SerializerMethodField()
+
+    class Meta:
+        from .models import MediaAsset
+        model = MediaAsset
+        fields = [
+            'id', 'file', 'url', 'file_path', 'original_filename',
+            'file_size', 'file_size_formatted', 'created_at', 'updated_at',
+            'usage_count', 'products_using'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'file_size', 'file_size_formatted', 'usage_count', 'products_using']
+
+    def get_url(self, obj):
+        if not obj.file:
+            return None
+        return obj.file.url
+
+    def get_file_path(self, obj):
+        if not obj.file:
+            return None
+        return obj.file.name
+
+    def get_file_size_formatted(self, obj):
+        size = getattr(obj, 'file_size', 0) or 0
+        if size < 1024:
+            return f"{size} B"
+        elif size < 1024 * 1024:
+            return f"{(size / 1024):.1f} KB"
+        else:
+            return f"{(size / (1024 * 1024)):.2f} MB"
+
+    def get_usage_count(self, obj):
+        from .media_utils import get_media_asset_usage
+        return len(get_media_asset_usage(obj))
+
+    def get_products_using(self, obj):
+        from .media_utils import get_media_asset_usage
+        prods = get_media_asset_usage(obj)
+        return [{'id': str(p.id), 'name': p.name} for p in prods]
+
+
 class TargetClientSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)

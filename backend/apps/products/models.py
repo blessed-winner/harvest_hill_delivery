@@ -286,6 +286,21 @@ class Product(models.Model):
         return self.name
 
 
+class MediaAsset(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    file = models.ImageField(upload_to='media_library/', max_length=500)
+    original_filename = models.CharField(max_length=255, blank=True, default='')
+    file_size = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.original_filename or str(self.file.name)
+
+
 class ProductImage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='gallery_images')

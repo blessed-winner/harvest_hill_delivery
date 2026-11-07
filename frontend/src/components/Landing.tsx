@@ -395,7 +395,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
   const renderProductCard = (item: any, isDeal = false, idx = 0, secId = '') => {
     const isSupply = !!item.product_detail;
     const name = isSupply ? item.product_detail?.name : item.name;
-    const farm = isSupply ? (item.farmer_name || 'Harvest Hill Partner Farm') : 'Harvest Hill Certified Partner Farm';
+    const farm = isSupply ? (item.farmer_name || item.category || 'Fresh Harvest') : (item.category || 'Fresh Harvest');
     
     const isDiscountedItem = !!(
       item.is_discounted ||

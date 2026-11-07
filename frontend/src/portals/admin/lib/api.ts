@@ -168,6 +168,33 @@ export const api = {
     delete: (id: string | number) => apiRequest(`/api/products/${id}/`, { method: 'DELETE' }),
   },
 
+  // Media Library
+  media: {
+    list: (params: Record<string, string> = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiRequest(`/api/media/${query ? '?' + query : ''}`);
+    },
+    upload: (formData: FormData) => {
+      return apiRequest('/api/media/', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    delete: (id: string, force = false) => {
+      return apiRequest(`/api/media/${id}/${force ? '?force=true' : ''}`, {
+        method: 'DELETE',
+      });
+    },
+    bulkDelete: (ids: string[], force = false) => {
+      return apiRequest('/api/media/bulk_delete/', {
+        method: 'POST',
+        body: JSON.stringify({ ids, force }),
+      });
+    },
+    usage: (id: string) => apiRequest(`/api/media/${id}/usage/`),
+    sync: () => apiRequest('/api/media/sync/', { method: 'POST' }),
+  },
+
   // Product Requests
   productRequests: {
     list: () => apiRequest('/api/products/requests/'),

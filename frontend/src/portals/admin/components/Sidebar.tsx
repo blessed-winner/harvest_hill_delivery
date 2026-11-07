@@ -12,7 +12,8 @@ import {
   LogOut,
   X,
   Layout,
-  Handshake
+  Handshake,
+  Image as ImageIcon
 } from 'lucide-react';
 import { ViewType } from '../../types';
 import { cn } from '../lib/utils';
@@ -28,6 +29,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'products', label: 'Products', icon: Package },
+  { id: 'media', label: 'Media Library', icon: ImageIcon },
   { id: 'homepage', label: 'Manage Sections', icon: Layout },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'deliveries', label: 'Delivery Notes', icon: Truck },
