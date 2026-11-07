@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -5,6 +6,27 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Product, ProductRequest
 from .serializers import ProductSerializer, ProductRequestSerializer
 from .utils import delete_image_file
+
+
+def _stored_image_name(image_url):
+    """Resolve a public media URL to the file name stored on the ImageField.
+
+    e.g. 'https://host/media/products/gallery/milk.webp' -> 'products/gallery/milk.webp'
+    The extension is preserved so same-named files such as milk.png and
+    milk.webp can never be confused with each other.
+    """
+    if not image_url:
+        return ""
+    clean = str(image_url).split('?')[0].split('#')[0].strip()
+    media_url = getattr(settings, 'MEDIA_URL', '') or '/media/'
+    if not media_url.endswith('/'):
+        media_url += '/'
+    if media_url in clean:
+        return clean.split(media_url, 1)[1].lstrip('/')
+    if '/media/' in clean:
+        return clean.rsplit('/media/', 1)[1].lstrip('/')
+    return clean.lstrip('/')
+
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -270,38 +292,40 @@ class ProductViewSet(viewsets.ModelViewSet):
                     pass
 
             if not deleted and image_url:
-                clean_url = str(image_url).split('?')[0].replace('http://', '').replace('https://', '')
-                url_key = clean_url.split('/')[-1].split('.')[0].lower() if '/' in clean_url else clean_url.lower()
+                # Exact file-name matching only: no prefix/suffix or extension-less
+                # matching, so deleting 'milk.webp' can never touch 'milk.png'.
+                target_name = _stored_image_name(image_url)
+                if target_name:
+                    target_base = target_name.rsplit('/', 1)[-1]
+                    gallery_imgs = list(ProductImage.objects.filter(product=product))
 
-                gallery_matches = ProductImage.objects.filter(product=product)
-                for img in gallery_matches:
-                    if img.image:
-                        try:
-                            g_url = str(img.image.url).split('?')[0].replace('http://', '').replace('https://', '')
-                            g_key = g_url.split('/')[-1].split('.')[0].lower() if '/' in g_url else g_url.lower()
-                            if (url_key and g_key and (g_key == url_key or g_key in url_key or url_key in g_key)) or img.image.name in clean_url or clean_url in g_url:
-                                delete_image_file(img.image)
-                                img.delete()
-                                deleted = True
-                                break
-                        except Exception:
-                            pass
+                    matched = [img for img in gallery_imgs if img.image and img.image.name == target_name]
+                    if not matched:
+                        # The client sent a bare file name: match it against the stored path.
+                        matched = [
+                            img for img in gallery_imgs
+                            if img.image and img.image.name.rsplit('/', 1)[-1] == target_base
+                        ][:1]
 
-                if product.image:
-                    try:
-                        c_url = str(product.image.url).split('?')[0].replace('http://', '').replace('https://', '')
-                        c_key = c_url.split('/')[-1].split('.')[0].lower() if '/' in c_url else c_url.lower()
-                        if (url_key and c_key and (c_key == url_key or c_key in url_key or url_key in c_key)) or product.image.name in clean_url or clean_url in c_url:
-                            delete_image_file(product.image)
-                            next_img = product.gallery_images.first()
-                            if next_img:
-                                product.image = next_img.image
-                            else:
-                                product.image = None
-                            product.save(update_fields=['image'])
-                            deleted = True
-                    except Exception:
-                        pass
+                    cover_matches = bool(
+                        product.image
+                        and (
+                            product.image.name == target_name
+                            or product.image.name.rsplit('/', 1)[-1] == target_base
+                        )
+                    )
+
+                    for img in matched:
+                        delete_image_file(img.image)
+                        img.delete()
+                        deleted = True
+
+                    if cover_matches:
+                        delete_image_file(product.image)
+                        next_img = product.gallery_images.exclude(image='').first()
+                        product.image = next_img.image if (next_img and next_img.image) else None
+                        product.save(update_fields=['image'])
+                        deleted = True
 
             from .serializers import ProductSerializer
             return Response(ProductSerializer(product, context={'request': request}).data, status=status.HTTP_200_OK)

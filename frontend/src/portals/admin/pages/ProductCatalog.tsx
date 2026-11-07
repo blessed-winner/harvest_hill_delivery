@@ -7,6 +7,63 @@ import { api, apiRequest } from '../lib/api';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { useAlert } from '../../../context/AlertContext';
 
+// Image URL helper
+const getImageUrl = (url: string | null | undefined) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+function ProductCardMedia({ images, name }: { images: string[]; name: string }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const currentImg = images[activeIdx] || images[0];
+
+  if (!currentImg) return null;
+
+  return (
+    <div className="mb-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+      <div className="h-32 w-full rounded-xl overflow-hidden border border-outline-variant/30 relative bg-surface-container-low group/media">
+        <img 
+          src={currentImg} 
+          alt={name} 
+          className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-300" 
+        />
+        {images.length > 1 && (
+          <span className="absolute bottom-1.5 right-1.5 bg-black/65 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs pointer-events-none">
+            <ImageIcon size={10} />
+            {activeIdx + 1}/{images.length}
+          </span>
+        )}
+      </div>
+
+      {images.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+          {images.map((img, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx(idx);
+              }}
+              className={cn(
+                "w-7 h-7 rounded-lg overflow-hidden border shrink-0 bg-surface-container-low transition-all cursor-pointer",
+                activeIdx === idx 
+                  ? "border-[#2D5A3D] ring-2 ring-[#2D5A3D]/40 scale-105" 
+                  : "border-outline-variant/40 opacity-60 hover:opacity-100 hover:border-[#2D5A3D]/60"
+              )}
+              title={`View image ${idx + 1}`}
+            >
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface ProductCatalogProps {
   searchTerm?: string;
 }
@@ -17,14 +74,6 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const { formatPrice } = useCurrency();
-
-  // Image URL helper
-  const getImageUrl = (url: string | null | undefined) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
 
   // Form states
   const [formName, setFormName] = useState("");
@@ -999,7 +1048,12 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                     const isArchived = st === 'archived';
                     const subCount = product.submission_count || product.sourcing_history_count || 0;
                     const isHarvestRequested = !!product.is_currently_needed;
-                    const coverImg = product.image_url || (Array.isArray(product.images) && product.images[0]) || null;
+                    const rawCardImages = (Array.isArray(product.images) && product.images.length > 0)
+                      ? product.images
+                      : (product.image_url ? [product.image_url] : (product.image ? [product.image] : []));
+                    const cardImages = rawCardImages
+                      .map((img: any) => getImageUrl(typeof img === 'string' ? img : (img?.image_url || img?.url || img?.image || '')))
+                      .filter(Boolean);
 
                     return (
                       <motion.div
@@ -1042,12 +1096,8 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
                             </div>
                           </div>
 
-                          {/* Product Cover Image Thumbnail (if present) */}
-                          {coverImg && (
-                            <div className="h-32 w-full rounded-xl overflow-hidden mb-2.5 border border-outline-variant/30 relative bg-surface-container-low">
-                              <img src={coverImg} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            </div>
-                          )}
+                          {/* Product Cover & Gallery Images */}
+                          <ProductCardMedia images={cardImages} name={product.name} />
 
                           {/* Product Title */}
                           <h3 className="font-extrabold text-base text-[#1C2A1E] group-hover:text-[#2D5A3D] transition-colors mb-2 leading-tight">
@@ -1347,25 +1397,23 @@ export function ProductCatalog({ searchTerm = '' }: ProductCatalogProps) {
             {existingImages.length > 0 && (
               <div className="space-y-2">
                 <label className="text-[10px] font-extrabold text-on-surface-variant uppercase tracking-wider block">
-                  Current Product Images
+                  Current Product Images ({existingImages.length})
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {existingImages.map((img: any) => {
-                    const imgUrl = typeof img === 'string' ? img : img.image_url || img.image;
-                    const imgId = typeof img === 'object' ? img.id : null;
+                  {existingImages.map((img: any, idx: number) => {
+                    const imgUrl = typeof img === 'string' ? img : (img.image_url || img.url || img.image);
+                    const imgKey = (typeof img === 'object' && img.id) ? img.id : `img-${idx}-${imgUrl}`;
                     return (
-                      <div key={imgId || imgUrl} className="relative h-20 rounded-xl overflow-hidden border border-outline-variant/40 group bg-surface-container-low shadow-2xs">
+                      <div key={imgKey} className="relative h-20 rounded-xl overflow-hidden border border-outline-variant/40 group bg-surface-container-low shadow-2xs">
                         <img src={imgUrl} alt="Product" className="w-full h-full object-cover" />
-                        {imgId && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExistingImage(imgId)}
-                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
-                            title="Delete image"
-                          >
-                            <X size={12} />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExistingImage(img)}
+                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                          title="Delete image"
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     );
                   })}

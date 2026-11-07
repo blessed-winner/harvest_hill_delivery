@@ -7,14 +7,16 @@ def _product_has_image(image):
 
 
 def _normalize_image_key(url):
+    """Return the stored file name (extension included) used to de-duplicate images.
+
+    The extension is intentionally kept: 'milk.png' and 'milk.webp' are two
+    different uploads and must both be returned, not collapsed into one.
+    """
     if not url:
         return ""
     clean = str(url).split('?')[0].replace('http://', '').replace('https://', '')
     if '/' in clean:
         clean = clean.split('/')[-1]
-    # Remove extension
-    if '.' in clean:
-        clean = clean.rsplit('.', 1)[0]
     return clean.lower().strip()
 
 

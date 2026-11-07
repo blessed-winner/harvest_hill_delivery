@@ -455,8 +455,8 @@ export default function ProductDetail({ onNavigate, addToCart, productId }: Prod
 
             for (const imgUrl of rawImages) {
               if (!imgUrl) continue;
-              let cleanKey = imgUrl.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || imgUrl;
-              if (cleanKey.includes('.')) cleanKey = cleanKey.split('.')[0];
+              // Keep the extension in the key: "milk.png" and "milk.webp" are different uploads.
+              const cleanKey = imgUrl.split('?')[0].replace(/^https?:\/\//, '').split('/').pop()?.toLowerCase() || imgUrl;
               if (!seenKeys.has(cleanKey)) {
                 seenKeys.add(cleanKey);
                 uniqueImages.push(imgUrl);
