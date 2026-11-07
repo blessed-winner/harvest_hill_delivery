@@ -58,7 +58,7 @@ export function MediaLibrary() {
   // Filters & Sorting
   const [searchTerm, setSearchTerm] = useState('');
   const [usageFilter, setUsageFilter] = useState<'all' | 'in_use' | 'unused'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'size'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'size_desc' | 'size_asc'>('newest');
 
   // Selection & Details
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -76,10 +76,16 @@ export function MediaLibrary() {
   const loadMedia = async () => {
     try {
       setLoading(true);
+      let orderingParam = '-created_at';
+      if (sortBy === 'oldest') orderingParam = 'created_at';
+      else if (sortBy === 'name') orderingParam = 'original_filename';
+      else if (sortBy === 'size_desc') orderingParam = '-file_size';
+      else if (sortBy === 'size_asc') orderingParam = 'file_size';
+
       const res = await api.media.list({
         search: searchTerm,
         filter: usageFilter !== 'all' ? usageFilter : '',
-        ordering: sortBy === 'oldest' ? 'created_at' : (sortBy === 'name' ? 'original_filename' : (sortBy === 'size' ? '-file_size' : '-created_at'))
+        ordering: orderingParam
       });
       const dataList = Array.isArray(res) ? res : (res?.results || []);
       setAssets(dataList);
@@ -99,15 +105,26 @@ export function MediaLibrary() {
   useEffect(() => {
     const handler = setTimeout(() => {
       loadMedia();
-    }, 300);
+    }, 280);
     return () => clearTimeout(handler);
   }, [searchTerm]);
+
+  // Dynamic counts for filter tabs
+  const { inUseCount, unusedCount } = useMemo(() => {
+    let inUse = 0;
+    let unused = 0;
+    for (const a of assets) {
+      if (a.usage_count > 0) inUse++;
+      else unused++;
+    }
+    return { inUseCount: inUse, unusedCount: unused };
+  }, [assets]);
 
   const handleSyncStorage = async () => {
     try {
       setSyncing(true);
       const res = await api.media.sync();
-      toast(res.message || "Media library synchronized successfully.", "success");
+      toast(res.message || "Media storage synchronized successfully.", "success");
       await loadMedia();
     } catch (err: any) {
       console.error("Sync error:", err);
@@ -191,7 +208,7 @@ export function MediaLibrary() {
 
     try {
       await api.media.delete(asset.id);
-      toast("Image deleted successfully.", "success");
+      toast("Image deleted successfully from Media Library.", "success");
       if (inspectAsset?.id === asset.id) setInspectAsset(null);
       setSelectedIds(prev => prev.filter(id => id !== asset.id));
       loadMedia();
@@ -206,7 +223,7 @@ export function MediaLibrary() {
 
     try {
       await api.media.delete(asset.id, true);
-      toast("Image deleted and removed from affected products.", "success");
+      toast("Image deleted and detached from affected products.", "success");
       setDeleteModalData({ isOpen: false, isBulk: false });
       if (inspectAsset?.id === asset.id) setInspectAsset(null);
       setSelectedIds(prev => prev.filter(id => id !== asset.id));
@@ -259,7 +276,7 @@ export function MediaLibrary() {
   const handleConfirmForcedBulkDelete = async () => {
     try {
       await api.media.bulkDelete(selectedIds, true);
-      toast(`Successfully deleted ${selectedIds.length} image(s) and updated affected products.`, "success");
+      toast(`Successfully deleted ${selectedIds.length} image(s) and detached them from affected products.`, "success");
       setDeleteModalData({ isOpen: false, isBulk: false });
       setSelectedIds([]);
       if (inspectAsset && selectedIds.includes(inspectAsset.id)) setInspectAsset(null);
@@ -276,455 +293,483 @@ export function MediaLibrary() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/40 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <ImageIcon size={18} />
-            </div>
-            <h1 className="text-xl font-extrabold text-on-surface tracking-tight">Media Library</h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-              {assets.length} {assets.length === 1 ? 'file' : 'files'}
-            </span>
-          </div>
-          <p className="text-xs text-on-surface-variant font-medium mt-1">
-            Centrally manage, reuse, and upload media files across your product catalog.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={handleSyncStorage}
-            disabled={syncing || loading}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-outline-variant/60 hover:bg-surface-container-low text-xs font-bold text-on-surface transition-all cursor-pointer disabled:opacity-50"
-            title="Scan media folder for newly added files"
-          >
-            <RefreshCw size={14} className={cn(syncing && "animate-spin text-primary")} />
-            <span>{syncing ? 'Syncing...' : 'Sync Storage'}</span>
-          </button>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            multiple
-            accept="image/*"
-            className="hidden"
-          />
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-extrabold shadow-sm hover:opacity-90 transition-all cursor-pointer disabled:opacity-50"
-          >
-            {uploading ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                <span>Uploading...</span>
-              </>
-            ) : (
-              <>
-                <UploadCloud size={15} />
-                <span>Upload Images</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Search, Filter, Sort & Bulk Actions */}
-      <div className="bg-white p-4 rounded-2xl border border-outline-variant/40 shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/60" />
-            <input
-              type="text"
-              placeholder="Search media by filename or path..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-surface-container-low/60 hover:bg-surface-container-low focus:bg-white rounded-xl text-xs font-medium text-on-surface placeholder:text-on-surface-variant/60 outline-none border border-transparent focus:border-primary/40 transition-all"
-            />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-0.5"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Filter & Sort Controls */}
-          <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none">
-            {/* Usage Filter Pills */}
-            <div className="flex items-center bg-surface-container-low rounded-xl p-1 border border-outline-variant/30 text-xs">
-              {(['all', 'in_use', 'unused'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setUsageFilter(f)}
-                  className={cn(
-                    "px-3 py-1 rounded-lg font-bold capitalize transition-all cursor-pointer whitespace-nowrap",
-                    usageFilter === f ? "bg-white text-primary shadow-xs" : "text-on-surface-variant hover:text-on-surface"
-                  )}
-                >
-                  {f === 'all' ? 'All Images' : f === 'in_use' ? 'In Use' : 'Unused'}
-                </button>
-              ))}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-xl border border-outline-variant/30 text-xs text-on-surface font-semibold shrink-0">
-              <ArrowUpDown size={13} className="text-on-surface-variant" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent border-none outline-none font-bold text-xs cursor-pointer text-on-surface"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name (A-Z)</option>
-                <option value="size">File Size</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Bulk Selection Bar */}
-        {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs transition-all animate-fadeIn">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={selectAll}
-                className="font-extrabold text-primary hover:underline cursor-pointer"
-              >
-                {selectedIds.length === assets.length ? 'Deselect All' : 'Select All'}
-              </button>
-              <span className="text-on-surface font-semibold">
-                <strong>{selectedIds.length}</strong> of {assets.length} selected
+    <div className="min-h-full bg-[#f9f9f7] pb-16">
+      <div className="max-w-[1560px] mx-auto px-6 sm:px-8 lg:px-10 py-7 space-y-7">
+        
+        {/* ── 1. Page Header ────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-[#E8E4DA] p-6 sm:p-7 shadow-[0_2px_8px_rgba(0,0,0,0.03)] flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-2xs">
+                <ImageIcon size={20} />
+              </div>
+              <h1 className="text-2xl font-extrabold text-[#1C2A1E] tracking-tight">Media Library</h1>
+              <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-200/80 shadow-2xs">
+                {assets.length} {assets.length === 1 ? 'Media Asset' : 'Media Assets'}
               </span>
             </div>
+            <p className="text-xs text-[#717971] font-medium leading-relaxed max-w-2xl">
+              Browse, manage, and reuse stored product images across your catalog. Reusing library photos prevents duplicate files and saves server storage.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap self-start md:self-auto shrink-0">
+            <button
+              onClick={handleSyncStorage}
+              disabled={syncing || loading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D5D0C5] hover:bg-[#F5F3ED] text-xs font-bold text-[#1C2A1E] transition-all cursor-pointer shadow-2xs hover:border-primary/50 disabled:opacity-50"
+              title="Scan media folder for newly added files on disk"
+            >
+              <RefreshCw size={14} className={cn(syncing && "animate-spin text-primary")} />
+              <span>{syncing ? 'Syncing...' : 'Sync Storage'}</span>
+            </button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              multiple
+              accept="image/*"
+              className="hidden"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={16} />
+                  <span>Upload Images</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── 2. Search, Filter & Bulk Toolbar ─────────────────────── */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E4DA] shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-lg">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#717971]" />
+              <input
+                type="text"
+                placeholder="Search images by filename or storage path..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-11 pl-10 pr-9 bg-[#FAF7F0] hover:bg-[#F5F1E6] focus:bg-white rounded-xl text-xs sm:text-sm font-medium text-[#1C2A1E] placeholder:text-[#8C887B] border border-[#E8E4DA] focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all outline-none shadow-2xs"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#717971] hover:text-[#1C2A1E] p-1 rounded-md"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Pills & Sorting */}
+            <div className="flex items-center gap-3 overflow-x-auto scrollbar-none pb-0.5">
+              {/* Usage Filter Pills */}
+              <div className="flex items-center bg-[#FAF7F0] p-1 rounded-xl border border-[#E8E4DA] text-xs">
+                <button
+                  onClick={() => setUsageFilter('all')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg font-extrabold transition-all cursor-pointer whitespace-nowrap",
+                    usageFilter === 'all' 
+                      ? "bg-white text-primary shadow-xs ring-1 ring-black/5" 
+                      : "text-[#717971] hover:text-[#1C2A1E]"
+                  )}
+                >
+                  All Images
+                </button>
+                <button
+                  onClick={() => setUsageFilter('in_use')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg font-extrabold transition-all cursor-pointer whitespace-nowrap",
+                    usageFilter === 'in_use' 
+                      ? "bg-white text-primary shadow-xs ring-1 ring-black/5" 
+                      : "text-[#717971] hover:text-[#1C2A1E]"
+                  )}
+                >
+                  In Use {usageFilter === 'all' && assets.length > 0 ? `(${inUseCount})` : ''}
+                </button>
+                <button
+                  onClick={() => setUsageFilter('unused')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg font-extrabold transition-all cursor-pointer whitespace-nowrap",
+                    usageFilter === 'unused' 
+                      ? "bg-white text-primary shadow-xs ring-1 ring-black/5" 
+                      : "text-[#717971] hover:text-[#1C2A1E]"
+                  )}
+                >
+                  Unused {usageFilter === 'all' && assets.length > 0 ? `(${unusedCount})` : ''}
+                </button>
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="h-11 px-3.5 bg-[#FAF7F0] hover:bg-white rounded-xl border border-[#E8E4DA] flex items-center gap-2 text-xs font-bold text-[#1C2A1E] transition-colors cursor-pointer shadow-2xs shrink-0">
+                <ArrowUpDown size={14} className="text-[#717971]" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-transparent border-none outline-none font-bold text-xs cursor-pointer text-[#1C2A1E]"
+                >
+                  <option value="newest">Sort: Newest First</option>
+                  <option value="oldest">Sort: Oldest First</option>
+                  <option value="name">Sort: Filename (A-Z)</option>
+                  <option value="size_desc">Sort: Size (Largest)</option>
+                  <option value="size_asc">Sort: Size (Smallest)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Bulk Selection Bar */}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center justify-between p-3.5 bg-emerald-50/80 border border-emerald-300 rounded-xl text-xs transition-all animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={selectAll}
+                  className="font-extrabold text-primary hover:underline cursor-pointer"
+                >
+                  {selectedIds.length === assets.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <span className="text-[#1C2A1E] font-semibold">
+                  <strong>{selectedIds.length}</strong> of {assets.length} image(s) selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className="px-3 py-1.5 text-[#717971] hover:text-[#1C2A1E] font-bold cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-extrabold shadow-2xs transition-all cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Selected ({selectedIds.length})</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 3. Image Gallery Grid ─────────────────────────────────── */}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-[#E8E4DA] p-20 flex flex-col items-center justify-center text-center space-y-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+            <Loader2 size={36} className="animate-spin text-primary" />
+            <p className="text-xs font-bold text-[#717971]">Loading media assets...</p>
+          </div>
+        ) : assets.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E8E4DA] p-20 flex flex-col items-center justify-center text-center space-y-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+            <div className="w-16 h-16 rounded-2xl bg-[#FAF7F0] flex items-center justify-center text-[#717971]/60">
+              <ImageIcon size={32} />
+            </div>
+            <h3 className="text-base font-extrabold text-[#1C2A1E]">No Media Assets Found</h3>
+            <p className="text-xs text-[#717971] max-w-md leading-relaxed">
+              {searchTerm || usageFilter !== 'all' 
+                ? 'No media matches your search query or filter. Try clearing the filter or checking another search term.' 
+                : 'Your media library is currently empty. Upload your first product photos or sync existing files from server storage.'}
+            </p>
+            <div className="flex items-center gap-2.5 pt-2">
+              {(searchTerm || usageFilter !== 'all') && (
+                <button
+                  onClick={() => { setSearchTerm(''); setUsageFilter('all'); }}
+                  className="px-4 py-2.5 text-xs font-bold border border-[#D5D0C5] rounded-xl hover:bg-[#FAF7F0] cursor-pointer transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
               <button
-                onClick={() => setSelectedIds([])}
-                className="px-2.5 py-1 text-on-surface-variant hover:text-on-surface font-bold cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-5 py-2.5 text-xs font-extrabold bg-primary text-white rounded-xl shadow-xs hover:opacity-90 cursor-pointer flex items-center gap-2 transition-all"
               >
-                Cancel
+                <UploadCloud size={15} />
+                <span>Upload Images</span>
               </button>
-              <button
-                onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg font-extrabold shadow-2xs transition-all cursor-pointer"
-              >
-                <Trash2 size={13} />
-                <span>Delete Selected ({selectedIds.length})</span>
-              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(215px,1fr))] gap-5">
+            {assets.map((asset) => {
+              const isSelected = selectedIds.includes(asset.id);
+              const fullUrl = getFullImageUrl(asset.url);
+              const inUse = asset.usage_count > 0;
+
+              return (
+                <div
+                  key={asset.id}
+                  onClick={() => setInspectAsset(asset)}
+                  className={cn(
+                    "group relative bg-white rounded-2xl overflow-hidden border transition-all duration-200 cursor-pointer flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-lg hover:-translate-y-0.5",
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/40 bg-emerald-50/10"
+                      : "border-[#E8E4DA] hover:border-primary/50"
+                  )}
+                >
+                  {/* Thumbnail Image Container */}
+                  <div className="relative aspect-square w-full bg-[#FAF7F0] overflow-hidden flex items-center justify-center">
+                    <img
+                      src={fullUrl}
+                      alt={asset.original_filename || 'Media'}
+                      className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-300"
+                      loading="lazy"
+                    />
+
+                    {/* Selection Checkbox (always visible if selected, or on hover) */}
+                    <button
+                      type="button"
+                      onClick={(e) => toggleSelectAsset(asset.id, e)}
+                      className={cn(
+                        "absolute top-2.5 left-2.5 z-10 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-sm",
+                        isSelected
+                          ? "bg-primary text-white opacity-100"
+                          : "bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 backdrop-blur-xs"
+                      )}
+                    >
+                      {isSelected ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded border border-white" />}
+                    </button>
+
+                    {/* Usage Badge */}
+                    <span
+                      className={cn(
+                        "absolute top-2.5 right-2.5 text-[9.5px] font-extrabold px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 backdrop-blur-xs",
+                        inUse
+                          ? "bg-emerald-700/95 text-white"
+                          : "bg-black/50 text-white/95"
+                      )}
+                    >
+                      {inUse ? `Used (${asset.usage_count})` : 'Unused'}
+                    </span>
+
+                    {/* Quick Action Overlay on Hover */}
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/75 via-black/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); copyImageUrl(asset.url); }}
+                        className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-colors"
+                        title="Copy Image URL"
+                      >
+                        <Copy size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteSingle(asset, e)}
+                        className="p-1.5 rounded-lg bg-red-600/85 hover:bg-red-600 text-white transition-colors"
+                        title="Delete Image"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Info Footer */}
+                  <div className="p-3.5 space-y-1 bg-white border-t border-[#F0ECE1] flex-1 flex flex-col justify-between">
+                    <p 
+                      className="text-xs font-bold text-[#1C2A1E] truncate group-hover:text-primary transition-colors leading-snug" 
+                      title={asset.original_filename || asset.file}
+                    >
+                      {asset.original_filename || asset.file_path.split('/').pop()}
+                    </p>
+                    <div className="flex items-center justify-between text-[11px] text-[#717971] font-medium pt-0.5">
+                      <span className="font-semibold">{asset.file_size_formatted}</span>
+                      <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : ''}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── 4. Image Detail Drawer / Modal ───────────────────────── */}
+        {inspectAsset && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+            <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-[#E8E4DA] flex flex-col max-h-[92vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-7 py-5 border-b border-[#E8E4DA]">
+                <div className="flex items-center gap-2.5">
+                  <ImageIcon size={18} className="text-primary" />
+                  <h3 className="text-base font-extrabold text-[#1C2A1E]">Image Information</h3>
+                </div>
+                <button
+                  onClick={() => setInspectAsset(null)}
+                  className="p-1.5 rounded-xl text-[#717971] hover:text-[#1C2A1E] hover:bg-[#FAF7F0] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-7 overflow-y-auto space-y-6">
+                {/* Image Preview Container */}
+                <div className="relative rounded-2xl overflow-hidden bg-[#FAF7F0] border border-[#E8E4DA] flex items-center justify-center max-h-80 p-2">
+                  <img
+                    src={getFullImageUrl(inspectAsset.url)}
+                    alt={inspectAsset.original_filename}
+                    className="w-full h-full object-contain max-h-76 rounded-xl"
+                  />
+                </div>
+
+                {/* File Metadata Grid */}
+                <div className="grid grid-cols-2 gap-3.5 p-4.5 bg-[#FAF7F0] rounded-2xl border border-[#E8E4DA] text-xs">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#717971] block tracking-wider">Original Filename</span>
+                    <p className="font-bold text-[#1C2A1E] truncate mt-0.5">{inspectAsset.original_filename || inspectAsset.file}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#717971] block tracking-wider">File Size</span>
+                    <p className="font-bold text-[#1C2A1E] mt-0.5">{inspectAsset.file_size_formatted}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#717971] block tracking-wider">Storage Path</span>
+                    <p className="font-mono text-[11px] text-[#717971] truncate mt-0.5">{inspectAsset.file_path}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase text-[#717971] block tracking-wider">Upload Timestamp</span>
+                    <p className="font-bold text-[#1C2A1E] mt-0.5">
+                      {inspectAsset.created_at ? new Date(inspectAsset.created_at).toLocaleString() : 'Recently'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Usage & Associated Products */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#1C2A1E] uppercase tracking-wider flex items-center gap-1.5">
+                      <Package size={15} className="text-primary" />
+                      <span>Associated Products ({inspectAsset.usage_count})</span>
+                    </span>
+                    <span className={cn(
+                      "text-[10.5px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-2xs",
+                      inspectAsset.usage_count > 0 
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                        : "bg-gray-100 text-gray-700 border-gray-200"
+                    )}>
+                      {inspectAsset.usage_count > 0 ? 'In Active Use' : 'Not Currently In Use'}
+                    </span>
+                  </div>
+
+                  {inspectAsset.usage_count > 0 ? (
+                    <div className="border border-[#E8E4DA] rounded-xl divide-y divide-[#F0ECE1] overflow-hidden bg-white max-h-48 overflow-y-auto">
+                      {inspectAsset.products_using.map(prod => (
+                        <div key={prod.id} className="p-3 flex items-center justify-between text-xs hover:bg-[#FAF7F0] transition-colors">
+                          <span className="font-bold text-[#1C2A1E]">{prod.name}</span>
+                          <span className="text-[10px] text-[#717971] font-mono">ID: {prod.id.slice(0, 8)}...</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[#717971] bg-[#FAF7F0] p-3.5 rounded-xl border border-[#E8E4DA] leading-relaxed">
+                      This media asset is currently not referenced by any catalog products. It can be safely deleted without impacting existing items.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="px-7 py-5 border-t border-[#E8E4DA] flex items-center justify-between bg-[#FAF7F0]">
+                <button
+                  type="button"
+                  onClick={() => copyImageUrl(inspectAsset.url)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#D5D0C5] hover:bg-white text-xs font-bold text-[#1C2A1E] transition-colors cursor-pointer"
+                >
+                  <Copy size={13} />
+                  <span>Copy Image URL</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setInspectAsset(null)}
+                    className="px-4 py-2 text-xs font-bold text-[#717971] hover:text-[#1C2A1E] cursor-pointer transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSingle(inspectAsset)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                    <span>Delete Image</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. Forced Deletion Warning Modal ─────────────────────── */}
+        {deleteModalData.isOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-amber-300 p-6 sm:p-7 space-y-4.5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-2xs">
+                <AlertTriangle size={24} />
+              </div>
+
+              <div className="text-center space-y-1.5">
+                <h3 className="text-base font-extrabold text-[#1C2A1E]">
+                  {deleteModalData.isBulk 
+                    ? 'Selected Images are Currently in Use' 
+                    : 'Image is Currently in Use by Products'}
+                </h3>
+                <p className="text-xs text-[#717971] leading-relaxed">
+                  {deleteModalData.isBulk
+                    ? `${deleteModalData.inUseCount} of the selected images are attached to active catalog products. Deleting them will detach them from those products and permanently erase the files.`
+                    : `"${deleteModalData.singleAsset?.original_filename || 'This image'}" is currently used in ${deleteModalData.inUseCount} product(s).`}
+                </p>
+              </div>
+
+              {deleteModalData.affectedProducts && deleteModalData.affectedProducts.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10.5px] font-extrabold text-amber-900 uppercase block tracking-wider">
+                    Affected Catalog Products ({deleteModalData.affectedProducts.length}):
+                  </span>
+                  <div className="max-h-36 overflow-y-auto bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 divide-y divide-amber-100 text-xs">
+                    {deleteModalData.affectedProducts.map(p => (
+                      <div key={p.id} className="py-1.5 font-semibold text-amber-950 flex items-center justify-between">
+                        <span>• {p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalData({ isOpen: false, isBulk: false })}
+                  className="flex-1 py-2.5 rounded-xl border border-[#D5D0C5] text-xs font-bold text-[#1C2A1E] hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteModalData.isBulk ? handleConfirmForcedBulkDelete : handleConfirmForcedDeleteSingle}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                >
+                  Confirm Delete & Detach
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Main Gallery Area */}
-      {loading ? (
-        <div className="bg-white rounded-2xl border border-outline-variant/40 p-16 flex flex-col items-center justify-center text-center space-y-3">
-          <Loader2 size={32} className="animate-spin text-primary" />
-          <p className="text-xs font-bold text-on-surface-variant">Loading media assets...</p>
-        </div>
-      ) : assets.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-outline-variant/40 p-16 flex flex-col items-center justify-center text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-surface-container-low flex items-center justify-center text-on-surface-variant/40">
-            <ImageIcon size={28} />
-          </div>
-          <h3 className="text-base font-bold text-on-surface">No Media Assets Found</h3>
-          <p className="text-xs text-on-surface-variant max-w-sm">
-            {searchTerm || usageFilter !== 'all' 
-              ? 'No media matches your search query or filter. Try clearing the filter.' 
-              : 'Your media library is empty. Upload your first product photos or sync existing files from storage.'}
-          </p>
-          <div className="flex items-center gap-2 pt-2">
-            {(searchTerm || usageFilter !== 'all') && (
-              <button
-                onClick={() => { setSearchTerm(''); setUsageFilter('all'); }}
-                className="px-3.5 py-2 text-xs font-bold border border-outline-variant/60 rounded-xl hover:bg-surface-container-low cursor-pointer"
-              >
-                Clear Filters
-              </button>
-            )}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-xs font-extrabold bg-primary text-white rounded-xl shadow-xs hover:opacity-90 cursor-pointer flex items-center gap-1.5"
-            >
-              <UploadCloud size={14} />
-              <span>Upload Images</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
-          {assets.map((asset) => {
-            const isSelected = selectedIds.includes(asset.id);
-            const fullUrl = getFullImageUrl(asset.url);
-            const inUse = asset.usage_count > 0;
-
-            return (
-              <div
-                key={asset.id}
-                onClick={() => setInspectAsset(asset)}
-                className={cn(
-                  "group relative bg-white rounded-2xl overflow-hidden border transition-all cursor-pointer flex flex-col shadow-2xs hover:shadow-md",
-                  isSelected
-                    ? "border-primary ring-2 ring-primary/30"
-                    : "border-outline-variant/40 hover:border-primary/40"
-                )}
-              >
-                {/* Thumbnail Image Container */}
-                <div className="relative aspect-square w-full bg-surface-container-lowest overflow-hidden flex items-center justify-center">
-                  <img
-                    src={fullUrl}
-                    alt={asset.original_filename || 'Media'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-
-                  {/* Selection Checkbox (always visible if selected, or on hover) */}
-                  <button
-                    type="button"
-                    onClick={(e) => toggleSelectAsset(asset.id, e)}
-                    className={cn(
-                      "absolute top-2 left-2 z-10 w-6 h-6 rounded-lg flex items-center justify-center transition-all cursor-pointer",
-                      isSelected
-                        ? "bg-primary text-white shadow-sm opacity-100"
-                        : "bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 backdrop-blur-xs"
-                    )}
-                  >
-                    {isSelected ? <Check size={14} /> : <div className="w-3.5 h-3.5 rounded border border-white/80" />}
-                  </button>
-
-                  {/* Usage Badge */}
-                  <span
-                    className={cn(
-                      "absolute top-2 right-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs flex items-center gap-1 backdrop-blur-xs",
-                      inUse
-                        ? "bg-emerald-600/90 text-white"
-                        : "bg-black/50 text-white/90"
-                    )}
-                  >
-                    {inUse ? `Used (${asset.usage_count})` : 'Unused'}
-                  </span>
-
-                  {/* Quick Action Overlay on Hover */}
-                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); copyImageUrl(asset.url); }}
-                      className="p-1 rounded-md bg-white/20 hover:bg-white/40 text-white transition-colors"
-                      title="Copy URL"
-                    >
-                      <Copy size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteSingle(asset, e)}
-                      className="p-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white transition-colors"
-                      title="Delete Image"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Info Footer */}
-                <div className="p-2.5 space-y-0.5 bg-white border-t border-outline-variant/20 flex-1 flex flex-col justify-between">
-                  <p 
-                    className="text-xs font-bold text-on-surface truncate" 
-                    title={asset.original_filename || asset.file}
-                  >
-                    {asset.original_filename || asset.file_path.split('/').pop()}
-                  </p>
-                  <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-medium">
-                    <span>{asset.file_size_formatted}</span>
-                    <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : ''}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Asset Inspection Drawer / Modal */}
-      {inspectAsset && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-outline-variant/30 flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30">
-              <div className="flex items-center gap-2">
-                <ImageIcon size={18} className="text-primary" />
-                <h3 className="text-sm font-extrabold text-on-surface">Image Details</h3>
-              </div>
-              <button
-                onClick={() => setInspectAsset(null)}
-                className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6">
-              {/* Image Preview Container */}
-              <div className="relative rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant/30 flex items-center justify-center max-h-72">
-                <img
-                  src={getFullImageUrl(inspectAsset.url)}
-                  alt={inspectAsset.original_filename}
-                  className="w-full h-full object-contain max-h-72"
-                />
-              </div>
-
-              {/* File Metadata Grid */}
-              <div className="grid grid-cols-2 gap-3 p-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 text-xs">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase text-on-surface-variant block">Filename</span>
-                  <p className="font-bold text-on-surface truncate mt-0.5">{inspectAsset.original_filename || inspectAsset.file}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase text-on-surface-variant block">File Size</span>
-                  <p className="font-bold text-on-surface mt-0.5">{inspectAsset.file_size_formatted}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase text-on-surface-variant block">Storage Path</span>
-                  <p className="font-mono text-[11px] text-on-surface-variant truncate mt-0.5">{inspectAsset.file_path}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase text-on-surface-variant block">Uploaded Date</span>
-                  <p className="font-bold text-on-surface mt-0.5">
-                    {inspectAsset.created_at ? new Date(inspectAsset.created_at).toLocaleString() : 'Recently'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Usage & Associated Products */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                    <Package size={14} className="text-primary" />
-                    <span>Catalog Products Using This Image ({inspectAsset.usage_count})</span>
-                  </span>
-                  <span className={cn(
-                    "text-[10px] font-extrabold px-2 py-0.5 rounded-full",
-                    inspectAsset.usage_count > 0 ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-700"
-                  )}>
-                    {inspectAsset.usage_count > 0 ? 'In Active Use' : 'Not Currently In Use'}
-                  </span>
-                </div>
-
-                {inspectAsset.usage_count > 0 ? (
-                  <div className="border border-outline-variant/30 rounded-xl divide-y divide-outline-variant/20 overflow-hidden bg-white max-h-40 overflow-y-auto">
-                    {inspectAsset.products_using.map(prod => (
-                      <div key={prod.id} className="p-2.5 flex items-center justify-between text-xs hover:bg-surface-container-lowest">
-                        <span className="font-bold text-on-surface">{prod.name}</span>
-                        <span className="text-[10px] text-on-surface-variant font-mono">ID: {prod.id.slice(0, 8)}...</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-on-surface-variant bg-surface-container-low/40 p-3 rounded-xl border border-outline-variant/20">
-                    This media asset is currently not referenced by any products. Deleting it will safely remove the stored file without affecting existing catalog items.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="px-6 py-4 border-t border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest">
-              <button
-                type="button"
-                onClick={() => copyImageUrl(inspectAsset.url)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-outline-variant/60 hover:bg-surface-container-low text-xs font-bold text-on-surface transition-colors cursor-pointer"
-              >
-                <Copy size={13} />
-                <span>Copy URL</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setInspectAsset(null)}
-                  className="px-4 py-2 text-xs font-bold text-on-surface-variant hover:text-on-surface cursor-pointer"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteSingle(inspectAsset)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
-                >
-                  <Trash2 size={13} />
-                  <span>Delete Image</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Forced Deletion Warning Modal (when image is currently in use) */}
-      {deleteModalData.isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-amber-300 p-6 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-              <AlertTriangle size={24} />
-            </div>
-
-            <div className="text-center space-y-1">
-              <h3 className="text-base font-extrabold text-on-surface">
-                {deleteModalData.isBulk 
-                  ? 'Selected Images are Currently in Use' 
-                  : 'Image is Currently in Use by Products'}
-              </h3>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                {deleteModalData.isBulk
-                  ? `${deleteModalData.inUseCount} of the selected images are attached to active catalog products. Deleting them will remove them from those products and permanently erase the files.`
-                  : `"${deleteModalData.singleAsset?.original_filename || 'This image'}" is currently used in ${deleteModalData.inUseCount} product(s).`}
-              </p>
-            </div>
-
-            {deleteModalData.affectedProducts && deleteModalData.affectedProducts.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-extrabold text-amber-900 uppercase block tracking-wider">
-                  Affected Catalog Products ({deleteModalData.affectedProducts.length}):
-                </span>
-                <div className="max-h-32 overflow-y-auto bg-amber-50/60 border border-amber-200 rounded-xl p-2 divide-y divide-amber-100 text-xs">
-                  {deleteModalData.affectedProducts.map(p => (
-                    <div key={p.id} className="py-1 font-semibold text-amber-950 flex items-center justify-between">
-                      <span>• {p.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteModalData({ isOpen: false, isBulk: false })}
-                className="flex-1 py-2.5 rounded-xl border border-outline-variant/60 text-xs font-bold text-on-surface hover:bg-surface-container-low transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={deleteModalData.isBulk ? handleConfirmForcedBulkDelete : handleConfirmForcedDeleteSingle}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-sm transition-all cursor-pointer"
-              >
-                Confirm Delete & Detach
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
