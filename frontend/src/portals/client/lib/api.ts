@@ -269,6 +269,9 @@ export const clientApi = {
     get: () => apiRequest('/api/accounts/system-settings/'),
     update: (payload: any) => apiRequest('/api/accounts/system-settings/', { method: 'POST', body: JSON.stringify(payload) }),
   },
+  homepageFeatureCards: {
+    get: (activeOnly = true) => apiRequest(`/api/accounts/homepage-feature-cards/${activeOnly ? '?active_only=true' : ''}`),
+  },
 };
 
 // Utility functions

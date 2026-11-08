@@ -304,3 +304,86 @@ class FarmerApplicationSerializer(serializers.ModelSerializer):
         model = FarmerApplication
         fields = ['id', 'full_name', 'email', 'phone', 'farm_name', 'location', 'crops', 'certifications', 'description', 'password', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'created_at', 'updated_at']
+
+
+DEFAULT_HOMEPAGE_FEATURE_CARDS = [
+    {
+        "id": "card-peak-season",
+        "title": "Peak Season",
+        "description": "This week's best",
+        "eyebrow": "IN HARVEST",
+        "link": "Vegetables",
+        "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&auto=format&fit=crop&q=80",
+        "order": 1,
+        "is_active": True,
+    },
+    {
+        "id": "card-new-season",
+        "title": "New This Season",
+        "description": "Just arrived",
+        "eyebrow": "FRESH ARRIVAL",
+        "link": "Fruits",
+        "image": "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=300&auto=format&fit=crop&q=80",
+        "order": 2,
+        "is_active": True,
+    },
+    {
+        "id": "card-flash-deals",
+        "title": "Flash Deals",
+        "description": "Limited time",
+        "eyebrow": "UP TO 35% OFF",
+        "link": "Deals",
+        "image": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&auto=format&fit=crop&q=80",
+        "order": 3,
+        "is_active": True,
+    },
+    {
+        "id": "card-fresh-vegetables",
+        "title": "Fresh Vegetables",
+        "description": "Wholesale harvest",
+        "eyebrow": "CRATE RATES",
+        "link": "Vegetables",
+        "image": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&auto=format&fit=crop&q=80",
+        "order": 4,
+        "is_active": True,
+    },
+    {
+        "id": "card-ready-to-ship",
+        "title": "Ready to Ship",
+        "description": "Fastest delivery",
+        "eyebrow": "SAME-DAY DISPATCH",
+        "link": "Seasonal",
+        "image": "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80",
+        "order": 5,
+        "is_active": True,
+    },
+]
+
+
+class HomepageFeatureCardSerializer(serializers.Serializer):
+    id = serializers.CharField(required=False, allow_blank=True, default='')
+    title = serializers.CharField(required=True, allow_blank=False, max_length=150, error_messages={'blank': 'Card title is required.'})
+    eyebrow = serializers.CharField(required=False, allow_blank=True, max_length=100, default='')
+    description = serializers.CharField(required=False, allow_blank=True, max_length=250, default='')
+    image = serializers.CharField(required=True, allow_blank=False, error_messages={'blank': 'Card image is required.'})
+    link = serializers.CharField(required=False, allow_blank=True, max_length=255, default='')
+    order = serializers.IntegerField(required=False, default=1)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+    def to_internal_value(self, data):
+        # Support aliases
+        if isinstance(data, dict):
+            mapped = dict(data)
+            if 'label' in mapped and 'title' not in mapped:
+                mapped['title'] = mapped['label']
+            if 'tag' in mapped and 'eyebrow' not in mapped:
+                mapped['eyebrow'] = mapped['tag']
+            if 'subtext' in mapped and 'description' not in mapped:
+                mapped['description'] = mapped['subtext']
+            if 'category' in mapped and 'link' not in mapped:
+                mapped['link'] = mapped['category']
+            if 'enabled' in mapped and 'is_active' not in mapped:
+                mapped['is_active'] = mapped['enabled']
+            return super().to_internal_value(mapped)
+        return super().to_internal_value(data)
+

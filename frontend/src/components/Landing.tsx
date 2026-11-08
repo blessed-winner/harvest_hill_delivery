@@ -4,7 +4,13 @@ import {
   ShieldCheck, ArrowUpRight, Grid, Sparkles, Tag, Package, Zap, Leaf, Sprout, AlertCircle, Store, Layers
 } from 'lucide-react';
 import { clientApi } from '../portals/client/lib/api';
-import { DEFAULT_HOMEPAGE_CONFIG, HomepageSectionConfig } from '../portals/admin/pages/HomepageCustomizer';
+import { 
+  DEFAULT_HOMEPAGE_CONFIG, 
+  HomepageSectionConfig,
+  DEFAULT_HOMEPAGE_FEATURE_CARDS,
+  HomepageFeatureCard,
+  getFullImageUrl
+} from '../portals/admin/pages/HomepageCustomizer';
 import { cn } from '../portals/farmer/lib/utils';
 
 interface LandingProps {
@@ -22,6 +28,7 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
 
   // Dynamic Homepage Configuration state
   const [sectionsConfig, setSectionsConfig] = useState<HomepageSectionConfig[]>(DEFAULT_HOMEPAGE_CONFIG);
+  const [featureCards, setFeatureCards] = useState<HomepageFeatureCard[]>(DEFAULT_HOMEPAGE_FEATURE_CARDS);
   const [sectionPages, setSectionPages] = useState<Record<string, number>>({});
 
   // Hero carousel slides
@@ -49,11 +56,14 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
     }
   ];
 
-  // Load section configuration from API or localStorage or DOM event
+  // Load section and feature card configurations from API or localStorage or DOM event
   const loadSectionConfig = async () => {
-    let loaded = false;
+    let loadedSections = false;
+    let loadedCards = false;
+
     try {
       const settings = await clientApi.systemSettings.get();
+      // 1. Produce sections
       if (settings?.homepage_sections_config) {
         const remote = settings.homepage_sections_config;
         const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
@@ -62,12 +72,61 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('homepage_sections_config', JSON.stringify(parsed));
           }
-          loaded = true;
+          loadedSections = true;
+        }
+      }
+
+      // 2. Promotional Feature Cards
+      if (settings?.homepage_feature_cards) {
+        const remoteCards = settings.homepage_feature_cards;
+        const parsedCards = typeof remoteCards === 'string' ? JSON.parse(remoteCards) : remoteCards;
+        if (Array.isArray(parsedCards) && parsedCards.length > 0) {
+          setFeatureCards(parsedCards.sort((a: any, b: any) => (a.order || 0) - (b.order || 0)));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('homepage_feature_cards', JSON.stringify(parsedCards));
+          }
+          loadedCards = true;
         }
       }
     } catch {}
 
-    if (!loaded && typeof window !== 'undefined') {
+    // Fallback dedicated endpoint for cards if not loaded from settings
+    if (!loadedCards) {
+      try {
+        if ((clientApi as any).homepageFeatureCards?.get) {
+          const cardsRes = await (clientApi as any).homepageFeatureCards.get(false);
+          const list = Array.isArray(cardsRes) ? cardsRes : (cardsRes?.cards || []);
+          if (list.length > 0) {
+            setFeatureCards(list.sort((a: any, b: any) => (a.order || 0) - (b.order || 0)));
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('homepage_feature_cards', JSON.stringify(list));
+            }
+            loadedCards = true;
+          }
+        }
+      } catch {}
+    }
+
+    // LocalStorage fallback for cards
+    if (!loadedCards && typeof window !== 'undefined') {
+      const savedCards = localStorage.getItem('homepage_feature_cards');
+      if (savedCards) {
+        try {
+          const parsed = JSON.parse(savedCards);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setFeatureCards(parsed.sort((a: any, b: any) => (a.order || 0) - (b.order || 0)));
+            loadedCards = true;
+          }
+        } catch {}
+      }
+    }
+
+    if (!loadedCards) {
+      setFeatureCards(DEFAULT_HOMEPAGE_FEATURE_CARDS);
+    }
+
+    // LocalStorage fallback for sections
+    if (!loadedSections && typeof window !== 'undefined') {
       const saved = localStorage.getItem('homepage_sections_config');
       if (saved) {
         try {
@@ -570,71 +629,63 @@ export default function Landing({ onNavigate, addToCart }: LandingProps) {
           </div>
         </div>
 
-        {/* 5 Compact Quick-Link Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          {[
-            {
-              label: "Peak Season",
-              subtext: "This week's best",
-              tag: "IN HARVEST",
-              category: "Vegetables",
-              image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300&auto=format&fit=crop&q=80"
-            },
-            {
-              label: "New This Season",
-              subtext: "Just arrived",
-              tag: "FRESH ARRIVAL",
-              category: "Fruits",
-              image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=300&auto=format&fit=crop&q=80"
-            },
-            {
-              label: "Flash Deals",
-              subtext: "Limited time",
-              tag: "UP TO 35% OFF",
-              category: "Deals",
-              image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=300&auto=format&fit=crop&q=80"
-            },
-            {
-              label: "Fresh Vegetables",
-              subtext: "Wholesale harvest",
-              tag: "CRATE RATES",
-              category: "Vegetables",
-              image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&auto=format&fit=crop&q=80"
-            },
-            {
-              label: "Ready to Ship",
-              subtext: "Fastest delivery",
-              tag: "SAME-DAY DISPATCH",
-              category: "Seasonal",
-              image: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80"
-            }
-          ].map((tile, idx) => (
-            <div
-              key={idx}
-              onClick={() => onNavigate('catalog', tile.category)}
-              className="bg-white border border-[#E8E4DA] rounded-[12px] p-2.5 flex items-center gap-3 cursor-pointer hover:border-[#2D5A3D] hover:shadow-md transition-all group overflow-hidden"
-            >
-              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-[#E8E4DA] bg-[#FAF7F0] relative">
-                <img 
-                  src={tile.image} 
-                  alt={tile.label} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[8px] font-extrabold text-[#2D5A3D] uppercase tracking-wider block leading-none mb-0.5">
-                  {tile.tag}
-                </span>
-                <h4 className="text-xs font-bold text-[#1C2A1E] truncate group-hover:text-[#2D5A3D] transition-colors leading-tight">
-                  {tile.label}
-                </h4>
-                <p className="text-[10px] text-[#717971] truncate leading-tight mt-0.5 font-medium">
-                  {tile.subtext}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Dynamic Promotional Feature Cards */}
+        {featureCards && featureCards.filter(c => c.is_active !== false).length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {featureCards
+              .filter(card => card.is_active !== false)
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((card, idx) => {
+                const title = card.title || (card as any).label || '';
+                const eyebrow = card.eyebrow || (card as any).tag || 'IN HARVEST';
+                const desc = card.description || (card as any).subtext || '';
+                const dest = card.link || (card as any).category || '';
+                const imgSrc = getFullImageUrl(card.image);
+
+                const handleCardClick = () => {
+                  if (!dest) {
+                    onNavigate('catalog');
+                  } else if (dest.startsWith('http://') || dest.startsWith('https://')) {
+                    window.open(dest, '_blank');
+                  } else if (dest.startsWith('/')) {
+                    window.location.href = dest;
+                  } else {
+                    onNavigate('catalog', dest);
+                  }
+                };
+
+                return (
+                  <div
+                    key={card.id || idx}
+                    onClick={handleCardClick}
+                    className="bg-white border border-[#E8E4DA] rounded-[12px] p-2.5 flex items-center gap-3 cursor-pointer hover:border-[#2D5A3D] hover:shadow-md transition-all group overflow-hidden"
+                  >
+                    <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-[#E8E4DA] bg-[#FAF7F0] relative">
+                      <img 
+                        src={imgSrc} 
+                        alt={title} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[8px] font-extrabold text-[#2D5A3D] uppercase tracking-wider block leading-none mb-0.5 truncate">
+                        {eyebrow}
+                      </span>
+                      <h4 className="text-xs font-bold text-[#1C2A1E] truncate group-hover:text-[#2D5A3D] transition-colors leading-tight">
+                        {title}
+                      </h4>
+                      <p className="text-[10px] text-[#717971] truncate leading-tight mt-0.5 font-medium">
+                        {desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </section>
 
       {/* SECTION: Product Section with Dynamic Inventory States */}

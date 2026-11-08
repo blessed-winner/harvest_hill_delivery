@@ -15,7 +15,8 @@ from .views import (
     ChangePasswordView,
     FarmerApplicationSubmitView,
     AdminFarmerApplicationViewSet,
-    SystemSettingsView
+    SystemSettingsView,
+    HomepageFeatureCardsView
 )
 
 router = DefaultRouter()
@@ -27,6 +28,7 @@ urlpatterns = [
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('admin/reports/', AdminReportsView.as_view(), name='admin-reports'),
     path('system-settings/', SystemSettingsView.as_view(), name='system-settings'),
+    path('homepage-feature-cards/', HomepageFeatureCardsView.as_view(), name='homepage-feature-cards'),
     path('login/', LoginView.as_view(), name='login'),
     path('google-login/', GoogleOAuthView.as_view(), name='google_login'),
     path('register/', RegisterView.as_view(), name='register'),

@@ -30,6 +30,23 @@ def _stored_image_name(image_url):
     return clean.lstrip('/')
 
 
+def _get_list_from_data(data, key):
+    if not data:
+        return []
+    if hasattr(data, 'getlist'):
+        res = data.getlist(key) or data.getlist(f'{key}[]')
+        if res:
+            return [x for x in res if x]
+    val = data.get(key) if hasattr(data, 'get') else None
+    if not val and hasattr(data, 'get'):
+        val = data.get(f'{key}[]')
+    if val is None:
+        return []
+    if isinstance(val, (list, tuple)):
+        return [x for x in val if x]
+    return [val] if val else []
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -93,11 +110,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         files = [f for f in raw_files if f and getattr(f, 'size', 0) > 0]
 
         # Library images selected from Media Library
-        library_images = self.request.data.getlist('library_images') or self.request.data.getlist('library_images[]')
-        if not library_images and self.request.data.get('library_images'):
-            lib_val = self.request.data.get('library_images')
-            library_images = [lib_val] if isinstance(lib_val, str) else list(lib_val)
-        library_images = [img for img in library_images if img]
+        library_images = _get_list_from_data(self.request.data, 'library_images')
 
         total_req_images = len(files) + len(library_images)
         if total_req_images > 3:
@@ -234,10 +247,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         # 1. Process explicit deletions (deleted_images)
         # Note: ONLY remove association from this product. Never delete the physical file from Media Library!
-        deleted_raw = self.request.data.getlist('deleted_images') or self.request.data.getlist('deleted_images[]')
-        if not deleted_raw and self.request.data.get('deleted_images'):
-            deleted_val = self.request.data.get('deleted_images')
-            deleted_raw = [deleted_val] if isinstance(deleted_val, str) else list(deleted_val)
+        deleted_raw = _get_list_from_data(self.request.data, 'deleted_images')
 
         for del_item in deleted_raw:
             if not del_item:
@@ -260,10 +270,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     instance.save(update_fields=['image'])
 
         # 2. Process retained images if explicitly supplied (remove un-retained images from this product)
-        retained_raw = self.request.data.getlist('retained_images') or self.request.data.getlist('retained_images[]')
-        if not retained_raw and self.request.data.get('retained_images'):
-            ret_val = self.request.data.get('retained_images')
-            retained_raw = [ret_val] if isinstance(ret_val, str) else list(ret_val)
+        retained_raw = _get_list_from_data(self.request.data, 'retained_images')
 
         if retained_raw:
             retained_targets = set()
@@ -291,11 +298,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     instance.save(update_fields=['image'])
 
         # Library images selected from Media Library
-        library_images = self.request.data.getlist('library_images') or self.request.data.getlist('library_images[]')
-        if not library_images and self.request.data.get('library_images'):
-            lib_val = self.request.data.get('library_images')
-            library_images = [lib_val] if isinstance(lib_val, str) else list(lib_val)
-        library_images = [img for img in library_images if img]
+        library_images = _get_list_from_data(self.request.data, 'library_images')
 
         # 3. Calculate current unique existing images count (retained)
         existing_names = set()

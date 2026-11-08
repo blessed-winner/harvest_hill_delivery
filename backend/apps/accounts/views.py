@@ -29,7 +29,9 @@ from .serializers import (
     AdminUserSerializer,
     FarmerApplicationSerializer,
     FarmerProfileSerializer,
-    ClientProfileSerializer
+    ClientProfileSerializer,
+    HomepageFeatureCardSerializer,
+    DEFAULT_HOMEPAGE_FEATURE_CARDS
 )
 from apps.common.utils import log_action
 
@@ -926,17 +928,25 @@ class SystemSettingsView(APIView):
         import json
         settings_dict = {}
         for s in SystemSetting.objects.all():
-            if s.key == 'homepage_sections_config':
+            if s.key in ['homepage_sections_config', 'homepage_feature_cards']:
                 try:
                     settings_dict[s.key] = json.loads(s.value)
                 except Exception:
                     settings_dict[s.key] = s.value
+            elif s.value.lower() in ['true', 'false']:
+                settings_dict[s.key] = s.value.lower() == 'true'
             else:
-                settings_dict[s.key] = s.value.lower() == 'true' if s.value.lower() in ['true', 'false'] else s.value
+                try:
+                    settings_dict[s.key] = json.loads(s.value)
+                except Exception:
+                    settings_dict[s.key] = s.value
         
         # Default show_farmer_names_to_clients to False if not explicitly set
         if 'show_farmer_names_to_clients' not in settings_dict:
             settings_dict['show_farmer_names_to_clients'] = False
+
+        if 'homepage_feature_cards' not in settings_dict:
+            settings_dict['homepage_feature_cards'] = DEFAULT_HOMEPAGE_FEATURE_CARDS
 
         return Response(settings_dict)
 
@@ -948,12 +958,97 @@ class SystemSettingsView(APIView):
         import json
         data = request.data
         for key, val in data.items():
-            setting, _ = SystemSetting.objects.get_or_create(key=key)
-            if isinstance(val, (dict, list)):
-                setting.value = json.dumps(val)
+            if key == 'homepage_feature_cards':
+                raw_cards = val
+                if isinstance(raw_cards, str):
+                    try:
+                        raw_cards = json.loads(raw_cards)
+                    except Exception:
+                        return Response({"homepage_feature_cards": "Invalid JSON format for cards."}, status=status.HTTP_400_BAD_REQUEST)
+                if not isinstance(raw_cards, list):
+                    return Response({"homepage_feature_cards": "homepage_feature_cards must be a list of cards."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                card_serializer = HomepageFeatureCardSerializer(data=raw_cards, many=True)
+                if not card_serializer.is_valid():
+                    return Response({"homepage_feature_cards": card_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                
+                validated_cards = card_serializer.validated_data
+                for idx, card in enumerate(validated_cards):
+                    if not card.get('id'):
+                        card['id'] = f"card_{idx + 1}"
+
+                setting, _ = SystemSetting.objects.get_or_create(key=key)
+                setting.value = json.dumps(validated_cards)
+                setting.save()
             else:
-                setting.value = str(val)
-            setting.save()
+                setting, _ = SystemSetting.objects.get_or_create(key=key)
+                if isinstance(val, (dict, list)):
+                    setting.value = json.dumps(val)
+                else:
+                    setting.value = str(val)
+                setting.save()
 
         return Response({"detail": "System settings updated successfully."})
+
+
+class HomepageFeatureCardsView(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        from .models import SystemSetting
+        import json
+
+        active_only = request.query_params.get('active_only', '').lower() in ['true', '1']
+        cards = DEFAULT_HOMEPAGE_FEATURE_CARDS
+
+        try:
+            setting = SystemSetting.objects.filter(key='homepage_feature_cards').first()
+            if setting and setting.value:
+                parsed = json.loads(setting.value)
+                if isinstance(parsed, list):
+                    cards = parsed
+        except Exception:
+            cards = DEFAULT_HOMEPAGE_FEATURE_CARDS
+
+        if active_only:
+            cards = [c for c in cards if c.get('is_active', True)]
+
+        cards.sort(key=lambda x: x.get('order', 0))
+        return Response(cards)
+
+    def post(self, request):
+        if not request.user or not request.user.is_authenticated or request.user.role != 'admin':
+            return Response({"detail": "Only admins can update promotional cards."}, status=status.HTTP_403_FORBIDDEN)
+
+        from .models import SystemSetting
+        import json
+
+        raw_cards = request.data.get('cards', request.data) if isinstance(request.data, dict) else request.data
+        if isinstance(raw_cards, str):
+            try:
+                raw_cards = json.loads(raw_cards)
+            except Exception:
+                return Response({"detail": "Invalid JSON payload for promotional cards."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(raw_cards, list):
+            return Response({"detail": "Promotional cards must be provided as a list."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = HomepageFeatureCardSerializer(data=raw_cards, many=True)
+        if not serializer.is_valid():
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_cards = serializer.validated_data
+        for idx, card in enumerate(validated_cards):
+            if not card.get('id'):
+                card['id'] = f"card_{idx + 1}"
+
+        setting, _ = SystemSetting.objects.get_or_create(key='homepage_feature_cards')
+        setting.value = json.dumps(validated_cards)
+        setting.save()
+
+        return Response({
+            "detail": "Homepage promotional cards updated successfully.",
+            "cards": validated_cards
+        }, status=status.HTTP_200_OK)
+
 

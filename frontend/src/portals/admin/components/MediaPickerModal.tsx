@@ -22,6 +22,9 @@ interface MediaPickerModalProps {
   maxSelectable: number;
   alreadyAttachedPaths?: string[];
   onSelectImages: (selected: MediaAssetItem[]) => void;
+  title?: string;
+  subtitle?: string;
+  limitMessage?: string;
 }
 
 const getFullImageUrl = (url: string | null | undefined) => {
@@ -37,6 +40,9 @@ export function MediaPickerModal({
   maxSelectable,
   alreadyAttachedPaths = [],
   onSelectImages,
+  title,
+  subtitle,
+  limitMessage,
 }: MediaPickerModalProps) {
   const { toast } = useAlert();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,7 +90,7 @@ export function MediaPickerModal({
       p && (p === asset.file_path || p === asset.file || p.includes(asset.file_path) || asset.file_path.includes(p))
     );
     if (isAlreadyAttached) {
-      toast("This image is already added to the product.", "warning");
+      toast("This image is already selected.", "warning");
       return;
     }
 
@@ -92,8 +98,12 @@ export function MediaPickerModal({
     if (isSelected) {
       setSelectedAssets(prev => prev.filter(a => a.id !== asset.id));
     } else {
+      if (maxSelectable === 1) {
+        setSelectedAssets([asset]);
+        return;
+      }
       if (selectedAssets.length >= maxSelectable) {
-        toast(`You can only select up to ${maxSelectable} image(s) to stay within the 3-image product limit.`, "warning");
+        toast(limitMessage || `You can only select up to ${maxSelectable} image(s).`, "warning");
         return;
       }
       setSelectedAssets(prev => [...prev, asset]);
@@ -164,10 +174,14 @@ export function MediaPickerModal({
           <div>
             <div className="flex items-center gap-2">
               <ImageIcon size={18} className="text-primary" />
-              <h3 className="text-sm font-extrabold text-on-surface">Choose from Media Library</h3>
+              <h3 className="text-sm font-extrabold text-on-surface">{title || "Choose from Media Library"}</h3>
             </div>
             <p className="text-[11px] text-on-surface-variant mt-0.5">
-              Select up to <strong className="text-primary">{maxSelectable}</strong> image(s) to attach to this product ({selectedAssets.length} of {maxSelectable} selected).
+              {subtitle || (
+                <>
+                  Select up to <strong className="text-primary">{maxSelectable}</strong> image(s) ({selectedAssets.length} of {maxSelectable} selected).
+                </>
+              )}
             </p>
           </div>
           <button

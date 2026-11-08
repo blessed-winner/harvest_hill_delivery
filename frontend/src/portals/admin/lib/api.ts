@@ -120,6 +120,10 @@ export const api = {
     get: () => apiRequest('/api/accounts/system-settings/'),
     update: (payload: any) => apiRequest('/api/accounts/system-settings/', { method: 'POST', body: JSON.stringify(payload) }),
   },
+  homepageFeatureCards: {
+    get: () => apiRequest('/api/accounts/homepage-feature-cards/'),
+    update: (cards: any[]) => apiRequest('/api/accounts/homepage-feature-cards/', { method: 'POST', body: JSON.stringify({ cards }) }),
+  },
 
   // Dashboard Metrics
   dashboardSummary: (params: Record<string, string> = {}) => {
